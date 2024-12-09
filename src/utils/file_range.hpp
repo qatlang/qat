@@ -68,8 +68,8 @@ class FileRange {
 
 	useit FileRange spanTo(FileRange const& other) const;
 	useit FileRange trimTo(FilePos othStart) const;
-	useit String	start_to_string() const;
-	useit bool		is_before(FileRange another) const;
+	useit String    start_to_string() const;
+	useit bool      is_before(FileRange another) const;
 
 	operator Json() const;
 

@@ -13,10 +13,10 @@ ir::PrerunValue* TypeWrap::emit(EmitCtx* ctx) {
 
 Json TypeWrap::to_json() const {
 	return Json()
-		._("nodeType", "typeWrap")
-		._("providedType", theType->to_json())
-		._("isExplicit", isExplicit)
-		._("fileRange", fileRange);
+	    ._("nodeType", "typeWrap")
+	    ._("providedType", theType->to_json())
+	    ._("isExplicit", isExplicit)
+	    ._("fileRange", fileRange);
 }
 
 String TypeWrap::to_string() const {

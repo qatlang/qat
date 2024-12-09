@@ -7,12 +7,12 @@ namespace qat::ast {
 
 class FunctionCall final : public Expression {
   private:
-	Expression*		 fnExpr;
+	Expression*      fnExpr;
 	Vec<Expression*> values;
 
   public:
 	FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
-		: Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
+	    : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
 
 	useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
@@ -26,8 +26,8 @@ class FunctionCall final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::FUNCTION_CALL; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::FUNCTION_CALL; }
 };
 
 } // namespace qat::ast

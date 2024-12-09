@@ -27,51 +27,51 @@ class OpaqueType : public Type, public EntityOverview {
 	friend class ast::DefineMixType;
 	friend class ir::StructType;
 
-	Identifier				 name;
-	Vec<GenericArgument*>	 generics;
-	Maybe<String>			 genericID;
+	Identifier               name;
+	Vec<GenericArgument*>    generics;
+	Maybe<String>            genericID;
 	Maybe<OpaqueSubtypeKind> subtypeKind;
-	ir::Mod*				 parent;
-	ir::ExpandedType*		 subTy = nullptr;
-	Maybe<usize>			 size;
-	VisibilityInfo			 visibility;
-	Maybe<MetaInfo>			 metaInfo;
+	ir::Mod*                 parent;
+	ir::ExpandedType*        subTy = nullptr;
+	Maybe<usize>             size;
+	VisibilityInfo           visibility;
+	Maybe<MetaInfo>          metaInfo;
 
   public:
 	OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
-			   Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
-			   llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
+	           Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
+	           llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
 	useit static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
-								 Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
-								 VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
+	                             Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
+	                             VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
-	useit String	 get_full_name() const;
+	useit String     get_full_name() const;
 	useit Identifier get_name() const;
-	useit ir::Mod*				get_module() const;
+	useit ir::Mod*              get_module() const;
 	useit VisibilityInfo const& get_visibility() const;
-	useit bool					is_generic() const;
-	useit Maybe<String>	   get_generic_id() const;
-	useit bool			   has_generic_parameter(String const& name) const;
+	useit bool                  is_generic() const;
+	useit Maybe<String>    get_generic_id() const;
+	useit bool             has_generic_parameter(String const& name) const;
 	useit GenericArgument* get_generic_parameter(String const& name) const;
 
-	useit bool	is_subtype_struct() const;
-	useit bool	is_subtype_mix() const;
-	useit bool	is_subtype_unknown() const;
-	useit bool	has_subtype() const;
-	void		set_sub_type(ir::ExpandedType* _subTy);
+	useit bool  is_subtype_struct() const;
+	useit bool  is_subtype_mix() const;
+	useit bool  is_subtype_unknown() const;
+	useit bool  has_subtype() const;
+	void        set_sub_type(ir::ExpandedType* _subTy);
 	useit Type* get_subtype() const;
-	useit bool	has_deduced_size() const;
+	useit bool  has_deduced_size() const;
 	useit usize get_deduced_size() const;
 
 	useit bool is_expanded() const final;
 	useit bool can_be_prerun() const final;
 	useit bool can_be_prerun_generic() const final;
 	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* preVal) const final;
-	useit bool			is_type_sized() const final;
+	useit bool          is_type_sized() const final;
 	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
-	useit bool		  is_trivially_copyable() const final;
-	useit bool		  is_trivially_movable() const final;
+	useit bool        is_trivially_copyable() const final;
+	useit bool        is_trivially_movable() const final;
 
 	useit bool is_copy_constructible() const final;
 	useit bool is_copy_assignable() const final;

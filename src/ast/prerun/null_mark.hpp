@@ -11,7 +11,7 @@ class NullMark final : public PrerunExpression, public TypeInferrable {
 
   public:
 	NullMark(Maybe<ast::Type*> _providedType, FileRange _fileRange)
-		: PrerunExpression(_fileRange), providedType(_providedType) {}
+	    : PrerunExpression(_fileRange), providedType(_providedType) {}
 
 	useit static NullMark* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(NullMark), _providedType, _fileRange);
@@ -26,9 +26,9 @@ class NullMark final : public PrerunExpression, public TypeInferrable {
 	TYPE_INFERRABLE_FUNCTIONS
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
-	useit Json			   to_json() const override;
-	useit String		   to_string() const final;
-	useit NodeType		   nodeType() const override { return NodeType::NULL_MARK; }
+	useit Json             to_json() const override;
+	useit String           to_string() const final;
+	useit NodeType         nodeType() const override { return NodeType::NULL_MARK; }
 };
 
 } // namespace qat::ast

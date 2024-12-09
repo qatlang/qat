@@ -15,10 +15,10 @@ class LinkedGeneric final : public Type {
 		return std::construct_at(OwnNormal(LinkedGeneric), _genAbs, _range);
 	}
 
-	useit ir::Type*	  emit(EmitCtx* ctx) final;
+	useit ir::Type*   emit(EmitCtx* ctx) final;
 	useit AstTypeKind type_kind() const final;
-	useit Json		  to_json() const final;
-	useit String	  to_string() const final;
+	useit Json        to_json() const final;
+	useit String      to_string() const final;
 };
 
 } // namespace qat::ast

@@ -5,7 +5,7 @@
 namespace qat::ir {
 
 VoidType::VoidType(llvm::LLVMContext& llctx) {
-	llvmType	= llvm::Type::getVoidTy(llctx);
+	llvmType    = llvm::Type::getVoidTy(llctx);
 	linkingName = "qat'void";
 }
 

@@ -4,7 +4,7 @@
 namespace qat::ast {
 
 void FunctionType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-									   EmitCtx* ctx) {
+                                       EmitCtx* ctx) {
 	returnType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	for (auto arg : argTypes) {
 		arg->update_dependencies(phase, ir::DependType::complete, ent, ctx);
@@ -44,10 +44,10 @@ Json FunctionType::to_json() const {
 		args.push_back(argTy->to_json());
 	}
 	return Json()
-		._("typeKind", "function")
-		._("returnType", returnType->to_json())
-		._("arguments", args)
-		._("isVariadic", isVariadic);
+	    ._("typeKind", "function")
+	    ._("returnType", returnType->to_json())
+	    ._("arguments", args)
+	    ._("isVariadic", isVariadic);
 }
 
 } // namespace qat::ast

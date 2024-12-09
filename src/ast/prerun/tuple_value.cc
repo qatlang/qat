@@ -3,7 +3,7 @@
 namespace qat::ast {
 
 void PrerunTupleValue::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-										   EmitCtx* ctx) {
+                                           EmitCtx* ctx) {
 	for (auto mem : members) {
 		mem->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	}
@@ -14,16 +14,16 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 	if (is_type_inferred()) {
 		if (!inferredType->is_tuple()) {
 			ctx->Error("This expression should be of a tuple type, but the type inferred from scope is " +
-						   ctx->color(inferredType->to_string()),
-					   fileRange);
+			               ctx->color(inferredType->to_string()),
+			           fileRange);
 		}
 		if (members.size() != inferredType->as_tuple()->getSubTypeCount()) {
 			ctx->Error("The type inferred from scope for this expression is " + ctx->color(inferredType->to_string()) +
-						   " which expects " + ctx->color(std::to_string(inferredType->as_tuple()->getSubTypeCount())) +
-						   " values. But " +
-						   ((inferredType->as_tuple()->getSubTypeCount() > members.size()) ? "only " : "") +
-						   std::to_string(members.size()) + " values were provided",
-					   fileRange);
+			               " which expects " + ctx->color(std::to_string(inferredType->as_tuple()->getSubTypeCount())) +
+			               " values. But " +
+			               ((inferredType->as_tuple()->getSubTypeCount() > members.size()) ? "only " : "") +
+			               std::to_string(members.size()) + " values were provided",
+			           fileRange);
 		}
 	}
 	Vec<ir::PrerunValue*> memberVals;
@@ -36,14 +36,14 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 		memberVals.push_back(members.at(i)->emit(ctx));
 		if (expected.has_value() && !expected.value()->getSubtypeAt(i)->is_same(memberVals.back()->get_ir_type())) {
 			ctx->Error("The tuple type inferred is " + ctx->color(expected.value()->to_string()) +
-						   " so the expected type of this expression is " +
-						   ctx->color(expected.value()->getSubtypeAt(i)->to_string()) +
-						   " but got an expression of type " +
-						   ctx->color(memberVals.back()->get_ir_type()->to_string()),
-					   members.at(i)->fileRange);
+			               " so the expected type of this expression is " +
+			               ctx->color(expected.value()->getSubtypeAt(i)->to_string()) +
+			               " but got an expression of type " +
+			               ctx->color(memberVals.back()->get_ir_type()->to_string()),
+			           members.at(i)->fileRange);
 		}
 	}
-	Vec<ir::Type*>		 memTys;
+	Vec<ir::Type*>       memTys;
 	Vec<llvm::Constant*> memConsts;
 	for (auto mem : memberVals) {
 		memTys.push_back(mem->get_ir_type());
@@ -54,7 +54,7 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 		expected = ir::TupleType::get(memTys, false, ctx->irCtx->llctx);
 	}
 	return ir::PrerunValue::get(llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(expected.value()), memConsts),
-								expected.value());
+	                            expected.value());
 }
 
 String PrerunTupleValue::to_string() const {

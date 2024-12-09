@@ -9,24 +9,24 @@ namespace qat::ir {
 
 struct MetaInfo {
 	static constexpr auto foreignKey  = "foreign";
-	static constexpr auto linkAsKey	  = "linkAs";
-	static constexpr auto unionKey	  = "union";
-	static constexpr auto packedKey	  = "packed";
-	static constexpr auto inlineKey	  = "inline";
+	static constexpr auto linkAsKey   = "linkAs";
+	static constexpr auto unionKey    = "union";
+	static constexpr auto packedKey   = "packed";
+	static constexpr auto inlineKey   = "inline";
 	static constexpr auto providesKey = "provides";
 
 	MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRange> _valueRanges, FileRange _fileRange)
-		: valueRanges(_valueRanges), fileRange(_fileRange) {
+	    : valueRanges(_valueRanges), fileRange(_fileRange) {
 		for (auto& kv : keyValues) {
 			keys.push_back(kv.first);
 			values.push_back(kv.second);
 		}
 	}
 
-	Vec<Identifier>		  keys;
+	Vec<Identifier>       keys;
 	Vec<ir::PrerunValue*> values;
-	Vec<FileRange>		  valueRanges;
-	FileRange			  fileRange;
+	Vec<FileRange>        valueRanges;
+	FileRange             fileRange;
 
 	useit bool has_key(String const& name) const {
 		for (auto& k : keys) {
@@ -83,8 +83,8 @@ struct MetaInfo {
 	useit bool get_inline() const {
 		if (has_key(inlineKey)) {
 			return llvm::cast<llvm::ConstantInt>(get_value_for(inlineKey)->get_llvm_constant())
-				->getValue()
-				.getBoolValue();
+			    ->getValue()
+			    .getBoolValue();
 		}
 		return false;
 	}

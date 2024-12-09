@@ -12,9 +12,9 @@
 namespace qat::ir {
 
 DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericArgument*> _generics, Mod* _mod,
-							   const VisibilityInfo& _visibInfo)
-	: ExpandedType(_name, _generics, _mod, _visibInfo), EntityOverview("typeDefinition", Json(), _name.range),
-	  subType(_subType) {
+                               const VisibilityInfo& _visibInfo)
+    : ExpandedType(_name, _generics, _mod, _visibInfo), EntityOverview("typeDefinition", Json(), _name.range),
+      subType(_subType) {
 	setSubType(subType);
 	linkingName = subType->get_name_for_linking();
 	parent->typeDefs.push_back(this);
@@ -87,12 +87,12 @@ void DefinitionType::update_overview() {
 		genJson.push_back(gen->to_json());
 	}
 	ovInfo._("fullName", get_full_name())
-		._("typeID", get_id())
-		._("subTypeID", subType->get_id())
-		._("visibility", visibility)
-		._("hasGenerics", !generics.empty())
-		._("generics", genJson)
-		._("moduleID", parent->get_id());
+	    ._("typeID", get_id())
+	    ._("subTypeID", subType->get_id())
+	    ._("visibility", visibility)
+	    ._("hasGenerics", !generics.empty())
+	    ._("generics", genJson)
+	    ._("moduleID", parent->get_id());
 }
 
 Maybe<String> DefinitionType::to_prerun_generic_string(ir::PrerunValue* constant) const {
@@ -116,18 +116,18 @@ TypeKind DefinitionType::type_kind() const { return TypeKind::definition; }
 String DefinitionType::to_string() const { return get_full_name(); }
 
 GenericDefinitionType::GenericDefinitionType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-											 Maybe<ast::PrerunExpression*> _constraint,
-											 ast::TypeDefinition* _defineTypeDef, Mod* _parent,
-											 const VisibilityInfo& _visibInfo)
-	: EntityOverview("genericTypeDefinition",
-					 Json()
-						 ._("name", _name.value)
-						 ._("fullName", _parent->get_fullname_with_child(_name.value))
-						 ._("visibility", _visibInfo)
-						 ._("moduleID", _parent->get_id()),
-					 _name.range),
-	  name(_name), generics(_generics), defineTypeDef(_defineTypeDef), parent(_parent), visibility(_visibInfo),
-	  constraint(_constraint) {
+                                             Maybe<ast::PrerunExpression*> _constraint,
+                                             ast::TypeDefinition* _defineTypeDef, Mod* _parent,
+                                             const VisibilityInfo& _visibInfo)
+    : EntityOverview("genericTypeDefinition",
+                     Json()
+                         ._("name", _name.value)
+                         ._("fullName", _parent->get_fullname_with_child(_name.value))
+                         ._("visibility", _visibInfo)
+                         ._("moduleID", _parent->get_id()),
+                     _name.range),
+      name(_name), generics(_generics), defineTypeDef(_defineTypeDef), parent(_parent), visibility(_visibInfo),
+      constraint(_constraint) {
 	parent->genericTypeDefinitions.push_back(this);
 }
 
@@ -164,13 +164,13 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
 		if (checkVal->get_ir_type()->is_bool()) {
 			if (!llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 				irCtx->Error(
-					"The provided generic parameters for the generic function do not satisfy the constraints", range,
-					Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+				    "The provided generic parameters for the generic function do not satisfy the constraints", range,
+				    Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
 			}
 		} else {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
-							 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
-						 constraint.value()->fileRange);
+			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
+			             constraint.value()->fileRange);
 		}
 	}
 	Vec<ir::GenericArgument*> genParams;
@@ -180,14 +180,14 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
 	auto variantName = ir::Logic::get_generic_variant_name(name.value, types);
 	defineTypeDef->set_variant_name(variantName);
 	irCtx->add_active_generic(
-		ir::GenericEntityMarker{
-			variantName,
-			ir::GenericEntityType::typeDefinition,
-			range,
-			0u,
-			genParams,
-		},
-		true);
+	    ir::GenericEntityMarker{
+	        variantName,
+	        ir::GenericEntityType::typeDefinition,
+	        range,
+	        0u,
+	        genParams,
+	    },
+	    true);
 	(void)defineTypeDef->create_type(parent, irCtx);
 	auto* dTy = defineTypeDef->getDefinition();
 	variants.push_back(GenericVariant<DefinitionType>(dTy, types));
@@ -199,8 +199,8 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
 		auto count = irCtx->get_active_generic().warningCount;
 		irCtx->remove_active_generic();
 		irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
-						   " generated while creating generic variant " + irCtx->highlightWarning(variantName),
-					   range);
+		                   " generated while creating generic variant " + irCtx->highlightWarning(variantName),
+		               range);
 	} else {
 		irCtx->remove_active_generic();
 	}

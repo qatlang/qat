@@ -18,12 +18,12 @@ Json Lib::to_json() const {
 		membersJsonValue.emplace_back(mem->to_json());
 	}
 	return Json()
-		._("name", name)
-		._("nodeType", "lib")
-		._("members", membersJsonValue)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("name", name)
+	    ._("nodeType", "lib")
+	    ._("members", membersJsonValue)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

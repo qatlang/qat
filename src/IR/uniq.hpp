@@ -16,7 +16,7 @@ class Uniq {
 	Uniq() : id(utils::unique_id()) {}
 
 	useit String get_id() const { return id; }
-	useit bool	 isID(const String& val) const { return (val == id); }
+	useit bool   isID(const String& val) const { return (val == id); }
 };
 
 } // namespace qat::ir

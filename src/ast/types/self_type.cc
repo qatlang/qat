@@ -10,13 +10,13 @@ ir::Type* SelfType::emit(EmitCtx* ctx) {
 		} else {
 			if (canBeSelfInstance) {
 				return ir::ReferenceType::get(isVarRef,
-											  ctx->has_member_parent() ? ctx->get_member_parent()->get_parent_type()
-																	   : ctx->get_opaque_parent(),
-											  ctx->irCtx);
+				                              ctx->has_member_parent() ? ctx->get_member_parent()->get_parent_type()
+				                                                       : ctx->get_opaque_parent(),
+				                              ctx->irCtx);
 			} else {
 				ctx->Error("The " + ctx->color("''") +
-							   " type can only be used as given type in normal and variation methods",
-						   fileRange);
+				               " type can only be used as given type in normal and variation methods",
+				           fileRange);
 			}
 		}
 	} else {

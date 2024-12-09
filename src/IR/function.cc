@@ -30,19 +30,19 @@
 namespace qat::ir {
 
 LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun, FileRange _fileRange)
-	: Value(nullptr, _type, _isVar), EntityOverview("localValue",
-													Json()
-														._("name", _name)
-														._("typeID", _type->get_id())
-														._("type", _type->to_string())
-														._("isVariable", _isVar)
-														._("functionID", fun->get_id()),
-													_fileRange),
-	  name(std::move(_name)) {
+    : Value(nullptr, _type, _isVar), EntityOverview("localValue",
+                                                    Json()
+                                                        ._("name", _name)
+                                                        ._("typeID", _type->get_id())
+                                                        ._("type", _type->to_string())
+                                                        ._("isVariable", _isVar)
+                                                        ._("functionID", fun->get_id()),
+                                                    _fileRange),
+      name(std::move(_name)) {
 	associatedRange = std::move(_fileRange);
 	SHOW("Type is " << type->to_string())
 	SHOW("Creating llvm::AllocaInst for " << name)
-	ll		= ir::Logic::newAlloca(fun, name, type->get_llvm_type());
+	ll      = ir::Logic::newAlloca(fun, name, type->get_llvm_type());
 	localID = utils::unique_id();
 	SHOW("AllocaInst name is: " << ((llvm::AllocaInst*)ll)->getName().str());
 }
@@ -68,7 +68,7 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
 		fn->blocks.push_back(this);
 	}
 	name = (has_parent() ? (parent->get_name() + "_") : "") + std::to_string(index) + "b";
-	bb	 = llvm::BasicBlock::Create(fn->get_llvm_function()->getContext(), name, fn->get_llvm_function());
+	bb   = llvm::BasicBlock::Create(fn->get_llvm_function()->getContext(), name, fn->get_llvm_function());
 	SHOW("Created llvm::BasicBlock " << name)
 }
 
@@ -201,10 +201,10 @@ void Block::destroy_locals(ast::EmitCtx* ctx) {
 	for (auto* loc : values) {
 		if (loc->get_ir_type()->is_destructible()) {
 			if (loc->get_ir_type()->is_mark()
-					? (loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
-					   (loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() ==
-						ctx->get_fn()->get_id()))
-					: true) {
+			        ? (loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
+			           (loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() ==
+			            ctx->get_fn()->get_id()))
+			        : true) {
 				loc->get_ir_type()->destroy_value(ctx->irCtx, loc, ctx->get_fn());
 			}
 		}
@@ -224,14 +224,14 @@ void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
 }
 
 Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-				   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> _fileRange,
-				   const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
-				   Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
-	: Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
-	  namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))), generics(std::move(_generics)), mod(_mod),
-	  arguments(std::move(_args)), visibilityInfo(_visibility_info), fileRange(std::move(_fileRange)),
-	  hasVariadicArguments(not arguments.empty() && (arguments.back().kind == ArgumentKind::VARIADIC)),
-	  isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
+                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> _fileRange,
+                   const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
+                   Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
+    : Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
+      namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))), generics(std::move(_generics)), mod(_mod),
+      arguments(std::move(_args)), visibilityInfo(_visibility_info), fileRange(std::move(_fileRange)),
+      hasVariadicArguments(not arguments.empty() && (arguments.back().kind == ArgumentKind::VARIADIC)),
+      isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
 {
 	SHOW("ir::Function constructor")
 	Maybe<String> foreignID;
@@ -250,15 +250,15 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
 			for (auto* param : generics) {
 				if (param->is_typed()) {
 					genericLinkNames.push_back(
-						LinkNames({LinkNameUnit(param->as_typed()->get_type()->get_name_for_linking(),
-												LinkUnitType::genericTypeValue)},
-								  None, nullptr));
+					    LinkNames({LinkNameUnit(param->as_typed()->get_type()->get_name_for_linking(),
+					                            LinkUnitType::genericTypeValue)},
+					              None, nullptr));
 				} else if (param->is_prerun()) {
 					auto preRes = param->as_prerun()->get_expression();
 					genericLinkNames.push_back(
-						LinkNames({LinkNameUnit(preRes->get_ir_type()->to_prerun_generic_string(preRes).value(),
-												LinkUnitType::genericPrerunValue)},
-								  None, nullptr));
+					    LinkNames({LinkNameUnit(preRes->get_ir_type()->to_prerun_generic_string(preRes).value(),
+					                            LinkUnitType::genericPrerunValue)},
+					              None, nullptr));
 				}
 			}
 			namingInfo.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericLinkNames), None);
@@ -273,12 +273,12 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
 	type = new FunctionType(returnType, argTypes, ctx->llctx);
 	if (isMemberFn) {
 		ll = llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
-									llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName,
-									mod->get_llvm_module());
+		                            llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName,
+		                            mod->get_llvm_module());
 	} else {
 		ll = llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
-									llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName,
-									mod->get_llvm_module());
+		                            llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName,
+		                            mod->get_llvm_module());
 	}
 	if (not is_method() && not is_generic()) {
 		mod->functions.push_back(this);
@@ -300,8 +300,8 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 	if (destMod->get_id() != mod->get_id()) {
 		if (not destMod->get_llvm_module()->getFunction(llvmFunction->getName())) {
 			llvm::Function::Create((llvm::FunctionType*)get_ir_type()->get_llvm_type(),
-								   llvm::GlobalValue::LinkageTypes::ExternalLinkage, llvmFunction->getAddressSpace(),
-								   llvmFunction->getName(), destMod->get_llvm_module());
+			                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, llvmFunction->getAddressSpace(),
+			                       llvmFunction->getName(), destMod->get_llvm_module());
 		}
 	}
 	SHOW("Getting return type")
@@ -323,11 +323,11 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 }
 
 Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> _generics,
-						   bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRange> fileRange,
-						   const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
-						   Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
+                           bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRange> fileRange,
+                           const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+                           Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
 	return new Function(mod, std::move(name), namingInfo, std::move(_generics), isInline, returnTy, std::move(args),
-						std::move(fileRange), visibilityInfo, irCtx, false, linkage, metaInfo);
+	                    std::move(fileRange), visibilityInfo, irCtx, false, linkage, metaInfo);
 }
 
 void Function::update_overview() {
@@ -339,9 +339,9 @@ void Function::update_overview() {
 	for (auto arg : arguments) {
 		if (arg.get_type() != nullptr) {
 			argsJSON.push_back(Json()
-								   ._("isVar", arg.get_variability())
-								   ._("name", arg.get_name().value != "" ? arg.get_name() : JsonValue())
-								   ._("typeID", arg.get_type()->get_id()));
+			                       ._("isVar", arg.get_variability())
+			                       ._("name", arg.get_name().value != "" ? arg.get_name() : JsonValue())
+			                       ._("typeID", arg.get_type()->get_id()));
 		}
 	}
 	Vec<JsonValue> genericArgsJSON;
@@ -349,14 +349,14 @@ void Function::update_overview() {
 		genericArgsJSON.push_back(param->to_json());
 	}
 	ovInfo._("name", name.value)
-		._("fullName", get_full_name())
-		._("genericArguments", genericArgsJSON)
-		._("arguments", argsJSON)
-		._("functionID", get_id())
-		._("moduleID", mod->get_id())
-		._("visibility", visibilityInfo)
-		._("isVariadic", hasVariadicArguments)
-		._("locals", localsJson);
+	    ._("fullName", get_full_name())
+	    ._("genericArguments", genericArgsJSON)
+	    ._("arguments", argsJSON)
+	    ._("functionID", get_id())
+	    ._("moduleID", mod->get_id())
+	    ._("visibility", visibilityInfo)
+	    ._("isVariadic", hasVariadicArguments)
+	    ._("locals", localsJson);
 }
 
 String Function::get_full_name() const { return mod->get_fullname_with_child(name.value); }
@@ -364,25 +364,25 @@ String Function::get_full_name() const { return mod->get_fullname_with_child(nam
 ir::LocalValue* Function::get_str_comparison_index() {
 	if (!strComparisonIndex) {
 		strComparisonIndex = get_first_block()->new_value("qat'strCmpInd",
-														  // NOLINTNEXTLINE(readability-magic-numbers)
-														  ir::UnsignedType::create(64u, ctx), true, name.range);
+		                                                  // NOLINTNEXTLINE(readability-magic-numbers)
+		                                                  ir::UnsignedType::create(64u, ctx), true, name.range);
 	}
 	return strComparisonIndex;
 }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-								 Maybe<ast::PrerunExpression*> _constraint, ast::FunctionPrototype* _functionDef,
-								 Mod* _parent, const VisibilityInfo& _visibInfo)
-	: EntityOverview("genericFunction",
-					 Json()
-						 ._("name", _name.value)
-						 ._("fullName", _parent->get_fullname_with_child(_name.value))
-						 ._("functionID", get_id())
-						 ._("moduleID", _parent->get_id())
-						 ._("visibility", _visibInfo),
-					 _name.range),
-	  name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), constraint(_constraint),
-	  parent(_parent), visibInfo(_visibInfo) {
+                                 Maybe<ast::PrerunExpression*> _constraint, ast::FunctionPrototype* _functionDef,
+                                 Mod* _parent, const VisibilityInfo& _visibInfo)
+    : EntityOverview("genericFunction",
+                     Json()
+                         ._("name", _name.value)
+                         ._("fullName", _parent->get_fullname_with_child(_name.value))
+                         ._("functionID", get_id())
+                         ._("moduleID", _parent->get_id())
+                         ._("visibility", _visibInfo),
+                     _name.range),
+      name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), constraint(_constraint),
+      parent(_parent), visibInfo(_visibInfo) {
 	parent->genericFunctions.push_back(this);
 }
 
@@ -427,14 +427,14 @@ Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx*
 		if (checkVal->get_ir_type()->is_bool()) {
 			if (!llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 				irCtx->Error(
-					"The provided generic parameters for the generic function do not satisfy the constraints",
-					fileRange,
-					Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+				    "The provided generic parameters for the generic function do not satisfy the constraints",
+				    fileRange,
+				    Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
 			}
 		} else {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
-							 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
-						 constraint.value()->fileRange);
+			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
+			             constraint.value()->fileRange);
 		}
 	}
 	auto variantName = ir::Logic::get_generic_variant_name(name.value, types);
@@ -445,8 +445,8 @@ Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx*
 	}
 	auto prevTemp = irCtx->allActiveGenerics;
 	irCtx->add_active_generic(
-		ir::GenericEntityMarker{variantName, ir::GenericEntityType::function, fileRange, 0, genParams}, true);
-	auto* fun					 = functionDefinition->create_function(parent, irCtx);
+	    ir::GenericEntityMarker{variantName, ir::GenericEntityType::function, fileRange, 0, genParams}, true);
+	auto* fun                    = functionDefinition->create_function(parent, irCtx);
 	functionDefinition->function = fun;
 	functionDefinition->emit_definition(parent, irCtx);
 	variants.push_back(GenericVariant<Function>(fun, types));
@@ -458,8 +458,8 @@ Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx*
 		auto count = irCtx->get_active_generic().warningCount;
 		irCtx->remove_active_generic();
 		irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
-						   " generated while creating generic function: " + irCtx->highlightWarning(variantName),
-					   fileRange);
+		                   " generated while creating generic function: " + irCtx->highlightWarning(variantName),
+		               fileRange);
 	} else {
 		irCtx->remove_active_generic();
 	}
@@ -477,15 +477,15 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 			continue;
 		}
 		if (loc->get_ir_type()->is_expanded() && loc->get_ir_type()->as_expanded()->has_destructor()) {
-			auto* eTy		 = loc->get_ir_type()->as_expanded();
+			auto* eTy        = loc->get_ir_type()->as_expanded();
 			auto* destructor = eTy->get_destructor();
 			(void)destructor->call(irCtx, {loc->get_alloca()}, None, fun->get_module());
 		} else if (loc->get_ir_type()->is_destructible()) {
 			loc->get_ir_type()->destroy_value(irCtx, loc->to_new_ir_value(), fun);
 			SHOW("Destroyed value using type level feature")
 		} else if (loc->get_ir_type()->is_mark() &&
-				   loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
-				   loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
+		           loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
+		           loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
 			auto* ptrTy = loc->get_ir_type()->as_mark();
 			if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
 				auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
@@ -497,40 +497,40 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					restBlock->link_previous_block(currBlock);
 					// NOLINTNEXTLINE(readability-magic-numbers)
 					auto* count =
-						currBlock->new_value(utils::unique_id(), ir::UnsignedType::create(64u, irCtx), true, {""});
+					    currBlock->new_value(utils::unique_id(), ir::UnsignedType::create(64u, irCtx), true, {""});
 					irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
-											   count->get_llvm());
+					                           count->get_llvm());
 					irCtx->builder.CreateCondBr(
-						irCtx->builder.CreateICmpNE(
-							irCtx->builder.CreatePtrDiff(
-								ptrTy->get_subtype()->get_llvm_type(),
-								irCtx->builder.CreateLoad(
-									ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
-									irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
-								llvm::ConstantPointerNull::get(ptrTy->get_subtype()->get_llvm_type()->getPointerTo())),
-							llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
-						condBlock->get_bb(), restBlock->get_bb());
+					    irCtx->builder.CreateICmpNE(
+					        irCtx->builder.CreatePtrDiff(
+					            ptrTy->get_subtype()->get_llvm_type(),
+					            irCtx->builder.CreateLoad(
+					                ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
+					                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
+					            llvm::ConstantPointerNull::get(ptrTy->get_subtype()->get_llvm_type()->getPointerTo())),
+					        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+					    condBlock->get_bb(), restBlock->get_bb());
 					condBlock->set_active(irCtx->builder);
 					SHOW("Set condition block active")
 					irCtx->builder.CreateCondBr(
-						irCtx->builder.CreateICmpULT(
-							irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm()),
-							irCtx->builder.CreateLoad(
-								count->get_ir_type()->get_llvm_type(),
-								irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 1u))),
-						trueBlock->get_bb(), restBlock->get_bb());
+					    irCtx->builder.CreateICmpULT(
+					        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm()),
+					        irCtx->builder.CreateLoad(
+					            count->get_ir_type()->get_llvm_type(),
+					            irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 1u))),
+					    trueBlock->get_bb(), restBlock->get_bb());
 					trueBlock->set_active(irCtx->builder);
 					SHOW("Set trueblock active")
 					(void)dstrFn->call(irCtx,
-									   {irCtx->builder.CreateLoad(ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
-																  irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(),
-																								 loc->get_llvm(), 0u))},
-									   None, fun->get_module());
+					                   {irCtx->builder.CreateLoad(ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
+					                                              irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(),
+					                                                                             loc->get_llvm(), 0u))},
+					                   None, fun->get_module());
 					irCtx->builder.CreateStore(
-						irCtx->builder.CreateAdd(
-							llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
-							irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm())),
-						count->get_llvm());
+					    irCtx->builder.CreateAdd(
+					        llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
+					        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm())),
+					    count->get_llvm());
 					(void)ir::add_branch(irCtx->builder, condBlock->get_bb());
 					restBlock->set_active(irCtx->builder);
 				} else {
@@ -539,37 +539,37 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					auto* restBlock = new ir::Block(fun, nullptr);
 					restBlock->link_previous_block(currBlock);
 					irCtx->builder.CreateCondBr(
-						irCtx->builder.CreateICmpNE(
-							irCtx->builder.CreatePtrDiff(
-								ptrTy->get_llvm_type(),
-								irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
-								llvm::ConstantPointerNull::get(
-									llvm::dyn_cast<llvm::PointerType>(ptrTy->get_llvm_type()))),
-							llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
-						trueBlock->get_bb(), restBlock->get_bb());
+					    irCtx->builder.CreateICmpNE(
+					        irCtx->builder.CreatePtrDiff(
+					            ptrTy->get_llvm_type(),
+					            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
+					            llvm::ConstantPointerNull::get(
+					                llvm::dyn_cast<llvm::PointerType>(ptrTy->get_llvm_type()))),
+					        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+					    trueBlock->get_bb(), restBlock->get_bb());
 					trueBlock->set_active(irCtx->builder);
 					irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(),
-											  dstrFn->get_llvm_function(),
-											  {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm())});
+					                          dstrFn->get_llvm_function(),
+					                          {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm())});
 					(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 					restBlock->set_active(irCtx->builder);
 				}
 			}
 			auto freeName = fun->get_module()->link_internal_dependency(
-				InternalDependency::free, irCtx,
-				fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
+			    InternalDependency::free, irCtx,
+			    fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
 			auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
 			irCtx->builder.CreateCall(
-				freeFn->getFunctionType(), freeFn,
-				{ptrTy->is_slice()
-					 ? irCtx->builder.CreatePointerCast(
-						   irCtx->builder.CreateLoad(
-							   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
-							   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
-						   llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())
-					 : irCtx->builder.CreatePointerCast(
-						   irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
-						   llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())});
+			    freeFn->getFunctionType(), freeFn,
+			    {ptrTy->is_slice()
+			         ? irCtx->builder.CreatePointerCast(
+			               irCtx->builder.CreateLoad(
+			                   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
+			                   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
+			               llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())
+			         : irCtx->builder.CreatePointerCast(
+			               irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
+			               llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())});
 		}
 	}
 	locals.clear();
@@ -587,13 +587,13 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 			for (usize i = 0; i < cTy->get_members().size(); i++) {
 				auto& mem = cTy->get_members().at(i);
 				if (mem->type->is_mark() && mem->type->as_mark()->get_owner().is_of_type() &&
-					(mem->type->as_mark()->get_owner().owner_as_type()->get_id() == mem->type->get_id())) {
-					auto* ptrTy	 = mem->type->as_mark();
+				    (mem->type->as_mark()->get_owner().owner_as_type()->get_id() == mem->type->get_id())) {
+					auto* ptrTy  = mem->type->as_mark();
 					auto* memPtr = irCtx->builder.CreateStructGEP(
-						ptrTy->get_llvm_type(),
-						irCtx->builder.CreateStructGEP(cTy->get_llvm_type(),
-													   mFn->get_first_block()->get_value("''")->get_llvm(), i),
-						0u);
+					    ptrTy->get_llvm_type(),
+					    irCtx->builder.CreateStructGEP(cTy->get_llvm_type(),
+					                                   mFn->get_first_block()->get_value("''")->get_llvm(), i),
+					    0u);
 					if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
 						auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
 						if (ptrTy->is_slice()) {
@@ -604,43 +604,43 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							restBlock->link_previous_block(currBlock);
 							// NOLINTNEXTLINE(readability-magic-numbers)
 							auto* count = currBlock->new_value(utils::unique_id(), ir::UnsignedType::create(64u, irCtx),
-															   true, {""});
+							                                   true, {""});
 							irCtx->builder.CreateStore(
-								llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
-								count->get_llvm());
+							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
+							    count->get_llvm());
 							irCtx->builder.CreateCondBr(
-								irCtx->builder.CreateICmpNE(
-									irCtx->builder.CreatePtrDiff(
-										ptrTy->get_subtype()->get_llvm_type(),
-										irCtx->builder.CreateLoad(
-											ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
-											irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
-										llvm::ConstantPointerNull::get(
-											ptrTy->get_subtype()->get_llvm_type()->getPointerTo())),
-									llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
-								condBlock->get_bb(), restBlock->get_bb());
+							    irCtx->builder.CreateICmpNE(
+							        irCtx->builder.CreatePtrDiff(
+							            ptrTy->get_subtype()->get_llvm_type(),
+							            irCtx->builder.CreateLoad(
+							                ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
+							                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
+							            llvm::ConstantPointerNull::get(
+							                ptrTy->get_subtype()->get_llvm_type()->getPointerTo())),
+							        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+							    condBlock->get_bb(), restBlock->get_bb());
 							condBlock->set_active(irCtx->builder);
 							SHOW("Set condition block active")
 							irCtx->builder.CreateCondBr(
-								irCtx->builder.CreateICmpULT(
-									irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm()),
-									irCtx->builder.CreateLoad(
-										count->get_ir_type()->get_llvm_type(),
-										irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 1u))),
-								trueBlock->get_bb(), restBlock->get_bb());
+							    irCtx->builder.CreateICmpULT(
+							        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm()),
+							        irCtx->builder.CreateLoad(
+							            count->get_ir_type()->get_llvm_type(),
+							            irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 1u))),
+							    trueBlock->get_bb(), restBlock->get_bb());
 							trueBlock->set_active(irCtx->builder);
 							SHOW("Set trueblock active")
 							(void)dstrFn->call(irCtx,
-											   {irCtx->builder.CreateLoad(
-												   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
-												   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u))},
-											   None, fun->get_module());
+							                   {irCtx->builder.CreateLoad(
+							                       ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
+							                       irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u))},
+							                   None, fun->get_module());
 							irCtx->builder.CreateStore(
-								irCtx->builder.CreateAdd(
-									llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
-									irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(),
-															  count->get_llvm())),
-								count->get_llvm());
+							    irCtx->builder.CreateAdd(
+							        llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
+							        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(),
+							                                  count->get_llvm())),
+							    count->get_llvm());
 							(void)ir::add_branch(irCtx->builder, condBlock->get_bb());
 							restBlock->set_active(irCtx->builder);
 						} else {
@@ -649,37 +649,37 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							auto* restBlock = new ir::Block(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							irCtx->builder.CreateCondBr(
-								irCtx->builder.CreateICmpNE(
-									irCtx->builder.CreatePtrDiff(
-										ptrTy->get_llvm_type(),
-										irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
-										llvm::ConstantPointerNull::get(
-											llvm::dyn_cast<llvm::PointerType>(ptrTy->get_llvm_type()))),
-									llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
-								trueBlock->get_bb(), restBlock->get_bb());
+							    irCtx->builder.CreateICmpNE(
+							        irCtx->builder.CreatePtrDiff(
+							            ptrTy->get_llvm_type(),
+							            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
+							            llvm::ConstantPointerNull::get(
+							                llvm::dyn_cast<llvm::PointerType>(ptrTy->get_llvm_type()))),
+							        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+							    trueBlock->get_bb(), restBlock->get_bb());
 							trueBlock->set_active(irCtx->builder);
 							irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(),
-													  dstrFn->get_llvm_function(),
-													  {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr)});
+							                          dstrFn->get_llvm_function(),
+							                          {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr)});
 							(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 							restBlock->set_active(irCtx->builder);
 						}
 					}
 					auto freeName = fun->get_module()->link_internal_dependency(
-						InternalDependency::free, irCtx,
-						fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
+					    InternalDependency::free, irCtx,
+					    fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
 					auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
 					irCtx->builder.CreateCall(
-						freeFn->getFunctionType(), freeFn,
-						{ptrTy->is_slice()
-							 ? irCtx->builder.CreatePointerCast(
-								   irCtx->builder.CreateLoad(
-									   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
-									   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
-								   llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())
-							 : irCtx->builder.CreatePointerCast(
-								   irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
-								   llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())});
+					    freeFn->getFunctionType(), freeFn,
+					    {ptrTy->is_slice()
+					         ? irCtx->builder.CreatePointerCast(
+					               irCtx->builder.CreateLoad(
+					                   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
+					                   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
+					               llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())
+					         : irCtx->builder.CreatePointerCast(
+					               irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
+					               llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())});
 				}
 			}
 			if (fun->get_block_count() >= 1 && fun->get_first_block()->has_value("''")) {
@@ -745,10 +745,10 @@ void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block) {
 	for (auto* loc : locals) {
 		if (loc->get_ir_type()->is_destructible()) {
 			if (loc->get_ir_type()->is_mark()
-					? (loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
-					   (loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() ==
-						block->get_fn()->get_id()))
-					: true) {
+			        ? (loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
+			           (loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() ==
+			            block->get_fn()->get_id()))
+			        : true) {
 				loc->get_ir_type()->destroy_value(irCtx, loc, block->get_fn());
 			}
 		}

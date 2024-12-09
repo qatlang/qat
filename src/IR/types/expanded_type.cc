@@ -7,8 +7,8 @@
 namespace qat::ir {
 
 ExpandedType::ExpandedType(Identifier _name, Vec<GenericArgument*> _generics, ir::Mod* _parent,
-						   const VisibilityInfo& _visib)
-	: name(std::move(_name)), generics(_generics), parent(_parent), visibility(_visib) {}
+                           const VisibilityInfo& _visib)
+    : name(std::move(_name)), generics(_generics), parent(_parent), visibility(_visib) {}
 
 bool ExpandedType::is_generic() const { return not generics.empty(); }
 
@@ -116,15 +116,15 @@ Method* ExpandedType::get_static_method(const String& fnName) const {
 }
 
 Maybe<ir::Method*> ExpandedType::check_binary_operator(Vec<ir::Method*> const& binOps, const String& opr,
-													   Pair<Maybe<bool>, ir::Type*> argType) {
+                                                       Pair<Maybe<bool>, ir::Type*> argType) {
 	for (auto* bin : binOps) {
 		if (bin->get_name().value == opr) {
 			auto* binArgTy = bin->get_ir_type()->as_function()->get_argument_type_at(1)->get_type();
 			if (binArgTy->is_same(argType.second) ||
-				(argType.first.has_value() && binArgTy->is_reference() &&
-				 (binArgTy->as_reference()->isSubtypeVariable() ? argType.first.value() : true) &&
-				 binArgTy->as_reference()->get_subtype()->is_same(argType.second)) ||
-				(argType.second->is_reference() && argType.second->as_reference()->get_subtype()->is_same(binArgTy))) {
+			    (argType.first.has_value() && binArgTy->is_reference() &&
+			     (binArgTy->as_reference()->isSubtypeVariable() ? argType.first.value() : true) &&
+			     binArgTy->as_reference()->get_subtype()->is_same(argType.second)) ||
+			    (argType.second->is_reference() && argType.second->as_reference()->get_subtype()->is_same(binArgTy))) {
 				return bin;
 			}
 		}
@@ -173,8 +173,8 @@ bool ExpandedType::has_any_constructor() const { return (!constructors.empty()) 
 
 bool ExpandedType::has_any_from_convertor() const { return !fromConvertors.empty(); }
 
-Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> const&			cons,
-															  Vec<Pair<Maybe<bool>, ir::Type*>> types) {
+Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> const&           cons,
+                                                              Vec<Pair<Maybe<bool>, ir::Type*>> types) {
 	for (auto* con : cons) {
 		auto argTys = con->get_ir_type()->as_function()->get_argument_types();
 		if (types.size() == (argTys.size() - 1)) {
@@ -182,13 +182,13 @@ Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> c
 			for (usize i = 1; i < argTys.size(); i++) {
 				auto* argType = argTys.at(i)->get_type();
 				if (!argType->is_same(types.at(i - 1).second) && !argType->isCompatible(types.at(i - 1).second) &&
-					(!(types.at(i - 1).first.has_value() && argType->is_reference() &&
-					   (argType->as_reference()->isSubtypeVariable() ? types.at(i - 1).first.value() : true) &&
-					   (argType->as_reference()->get_subtype()->is_same(types.at(i - 1).second) ||
-						argType->as_reference()->get_subtype()->isCompatible(types.at(i - 1).second)))) &&
-					(!(types.at(i - 1).second->is_reference() &&
-					   (types.at(i - 1).second->as_reference()->get_subtype()->is_same(argType) ||
-						types.at(i - 1).second->as_reference()->get_subtype()->isCompatible(argType))))) {
+				    (!(types.at(i - 1).first.has_value() && argType->is_reference() &&
+				       (argType->as_reference()->isSubtypeVariable() ? types.at(i - 1).first.value() : true) &&
+				       (argType->as_reference()->get_subtype()->is_same(types.at(i - 1).second) ||
+				        argType->as_reference()->get_subtype()->isCompatible(types.at(i - 1).second)))) &&
+				    (!(types.at(i - 1).second->is_reference() &&
+				       (types.at(i - 1).second->as_reference()->get_subtype()->is_same(argType) ||
+				        types.at(i - 1).second->as_reference()->get_subtype()->isCompatible(argType))))) {
 					result = false;
 					break;
 				}
@@ -212,15 +212,15 @@ Method* ExpandedType::get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*
 }
 
 Maybe<ir::Method*> ExpandedType::check_from_convertor(Vec<ir::Method*> const& fromConvs, Maybe<bool> isValueVar,
-													  ir::Type* candTy) {
+                                                      ir::Type* candTy) {
 	for (auto* fconv : fromConvs) {
 		auto* argTy = fconv->get_ir_type()->as_function()->get_argument_type_at(1)->get_type();
 		if (argTy->is_same(candTy) || argTy->isCompatible(candTy) ||
-			(isValueVar.has_value() && argTy->is_reference() &&
-			 (argTy->as_reference()->isSubtypeVariable() ? isValueVar.value() : true) &&
-			 (argTy->as_reference()->get_subtype()->is_same(candTy) ||
-			  argTy->as_reference()->get_subtype()->isCompatible(candTy))) ||
-			(candTy->is_reference() && candTy->as_reference()->get_subtype()->is_same(argTy))) {
+		    (isValueVar.has_value() && argTy->is_reference() &&
+		     (argTy->as_reference()->isSubtypeVariable() ? isValueVar.value() : true) &&
+		     (argTy->as_reference()->get_subtype()->is_same(candTy) ||
+		      argTy->as_reference()->get_subtype()->isCompatible(candTy))) ||
+		    (candTy->is_reference() && candTy->as_reference()->get_subtype()->is_same(argTy))) {
 			return fconv;
 		}
 	}
@@ -239,8 +239,8 @@ Maybe<Method*> ExpandedType::check_to_convertor(Vec<Method*> const& toConvertors
 	for (auto* tconv : toConvertors) {
 		auto* retTy = tconv->get_ir_type()->as_function()->get_return_type()->get_type();
 		if (retTy->is_same(targetTy) ||
-			(retTy->is_reference() && retTy->as_reference()->get_subtype()->is_same(targetTy)) ||
-			(targetTy->is_reference() && targetTy->as_reference()->get_subtype()->is_same(retTy))) {
+		    (retTy->is_reference() && retTy->as_reference()->get_subtype()->is_same(targetTy)) ||
+		    (targetTy->is_reference() && targetTy->as_reference()->get_subtype()->is_same(retTy))) {
 			return tconv;
 		}
 	}

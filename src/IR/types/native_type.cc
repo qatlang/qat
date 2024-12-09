@@ -131,7 +131,7 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 }
 
 NativeType::NativeType(ir::Type* actual, NativeTypeKind c_kind) : subType(actual), nativeKind(c_kind) {
-	llvmType	= actual->get_llvm_type();
+	llvmType    = actual->get_llvm_type();
 	linkingName = "qat'nativetype:[" + to_string() + "]";
 }
 
@@ -210,8 +210,8 @@ NativeType* NativeType::get_bool(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getBoolWidth(), irCtx),
-							 NativeTypeKind::Bool);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getBoolWidth(), irCtx),
+	                         NativeTypeKind::Bool);
 }
 
 NativeType* NativeType::get_int(ir::Ctx* irCtx) {
@@ -224,7 +224,7 @@ NativeType* NativeType::get_int(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getIntWidth(), irCtx),
-							 NativeTypeKind::Int);
+	                         NativeTypeKind::Int);
 }
 
 NativeType* NativeType::get_uint(ir::Ctx* irCtx) {
@@ -237,8 +237,8 @@ NativeType* NativeType::get_uint(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getIntWidth(), irCtx),
-							 NativeTypeKind::Uint);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getIntWidth(), irCtx),
+	                         NativeTypeKind::Uint);
 }
 
 NativeType* NativeType::get_char(ir::Ctx* irCtx) {
@@ -251,7 +251,7 @@ NativeType* NativeType::get_char(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getCharWidth(), irCtx),
-							 NativeTypeKind::Char);
+	                         NativeTypeKind::Char);
 }
 
 NativeType* NativeType::get_char_unsigned(ir::Ctx* irCtx) {
@@ -264,8 +264,8 @@ NativeType* NativeType::get_char_unsigned(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getCharWidth(), irCtx),
-							 NativeTypeKind::UChar);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getCharWidth(), irCtx),
+	                         NativeTypeKind::UChar);
 }
 
 NativeType* NativeType::get_short(ir::Ctx* irCtx) {
@@ -278,8 +278,8 @@ NativeType* NativeType::get_short(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::IntegerType::get(irCtx->clangTargetInfo->getShortWidth(), irCtx),
-							 NativeTypeKind::Char);
+	                         ir::IntegerType::get(irCtx->clangTargetInfo->getShortWidth(), irCtx),
+	                         NativeTypeKind::Char);
 }
 
 NativeType* NativeType::get_short_unsigned(ir::Ctx* irCtx) {
@@ -292,8 +292,8 @@ NativeType* NativeType::get_short_unsigned(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getShortWidth(), irCtx),
-							 NativeTypeKind::UChar);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getShortWidth(), irCtx),
+	                         NativeTypeKind::UChar);
 }
 
 NativeType* NativeType::get_wide_char(ir::Ctx* irCtx) {
@@ -306,8 +306,8 @@ NativeType* NativeType::get_wide_char(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::IntegerType::get(irCtx->clangTargetInfo->getWCharWidth(), irCtx),
-							 NativeTypeKind::WideChar);
+	                         ir::IntegerType::get(irCtx->clangTargetInfo->getWCharWidth(), irCtx),
+	                         NativeTypeKind::WideChar);
 }
 
 NativeType* NativeType::get_wide_char_unsigned(ir::Ctx* irCtx) {
@@ -320,8 +320,8 @@ NativeType* NativeType::get_wide_char_unsigned(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getWCharWidth(), irCtx),
-							 NativeTypeKind::UWideChar);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getWCharWidth(), irCtx),
+	                         NativeTypeKind::UWideChar);
 }
 
 NativeType* NativeType::get_long_int(ir::Ctx* irCtx) {
@@ -334,7 +334,7 @@ NativeType* NativeType::get_long_int(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getLongWidth(), irCtx),
-							 NativeTypeKind::LongInt);
+	                         NativeTypeKind::LongInt);
 }
 
 NativeType* NativeType::get_long_int_unsigned(ir::Ctx* irCtx) {
@@ -347,8 +347,8 @@ NativeType* NativeType::get_long_int_unsigned(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getLongWidth(), irCtx),
-							 NativeTypeKind::ULongInt);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getLongWidth(), irCtx),
+	                         NativeTypeKind::ULongInt);
 }
 
 NativeType* NativeType::get_long_long(ir::Ctx* irCtx) {
@@ -361,8 +361,8 @@ NativeType* NativeType::get_long_long(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::IntegerType::get(irCtx->clangTargetInfo->getLongLongWidth(), irCtx),
-							 NativeTypeKind::LongLong);
+	                         ir::IntegerType::get(irCtx->clangTargetInfo->getLongLongWidth(), irCtx),
+	                         NativeTypeKind::LongLong);
 }
 
 NativeType* NativeType::get_long_long_unsigned(ir::Ctx* irCtx) {
@@ -375,8 +375,8 @@ NativeType* NativeType::get_long_long_unsigned(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getLongLongWidth(), irCtx),
-							 NativeTypeKind::ULongLong);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getLongLongWidth(), irCtx),
+	                         NativeTypeKind::ULongLong);
 }
 
 NativeType* NativeType::get_isize(ir::Ctx* irCtx) {
@@ -389,9 +389,9 @@ NativeType* NativeType::get_isize(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSignedSizeType()), irCtx),
-		NativeTypeKind::Isize);
+	    OwnNormal(NativeType),
+	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSignedSizeType()), irCtx),
+	    NativeTypeKind::Isize);
 }
 
 NativeType* NativeType::get_usize(ir::Ctx* irCtx) {
@@ -404,9 +404,9 @@ NativeType* NativeType::get_usize(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()), irCtx),
-		NativeTypeKind::Usize);
+	    OwnNormal(NativeType),
+	    ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()), irCtx),
+	    NativeTypeKind::Usize);
 }
 
 NativeType* NativeType::get_float(ir::Ctx* irCtx) {
@@ -477,7 +477,7 @@ NativeType* NativeType::get_double(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::FloatType::get(floatKind, irCtx->llctx),
-							 NativeTypeKind::Double);
+	                         NativeTypeKind::Double);
 }
 
 NativeType* NativeType::get_intmax(ir::Ctx* irCtx) {
@@ -490,8 +490,8 @@ NativeType* NativeType::get_intmax(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::IntegerType::get(irCtx->clangTargetInfo->getIntMaxTWidth(), irCtx),
-							 NativeTypeKind::IntMax);
+	                         ir::IntegerType::get(irCtx->clangTargetInfo->getIntMaxTWidth(), irCtx),
+	                         NativeTypeKind::IntMax);
 }
 
 NativeType* NativeType::get_uintmax(ir::Ctx* irCtx) {
@@ -504,8 +504,8 @@ NativeType* NativeType::get_uintmax(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-							 ir::UnsignedType::create(irCtx->clangTargetInfo->getIntMaxTWidth(), irCtx),
-							 NativeTypeKind::UintMax);
+	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getIntMaxTWidth(), irCtx),
+	                         NativeTypeKind::UintMax);
 }
 
 NativeType* NativeType::get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx) {
@@ -513,16 +513,16 @@ NativeType* NativeType::get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::C
 		if (typ->type_kind() == TypeKind::nativeType) {
 			auto cTyp = (NativeType*)typ;
 			if (cTyp->nativeKind == NativeTypeKind::Pointer &&
-				(cTyp->subType->as_mark()->is_subtype_variable() == isSubTypeVariable) &&
-				cTyp->subType->as_mark()->get_subtype()->is_same(subType)) {
+			    (cTyp->subType->as_mark()->is_subtype_variable() == isSubTypeVariable) &&
+			    cTyp->subType->as_mark()->get_subtype()->is_same(subType)) {
 				return cTyp;
 			}
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::MarkType::get(isSubTypeVariable, subType, false, MarkOwner::of_anonymous(), false, irCtx),
-		NativeTypeKind::Pointer);
+	    OwnNormal(NativeType),
+	    ir::MarkType::get(isSubTypeVariable, subType, false, MarkOwner::of_anonymous(), false, irCtx),
+	    NativeTypeKind::Pointer);
 }
 
 NativeType* NativeType::get_intptr(ir::Ctx* irCtx) {
@@ -535,9 +535,9 @@ NativeType* NativeType::get_intptr(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getIntPtrType()), irCtx),
-		NativeTypeKind::IntPtr);
+	    OwnNormal(NativeType),
+	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getIntPtrType()), irCtx),
+	    NativeTypeKind::IntPtr);
 }
 
 NativeType* NativeType::get_uintptr(ir::Ctx* irCtx) {
@@ -550,9 +550,9 @@ NativeType* NativeType::get_uintptr(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntMaxType()), irCtx),
-		NativeTypeKind::UintPtr);
+	    OwnNormal(NativeType),
+	    ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntMaxType()), irCtx),
+	    NativeTypeKind::UintPtr);
 }
 
 NativeType* NativeType::get_ptrdiff(ir::Ctx* irCtx) {
@@ -565,11 +565,11 @@ NativeType* NativeType::get_ptrdiff(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(
-								 irCtx->clangTargetInfo->getPtrDiffType(irCtx->get_language_address_space())),
-							 irCtx),
-		NativeTypeKind::PtrDiff);
+	    OwnNormal(NativeType),
+	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(
+	                             irCtx->clangTargetInfo->getPtrDiffType(irCtx->get_language_address_space())),
+	                         irCtx),
+	    NativeTypeKind::PtrDiff);
 }
 
 NativeType* NativeType::get_ptrdiff_unsigned(ir::Ctx* irCtx) {
@@ -582,11 +582,11 @@ NativeType* NativeType::get_ptrdiff_unsigned(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUnsignedPtrDiffType(
-									 irCtx->get_language_address_space())),
-								 irCtx),
-		NativeTypeKind::UPtrDiff);
+	    OwnNormal(NativeType),
+	    ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUnsignedPtrDiffType(
+	                                 irCtx->get_language_address_space())),
+	                             irCtx),
+	    NativeTypeKind::UPtrDiff);
 }
 
 NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
@@ -599,9 +599,9 @@ NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSigAtomicType()), irCtx),
-		NativeTypeKind::SigAtomic);
+	    OwnNormal(NativeType),
+	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSigAtomicType()), irCtx),
+	    NativeTypeKind::SigAtomic);
 }
 
 NativeType* NativeType::get_processid(ir::Ctx* irCtx) {
@@ -614,9 +614,9 @@ NativeType* NativeType::get_processid(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getProcessIDType()), irCtx),
-		NativeTypeKind::ProcessID);
+	    OwnNormal(NativeType),
+	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getProcessIDType()), irCtx),
+	    NativeTypeKind::ProcessID);
 }
 
 NativeType* NativeType::get_cstr(ir::Ctx* irCtx) {
@@ -629,9 +629,9 @@ NativeType* NativeType::get_cstr(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(
-		OwnNormal(NativeType),
-		ir::MarkType::get(false, ir::IntegerType::get(8, irCtx), false, MarkOwner::of_anonymous(), false, irCtx),
-		NativeTypeKind::String);
+	    OwnNormal(NativeType),
+	    ir::MarkType::get(false, ir::IntegerType::get(8, irCtx), false, MarkOwner::of_anonymous(), false, irCtx),
+	    NativeTypeKind::String);
 }
 
 bool NativeType::has_long_double(ir::Ctx* irCtx) { return irCtx->clangTargetInfo->hasLongDoubleType(); }
@@ -669,7 +669,7 @@ NativeType* NativeType::get_long_double(ir::Ctx* irCtx) {
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::FloatType::get(floatKind, irCtx->llctx),
-							 NativeTypeKind::LongDouble);
+	                         NativeTypeKind::LongDouble);
 }
 
 Maybe<bool> NativeType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
@@ -681,10 +681,10 @@ Maybe<bool> NativeType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::
 
 String NativeType::to_string() const {
 	return native_type_kind_to_string(nativeKind) +
-		   ((nativeKind == NativeTypeKind::Pointer)
-				? (String(":[") + (subType->as_mark()->is_subtype_variable() ? "var " : "") +
-				   subType->as_mark()->get_subtype()->to_string() + "]")
-				: "");
+	       ((nativeKind == NativeTypeKind::Pointer)
+	            ? (String(":[") + (subType->as_mark()->is_subtype_variable() ? "var " : "") +
+	               subType->as_mark()->get_subtype()->to_string() + "]")
+	            : "");
 }
 
 } // namespace qat::ir

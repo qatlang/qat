@@ -17,18 +17,18 @@ class ConstructorDefinition;
 class DefineCoreType;
 
 struct MethodState {
-	ir::MethodParent*	parent;
-	ir::Method*			result;
-	Maybe<bool>			defineCondition;
+	ir::MethodParent*   parent;
+	ir::Method*         result;
+	Maybe<bool>         defineCondition;
 	Maybe<ir::MetaInfo> metaInfo;
 
 	MethodState(ir::MethodParent* _parent) : parent(_parent), result(nullptr), defineCondition(None) {}
 	MethodState(ir::MethodParent* _parent, ir::Method* _result)
-		: parent(_parent), result(_result), defineCondition(None) {}
+	    : parent(_parent), result(_result), defineCondition(None) {}
 
 	MethodState(ir::MethodParent* _parent, ir::Method* _result, Maybe<bool> _defineCondition,
-				Maybe<ir::MetaInfo> _metaInfo)
-		: parent(_parent), result(_result), defineCondition(_defineCondition), metaInfo(std::move(_metaInfo)) {}
+	            Maybe<ir::MetaInfo> _metaInfo)
+	    : parent(_parent), result(_result), defineCondition(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 };
 
 class MethodParentState {
@@ -37,16 +37,16 @@ class MethodParentState {
 	Vec<MethodState> convertors;
 	Vec<MethodState> operators;
 	Vec<MethodState> constructors;
-	MethodState		 defaultConstructor;
-	MethodState		 copyConstructor;
-	MethodState		 moveConstructor;
-	MethodState		 copyAssignment;
-	MethodState		 moveAssignment;
-	MethodState		 destructor;
+	MethodState      defaultConstructor;
+	MethodState      copyConstructor;
+	MethodState      moveConstructor;
+	MethodState      copyAssignment;
+	MethodState      moveAssignment;
+	MethodState      destructor;
 
 	MethodParentState(ir::MethodParent* parent)
-		: allMethods(), convertors(), operators(), constructors(), defaultConstructor(parent), copyConstructor(parent),
-		  moveConstructor(parent), copyAssignment(parent), moveAssignment(parent), destructor(parent) {}
+	    : allMethods(), convertors(), operators(), constructors(), defaultConstructor(parent), copyConstructor(parent),
+	      moveConstructor(parent), copyAssignment(parent), moveAssignment(parent), destructor(parent) {}
 
 	useit static MethodParentState* get(ir::MethodParent* parent) {
 		return std::construct_at(OwnNormal(MethodParentState), parent);
@@ -67,21 +67,21 @@ class MemberParentLike {
 		return parentStates.back().second;
 	}
 
-	Vec<MethodDefinition*>		memberDefinitions;
-	Vec<ConvertorDefinition*>	convertorDefinitions;
-	Vec<OperatorDefinition*>	operatorDefinitions;
+	Vec<MethodDefinition*>      memberDefinitions;
+	Vec<ConvertorDefinition*>   convertorDefinitions;
+	Vec<OperatorDefinition*>    operatorDefinitions;
 	Vec<ConstructorDefinition*> constructorDefinitions;
-	ConstructorDefinition*		defaultConstructor	 = nullptr;
-	ConstructorDefinition*		copyConstructor		 = nullptr;
-	ConstructorDefinition*		moveConstructor		 = nullptr;
-	OperatorDefinition*			copyAssignment		 = nullptr;
-	OperatorDefinition*			moveAssignment		 = nullptr;
-	DestructorDefinition*		destructorDefinition = nullptr;
+	ConstructorDefinition*      defaultConstructor   = nullptr;
+	ConstructorDefinition*      copyConstructor      = nullptr;
+	ConstructorDefinition*      moveConstructor      = nullptr;
+	OperatorDefinition*         copyAssignment       = nullptr;
+	OperatorDefinition*         moveAssignment       = nullptr;
+	DestructorDefinition*       destructorDefinition = nullptr;
 
 	MemberParentLike()
-		: parentStates(), memberDefinitions(), convertorDefinitions(), operatorDefinitions(), constructorDefinitions(),
-		  defaultConstructor(nullptr), copyConstructor(nullptr), moveConstructor(nullptr), copyAssignment(nullptr),
-		  moveAssignment(nullptr), destructorDefinition(nullptr) {}
+	    : parentStates(), memberDefinitions(), convertorDefinitions(), operatorDefinitions(), constructorDefinitions(),
+	      defaultConstructor(nullptr), copyConstructor(nullptr), moveConstructor(nullptr), copyAssignment(nullptr),
+	      moveAssignment(nullptr), destructorDefinition(nullptr) {}
 
 	~MemberParentLike() {
 		for (auto& it : parentStates) {
@@ -111,7 +111,7 @@ class MemberParentLike {
 	useit virtual bool is_done_skill() const { return false; }
 
 	useit virtual DefineCoreType* as_define_core_type() { return nullptr; }
-	useit virtual DoSkill*		  as_done_skill() { return nullptr; }
+	useit virtual DoSkill*        as_done_skill() { return nullptr; }
 };
 
 } // namespace qat::ast

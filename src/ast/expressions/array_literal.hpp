@@ -6,9 +6,9 @@
 namespace qat::ast {
 
 class ArrayLiteral final : public Expression,
-						   public LocalDeclCompatible,
-						   public InPlaceCreatable,
-						   public TypeInferrable {
+                           public LocalDeclCompatible,
+                           public InPlaceCreatable,
+                           public TypeInferrable {
 	friend class LocalDeclaration;
 	friend class Assignment;
 
@@ -17,7 +17,7 @@ class ArrayLiteral final : public Expression,
 
   public:
 	ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
-		: Expression(std::move(_fileRange)), values(std::move(_values)) {}
+	    : Expression(std::move(_fileRange)), values(std::move(_values)) {}
 
 	useit static ArrayLiteral* create(Vec<Expression*> values, FileRange fileRange) {
 		return std::construct_at(OwnNormal(ArrayLiteral), values, fileRange);
@@ -34,8 +34,8 @@ class ArrayLiteral final : public Expression,
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::ARRAY_LITERAL; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

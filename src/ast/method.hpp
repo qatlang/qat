@@ -38,36 +38,36 @@ inline String method_type_to_string(MethodType ty) {
 class MethodPrototype {
 	friend class MethodDefinition;
 
-	MethodType			  fnTy;
-	Identifier			  name;
-	Vec<Argument*>		  arguments;
-	bool				  isVariadic;
-	Maybe<Type*>		  returnType;
+	MethodType            fnTy;
+	Identifier            name;
+	Vec<Argument*>        arguments;
+	bool                  isVariadic;
+	Maybe<Type*>          returnType;
 	Maybe<VisibilitySpec> visibSpec;
-	FileRange			  fileRange;
+	FileRange             fileRange;
 
 	PrerunExpression* defineChecker;
-	Maybe<MetaInfo>	  metaInfo;
+	Maybe<MetaInfo>   metaInfo;
 
   public:
 	MethodPrototype(MethodType _fnTy, Identifier _name, PrerunExpression* _defineChecker, Vec<Argument*> _arguments,
-					bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
-					Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
+	                bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
+	                Maybe<VisibilitySpec> visibSpec, FileRange _fileRange);
 
 	static MethodPrototype* Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
-								   const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-								   Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-								   const FileRange& _fileRange);
+	                               const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
+	                               Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                               const FileRange& _fileRange);
 
 	static MethodPrototype* Static(const Identifier& _name, PrerunExpression* _condition,
-								   const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-								   Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-								   const FileRange& _fileRange);
+	                               const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
+	                               Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                               const FileRange& _fileRange);
 
 	static MethodPrototype* Value(const Identifier& _name, PrerunExpression* _condition,
-								  const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-								  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-								  const FileRange& _fileRange);
+	                              const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
+	                              Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                              const FileRange& _fileRange);
 
 	ir::EntityChildType fn_type_to_child_type() {
 		switch (fnTy) {
@@ -86,8 +86,8 @@ class MethodPrototype {
 		if (ent->has_child(name.value)) {
 			auto ch = ent->get_child(name.value);
 			irCtx->Error("Found " + ir::entity_child_type_to_string(ch.first) + " named " + irCtx->color(name.value) +
-							 " found",
-						 name.range);
+			                 " found",
+			             name.range);
 		}
 		ent->add_child({fn_type_to_child_type(), name.value});
 	}
@@ -106,8 +106,8 @@ class MethodPrototype {
 		}
 	}
 
-	void		   define(MethodState& state, ir::Ctx* irCtx);
-	useit Json	   to_json() const;
+	void           define(MethodState& state, ir::Ctx* irCtx);
+	useit Json     to_json() const;
 	useit NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
 	~MethodPrototype();
 };
@@ -117,16 +117,16 @@ class MethodDefinition {
 	friend class DoSkill;
 
   private:
-	Vec<Sentence*>	 sentences;
+	Vec<Sentence*>   sentences;
 	MethodPrototype* prototype;
-	FileRange		 fileRange;
+	FileRange        fileRange;
 
   public:
 	MethodDefinition(MethodPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
-		: sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
+	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
 	useit static MethodDefinition* create(MethodPrototype* _prototype, Vec<Sentence*> _sentences,
-										  FileRange _fileRange) {
+	                                      FileRange _fileRange) {
 		return std::construct_at(OwnNormal(MethodDefinition), _prototype, _sentences, _fileRange);
 	}
 
@@ -138,8 +138,8 @@ class MethodDefinition {
 
 	void  define(MethodState& state, ir::Ctx* irCtx);
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
-	useit Json		 to_json() const;
-	useit NodeType	 nodeType() const { return NodeType::MEMBER_DEFINITION; }
+	useit Json       to_json() const;
+	useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

@@ -27,34 +27,34 @@ void Logger::diagnostic(String message) const {
 String Logger::color(const String& message) const {
 	auto cfg = cli::Config::get();
 	return (cfg->is_no_color_mode() ? "`" : String(colors::bold) + cli::get_color(cli::Color::yellow)) + message +
-		   (cfg->is_no_color_mode() ? "`" : String(colors::reset) + cli::get_color(cli::Color::white));
+	       (cfg->is_no_color_mode() ? "`" : String(colors::reset) + cli::get_color(cli::Color::white));
 }
 
 void Logger::warn(String message, Maybe<ErrorLocation> range) {
 	std::cout << String(cli::get_bg_color(cli::Color::purple)) + " WARNING " + cli::get_bg_color(cli::Color::reset) +
-					 (range.has_value()
-						  ? (String(cli::get_color(cli::Color::cyan)) + " --> " + cli::get_color(cli::Color::reset) +
-							 getPathFromErrorLocation(range.value()).string() +
-							 (std::holds_alternative<FileRange>(range.value())
-								  ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
-									 std::to_string(std::get<FileRange>(range.value()).start.character))
-								  : "") +
-							 "\n")
-						  : "") +
-					 cli::get_color(cli::Color::white) + message + cli::get_color(cli::Color::reset) + "\n";
+	                 (range.has_value()
+	                      ? (String(cli::get_color(cli::Color::cyan)) + " --> " + cli::get_color(cli::Color::reset) +
+	                         getPathFromErrorLocation(range.value()).string() +
+	                         (std::holds_alternative<FileRange>(range.value())
+	                              ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
+	                                 std::to_string(std::get<FileRange>(range.value()).start.character))
+	                              : "") +
+	                         "\n")
+	                      : "") +
+	                 cli::get_color(cli::Color::white) + message + cli::get_color(cli::Color::reset) + "\n";
 }
 
 void Logger::fatalError(String message, Maybe<ErrorLocation> range) {
 	std::cerr << String(cli::get_bg_color(cli::Color::red)) + " ERROR " + cli::get_bg_color(cli::Color::reset) +
-					 (range.has_value()
-						  ? (" --> " + getPathFromErrorLocation(range.value()).string() +
-							 (std::holds_alternative<FileRange>(range.value())
-								  ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
-									 std::to_string(std::get<FileRange>(range.value()).start.character))
-								  : "") +
-							 "\n")
-						  : "") +
-					 cli::get_color(cli::Color::white) + message + cli::get_color(cli::Color::reset) + "\n";
+	                 (range.has_value()
+	                      ? (" --> " + getPathFromErrorLocation(range.value()).string() +
+	                         (std::holds_alternative<FileRange>(range.value())
+	                              ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
+	                                 std::to_string(std::get<FileRange>(range.value()).start.character))
+	                              : "") +
+	                         "\n")
+	                      : "") +
+	                 cli::get_color(cli::Color::white) + message + cli::get_color(cli::Color::reset) + "\n";
 	std::exit(1);
 }
 

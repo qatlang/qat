@@ -9,7 +9,7 @@ void emit_sentences(const Vec<Sentence*>& sentences, EmitCtx* ctx) {
 		if (ctx->has_fn()) {
 			if (ctx->get_fn()->get_block()->fileRange) {
 				ctx->get_fn()->get_block()->fileRange =
-					ctx->get_fn()->get_block()->fileRange.value().trimTo(snt->fileRange.start);
+				    ctx->get_fn()->get_block()->fileRange.value().trimTo(snt->fileRange.start);
 			}
 		}
 		SHOW("Emitting sentence")

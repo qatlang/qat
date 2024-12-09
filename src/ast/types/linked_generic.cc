@@ -20,21 +20,21 @@ ir::Type* LinkedGeneric::emit(EmitCtx* ctx) {
 		} else {
 			if (genAbs->is_typed()) {
 				ctx->Error("No type set for the " + utils::number_to_position(genAbs->getIndex()) +
-							   " Generic Parameter " + ctx->color(genAbs->get_name().value),
-						   fileRange);
+				               " Generic Parameter " + ctx->color(genAbs->get_name().value),
+				           fileRange);
 			} else if (genAbs->as_typed()) {
 				ctx->Error("No prerun expression set for the " + utils::number_to_position(genAbs->getIndex()) +
-							   " Generic Parameter " + ctx->color(genAbs->get_name().value),
-						   fileRange);
+				               " Generic Parameter " + ctx->color(genAbs->get_name().value),
+				           fileRange);
 			} else {
 				ctx->Error("Invalid generic kind", fileRange);
 			}
 		}
 	} else if (genAbs->as_typed()) {
 		ctx->Error(utils::number_to_position(genAbs->getIndex()) + " Generic Parameter " +
-					   ctx->color(genAbs->get_name().value) + " is a normal prerun expression with type " +
-					   genAbs->as_prerun()->getType()->to_string() + " and hence cannot be used as a type",
-				   fileRange);
+		               ctx->color(genAbs->get_name().value) + " is a normal prerun expression with type " +
+		               genAbs->as_prerun()->getType()->to_string() + " and hence cannot be used as a type",
+		           fileRange);
 	} else {
 		ctx->Error("Invalid generic kind", fileRange);
 	}

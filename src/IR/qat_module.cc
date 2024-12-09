@@ -53,13 +53,13 @@ namespace qat::ir {
 
 std::map<InternalDependency, Function*> Mod::providedFunctions = {};
 
-Vec<Mod*>		Mod::allModules{};
-Vec<fs::path>	Mod::usableNativeLibPaths{};
-Maybe<String>	Mod::usableClangPath	  = None;
-Maybe<fs::path> Mod::windowsMSVCLibPath	  = None;
+Vec<Mod*>       Mod::allModules{};
+Vec<fs::path>   Mod::usableNativeLibPaths{};
+Maybe<String>   Mod::usableClangPath      = None;
+Maybe<fs::path> Mod::windowsMSVCLibPath   = None;
 Maybe<fs::path> Mod::windowsATLMFCLibPath = None;
-Maybe<fs::path> Mod::windowsUCRTLibPath	  = None;
-Maybe<fs::path> Mod::windowsUMLibPath	  = None;
+Maybe<fs::path> Mod::windowsUCRTLibPath   = None;
+Maybe<fs::path> Mod::windowsUMLibPath     = None;
 
 void EntityState::do_next_phase(Mod* mod, Ctx* ctx) {
 	SHOW("EntityState::do_next_phase " << (name.has_value() ? name.value().value : ""))
@@ -133,9 +133,9 @@ Mod* Mod::get_folder_module(const fs::path& fPath) {
 }
 
 Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
-		 Ctx* ctx)
-	: EntityOverview("module", Json(), _name.range), name(std::move(_name)), moduleType(_type),
-	  filePath(std::move(_filepath)), basePath(std::move(_basePath)), visibility(_visibility) {
+         Ctx* ctx)
+    : EntityOverview("module", Json(), _name.range), name(std::move(_name)), moduleType(_type),
+      filePath(std::move(_filepath)), basePath(std::move(_basePath)), visibility(_visibility) {
 	llvmModule = new llvm::Module(get_full_name(), ctx->llctx);
 	llvmModule->setModuleIdentifier(get_full_name());
 	llvmModule->setSourceFileName(filePath.string());
@@ -167,20 +167,20 @@ void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
 	for (auto ent : entityEntries) {
 		if (ent->name.has_value() && (ent->name->value == name.value)) {
 			ctx->Error(
-				"Found " + entity_type_to_string(ent->type) + " named " + ctx->color(name.value) +
-					" in the parent module. So cannot define a " + entity_type_to_string(entTy) + " named " +
-					ctx->color(name.value) + ".",
-				name.range,
-				ent->name.has_value()
-					? Maybe<Pair<String, FileRange>>(Pair<String, FileRange>{
-						  "The existing " + entity_type_to_string(ent->type) + " can be found here", ent->name->range})
-					: None);
+			    "Found " + entity_type_to_string(ent->type) + " named " + ctx->color(name.value) +
+			        " in the parent module. So cannot define a " + entity_type_to_string(entTy) + " named " +
+			        ctx->color(name.value) + ".",
+			    name.range,
+			    ent->name.has_value()
+			        ? Maybe<Pair<String, FileRange>>(Pair<String, FileRange>{
+			              "The existing " + entity_type_to_string(ent->type) + " can be found here", ent->name->range})
+			        : None);
 		}
 	}
 }
 
 Mod* Mod::create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
-				 const VisibilityInfo& visib_info, Ctx* ctx) {
+                 const VisibilityInfo& visib_info, Ctx* ctx) {
 	return new Mod(name, filepath, basePath, type, visib_info, ctx);
 }
 
@@ -300,13 +300,13 @@ void Mod::addMember(Mod* mod) {
 }
 
 Function* Mod::create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
-							   const FileRange& fileRange, const VisibilityInfo& visibility,
-							   Maybe<llvm::GlobalValue::LinkageTypes> linkage, Ctx* ctx) {
+                               const FileRange& fileRange, const VisibilityInfo& visibility,
+                               Maybe<llvm::GlobalValue::LinkageTypes> linkage, Ctx* ctx) {
 	SHOW("Creating IR function")
 	auto nmUnits = get_link_names();
 	nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, {}), None);
 	auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, isInline, ir::ReturnType::get(returnType),
-								 std::move(args), fileRange, visibility, ctx, linkage);
+	                             std::move(args), fileRange, visibility, ctx, linkage);
 	SHOW("Created function")
 	functions.push_back(fun);
 	return fun;
@@ -317,13 +317,13 @@ bool Mod::triple_is_equivalent(const llvm::Triple& first, const llvm::Triple& se
 		return true;
 	} else {
 		return (first.getOS() == second.getOS()) && (first.getArch() == second.getArch()) &&
-			   (first.getEnvironment() == second.getEnvironment()) &&
-			   (first.getObjectFormat() == second.getObjectFormat());
+		       (first.getEnvironment() == second.getEnvironment()) &&
+		       (first.getObjectFormat() == second.getObjectFormat());
 	}
 }
 
 Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Identifier sname, ModuleType type,
-						   const VisibilityInfo& visibilityInfo, Ctx* ctx) {
+                           const VisibilityInfo& visibilityInfo, Ctx* ctx) {
 	SHOW("Creating submodule: " << sname.value)
 	auto* sub = new Mod(std::move(sname), std::move(filepath), std::move(basePath), type, visibilityInfo, ctx);
 	if (parent) {
@@ -335,9 +335,9 @@ Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Id
 }
 
 Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
-						  VisibilityInfo visibilityInfo, Ctx* ctx) {
+                          VisibilityInfo visibilityInfo, Ctx* ctx) {
 	auto* sub =
-		new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::file, visibilityInfo, ctx);
+	    new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::file, visibilityInfo, ctx);
 	if (parent) {
 		sub->parent = parent;
 		parent->submodules.push_back(sub);
@@ -347,9 +347,9 @@ Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Ide
 }
 
 Mod* Mod::create_root_lib(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
-						  const VisibilityInfo& visibilityInfo, Ctx* ctx) {
+                          const VisibilityInfo& visibilityInfo, Ctx* ctx) {
 	auto* sub =
-		new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
+	    new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
 	sub->rootLib = true;
 	if (parent) {
 		sub->parent = parent;
@@ -394,21 +394,21 @@ void Mod::update_overview() {
 		fsBroughtMentionsJson.push_back(men.second);
 	}
 	ovInfo._("moduleID", get_id())
-		._("fullName", get_full_name())
-		._("isFilesystemLib", rootLib)
-		._("moduleType", moduleTyStr)
-		._("visibility", visibility)
-		._("hasModuleInitialiser", ((moduleInitialiser != nullptr) && (nonConstantGlobals > 0)))
-		._("integerBitwidths", integerBitsVal)
-		._("unsignedBitwidths", unsignedBitsVal)
-		._("filesystemBroughtMentions", fsBroughtMentionsJson);
+	    ._("fullName", get_full_name())
+	    ._("isFilesystemLib", rootLib)
+	    ._("moduleType", moduleTyStr)
+	    ._("visibility", visibility)
+	    ._("hasModuleInitialiser", ((moduleInitialiser != nullptr) && (nonConstantGlobals > 0)))
+	    ._("integerBitwidths", integerBitsVal)
+	    ._("unsignedBitwidths", unsignedBitsVal)
+	    ._("filesystemBroughtMentions", fsBroughtMentionsJson);
 }
 
 void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-							  Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
-							  Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
-							  Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
-							  Vec<JsonValue>& defsJson) {
+                              Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
+                              Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
+                              Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
+                              Vec<JsonValue>& defsJson) {
 	if (not isOverviewOutputted) {
 		isOverviewOutputted = true;
 		modulesJson.push_back(overviewToJson());
@@ -444,8 +444,8 @@ void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& funct
 		}
 		for (auto* sub : submodules) {
 			sub->output_all_overview(modulesJson, functionsJson, prerunFunctionJSON, genericFunctionsJson,
-									 genericCoreTypesJson, coreTypesJson, mixTypesJson, regionJson, choiceJson,
-									 defsJson);
+			                         genericCoreTypesJson, coreTypesJson, mixTypesJson, regionJson, choiceJson,
+			                         defsJson);
 		}
 	}
 }
@@ -538,8 +538,8 @@ bool Mod::should_be_named() const { return moduleType == ModuleType::lib; }
 Function* Mod::get_mod_initialiser(Ctx* ctx) {
 	if (!moduleInitialiser) {
 		moduleInitialiser = ir::Function::Create(
-			this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), None, {/* Generics */}, false,
-			ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, name.range, VisibilityInfo::pub(), ctx);
+		    this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), None, {/* Generics */}, false,
+		    ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, name.range, VisibilityInfo::pub(), ctx);
 		auto* entry = new ir::Block(moduleInitialiser, nullptr);
 		entry->set_active(ctx->builder);
 	}
@@ -551,7 +551,7 @@ void Mod::add_non_const_global_counter() { nonConstantGlobals++; }
 bool Mod::should_call_initialiser() const { return nonConstantGlobals != 0; }
 
 void Mod::addNamedSubmodule(const Identifier& sname, const String& filename, ModuleType type,
-							const VisibilityInfo& visib_info, Ctx* ctx) {
+                            const VisibilityInfo& visib_info, Ctx* ctx) {
 	SHOW("Creating submodule: " << sname.value)
 	active = create_submodule(this, filename, basePath.string(), sname, type, visib_info, ctx);
 }
@@ -561,11 +561,11 @@ void Mod::closeSubmodule() { active = nullptr; }
 bool Mod::has_lib(const String& name, AccessInfo reqInfo) const {
 	for (auto* sub : submodules) {
 		if ((sub->moduleType == ModuleType::lib) && (sub->get_name() == name) &&
-			(sub->get_visibility().is_accessible(reqInfo))) {
+		    (sub->get_visibility().is_accessible(reqInfo))) {
 			return true;
 		} else if (!sub->should_be_named()) {
 			if (sub->has_lib(name, reqInfo) || sub->has_brought_lib(name, reqInfo) ||
-				sub->has_lib_in_imports(name, reqInfo).first) {
+			    sub->has_lib_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -580,10 +580,10 @@ bool Mod::has_brought_lib(const String& name, Maybe<AccessInfo> reqInfo) const {
 			auto result = false;
 			if (brought.is_named()) {
 				result = (brought.name.value().value == name) && brought.visibility.is_accessible(reqInfo) &&
-						 brought.entity->get_visibility().is_accessible(reqInfo);
+				         brought.entity->get_visibility().is_accessible(reqInfo);
 			} else {
 				result = (brought.entity->get_name() == name) && brought.visibility.is_accessible(reqInfo) &&
-						 brought.entity->get_visibility().is_accessible(reqInfo);
+				         brought.entity->get_visibility().is_accessible(reqInfo);
 			}
 			if (result) {
 				return true;
@@ -594,13 +594,13 @@ bool Mod::has_brought_lib(const String& name, Maybe<AccessInfo> reqInfo) const {
 }
 
 Pair<bool, String> Mod::has_lib_in_imports( // NOLINT(misc-no-recursion)
-	const String& name, const AccessInfo& reqInfo) const {
+    const String& name, const AccessInfo& reqInfo) const {
 	for (const auto& brought : broughtModules) {
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_lib(name, reqInfo) || bMod->has_brought_lib(name, reqInfo) ||
-					bMod->has_lib_in_imports(name, reqInfo).first) {
+				    bMod->has_lib_in_imports(name, reqInfo).first) {
 					if (bMod->get_lib(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
 					}
@@ -614,12 +614,12 @@ Pair<bool, String> Mod::has_lib_in_imports( // NOLINT(misc-no-recursion)
 Mod* Mod::get_lib(const String& name, const AccessInfo& reqInfo) {
 	for (auto* sub : submodules) {
 		if ((sub->moduleType == ModuleType::lib) && (sub->get_name() == name) &&
-			(sub->get_visibility().is_accessible(reqInfo))) {
+		    (sub->get_visibility().is_accessible(reqInfo))) {
 			return sub;
 		} else {
 			if (!sub->should_be_named()) {
 				if (sub->has_lib(name, reqInfo) || sub->has_brought_lib(name, reqInfo) ||
-					sub->has_lib_in_imports(name, reqInfo).first) {
+				    sub->has_lib_in_imports(name, reqInfo).first) {
 					return sub;
 				}
 			}
@@ -631,10 +631,10 @@ Mod* Mod::get_lib(const String& name, const AccessInfo& reqInfo) {
 			auto result = false;
 			if (brought.is_named()) {
 				result = (brought.name.value().value == name) && brought.visibility.is_accessible(reqInfo) &&
-						 brought.entity->get_visibility().is_accessible(reqInfo);
+				         brought.entity->get_visibility().is_accessible(reqInfo);
 			} else {
 				result = (brought.entity->get_name() == name) && brought.visibility.is_accessible(reqInfo) &&
-						 brought.entity->get_visibility().is_accessible(reqInfo);
+				         brought.entity->get_visibility().is_accessible(reqInfo);
 			}
 			if (result) {
 				return bMod;
@@ -646,7 +646,7 @@ Mod* Mod::get_lib(const String& name, const AccessInfo& reqInfo) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_lib(name, reqInfo) || bMod->has_brought_lib(name, reqInfo) ||
-					bMod->has_lib_in_imports(name, reqInfo).first) {
+				    bMod->has_lib_in_imports(name, reqInfo).first) {
 					if (bMod->get_lib(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_lib(name, reqInfo);
 					}
@@ -658,7 +658,7 @@ Mod* Mod::get_lib(const String& name, const AccessInfo& reqInfo) {
 }
 
 void Mod::open_lib_for_creation(const Identifier& name, const String& filename, const VisibilityInfo& visib_info,
-								Ctx* ctx) {
+                                Ctx* ctx) {
 	if (!has_lib(name.value, AccessInfo::GetPrivileged())) {
 		addNamedSubmodule(name, filename, ModuleType::lib, visib_info, ctx);
 	}
@@ -671,10 +671,10 @@ bool Mod::has_brought_mod(const String& name, Maybe<AccessInfo> reqInfo) const {
 		auto result = false;
 		if (brought.is_named()) {
 			result = (brought.name.value().value == name) && brought.visibility.is_accessible(reqInfo) &&
-					 brought.entity->get_visibility().is_accessible(reqInfo);
+			         brought.entity->get_visibility().is_accessible(reqInfo);
 		} else {
 			result = (brought.entity->get_name() == name) && brought.visibility.is_accessible(reqInfo) &&
-					 brought.entity->get_visibility().is_accessible(reqInfo);
+			         brought.entity->get_visibility().is_accessible(reqInfo);
 		}
 		if (result) {
 			return true;
@@ -705,7 +705,7 @@ Mod* Mod::get_brought_mod(const String& name, const AccessInfo& reqInfo) const {
 		auto* bMod = brought.get();
 		if (!brought.is_named()) {
 			if (bMod->should_be_named() && (bMod->get_name() == name) &&
-				brought.get_visibility().is_accessible(reqInfo)) {
+			    brought.get_visibility().is_accessible(reqInfo)) {
 				return bMod;
 			} else if (!bMod->should_be_named()) {
 				if (bMod->has_brought_mod(name, reqInfo) || bMod->has_brought_mod_in_imports(name, reqInfo).first) {
@@ -755,7 +755,7 @@ void Mod::bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInf
 }
 
 void Mod::bring_generic_type_definition(GenericDefinitionType* gTyDef, const VisibilityInfo& visib,
-										Maybe<Identifier> bName) {
+                                        Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtGenericTypeDefinitions.push_back(Brought<GenericDefinitionType>(bName.value(), gTyDef, visib));
 	} else {
@@ -850,7 +850,7 @@ bool Mod::has_function(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_function(name, reqInfo) || sub->has_brought_function(name, reqInfo) ||
-				sub->has_function_in_imports(name, reqInfo).first) {
+			    sub->has_function_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -874,9 +874,9 @@ Pair<bool, String> Mod::has_function_in_imports(const String& name, const Access
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				SHOW("Checking brought function " << name << " in brought module " << bMod->get_name() << " from file "
-												  << bMod->get_file_path())
+				                                  << bMod->get_file_path())
 				if (bMod->has_function(name, reqInfo) || bMod->has_brought_function(name, reqInfo) ||
-					bMod->has_function_in_imports(name, reqInfo).first) {
+				    bMod->has_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
 					}
@@ -896,7 +896,7 @@ Function* Mod::get_function(const String& name, const AccessInfo& reqInfo) {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_function(name, reqInfo) || sub->has_brought_function(name, reqInfo) ||
-				sub->has_function_in_imports(name, reqInfo).first) {
+			    sub->has_function_in_imports(name, reqInfo).first) {
 				return sub->get_function(name, reqInfo);
 			}
 		}
@@ -911,7 +911,7 @@ Function* Mod::get_function(const String& name, const AccessInfo& reqInfo) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_function(name, reqInfo) || bMod->has_brought_function(name, reqInfo) ||
-					bMod->has_function_in_imports(name, reqInfo).first) {
+				    bMod->has_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_function(name, reqInfo);
 					}
@@ -933,7 +933,7 @@ bool Mod::has_prerun_function(String const& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
 			if (sub->has_prerun_function(name, reqInfo) || sub->has_brought_prerun_function(name, reqInfo) ||
-				sub->has_prerun_function_in_imports(name, reqInfo).first) {
+			    sub->has_prerun_function_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -956,7 +956,7 @@ Pair<bool, String> Mod::has_prerun_function_in_imports(const String& name, const
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				if (bMod->has_prerun_function(name, reqInfo) || bMod->has_brought_prerun_function(name, reqInfo) ||
-					bMod->has_prerun_function_in_imports(name, reqInfo).first) {
+				    bMod->has_prerun_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_prerun_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
 					}
@@ -976,7 +976,7 @@ PrerunFunction* Mod::get_prerun_function(const String& name, const AccessInfo& r
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
 			if (sub->has_prerun_function(name, reqInfo) || sub->has_brought_prerun_function(name, reqInfo) ||
-				sub->has_prerun_function_in_imports(name, reqInfo).first) {
+			    sub->has_prerun_function_in_imports(name, reqInfo).first) {
 				return sub->get_prerun_function(name, reqInfo);
 			}
 		}
@@ -991,7 +991,7 @@ PrerunFunction* Mod::get_prerun_function(const String& name, const AccessInfo& r
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				if (bMod->has_prerun_function(name, reqInfo) || bMod->has_brought_prerun_function(name, reqInfo) ||
-					bMod->has_prerun_function_in_imports(name, reqInfo).first) {
+				    bMod->has_prerun_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_prerun_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_prerun_function(name, reqInfo);
 					}
@@ -1013,7 +1013,7 @@ bool Mod::has_generic_function(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_generic_function(name, reqInfo) || sub->has_brought_generic_function(name, reqInfo) ||
-				sub->has_generic_function_in_imports(name, reqInfo).first) {
+			    sub->has_generic_function_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1037,7 +1037,7 @@ Pair<bool, String> Mod::has_generic_function_in_imports(const String& name, cons
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_generic_function(name, reqInfo) || bMod->has_brought_generic_function(name, reqInfo) ||
-					bMod->has_generic_function_in_imports(name, reqInfo).first) {
+				    bMod->has_generic_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
 					}
@@ -1057,7 +1057,7 @@ GenericFunction* Mod::get_generic_function(const String& name, const AccessInfo&
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_generic_function(name, reqInfo) || sub->has_brought_generic_function(name, reqInfo) ||
-				sub->has_generic_function_in_imports(name, reqInfo).first) {
+			    sub->has_generic_function_in_imports(name, reqInfo).first) {
 				return sub->get_generic_function(name, reqInfo);
 			}
 		}
@@ -1072,7 +1072,7 @@ GenericFunction* Mod::get_generic_function(const String& name, const AccessInfo&
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_generic_function(name, reqInfo) || bMod->has_brought_generic_function(name, reqInfo) ||
-					bMod->has_generic_function_in_imports(name, reqInfo).first) {
+				    bMod->has_generic_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_function(name, reqInfo);
 					}
@@ -1094,7 +1094,7 @@ bool Mod::has_region(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_region(name, reqInfo) || sub->has_brought_region(name, reqInfo) ||
-				sub->has_region_in_imports(name, reqInfo).first) {
+			    sub->has_region_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1116,8 +1116,8 @@ Pair<bool, String> Mod::has_region_in_imports(const String& name, const AccessIn
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_region(name, reqInfo) || bMod->has_brought_region(name, reqInfo) ||
-				 bMod->has_region_in_imports(name, reqInfo).first)) {
+			    (bMod->has_region(name, reqInfo) || bMod->has_brought_region(name, reqInfo) ||
+			     bMod->has_region_in_imports(name, reqInfo).first)) {
 				if (bMod->get_region(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1136,7 +1136,7 @@ Region* Mod::get_region(const String& name, const AccessInfo& reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_region(name, reqInfo) || sub->has_brought_region(name, reqInfo) ||
-				sub->has_region_in_imports(name, reqInfo).first) {
+			    sub->has_region_in_imports(name, reqInfo).first) {
 				return sub->get_region(name, reqInfo);
 			}
 		}
@@ -1151,7 +1151,7 @@ Region* Mod::get_region(const String& name, const AccessInfo& reqInfo) const {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_region(name, reqInfo) || bMod->has_brought_region(name, reqInfo) ||
-					bMod->has_region_in_imports(name, reqInfo).first) {
+				    bMod->has_region_in_imports(name, reqInfo).first) {
 					if (bMod->get_region(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_region(name, reqInfo);
 					}
@@ -1178,7 +1178,7 @@ bool Mod::has_opaque_type(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_opaque_type(name, reqInfo) || sub->has_brought_opaque_type(name, reqInfo) ||
-				sub->has_opaque_type_in_imports(name, reqInfo).first) {
+			    sub->has_opaque_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1190,7 +1190,7 @@ bool Mod::has_brought_opaque_type(const String& name, Maybe<AccessInfo> reqInfo)
 	SHOW("Brought opaque type count " << broughtOpaqueTypes.size())
 	for (const auto& brought : broughtOpaqueTypes) {
 		SHOW("Brought entity " << (brought.name.has_value() ? ("Has Name " + brought.name.value().value)
-															: ("No Name" + brought.get()->get_name().value)))
+		                                                    : ("No Name" + brought.get()->get_name().value)))
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
 		}
@@ -1203,8 +1203,8 @@ Pair<bool, String> Mod::has_opaque_type_in_imports(const String& name, const Acc
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_opaque_type(name, reqInfo) || bMod->has_brought_opaque_type(name, reqInfo) ||
-				 bMod->has_opaque_type_in_imports(name, reqInfo).first)) {
+			    (bMod->has_opaque_type(name, reqInfo) || bMod->has_brought_opaque_type(name, reqInfo) ||
+			     bMod->has_opaque_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_opaque_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1223,7 +1223,7 @@ OpaqueType* Mod::get_opaque_type(const String& name, const AccessInfo& reqInfo) 
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_opaque_type(name, reqInfo) || sub->has_brought_opaque_type(name, reqInfo) ||
-				sub->has_opaque_type_in_imports(name, reqInfo).first) {
+			    sub->has_opaque_type_in_imports(name, reqInfo).first) {
 				return sub->get_opaque_type(name, reqInfo);
 			}
 		}
@@ -1238,7 +1238,7 @@ OpaqueType* Mod::get_opaque_type(const String& name, const AccessInfo& reqInfo) 
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_opaque_type(name, reqInfo) || bMod->has_brought_opaque_type(name, reqInfo) ||
-					bMod->has_opaque_type_in_imports(name, reqInfo).first) {
+				    bMod->has_opaque_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_opaque_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_opaque_type(name, reqInfo);
 					}
@@ -1260,7 +1260,7 @@ bool Mod::has_struct_type(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_struct_type(name, reqInfo) || sub->has_brought_struct_type(name, reqInfo) ||
-				sub->has_struct_type_in_imports(name, reqInfo).first) {
+			    sub->has_struct_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1284,8 +1284,8 @@ Pair<bool, String> Mod::has_struct_type_in_imports(const String& name, const Acc
 			auto* bMod = brought.get();
 			SHOW("Brought module: " << bMod->get_id() << " name: " << bMod->get_full_name())
 			if (!bMod->should_be_named() &&
-				(bMod->has_struct_type(name, reqInfo) || bMod->has_brought_struct_type(name, reqInfo) ||
-				 bMod->has_struct_type_in_imports(name, reqInfo).first)) {
+			    (bMod->has_struct_type(name, reqInfo) || bMod->has_brought_struct_type(name, reqInfo) ||
+			     bMod->has_struct_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1304,7 +1304,7 @@ StructType* Mod::get_struct_type(const String& name, const AccessInfo& reqInfo) 
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_struct_type(name, reqInfo) || sub->has_brought_struct_type(name, reqInfo) ||
-				sub->has_struct_type_in_imports(name, reqInfo).first) {
+			    sub->has_struct_type_in_imports(name, reqInfo).first) {
 				return sub->get_struct_type(name, reqInfo);
 			}
 		}
@@ -1319,7 +1319,7 @@ StructType* Mod::get_struct_type(const String& name, const AccessInfo& reqInfo) 
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_struct_type(name, reqInfo) || bMod->has_brought_struct_type(name, reqInfo) ||
-					bMod->has_struct_type_in_imports(name, reqInfo).first) {
+				    bMod->has_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_struct_type(name, reqInfo);
 					}
@@ -1342,7 +1342,7 @@ bool Mod::has_mix_type(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_mix_type(name, reqInfo) || sub->has_brought_mix_type(name, reqInfo) ||
-				sub->has_mix_type_in_imports(name, reqInfo).first) {
+			    sub->has_mix_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1364,8 +1364,8 @@ Pair<bool, String> Mod::has_mix_type_in_imports(const String& name, const Access
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_mix_type(name, reqInfo) || bMod->has_brought_mix_type(name, reqInfo) ||
-				 bMod->has_mix_type_in_imports(name, reqInfo).first)) {
+			    (bMod->has_mix_type(name, reqInfo) || bMod->has_brought_mix_type(name, reqInfo) ||
+			     bMod->has_mix_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_mix_type(name, reqInfo)->is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1384,7 +1384,7 @@ MixType* Mod::get_mix_type(const String& name, const AccessInfo& reqInfo) const 
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_mix_type(name, reqInfo) || sub->has_brought_mix_type(name, reqInfo) ||
-				sub->has_mix_type_in_imports(name, reqInfo).first) {
+			    sub->has_mix_type_in_imports(name, reqInfo).first) {
 				return sub->get_mix_type(name, reqInfo);
 			}
 		}
@@ -1399,7 +1399,7 @@ MixType* Mod::get_mix_type(const String& name, const AccessInfo& reqInfo) const 
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_mix_type(name, reqInfo) || bMod->has_brought_mix_type(name, reqInfo) ||
-					bMod->has_mix_type_in_imports(name, reqInfo).first) {
+				    bMod->has_mix_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_mix_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_mix_type(name, reqInfo);
 					}
@@ -1422,7 +1422,7 @@ bool Mod::has_choice_type(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_choice_type(name, reqInfo) || sub->has_brought_choice_type(name, reqInfo) ||
-				sub->has_choice_type_in_imports(name, reqInfo).first) {
+			    sub->has_choice_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1444,8 +1444,8 @@ Pair<bool, String> Mod::has_choice_type_in_imports(const String& name, const Acc
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
-				 bMod->has_choice_type_in_imports(name, reqInfo).first)) {
+			    (bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
+			     bMod->has_choice_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_choice_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1464,7 +1464,7 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_choice_type(name, reqInfo) || sub->has_brought_choice_type(name, reqInfo) ||
-				sub->has_choice_type_in_imports(name, reqInfo).first) {
+			    sub->has_choice_type_in_imports(name, reqInfo).first) {
 				return sub->get_choice_type(name, reqInfo);
 			}
 		}
@@ -1479,7 +1479,7 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
-					bMod->has_choice_type_in_imports(name, reqInfo).first) {
+				    bMod->has_choice_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_choice_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_choice_type(name, reqInfo);
 					}
@@ -1503,7 +1503,7 @@ bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const 
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_generic_struct_type(name, reqInfo) || sub->has_brought_generic_struct_type(name, reqInfo) ||
-				sub->has_generic_struct_type_in_imports(name, reqInfo).first) {
+			    sub->has_generic_struct_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1527,8 +1527,8 @@ Pair<bool, String> Mod::has_generic_struct_type_in_imports(const String& name, c
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_generic_struct_type(name, reqInfo) ||
-					bMod->has_brought_generic_struct_type(name, reqInfo) ||
-					bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
+				    bMod->has_brought_generic_struct_type(name, reqInfo) ||
+				    bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
 					}
@@ -1562,8 +1562,8 @@ GenericStructType* Mod::get_generic_struct_type(const String& name, const Access
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_generic_struct_type(name, reqInfo) ||
-					bMod->has_brought_generic_struct_type(name, reqInfo) ||
-					bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
+				    bMod->has_brought_generic_struct_type(name, reqInfo) ||
+				    bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_struct_type(name, reqInfo);
 					}
@@ -1586,7 +1586,7 @@ bool Mod::has_type_definition(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_type_definition(name, reqInfo) || sub->has_brought_type_definition(name, reqInfo) ||
-				sub->has_type_definition_in_imports(name, reqInfo).first) {
+			    sub->has_type_definition_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1608,8 +1608,8 @@ Pair<bool, String> Mod::has_type_definition_in_imports(const String& name, const
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_type_definition(name, reqInfo) || bMod->has_brought_type_definition(name, reqInfo) ||
-				 bMod->has_type_definition_in_imports(name, reqInfo).first)) {
+			    (bMod->has_type_definition(name, reqInfo) || bMod->has_brought_type_definition(name, reqInfo) ||
+			     bMod->has_type_definition_in_imports(name, reqInfo).first)) {
 				if (bMod->get_type_def(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1628,7 +1628,7 @@ DefinitionType* Mod::get_type_def(const String& name, const AccessInfo& reqInfo)
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_type_definition(name, reqInfo) || sub->has_brought_type_definition(name, reqInfo) ||
-				sub->has_type_definition_in_imports(name, reqInfo).first) {
+			    sub->has_type_definition_in_imports(name, reqInfo).first) {
 				return sub->get_type_def(name, reqInfo);
 			}
 		}
@@ -1643,7 +1643,7 @@ DefinitionType* Mod::get_type_def(const String& name, const AccessInfo& reqInfo)
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_type_definition(name, reqInfo) || bMod->has_brought_type_definition(name, reqInfo) ||
-					bMod->has_type_definition_in_imports(name, reqInfo).first) {
+				    bMod->has_type_definition_in_imports(name, reqInfo).first) {
 					if (bMod->get_type_def(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_type_def(name, reqInfo);
 					}
@@ -1665,7 +1665,7 @@ bool Mod::has_generic_type_def(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_generic_type_def(name, reqInfo) || sub->has_brought_generic_type_def(name, reqInfo) ||
-				sub->has_generic_type_def_in_imports(name, reqInfo).first) {
+			    sub->has_generic_type_def_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1688,7 +1688,7 @@ Pair<bool, String> Mod::has_generic_type_def_in_imports(const String& name, cons
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_generic_type_def(name, reqInfo) || bMod->has_brought_generic_type_def(name, reqInfo) ||
-					bMod->has_generic_type_def_in_imports(name, reqInfo).first) {
+				    bMod->has_generic_type_def_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_type_def(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
 					}
@@ -1708,7 +1708,7 @@ GenericDefinitionType* Mod::get_generic_type_def(const String& name, const Acces
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_generic_type_def(name, reqInfo) || sub->has_brought_generic_type_def(name, reqInfo) ||
-				sub->has_generic_type_def_in_imports(name, reqInfo).first) {
+			    sub->has_generic_type_def_in_imports(name, reqInfo).first) {
 				return sub->get_generic_type_def(name, reqInfo);
 			}
 		}
@@ -1723,7 +1723,7 @@ GenericDefinitionType* Mod::get_generic_type_def(const String& name, const Acces
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named()) {
 				if (bMod->has_generic_type_def(name, reqInfo) || bMod->has_brought_generic_type_def(name, reqInfo) ||
-					bMod->has_generic_type_def_in_imports(name, reqInfo).first) {
+				    bMod->has_generic_type_def_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_type_def(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_type_def(name, reqInfo);
 					}
@@ -1745,7 +1745,7 @@ bool Mod::has_prerun_global(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_prerun_global(name, reqInfo) || sub->has_brought_prerun_global(name, reqInfo) ||
-				sub->has_prerun_global_in_imports(name, reqInfo).first) {
+			    sub->has_prerun_global_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1767,8 +1767,8 @@ Pair<bool, String> Mod::has_prerun_global_in_imports(const String& name, const A
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_prerun_global(name, reqInfo) || bMod->has_brought_prerun_global(name, reqInfo) ||
-				 bMod->has_prerun_global_in_imports(name, reqInfo).first)) {
+			    (bMod->has_prerun_global(name, reqInfo) || bMod->has_brought_prerun_global(name, reqInfo) ||
+			     bMod->has_prerun_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_prerun_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1778,8 +1778,8 @@ Pair<bool, String> Mod::has_prerun_global_in_imports(const String& name, const A
 	return {false, ""};
 }
 
-PrerunGlobal* Mod::get_prerun_global(const String&	   name, // NOLINT(misc-no-recursion)
-									 const AccessInfo& reqInfo) const {
+PrerunGlobal* Mod::get_prerun_global(const String&     name, // NOLINT(misc-no-recursion)
+                                     const AccessInfo& reqInfo) const {
 	for (auto* ent : prerunGlobals) {
 		if ((ent->get_name().value == name) && ent->get_visibility().is_accessible(reqInfo)) {
 			return ent;
@@ -1788,7 +1788,7 @@ PrerunGlobal* Mod::get_prerun_global(const String&	   name, // NOLINT(misc-no-re
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_prerun_global(name, reqInfo) || sub->has_brought_prerun_global(name, reqInfo) ||
-				sub->has_prerun_global_in_imports(name, reqInfo).first) {
+			    sub->has_prerun_global_in_imports(name, reqInfo).first) {
 				return sub->get_prerun_global(name, reqInfo);
 			}
 		}
@@ -1802,8 +1802,8 @@ PrerunGlobal* Mod::get_prerun_global(const String&	   name, // NOLINT(misc-no-re
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_prerun_global(name, reqInfo) || bMod->has_brought_prerun_global(name, reqInfo) ||
-				 bMod->has_prerun_global_in_imports(name, reqInfo).first)) {
+			    (bMod->has_prerun_global(name, reqInfo) || bMod->has_brought_prerun_global(name, reqInfo) ||
+			     bMod->has_prerun_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_prerun_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return bMod->get_prerun_global(name, reqInfo);
 				}
@@ -1824,7 +1824,7 @@ bool Mod::has_global(const String& name, AccessInfo reqInfo) const {
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_global(name, reqInfo) || sub->has_brought_global(name, reqInfo) ||
-				sub->has_global_in_imports(name, reqInfo).first) {
+			    sub->has_global_in_imports(name, reqInfo).first) {
 				return true;
 			}
 		}
@@ -1846,8 +1846,8 @@ Pair<bool, String> Mod::has_global_in_imports(const String& name, const AccessIn
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_global(name, reqInfo) || bMod->has_brought_global(name, reqInfo) ||
-				 bMod->has_global_in_imports(name, reqInfo).first)) {
+			    (bMod->has_global(name, reqInfo) || bMod->has_brought_global(name, reqInfo) ||
+			     bMod->has_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
 				}
@@ -1857,8 +1857,8 @@ Pair<bool, String> Mod::has_global_in_imports(const String& name, const AccessIn
 	return {false, ""};
 }
 
-GlobalEntity* Mod::get_global(const String&		name, // NOLINT(misc-no-recursion)
-							  const AccessInfo& reqInfo) const {
+GlobalEntity* Mod::get_global(const String&     name, // NOLINT(misc-no-recursion)
+                              const AccessInfo& reqInfo) const {
 	for (auto* ent : globalEntities) {
 		if ((ent->get_name().value == name) && ent->get_visibility().is_accessible(reqInfo)) {
 			return ent;
@@ -1867,7 +1867,7 @@ GlobalEntity* Mod::get_global(const String&		name, // NOLINT(misc-no-recursion)
 	for (auto sub : submodules) {
 		if (!sub->should_be_named()) {
 			if (sub->has_global(name, reqInfo) || sub->has_brought_global(name, reqInfo) ||
-				sub->has_global_in_imports(name, reqInfo).first) {
+			    sub->has_global_in_imports(name, reqInfo).first) {
 				return sub->get_global(name, reqInfo);
 			}
 		}
@@ -1881,8 +1881,8 @@ GlobalEntity* Mod::get_global(const String&		name, // NOLINT(misc-no-recursion)
 		if (!brought.is_named()) {
 			auto* bMod = brought.get();
 			if (!bMod->should_be_named() &&
-				(bMod->has_global(name, reqInfo) || bMod->has_brought_global(name, reqInfo) ||
-				 bMod->has_global_in_imports(name, reqInfo).first)) {
+			    (bMod->has_global(name, reqInfo) || bMod->has_brought_global(name, reqInfo) ||
+			     bMod->has_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return bMod->get_global(name, reqInfo);
 				}
@@ -1998,8 +1998,8 @@ void Mod::setup_llvm_file(Ctx* ctx) {
 	auto* cfg = cli::Config::get();
 	SHOW("Creating llvm output path")
 	auto fileName = get_writable_name() + ".ll";
-	llPath		  = (cfg->has_output_path() ? cfg->get_output_path() : basePath) / "llvm" /
-			 filePath.lexically_relative(basePath).replace_filename(fileName);
+	llPath        = (cfg->has_output_path() ? cfg->get_output_path() : basePath) / "llvm" /
+	         filePath.lexically_relative(basePath).replace_filename(fileName);
 	std::error_code errorCode;
 	if (fs::exists(llPath)) {
 		fs::remove(llPath, errorCode);
@@ -2027,8 +2027,8 @@ void Mod::setup_llvm_file(Ctx* ctx) {
 		SHOW("Flushed llvm IR file stream")
 	} else {
 		ctx->Error("Error while creating parent directory for LLVM output file with path: " +
-					   ctx->color(llPath.parent_path().string()) + " with error: " + errorCode.message(),
-				   None);
+		               ctx->color(llPath.parent_path().string()) + " with error: " + errorCode.message(),
+		           None);
 	}
 	for (auto sub : submodules) {
 		sub->setup_llvm_file(ctx);
@@ -2041,18 +2041,18 @@ bool Mod::find_clang_path(Ctx* ctx) {
 	}
 	auto cfg = cli::Config::get();
 	if (!cfg->has_clang_path()) {
-		auto clangPath	  = find_executable("clang");
+		auto clangPath    = find_executable("clang");
 		auto qatClangPath = find_executable("qat-clang");
 		SHOW("clang path is " << (clangPath.has_value() ? clangPath.value() : "none"))
 		SHOW("clang path is " << (qatClangPath.has_value() ? qatClangPath.value() : "none"))
 		if ((not clangPath.has_value()) && (not qatClangPath.has_value())) {
 			ctx->Error(
-				ctx->color("clang") + " could not be found in PATH. Tried using " + ctx->color("qat-clang") +
-					" which is the compatible version of clang bundled with qat, but that executable also could not be found."
-					" Please check your installation of qat. Make sure that clang is installed and is added to the system PATH variable."
-					" If you want clang from a custom path to be used, provide path to clang using " +
-					ctx->color("--clang=\"/path/of/clang/exe\""),
-				None);
+			    ctx->color("clang") + " could not be found in PATH. Tried using " + ctx->color("qat-clang") +
+			        " which is the compatible version of clang bundled with qat, but that executable also could not be found."
+			        " Please check your installation of qat. Make sure that clang is installed and is added to the system PATH variable."
+			        " If you want clang from a custom path to be used, provide path to clang using " +
+			        ctx->color("--clang=\"/path/of/clang/exe\""),
+			    None);
 		} else if ((not qatClangPath.has_value()) && clangPath.has_value()) {
 			auto clangRes = run_command_get_stdout(clangPath.value(), {"--version"});
 			if (clangRes.first == 0) {
@@ -2061,11 +2061,11 @@ bool Mod::find_clang_path(Ctx* ctx) {
 					auto firstLine = clangRes.second.substr(0, clangRes.second.find("\n"));
 					if (firstLine.find("version ") != String::npos) {
 						versionString =
-							firstLine.substr(firstLine.find("version ") + String::traits_type::length("version "));
+						    firstLine.substr(firstLine.find("version ") + String::traits_type::length("version "));
 					}
 				} else if (clangRes.second.find("version ") != String::npos) {
 					versionString = clangRes.second.substr(clangRes.second.find("version ") +
-														   String::traits_type::length("version "));
+					                                       String::traits_type::length("version "));
 				}
 				if (versionString.has_value() && versionString.value().find(' ') != String::npos) {
 					versionString = versionString.value().substr(0, versionString.value().find(' '));
@@ -2085,28 +2085,28 @@ bool Mod::find_clang_path(Ctx* ctx) {
 				if (majorVersion.has_value()) {
 					if (majorVersion.value() < 17) {
 						ctx->Error(
-							"qat requires a clang installation of version 17 or later. The clang compiler found at " +
-								clangPath.value() + " has a version of " + ctx->color(versionString.value()) +
-								". Also tried using the " + ctx->color("qat-clang") +
-								" binary bundled with qat, but the file could not be found. Please check your installation of qat",
-							None);
+						    "qat requires a clang installation of version 17 or later. The clang compiler found at " +
+						        clangPath.value() + " has a version of " + ctx->color(versionString.value()) +
+						        ". Also tried using the " + ctx->color("qat-clang") +
+						        " binary bundled with qat, but the file could not be found. Please check your installation of qat",
+						    None);
 					}
 					usableClangPath = clangPath.value();
 				} else {
 					ctx->Error(
-						"Could not determine the version of the clang compiler found at " +
-							ctx->color(clangPath.value()) + ". Also tried using the " + ctx->color("qat-clang") +
-							" binary bundled with qat, but the file could not be found. Please check your installation of qat",
-						None);
+					    "Could not determine the version of the clang compiler found at " +
+					        ctx->color(clangPath.value()) + ". Also tried using the " + ctx->color("qat-clang") +
+					        " binary bundled with qat, but the file could not be found. Please check your installation of qat",
+					    None);
 				}
 			} else {
 				ctx->Error(
-					"Tried to run " + ctx->color("clang --version") +
-						" to determine the version of the clang compiler. But the command failed with the status code " +
-						ctx->color(std::to_string(clangRes.first)) + ". Also tried using the " +
-						ctx->color("qat-clang") +
-						" binary bundled with qat, but the file could not be found. Please check your installation of qat",
-					None);
+				    "Tried to run " + ctx->color("clang --version") +
+				        " to determine the version of the clang compiler. But the command failed with the status code " +
+				        ctx->color(std::to_string(clangRes.first)) + ". Also tried using the " +
+				        ctx->color("qat-clang") +
+				        " binary bundled with qat, but the file could not be found. Please check your installation of qat",
+				    None);
 			}
 		} else if (qatClangPath.has_value()) {
 			usableClangPath = qatClangPath.value();
@@ -2121,7 +2121,7 @@ void Mod::compile_to_object(Ctx* ctx) {
 	if (!isCompiledToObject) {
 		auto& log = Logger::get();
 		log->say("Compiling module `" + name.value + "` from file " + filePath.string());
-		auto*		cfg = cli::Config::get();
+		auto*       cfg = cli::Config::get();
 		Vec<String> compileArgs;
 		if (cfg->should_build_shared()) {
 			compileArgs.push_back("-fPIC");
@@ -2150,11 +2150,11 @@ void Mod::compile_to_object(Ctx* ctx) {
 			sub->compile_to_object(ctx);
 		}
 		objectFilePath = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "object" /
-									  filePath.lexically_relative(basePath).replace_filename(get_writable_name().append(
-										  ctx->clangTargetInfo->getTriple().isOSWindows()
-											  ? ".obj"
-											  : (ctx->clangTargetInfo->getTriple().isWasm() ? ".wasm" : ".o"))))
-							 .lexically_normal();
+		                              filePath.lexically_relative(basePath).replace_filename(get_writable_name().append(
+		                                  ctx->clangTargetInfo->getTriple().isOSWindows()
+		                                      ? ".obj"
+		                                      : (ctx->clangTargetInfo->getTriple().isWasm() ? ".wasm" : ".o"))))
+		                     .lexically_normal();
 		SHOW("Got object file path")
 		if (!fs::exists(objectFilePath.value().parent_path())) {
 			std::error_code errorCode;
@@ -2162,9 +2162,9 @@ void Mod::compile_to_object(Ctx* ctx) {
 			fs::create_directories(objectFilePath.value().parent_path(), errorCode);
 			if (errorCode) {
 				ctx->Error("Could not create parent directory for the object file. Parent directory path is: " +
-							   ctx->color(objectFilePath.value().parent_path().string()) +
-							   " with error: " + errorCode.message(),
-						   None);
+				               ctx->color(objectFilePath.value().parent_path().string()) +
+				               " with error: " + errorCode.message(),
+				           None);
 			}
 		}
 		compileArgs.push_back(llPath.string());
@@ -2176,8 +2176,8 @@ void Mod::compile_to_object(Ctx* ctx) {
 		auto cmdRes = run_command_get_stderr(usableClangPath.value(), compileArgs);
 		if (cmdRes.first) {
 			ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
-						   cmdRes.second,
-					   None);
+			               cmdRes.second,
+			           None);
 		}
 		isCompiledToObject = true;
 	}
@@ -2314,10 +2314,10 @@ std::set<String> Mod::getAllLinkableLibs() const {
 }
 
 void Mod::find_native_library_paths() {
-	Vec<fs::path> unixPaths	   = {"/lib", "/usr/lib", "/usr/local/lib"};
-	auto		  cfg		   = cli::Config::get();
-	const auto	  hostTriple   = llvm::Triple(LLVM_HOST_TRIPLE);
-	const auto	  targetTriple = llvm::Triple(cfg->get_target_triple());
+	Vec<fs::path> unixPaths    = {"/lib", "/usr/lib", "/usr/local/lib"};
+	auto          cfg          = cli::Config::get();
+	const auto    hostTriple   = llvm::Triple(LLVM_HOST_TRIPLE);
+	const auto    targetTriple = llvm::Triple(cfg->get_target_triple());
 	if (hostTriple.getArch() == llvm::Triple::ArchType::x86_64) {
 		unixPaths.push_back("/lib64");
 		unixPaths.push_back("/usr/lib64");
@@ -2332,16 +2332,16 @@ void Mod::find_native_library_paths() {
 			if (fs::exists(item)) {
 				usableNativeLibPaths.push_back(item);
 				auto targetStr =
-					((targetTriple.getArch() == llvm::Triple::ArchType::UnknownArch
-						  ? ""
-						  : (targetTriple.getArchName().str() + "-")) +
-					 (targetTriple.isOSUnknown()
-						  ? ""
-						  : (targetTriple.getOSName().str() +
-							 (targetTriple.getEnvironment() == llvm::Triple::EnvironmentType::UnknownEnvironment
-								  ? ""
-								  : "-"))) +
-					 targetTriple.getEnvironmentName().str());
+				    ((targetTriple.getArch() == llvm::Triple::ArchType::UnknownArch
+				          ? ""
+				          : (targetTriple.getArchName().str() + "-")) +
+				     (targetTriple.isOSUnknown()
+				          ? ""
+				          : (targetTriple.getOSName().str() +
+				             (targetTriple.getEnvironment() == llvm::Triple::EnvironmentType::UnknownEnvironment
+				                  ? ""
+				                  : "-"))) +
+				     targetTriple.getEnvironmentName().str());
 				if (fs::exists(item / targetStr)) {
 					usableNativeLibPaths.push_back(item / targetStr);
 				}
@@ -2375,9 +2375,9 @@ Maybe<fs::path> Mod::find_static_library_path(String libName) const {
 	return None;
 }
 
-#define LINK_LIB_KEY			   "linkLibs"
-#define LINK_LIBS_FROM_PATH_KEY	   "linkLibsFromPath"
-#define LINK_FILE_KEY			   "linkFiles"
+#define LINK_LIB_KEY               "linkLibs"
+#define LINK_LIBS_FROM_PATH_KEY    "linkLibsFromPath"
+#define LINK_FILE_KEY              "linkFiles"
 #define LINK_STATIC_AND_SHARED_KEY "linkStaticAndShared"
 
 void Mod::handle_native_libs(Ctx* ctx) {
@@ -2388,50 +2388,50 @@ void Mod::handle_native_libs(Ctx* ctx) {
 			SHOW("Found linkLibs key")
 			auto linkLibPre = metaInfo.value().get_value_for(LINK_LIB_KEY);
 			if (linkLibPre->get_ir_type()->is_array() &&
-				linkLibPre->get_ir_type()->as_array()->get_element_type()->is_string_slice()) {
-				auto			 dataArr = llvm::cast<llvm::ConstantArray>(linkLibPre->get_llvm_constant());
+			    linkLibPre->get_ir_type()->as_array()->get_element_type()->is_string_slice()) {
+				auto             dataArr = llvm::cast<llvm::ConstantArray>(linkLibPre->get_llvm_constant());
 				std::set<String> libs;
 				for (usize i = 0; i < linkLibPre->get_ir_type()->as_array()->get_length(); i++) {
 					SHOW("Link lib array at: " << i)
 					auto itemLib = ir::StringSliceType::value_to_string(
-						ir::PrerunValue::get(dataArr->getAggregateElement(i), ir::StringSliceType::get(ctx)));
+					    ir::PrerunValue::get(dataArr->getAggregateElement(i), ir::StringSliceType::get(ctx)));
 					SHOW("link item retrieved")
 					if (!libs.contains(itemLib)) {
 						nativeLibsToLink.push_back(
-							LibToLink::fromName({itemLib, metaInfo.value().get_value_range_for(LINK_LIB_KEY)},
-												metaInfo.value().get_value_range_for(LINK_LIB_KEY)));
+						    LibToLink::fromName({itemLib, metaInfo.value().get_value_range_for(LINK_LIB_KEY)},
+						                        metaInfo.value().get_value_range_for(LINK_LIB_KEY)));
 						libs.insert(itemLib);
 					}
 				}
 			} else {
 				ctx->Error("The field " + ctx->color(LINK_LIB_KEY) +
-							   " is expected to be an array of string slices. The provided value is of type " +
-							   ctx->color(linkLibPre->get_ir_type()->to_string()),
-						   metaInfo.value().get_value_range_for(LINK_LIB_KEY));
+				               " is expected to be an array of string slices. The provided value is of type " +
+				               ctx->color(linkLibPre->get_ir_type()->to_string()),
+				           metaInfo.value().get_value_range_for(LINK_LIB_KEY));
 			}
 		} else if (metaInfo.value().has_key(LINK_LIBS_FROM_PATH_KEY)) {
 			ctx->Error("This is not supported for now", metaInfo->get_value_range_for(LINK_LIBS_FROM_PATH_KEY));
 		} else if (metaInfo.value().has_key(LINK_FILE_KEY)) {
 			auto linkFilePre = metaInfo.value().get_value_for(LINK_FILE_KEY);
 			if (linkFilePre->get_ir_type()->is_array() &&
-				linkFilePre->get_ir_type()->as_array()->get_element_type()->is_string_slice()) {
-				auto			 dataArr = llvm::cast<llvm::ConstantArray>(linkFilePre->get_llvm_constant());
+			    linkFilePre->get_ir_type()->as_array()->get_element_type()->is_string_slice()) {
+				auto             dataArr = llvm::cast<llvm::ConstantArray>(linkFilePre->get_llvm_constant());
 				std::set<String> libs;
 				for (usize i = 0; i < linkFilePre->get_ir_type()->as_array()->get_length(); i++) {
 					auto itemLib = ir::StringSliceType::value_to_string(
-						ir::PrerunValue::get(dataArr->getAggregateElement(i), ir::StringSliceType::get(ctx)));
+					    ir::PrerunValue::get(dataArr->getAggregateElement(i), ir::StringSliceType::get(ctx)));
 					if (!libs.contains(itemLib)) {
 						nativeLibsToLink.push_back(
-							LibToLink::fromPath({itemLib, metaInfo.value().get_value_range_for(LINK_FILE_KEY)},
-												metaInfo.value().get_value_range_for(LINK_FILE_KEY)));
+						    LibToLink::fromPath({itemLib, metaInfo.value().get_value_range_for(LINK_FILE_KEY)},
+						                        metaInfo.value().get_value_range_for(LINK_FILE_KEY)));
 						libs.insert(itemLib);
 					}
 				}
 			} else {
 				ctx->Error("The field " + ctx->color(LINK_FILE_KEY) +
-							   " is expected to be an array of string slices. The provided value is of type " +
-							   ctx->color(linkFilePre->get_ir_type()->to_string()),
-						   metaInfo.value().get_value_range_for(LINK_FILE_KEY));
+				               " is expected to be an array of string slices. The provided value is of type " +
+				               ctx->color(linkFilePre->get_ir_type()->to_string()),
+				           metaInfo.value().get_value_range_for(LINK_FILE_KEY));
 			}
 		} else if (metaInfo.value().has_key(LINK_STATIC_AND_SHARED_KEY)) {
 			ctx->Error("This is not supported for now", metaInfo->get_value_range_for(LINK_STATIC_AND_SHARED_KEY));
@@ -2443,8 +2443,8 @@ void Mod::handle_native_libs(Ctx* ctx) {
 }
 
 bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath,
-									  bool findUCRTLibPath, bool findUMLibPath) {
-	auto cfg	= cli::Config::get();
+                                      bool findUCRTLibPath, bool findUMLibPath) {
+	auto cfg    = cli::Config::get();
 	auto target = irCtx->clangTargetInfo->getTriple();
 	if (cfg->has_toolchain_path()) {
 		const auto windowsPath = cfg->get_toolchain_path() / "windows";
@@ -2467,7 +2467,7 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 						}
 					}
 					if (version.has_value()) {
-						auto			versionPath = msvcMainPath / std::to_string(version.value());
+						auto            versionPath = msvcMainPath / std::to_string(version.value());
 						Maybe<fs::path> candidateMSVCLibPath;
 						Maybe<fs::path> candidateATLMFCLibPath;
 						if (target.isX86() && target.isArch64Bit()) {
@@ -2488,48 +2488,48 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 							}
 						}
 						if (candidateMSVCLibPath.has_value() && fs::exists(candidateMSVCLibPath.value()) &&
-							fs::is_directory(candidateMSVCLibPath.value())) {
+						    fs::is_directory(candidateMSVCLibPath.value())) {
 							SHOW("Found MSVC Lib Path")
 							windowsMSVCLibPath = candidateMSVCLibPath;
 						}
 						if (candidateATLMFCLibPath.has_value() && fs::exists(candidateATLMFCLibPath.value()) &&
-							fs::is_directory(candidateATLMFCLibPath.value())) {
+						    fs::is_directory(candidateATLMFCLibPath.value())) {
 							SHOW("Found ATLMFC Lib Path")
 							windowsATLMFCLibPath = candidateATLMFCLibPath;
 						}
 					} else {
 						irCtx->Error("Could not find any versions of MSVC in the directory " +
-										 irCtx->color(msvcMainPath.string()),
-									 None);
+						                 irCtx->color(msvcMainPath.string()),
+						             None);
 					}
 				} else {
 					irCtx->Error("Could not find the directory " + irCtx->color((windowsPath / "MSVC").string()) +
-									 ", which is required for finding platform-specific libraries for the target " +
-									 irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
-								 None);
+					                 ", which is required for finding platform-specific libraries for the target " +
+					                 irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
+					             None);
 				}
 			} else if (findUCRTLibPath || findUMLibPath) {
 				auto windowsKitPath = windowsPath / "SDK";
 				if (fs::exists(windowsKitPath) && fs::is_directory(windowsKitPath)) {
 					Maybe<fs::path> osVerPath;
-					Maybe<float>	osVer;
+					Maybe<float>    osVer;
 					for (auto it : fs::directory_iterator(windowsKitPath)) {
 						if (fs::is_directory(it)) {
 							// FIXME - Rethink for future Windows SDK versions
 							if (it.path().filename().string() == "10") {
 								if (osVer.has_value() ? (osVer.value() < 10) : true) {
 									osVerPath = windowsKitPath / "10";
-									osVer	  = 10;
+									osVer     = 10;
 								}
 							} else if (it.path().filename().string() == "8.1") {
 								if (osVer.has_value() ? (osVer.value() < 8.1) : true) {
 									osVerPath = windowsKitPath / "8.1";
-									osVer	  = 8.1;
+									osVer     = 8.1;
 								}
 							} else if (it.path().filename().string() == "7.1") {
 								if (osVer.has_value() ? (osVer.value() < 7.1) : true) {
 									osVerPath = windowsKitPath / "7.1";
-									osVer	  = 7.1;
+									osVer     = 7.1;
 								}
 							}
 						}
@@ -2537,12 +2537,12 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 					if (osVerPath.has_value() && fs::exists(osVerPath.value() / "Lib")) {
 						SHOW("Found OS Ver Path: " << (osVerPath.value() / "Lib").string())
 						std::array<u64, 4> verNums = {0, 0, 0, 0};
-						fs::path		   osVerSDKPath;
+						fs::path           osVerSDKPath;
 						for (auto it : fs::directory_iterator(osVerPath.value() / "Lib")) {
 							if (fs::is_directory(it)) {
 								SHOW("In OS Ver main path, iterating " << it.path().string())
 								auto  osVersionStr = it.path().filename().string();
-								usize dotCount	   = 0;
+								usize dotCount     = 0;
 								for (char ch : osVersionStr) {
 									if (ch == '.') {
 										dotCount++;
@@ -2550,17 +2550,17 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 								}
 								SHOW("Dot count is " << dotCount)
 								if (dotCount == 3) {
-									auto			   firstDot	 = osVersionStr.find('.');
-									auto			   secondDot = osVersionStr.find('.', firstDot + 1);
-									auto			   thirdDot	 = osVersionStr.find('.', secondDot + 1);
+									auto               firstDot  = osVersionStr.find('.');
+									auto               secondDot = osVersionStr.find('.', firstDot + 1);
+									auto               thirdDot  = osVersionStr.find('.', secondDot + 1);
 									std::array<u64, 4> newVerNum = {
-										std::stoul(osVersionStr.substr(0, firstDot - 1)),
-										std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
-										std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
-										std::stoul(osVersionStr.substr(thirdDot + 1))};
+									    std::stoul(osVersionStr.substr(0, firstDot - 1)),
+									    std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
+									    std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
+									    std::stoul(osVersionStr.substr(thirdDot + 1))};
 									for (usize i = 0; i < 4; i++) {
 										if (newVerNum[i] > verNums[i]) {
-											verNums		 = newVerNum;
+											verNums      = newVerNum;
 											osVerSDKPath = it.path();
 											break;
 										} else if (newVerNum[i] == verNums[i]) {
@@ -2607,25 +2607,25 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 			}
 		} else {
 			irCtx->Error("Could not find the directory " + irCtx->color(windowsPath.string()) +
-							 " which is required for finding platform-specific libraries for the target " +
-							 irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
-						 None);
+			                 " which is required for finding platform-specific libraries for the target " +
+			                 irCtx->color(irCtx->clangTargetInfo->getTriple().str()),
+			             None);
 		}
 	} else {
 		irCtx->Error("Could not find the " + irCtx->color("toolchain") + " directory. Expected to find the " +
-						 irCtx->color("toolchain") + " directory in the directory of installation of qat",
-					 None);
+		                 irCtx->color("toolchain") + " directory in the directory of installation of qat",
+		             None);
 	}
 	return (findMSVCLibPath ? windowsMSVCLibPath.has_value() : true) &&
-		   (findATLMFCLibPath ? windowsATLMFCLibPath.has_value() : true) &&
-		   (findUCRTLibPath ? windowsUCRTLibPath.has_value() : true) &&
-		   (findUMLibPath ? windowsUMLibPath.has_value() : true);
+	       (findATLMFCLibPath ? windowsATLMFCLibPath.has_value() : true) &&
+	       (findUCRTLibPath ? windowsUCRTLibPath.has_value() : true) &&
+	       (findUMLibPath ? windowsUMLibPath.has_value() : true);
 }
 
 bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 	SHOW("Finding MSVC SDK Path")
 	if (windowsMSVCLibPath.has_value() || windowsATLMFCLibPath.has_value() || windowsUCRTLibPath.has_value() ||
-		windowsUMLibPath.has_value()) {
+	    windowsUMLibPath.has_value()) {
 		SHOW("Already found MSVC paths")
 		return true;
 	}
@@ -2649,8 +2649,8 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		auto vsWhereRes = run_command_get_output(vsWherePath.value(), {"-latest", "-property", "installationPath"});
 		if (vsWhereRes.first) {
 			irCtx->Error("Running 'vswhere.exe' exited with status code " + std::to_string(vsWhereRes.first) +
-							 ". The error output is: " + vsWhereRes.second,
-						 None);
+			                 ". The error output is: " + vsWhereRes.second,
+			             None);
 		}
 		Maybe<String> vsPath;
 		if (not vsWhereRes.second.empty()) {
@@ -2673,7 +2673,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 				//                  " do not exist. Could not find path of the MSVC SDK",
 				//              None);
 				SHOW("Found MSVC Root path: " << msvcMainPath.string())
-				Maybe<int>		versionMajor;
+				Maybe<int>      versionMajor;
 				Maybe<fs::path> versionPath;
 				for (auto it : fs::directory_iterator(msvcMainPath)) {
 					if (fs::is_directory(it)) {
@@ -2684,7 +2684,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 								auto newVersion = std::stoi(majStr);
 								if (versionMajor.has_value() ? (versionMajor.value() < newVersion) : true) {
 									versionMajor = newVersion;
-									versionPath	 = it.path();
+									versionPath  = it.path();
 								}
 							}
 						}
@@ -2717,12 +2717,12 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 						}
 					}
 					if (candidateMSVCLibPath.has_value() && fs::exists(candidateMSVCLibPath.value()) &&
-						fs::is_directory(candidateMSVCLibPath.value())) {
+					    fs::is_directory(candidateMSVCLibPath.value())) {
 						SHOW("Found MSVC Lib Path")
 						windowsMSVCLibPath = candidateMSVCLibPath;
 					}
 					if (candidateATLMFCLibPath.has_value() && fs::exists(candidateATLMFCLibPath.value()) &&
-						fs::is_directory(candidateATLMFCLibPath.value())) {
+					    fs::is_directory(candidateATLMFCLibPath.value())) {
 						SHOW("Found ATLMFC Lib Path")
 						windowsATLMFCLibPath = candidateATLMFCLibPath;
 					}
@@ -2736,24 +2736,24 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		(void)find_windows_toolchain_libs(irCtx, false, false, true, true);
 	} else {
 		Maybe<fs::path> osVerPath;
-		Maybe<float>	osVer;
+		Maybe<float>    osVer;
 		for (auto it : fs::directory_iterator(windowsKitPath)) {
 			if (fs::is_directory(it)) {
 				// FIXME - Rethink for future Windows SDK versions
 				if (it.path().filename().string() == "10") {
 					if (osVer.has_value() ? (osVer.value() < 10) : true) {
 						osVerPath = windowsKitPath / "10";
-						osVer	  = 10;
+						osVer     = 10;
 					}
 				} else if (it.path().filename().string() == "8.1") {
 					if (osVer.has_value() ? (osVer.value() < 8.1) : true) {
 						osVerPath = windowsKitPath / "8.1";
-						osVer	  = 8.1;
+						osVer     = 8.1;
 					}
 				} else if (it.path().filename().string() == "7.1") {
 					if (osVer.has_value() ? (osVer.value() < 7.1) : true) {
 						osVerPath = windowsKitPath / "7.1";
-						osVer	  = 7.1;
+						osVer     = 7.1;
 					}
 				}
 			}
@@ -2761,12 +2761,12 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		if (osVerPath.has_value() && fs::exists(osVerPath.value() / "Lib")) {
 			SHOW("Found OS Ver Path: " << (osVerPath.value() / "Lib").string())
 			std::array<u64, 4> verNums = {0, 0, 0, 0};
-			fs::path		   osVerSDKPath;
+			fs::path           osVerSDKPath;
 			for (auto it : fs::directory_iterator(osVerPath.value() / "Lib")) {
 				if (fs::is_directory(it)) {
 					SHOW("In OS Ver main path, iterating " << it.path().string())
 					auto  osVersionStr = it.path().filename().string();
-					usize dotCount	   = 0;
+					usize dotCount     = 0;
 					for (char ch : osVersionStr) {
 						if (ch == '.') {
 							dotCount++;
@@ -2774,16 +2774,16 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 					}
 					SHOW("Dot count is " << dotCount)
 					if (dotCount == 3) {
-						auto			   firstDot	 = osVersionStr.find('.');
-						auto			   secondDot = osVersionStr.find('.', firstDot + 1);
-						auto			   thirdDot	 = osVersionStr.find('.', secondDot + 1);
+						auto               firstDot  = osVersionStr.find('.');
+						auto               secondDot = osVersionStr.find('.', firstDot + 1);
+						auto               thirdDot  = osVersionStr.find('.', secondDot + 1);
 						std::array<u64, 4> newVerNum = {std::stoul(osVersionStr.substr(0, firstDot - 1)),
-														std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
-														std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
-														std::stoul(osVersionStr.substr(thirdDot + 1))};
+						                                std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
+						                                std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
+						                                std::stoul(osVersionStr.substr(thirdDot + 1))};
 						for (usize i = 0; i < 4; i++) {
 							if (newVerNum[i] > verNums[i]) {
-								verNums		 = newVerNum;
+								verNums      = newVerNum;
 								osVerSDKPath = it.path();
 								break;
 							} else if (newVerNum[i] == verNums[i]) {
@@ -2832,7 +2832,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		}
 	}
 	return windowsMSVCLibPath.has_value() || windowsATLMFCLibPath.has_value() || windowsUCRTLibPath.has_value() ||
-		   windowsUMLibPath.has_value();
+	       windowsUMLibPath.has_value();
 }
 
 void Mod::bundle_modules(Ctx* ctx) {
@@ -2846,10 +2846,10 @@ void Mod::bundle_modules(Ctx* ctx) {
 		SHOW("Getting linkable libs")
 		auto linkableLibs = getAllLinkableLibs();
 		SHOW("Linkable lib count for module " << name.value << " is " << linkableLibs.size())
-		auto*		cfg = cli::Config::get();
+		auto*       cfg = cli::Config::get();
 		Vec<String> cmdOne;
 		Vec<String> targetCMD;
-		auto		hostTriplet = llvm::Triple(LLVM_HOST_TRIPLE);
+		auto        hostTriplet = llvm::Triple(LLVM_HOST_TRIPLE);
 		for (auto& lib : linkableLibs) {
 			cmdOne.push_back(lib);
 		}
@@ -2861,17 +2861,17 @@ void Mod::bundle_modules(Ctx* ctx) {
 				targetCMD.push_back("--sysroot=" MACOS_DEFAULT_SDK_PATH);
 			} else {
 				ctx->Error(
-					"The host triplet of the compiler is " + ctx->color(LLVM_HOST_TRIPLE) +
-						(hostTriplet.isMacOSX() ? ", and " : " which is not MacOS, but ") + "the target triplet is " +
-						ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
-						" which is identified to be for a MacOS platform. Please provide the --sysroot parameter." +
-						(hostTriplet.isTargetMachineMac()
-							 ? (" The default value that could have been used for the sysroot is " +
-								ctx->color(MACOS_DEFAULT_SDK_PATH) +
-								" which does not exist. Please make sure that you have Command Line Tools installed by running: " +
-								ctx->color("sudo xcode-select --install"))
-							 : ""),
-					None);
+				    "The host triplet of the compiler is " + ctx->color(LLVM_HOST_TRIPLE) +
+				        (hostTriplet.isMacOSX() ? ", and " : " which is not MacOS, but ") + "the target triplet is " +
+				        ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
+				        " which is identified to be for a MacOS platform. Please provide the --sysroot parameter." +
+				        (hostTriplet.isTargetMachineMac()
+				             ? (" The default value that could have been used for the sysroot is " +
+				                ctx->color(MACOS_DEFAULT_SDK_PATH) +
+				                " which does not exist. Please make sure that you have Command Line Tools installed by running: " +
+				                ctx->color("sudo xcode-select --install"))
+				             : ""),
+				    None);
 			}
 		}
 		if (ctx->clangTargetInfo->getTriple().isWasm()) {
@@ -2881,12 +2881,12 @@ void Mod::bundle_modules(Ctx* ctx) {
 			targetCMD.push_back("-Wl,--export-all");
 		}
 		std::set<String> objectFiles = getAllObjectPaths();
-		Vec<String>		 inputFiles;
+		Vec<String>      inputFiles;
 		for (auto& objPath : objectFiles) {
 			inputFiles.push_back(objPath);
 		}
 		SHOW("Finished input files")
-		auto		  outNameVal = get_meta_info_for_key("outputName");
+		auto          outNameVal = get_meta_info_for_key("outputName");
 		Maybe<String> outputNameValue;
 		if (outNameVal.has_value() && outNameVal.value()->get_ir_type()->is_string_slice()) {
 			outputNameValue = ir::StringSliceType::value_to_string(outNameVal.value());
@@ -2894,19 +2894,19 @@ void Mod::bundle_modules(Ctx* ctx) {
 		SHOW("Added ll paths of all brought modules")
 		if (hasMain) {
 			auto outPath = ((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "bin" /
-							filePath.lexically_relative(basePath)
-								.replace_filename(outputNameValue.value_or(name.value))
-								.replace_extension(ctx->clangTargetInfo->getTriple().isOSWindows()
-													   ? "exe"
-													   : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
-							   .string();
+			                filePath.lexically_relative(basePath)
+			                    .replace_filename(outputNameValue.value_or(name.value))
+			                    .replace_extension(ctx->clangTargetInfo->getTriple().isOSWindows()
+			                                           ? "exe"
+			                                           : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
+			                   .string();
 			std::error_code err;
 			fs::create_directories(fs::path(outPath).parent_path(), err);
 			if (err) {
 				ctx->Error("Could not create the parent directories in the path " +
-							   ctx->color(fs::path(outPath).parent_path().string()) +
-							   ". The error message was: " + ctx->color(err.message()),
-						   None);
+				               ctx->color(fs::path(outPath).parent_path().string()) +
+				               ". The error message was: " + ctx->color(err.message()),
+				           None);
 			}
 			// FIXME - LIB_LINKING
 			//   String staticLibStr;
@@ -2950,21 +2950,21 @@ void Mod::bundle_modules(Ctx* ctx) {
 				auto cmdRes = run_command_get_stderr(usableClangPath.value(), staticArgs);
 				if (cmdRes.first) {
 					ctx->Error("Statically compiling & linking executable failed: " + ctx->color(filePath.string()) +
-								   ". The error output is\n" + cmdRes.second,
-							   None);
+					               ". The error output is\n" + cmdRes.second,
+					           None);
 				}
 			} else if (cfg->should_build_shared()) {
 				auto cmdRes = run_command_get_stderr(usableClangPath.value(), sharedArgs);
 				if (cmdRes.first) {
 					ctx->Error("Dynamically compiling & linking executable failed: " + ctx->color(filePath.string()) +
-								   ". The error output is\n" + cmdRes.second,
-							   None);
+					               ". The error output is\n" + cmdRes.second,
+					           None);
 				}
 			}
 			ctx->add_exe_path(fs::absolute(outPath).lexically_normal());
 			if (cfg->export_code_metadata()) {
 				std::ifstream file(filePath, std::ios::binary);
-				auto		  fsize = file.tellg();
+				auto          fsize = file.tellg();
 				file.seekg(0, std::ios::end);
 				fsize = file.tellg() - fsize;
 				ctx->add_binary_size(fsize);
@@ -3017,24 +3017,24 @@ void Mod::bundle_modules(Ctx* ctx) {
 				}
 			};
 			auto outPath = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "libs" /
-										filePath.lexically_relative(basePath).replace_filename(
-											getNameForLib(outputNameValue).append(getExtension())))
-							   .string();
+			                            filePath.lexically_relative(basePath).replace_filename(
+			                                getNameForLib(outputNameValue).append(getExtension())))
+			                   .string();
 			auto outPathShared = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "libs" /
-											  filePath.lexically_relative(basePath).replace_filename(
-												  getNameForLib(outputNameValue).append(getExtensionShared())))
-									 .string();
+			                                  filePath.lexically_relative(basePath).replace_filename(
+			                                      getNameForLib(outputNameValue).append(getExtensionShared())))
+			                         .string();
 			// NOTE - Assuming both static and shared libraries live in the same directory
 			std::error_code err;
 			fs::create_directories(fs::path(outPath).parent_path(), err);
 			if (err) {
 				ctx->Error("Could not create the parent directories in the path " +
-							   ctx->color(fs::path(outPath).parent_path().string()) +
-							   ". The error message was: " + ctx->color(err.message()),
-						   None);
+				               ctx->color(fs::path(outPath).parent_path().string()) +
+				               ". The error message was: " + ctx->color(err.message()),
+				           None);
 			}
-			String					 stdOutStr;
-			String					 stdErrStr;
+			String                   stdOutStr;
+			String                   stdErrStr;
 			llvm::raw_string_ostream linkerStdOut(stdOutStr);
 			llvm::raw_string_ostream linkerStdErr(stdErrStr);
 			if (ctx->clangTargetInfo->getTriple().isWindowsGNUEnvironment()) {
@@ -3053,17 +3053,17 @@ void Mod::bundle_modules(Ctx* ctx) {
 				}
 				allArgsShared.push_back("-Bdynamic");
 				auto sysRootStr =
-					String("--sysroot=\"").append(cfg->has_sysroot() ? cfg->get_sysroot() : "").append("\"");
+				    String("--sysroot=\"").append(cfg->has_sysroot() ? cfg->get_sysroot() : "").append("\"");
 				if (cfg->has_sysroot()) {
 					allArgs.push_back(sysRootStr.c_str());
 					allArgsShared.push_back(sysRootStr.c_str());
 				} else if (!triple_is_equivalent(hostTriplet, ctx->clangTargetInfo->getTriple())) {
 					ctx->Error(
-						"Please provide the --sysroot parameter to build the library for the MinGW target triple " +
-							ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
-							" which is not compatible with the compiler's host triplet " +
-							ctx->color(ctx->clangTargetInfo->getTriple().getTriple()),
-						None);
+					    "Please provide the --sysroot parameter to build the library for the MinGW target triple " +
+					        ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
+					        " which is not compatible with the compiler's host triplet " +
+					        ctx->color(ctx->clangTargetInfo->getTriple().getTriple()),
+					    None);
 				}
 				for (auto& obj : objectFiles) {
 					allArgs.push_back(obj.c_str());
@@ -3072,17 +3072,17 @@ void Mod::bundle_modules(Ctx* ctx) {
 				if (cfg->should_build_static()) {
 					SHOW("Linking Static Library MingW")
 					auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
-											   {{lld::MinGW, &lld::mingw::link}});
+					                           {{lld::MinGW, &lld::mingw::link}});
 					if (result.retCode != 0) {
 						String staticCmdStr;
 						for (auto arg : allArgs) {
 							staticCmdStr += String(arg) + " ";
 						}
 						ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM MinGW' linker failed with status code " +
-									   std::to_string(result.retCode) + "\nThe command was: " + staticCmdStr +
-									   "\nThe linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM MinGW' linker failed with status code " +
+						               std::to_string(result.retCode) + "\nThe command was: " + staticCmdStr +
+						               "\nThe linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 				if (cfg->should_build_shared()) {
@@ -3090,17 +3090,17 @@ void Mod::bundle_modules(Ctx* ctx) {
 					linkerStdErr.flush();
 					SHOW("Linking Shared Library")
 					auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut,
-													 linkerStdErr, {{lld::MinGW, &lld::mingw::link}});
+					                                 linkerStdErr, {{lld::MinGW, &lld::mingw::link}});
 					if (resultShared.retCode != 0) {
 						String sharedCmdStr;
 						for (auto arg : allArgsShared) {
 							sharedCmdStr += String(arg) + " ";
 						}
 						ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM MinGW' linker failed with status code " +
-									   std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
-									   "\nThe linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM MinGW' linker failed with status code " +
+						               std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
+						               "\nThe linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 			} else if (ctx->clangTargetInfo->getTriple().isOSWindows()) {
@@ -3108,12 +3108,12 @@ void Mod::bundle_modules(Ctx* ctx) {
 				 *  Windows Linker
 				 */
 				// FIXME - Check if this should be used
-				auto msvcRes	  = find_windows_sdk_paths(ctx);
+				auto msvcRes      = find_windows_sdk_paths(ctx);
 				auto outSharedArg = "/OUT:" + outPathShared;
 
-				Vec<String>		 allArgs{"/OUT:" + outPath};
+				Vec<String>      allArgs{"/OUT:" + outPath};
 				Vec<const char*> allArgsShared{
-					"lld.link", "-flavor", "link", "/DLL", outSharedArg.c_str(),
+				    "lld.link", "-flavor", "link", "/DLL", outSharedArg.c_str(),
 				};
 
 				String libPathMSVC;
@@ -3157,11 +3157,11 @@ void Mod::bundle_modules(Ctx* ctx) {
 					allArgsShared.push_back(libPathStr.c_str());
 				} else if (!triple_is_equivalent(hostTriplet, ctx->clangTargetInfo->getTriple())) {
 					ctx->Error("The target triplet " + ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
-								   " is not compatible with the compiler's host triplet " +
-								   ctx->color(hostTriplet.getTriple()) + ". Please provide the " +
-								   ctx->color("--sysroot") +
-								   " parameter with the path to the SDK for the target platform",
-							   None);
+					               " is not compatible with the compiler's host triplet " +
+					               ctx->color(hostTriplet.getTriple()) + ". Please provide the " +
+					               ctx->color("--sysroot") +
+					               " parameter with the path to the SDK for the target platform",
+					           None);
 				}
 				for (auto& obj : objectFiles) {
 					allArgs.push_back(obj);
@@ -3171,10 +3171,10 @@ void Mod::bundle_modules(Ctx* ctx) {
 					auto llvmLibPath = find_executable("llvm-ar-17");
 					if (not llvmLibPath.has_value()) {
 						ctx->Error(
-							"Could not find " + ctx->color("llvm-ar-17") + " on the PATH. " + ctx->color("llvm-ar-17") +
-								" is the renamed version of " + ctx->color("llvm-ar") +
-								" utility, bundled with the QAT installation. Please check your installation of qat",
-							None);
+						    "Could not find " + ctx->color("llvm-ar-17") + " on the PATH. " + ctx->color("llvm-ar-17") +
+						        " is the renamed version of " + ctx->color("llvm-ar") +
+						        " utility, bundled with the QAT installation. Please check your installation of qat",
+						    None);
 					}
 					SHOW("Linking Static Library Windows")
 					auto llvmLibRes = run_command_get_stderr(llvmLibPath.value(), allArgs);
@@ -3184,10 +3184,10 @@ void Mod::bundle_modules(Ctx* ctx) {
 							staticCmdStr += arg + " ";
 						}
 						ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM Lib' program failed with status code " +
-									   std::to_string(llvmLibRes.first) + "\nThe command was: " + staticCmdStr +
-									   "\nThe error output is: " + llvmLibRes.second,
-								   None);
+						               " using the 'LLVM Lib' program failed with status code " +
+						               std::to_string(llvmLibRes.first) + "\nThe command was: " + staticCmdStr +
+						               "\nThe error output is: " + llvmLibRes.second,
+						           None);
 					}
 				}
 				if (cfg->should_build_shared()) {
@@ -3195,17 +3195,17 @@ void Mod::bundle_modules(Ctx* ctx) {
 					linkerStdErr.flush();
 					SHOW("Linking Shared Library")
 					auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut,
-													 linkerStdErr, {{lld::WinLink, &lld::coff::link}});
+					                                 linkerStdErr, {{lld::WinLink, &lld::coff::link}});
 					if (resultShared.retCode != 0) {
 						String sharedCmdStr;
 						for (auto arg : allArgsShared) {
 							sharedCmdStr += String(arg) + " ";
 						}
 						ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM Link (MSVC)' linker failed with status code " +
-									   std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
-									   "\nThe linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM Link (MSVC)' linker failed with status code " +
+						               std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
+						               "\nThe linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 			} else if (ctx->clangTargetInfo->getTriple().isOSBinFormatELF()) {
@@ -3215,25 +3215,25 @@ void Mod::bundle_modules(Ctx* ctx) {
 				SHOW("Outpath is " << outPath)
 				Vec<const char*> allArgs{"ld.lld", "-flavor", "gnu", "-r", "-o", outPath.c_str()};
 				Vec<const char*> allArgsShared{"ld.lld", "-flavor", "gnu", "-r", "-o", outPathShared.c_str()};
-				Vec<String>		 folderPaths;
-				Vec<String>		 staticPaths;
+				Vec<String>      folderPaths;
+				Vec<String>      staticPaths;
 				if (cfg->is_build_mode_release()) {
 					allArgs.push_back("--strip-debug");
 					allArgsShared.push_back("--strip-debug");
 				}
 				allArgsShared.push_back("-Bdynamic");
 				String libPathStr =
-					String("--library-path=\"").append(cfg->has_sysroot() ? cfg->get_sysroot() : "").append("\"");
+				    String("--library-path=\"").append(cfg->has_sysroot() ? cfg->get_sysroot() : "").append("\"");
 				if (cfg->has_sysroot()) {
 					allArgs.push_back(libPathStr.c_str());
 					allArgsShared.push_back(libPathStr.c_str());
 				} else if (!triple_is_equivalent(hostTriplet, ctx->clangTargetInfo->getTriple())) {
 					ctx->Error(
-						"The target triple " + ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
-							" is not compatible with the compiler's host triplet " +
-							ctx->color(hostTriplet.getTriple()) +
-							". Please provide the --sysroot parameter with the path to the SDK for the target platform",
-						None);
+					    "The target triple " + ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
+					        " is not compatible with the compiler's host triplet " +
+					        ctx->color(hostTriplet.getTriple()) +
+					        ". Please provide the --sysroot parameter with the path to the SDK for the target platform",
+					    None);
 				}
 				for (auto& obj : objectFiles) {
 					allArgs.push_back(obj.c_str());
@@ -3242,7 +3242,7 @@ void Mod::bundle_modules(Ctx* ctx) {
 				if (cfg->should_build_static()) {
 					SHOW("Linking Static Library ELF")
 					auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
-											   {{lld::Gnu, &lld::elf::link}});
+					                           {{lld::Gnu, &lld::elf::link}});
 					if (result.retCode != 0 || !stdErrStr.empty()) {
 						String staticCmdStr;
 						for (auto arg : allArgs) {
@@ -3250,10 +3250,10 @@ void Mod::bundle_modules(Ctx* ctx) {
 						}
 						SHOW("Linker failed")
 						ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM lld (ELF)' linker failed with status code " +
-									   std::to_string(result.retCode) + "\nThe command was: " + staticCmdStr +
-									   "\nThe linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM lld (ELF)' linker failed with status code " +
+						               std::to_string(result.retCode) + "\nThe command was: " + staticCmdStr +
+						               "\nThe linker's error output is: " + stdErrStr,
+						           None);
 					}
 					SHOW("Linker done for " << name.value)
 				}
@@ -3262,17 +3262,17 @@ void Mod::bundle_modules(Ctx* ctx) {
 					linkerStdErr.flush();
 					SHOW("Linking Shared Library")
 					auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut,
-													 linkerStdErr, {{lld::Gnu, &lld::elf::link}});
+					                                 linkerStdErr, {{lld::Gnu, &lld::elf::link}});
 					if (resultShared.retCode != 0) {
 						String sharedCmdStr;
 						for (auto arg : allArgsShared) {
 							sharedCmdStr += String(arg) + " ";
 						}
 						ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM lld (ELF)' linker failed with status code " +
-									   std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
-									   "\nThe linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM lld (ELF)' linker failed with status code " +
+						               std::to_string(resultShared.retCode) + "\nThe command was: " + sharedCmdStr +
+						               "\nThe linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 			} else if (ctx->clangTargetInfo->getTriple().isOSBinFormatWasm()) {
@@ -3284,8 +3284,8 @@ void Mod::bundle_modules(Ctx* ctx) {
 					allArgs.push_back(String("--library-path=\"").append(cfg->get_sysroot()).append("\"").c_str());
 				} else if (!hostTriplet.isWasm()) {
 					ctx->Error("Please provide the --sysroot parameter to build the library for the WASM target " +
-								   ctx->color(ctx->clangTargetInfo->getTriple().getTriple()),
-							   None);
+					               ctx->color(ctx->clangTargetInfo->getTriple().getTriple()),
+					           None);
 				}
 				Vec<String> staticCmdList;
 				for (auto& obj : objectFiles) {
@@ -3294,24 +3294,24 @@ void Mod::bundle_modules(Ctx* ctx) {
 				if (cfg->should_build_static()) {
 					SHOW("Linking Static Library WASM")
 					auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
-											   {{lld::Wasm, &lld::wasm::link}});
+					                           {{lld::Wasm, &lld::wasm::link}});
 					if (result.retCode != 0) {
 						String staticCmdStr;
 						for (auto arg : allArgs) {
 							staticCmdStr += String(arg) + " ";
 						}
 						ctx->Error("Building static WASM library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM WASM' linker failed with status code " +
-									   std::to_string(result.retCode) + +"\nThe command was: " + staticCmdStr +
-									   "\nThe linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM WASM' linker failed with status code " +
+						               std::to_string(result.retCode) + +"\nThe command was: " + staticCmdStr +
+						               "\nThe linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 				if (cfg->should_build_shared()) {
 					ctx->Error(
-						"Cannot build shared libraries for WASM for now. Please see link: " +
-							ctx->color("https://github.com/WebAssembly/tool-conventions/blob/main/DynamicLinking.md"),
-						None);
+					    "Cannot build shared libraries for WASM for now. Please see link: " +
+					        ctx->color("https://github.com/WebAssembly/tool-conventions/blob/main/DynamicLinking.md"),
+					    None);
 				}
 			} else if (ctx->clangTargetInfo->getTriple().isOSBinFormatMachO()) {
 				/**
@@ -3319,15 +3319,15 @@ void Mod::bundle_modules(Ctx* ctx) {
 				 */
 				Vec<const char*> allArgs{"ld64.lld", "-flavor", "darwin", "-o", outPath.c_str()};
 				Vec<const char*> allArgsShared{"ld64.lld", "-flavor", "darwin", "-o", outPathShared.c_str()};
-				Vec<String>		 staticCmdList;
-				Vec<String>		 sharedCmdList;
+				Vec<String>      staticCmdList;
+				Vec<String>      sharedCmdList;
 				allArgsShared.push_back("-dynamic");
 				allArgs.push_back("-arch");
 				allArgsShared.push_back("-arch");
 				auto archStr =
-					(cfg->has_target_triple() ? ctx->clangTargetInfo->getTriple() : llvm::Triple(LLVM_HOST_TRIPLE))
-						.getArchName()
-						.str();
+				    (cfg->has_target_triple() ? ctx->clangTargetInfo->getTriple() : llvm::Triple(LLVM_HOST_TRIPLE))
+				        .getArchName()
+				        .str();
 				allArgs.push_back(archStr.c_str());
 				allArgsShared.push_back(archStr.c_str());
 				auto sysrootStr = cfg->has_sysroot() ? cfg->get_sysroot() : "";
@@ -3345,15 +3345,15 @@ void Mod::bundle_modules(Ctx* ctx) {
 						allArgsShared.push_back(sysrootStr.c_str());
 					} else {
 						ctx->Error(
-							"The compiler's host triplet is " + ctx->color(LLVM_HOST_TRIPLE) +
-								(hostTriplet.isMacOSX() ? "" : " which is not MacOS") + ", but the target triplet is " +
-								ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
-								" which is identified to be for a MacOS platform. Please provide the --sysroot parameter." +
-								(hostTriplet.isTargetMachineMac()
-									 ? (" The default value that could have been used for the sysroot is " +
-										ctx->color(MACOS_DEFAULT_SDK_PATH) + " which does not exist")
-									 : ""),
-							None);
+						    "The compiler's host triplet is " + ctx->color(LLVM_HOST_TRIPLE) +
+						        (hostTriplet.isMacOSX() ? "" : " which is not MacOS") + ", but the target triplet is " +
+						        ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
+						        " which is identified to be for a MacOS platform. Please provide the --sysroot parameter." +
+						        (hostTriplet.isTargetMachineMac()
+						             ? (" The default value that could have been used for the sysroot is " +
+						                ctx->color(MACOS_DEFAULT_SDK_PATH) + " which does not exist")
+						             : ""),
+						    None);
 					}
 				}
 				for (auto& obj : objectFiles) {
@@ -3362,13 +3362,13 @@ void Mod::bundle_modules(Ctx* ctx) {
 				if (cfg->should_build_static()) {
 					SHOW("Linking Static Library Mac")
 					auto result = lld::lldMain(llvm::ArrayRef<const char*>(allArgs), linkerStdOut, linkerStdErr,
-											   {{lld::Darwin, &lld::macho::link}});
+					                           {{lld::Darwin, &lld::macho::link}});
 					if (result.retCode != 0) {
 						ctx->Error("Building static library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM ld64 (MacOS)' linker failed with status code " +
-									   ctx->color(std::to_string(result.retCode)) +
-									   ". The linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM ld64 (MacOS)' linker failed with status code " +
+						               ctx->color(std::to_string(result.retCode)) +
+						               ". The linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 				if (cfg->should_build_shared()) {
@@ -3376,18 +3376,18 @@ void Mod::bundle_modules(Ctx* ctx) {
 					linkerStdErr.flush();
 					SHOW("Linking Shared Library Mac")
 					auto resultShared = lld::lldMain(llvm::ArrayRef<const char*>(allArgsShared), linkerStdOut,
-													 linkerStdErr, {{lld::Darwin, &lld::macho::link}});
+					                                 linkerStdErr, {{lld::Darwin, &lld::macho::link}});
 					if (resultShared.retCode != 0) {
 						ctx->Error("Building shared library for module " + ctx->color(filePath.string()) +
-									   " using the 'LLVM ld64 (MacOS)' linker failed with status code " +
-									   ctx->color(std::to_string(resultShared.retCode)) +
-									   ". The linker's error output is: " + stdErrStr,
-								   None);
+						               " using the 'LLVM ld64 (MacOS)' linker failed with status code " +
+						               ctx->color(std::to_string(resultShared.retCode)) +
+						               ". The linker's error output is: " + stdErrStr,
+						           None);
 					}
 				}
 			} else {
 				if (cfg->has_linker_path()) {
-					auto		cmd = cfg->get_linker_path();
+					auto        cmd = cfg->get_linker_path();
 					Vec<String> cmdArgs;
 					cmdArgs.push_back("-o");
 					cmdArgs.push_back(outPath);
@@ -3395,16 +3395,16 @@ void Mod::bundle_modules(Ctx* ctx) {
 					auto cmdRes = run_command_get_output(cmd, cmdArgs);
 					if (cmdRes.first) {
 						ctx->Error("Linking library failed for module " + ctx->color(name.value) + " in " +
-									   ctx->color(filePath.string()) +
-									   ". Please note that the linker path was provided via the cli The output is\n" +
-									   cmdRes.second,
-								   None);
+						               ctx->color(filePath.string()) +
+						               ". Please note that the linker path was provided via the cli The output is\n" +
+						               cmdRes.second,
+						           None);
 					}
 				} else {
 					ctx->Error("Could not find the linker to be used for the target " +
-								   ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
-								   ". Please provide the --linker argument with the path to the linker to use",
-							   None);
+					               ctx->color(ctx->clangTargetInfo->getTriple().getTriple()) +
+					               ". Please provide the --linker argument with the path to the linker to use",
+					           None);
 				}
 			}
 		}
@@ -3414,8 +3414,8 @@ void Mod::bundle_modules(Ctx* ctx) {
 
 fs::path Mod::get_resolved_output_path(const String& extension, Ctx* ctx) {
 	auto* config = cli::Config::get();
-	auto  fPath	 = filePath;
-	auto  out	 = fPath.replace_extension(extension);
+	auto  fPath  = filePath;
+	auto  out    = fPath.replace_extension(extension);
 	if (config->has_output_path()) {
 		out = (config->get_output_path() / filePath.lexically_relative(basePath).remove_filename());
 		std::error_code errorCode;
@@ -3424,8 +3424,8 @@ fs::path Mod::get_resolved_output_path(const String& extension, Ctx* ctx) {
 			out = out / fPath.filename();
 		} else {
 			ctx->Error("Could not create the parent directory of the output files with path: " +
-						   ctx->color(out.string()) + " with error: " + errorCode.message(),
-					   None);
+			               ctx->color(out.string()) + " with error: " + errorCode.message(),
+			           None);
 		}
 	}
 	return out;
@@ -3433,18 +3433,18 @@ fs::path Mod::get_resolved_output_path(const String& extension, Ctx* ctx) {
 
 void Mod::export_json_from_ast(Ctx* ctx) {
 	if ((moduleType == ModuleType::file) || rootLib) {
-		auto*		   cfg	  = cli::Config::get();
-		auto		   result = Json();
+		auto*          cfg    = cli::Config::get();
+		auto           result = Json();
 		Vec<JsonValue> contents;
 		for (auto* node : nodes) {
 			contents.push_back(node->to_json());
 		}
 		result["contents"] = contents;
 		std::fstream jsonStream;
-		auto		 jsonPath = (cfg->has_output_path() ? cfg->get_output_path() : basePath) / "AST" /
-						filePath.lexically_relative(basePath)
-							.replace_filename(filePath.filename().string())
-							.replace_extension("json");
+		auto         jsonPath = (cfg->has_output_path() ? cfg->get_output_path() : basePath) / "AST" /
+		                filePath.lexically_relative(basePath)
+		                    .replace_filename(filePath.filename().string())
+		                    .replace_extension("json");
 		std::error_code errorCode;
 		fs::create_directories(jsonPath.parent_path(), errorCode);
 		if (!errorCode) {
@@ -3454,11 +3454,11 @@ void Mod::export_json_from_ast(Ctx* ctx) {
 				jsonStream.close();
 			} else {
 				ctx->Error("Output file could not be opened for writing the JSON representation",
-						   {get_parent_file()->filePath});
+				           {get_parent_file()->filePath});
 			}
 		} else {
 			ctx->Error("Could not create parent directories for the JSON file for exporting AST",
-					   {get_parent_file()->filePath});
+			           {get_parent_file()->filePath});
 		}
 	} else {
 		SHOW("Module type not suitable for exporting AST")
@@ -3472,55 +3472,55 @@ llvm::Function* Mod::link_intrinsic(IntrinsicID intr) {
 	switch (intr) {
 		case IntrinsicID::varArgStart:
 			return llvm::Intrinsic::getDeclaration(
-				llvmModule, llvm::Intrinsic::vastart,
-				{llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
+			    llvmModule, llvm::Intrinsic::vastart,
+			    {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
 		case IntrinsicID::varArgCopy:
 			return llvm::Intrinsic::getDeclaration(
-				llvmModule, llvm::Intrinsic::vacopy,
-				{llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
+			    llvmModule, llvm::Intrinsic::vacopy,
+			    {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
 		case IntrinsicID::varArgEnd:
 			return llvm::Intrinsic::getDeclaration(
-				llvmModule, llvm::Intrinsic::vaend,
-				{llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
+			    llvmModule, llvm::Intrinsic::vaend,
+			    {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
 		case IntrinsicID::vectorScale:
 			return llvm::Intrinsic::getDeclaration(llvmModule, llvm::Intrinsic::vscale,
-												   {llvm::IntegerType::get(llCtx, 64u)});
+			                                       {llvm::IntegerType::get(llCtx, 64u)});
 	}
 }
 
 String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRange rangeVal) {
 	if (cli::Config::get()->is_freestanding()) {
 		if (has_provided_function(nval)) {
-			auto resFn		= get_provided_function(nval);
+			auto resFn      = get_provided_function(nval);
 			auto existingFn = llvmModule->getFunction(resFn->get_llvm_function()->getName());
 			if (not existingFn) {
 				llvm::Function::Create(resFn->get_llvm_function()->getFunctionType(),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage,
-									   resFn->get_llvm_function()->getName(), llvmModule);
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+				                       resFn->get_llvm_function()->getName(), llvmModule);
 				if (this != resFn->get_module()) {
 					dependencies.insert(resFn->get_module());
 				}
 				return resFn->get_llvm_function()->getName().str();
 			} else if (existingFn->getFunctionType() != resFn->get_llvm_function()->getFunctionType()) {
-				String					 fnTyVal;
+				String                   fnTyVal;
 				llvm::raw_string_ostream fnTypeStr(fnTyVal);
 				existingFn->getFunctionType()->print(fnTypeStr);
 				irCtx->Error(
-					"The internal dependency " + irCtx->color(existingFn->getName().str()) +
-						" is already linked to the current module, and has an unexpected signature. The llvm signature of the existing function in the module is " +
-						irCtx->color(fnTyVal) + " and the expected signature is " +
-						irCtx->color(resFn->get_ir_type()->to_string()) + ". Note that the " +
-						irCtx->color("--freestanding") +
-						" flag was provided, which leads to the assumption that such dependencies are not present",
-					std::move(rangeVal));
+				    "The internal dependency " + irCtx->color(existingFn->getName().str()) +
+				        " is already linked to the current module, and has an unexpected signature. The llvm signature of the existing function in the module is " +
+				        irCtx->color(fnTyVal) + " and the expected signature is " +
+				        irCtx->color(resFn->get_ir_type()->to_string()) + ". Note that the " +
+				        irCtx->color("--freestanding") +
+				        " flag was provided, which leads to the assumption that such dependencies are not present",
+				    std::move(rangeVal));
 			}
 		} else {
 			irCtx->Error(
-				"The internal dependency " + internal_dependency_to_string(nval) +
-					" could not be automatically linked in a freestanding environment. The " +
-					irCtx->color("--freestanding") +
-					" flag was provided, which means that such dependencies are assumed to not be present. You can provide a replacement for such dependencies on your own, or remove logic that uses these dependencies in such scenarios",
-				rangeVal);
+			    "The internal dependency " + internal_dependency_to_string(nval) +
+			        " could not be automatically linked in a freestanding environment. The " +
+			        irCtx->color("--freestanding") +
+			        " flag was provided, which means that such dependencies are assumed to not be present. You can provide a replacement for such dependencies on your own, or remove logic that uses these dependencies in such scenarios",
+			    rangeVal);
 		}
 	}
 	// FIXME - Use integer widths according to the specification and not the same
@@ -3530,8 +3530,8 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::printf: {
 			if (!llvmModule->getFunction("printf")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-															   {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
+				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
 			}
 			return "printf";
 		}
@@ -3539,46 +3539,46 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			if (!llvmModule->getFunction("malloc")) {
 				SHOW("Creating malloc function")
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
-															   {llvm::Type::getInt64Ty(llCtx)}, false),
-									   llvm::GlobalValue::ExternalLinkage, "malloc", llvmModule);
+				                                               {llvm::Type::getInt64Ty(llCtx)}, false),
+				                       llvm::GlobalValue::ExternalLinkage, "malloc", llvmModule);
 			}
 			return "malloc";
 		}
 		case InternalDependency::free: {
 			if (!llvmModule->getFunction("free")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-															   {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
+				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
 			}
 			return "free";
 		}
 		case InternalDependency::realloc: {
 			if (!llvmModule->getFunction("realloc")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
-															   {llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
-																llvm::Type::getInt64Ty(llCtx)},
-															   false),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage, "realloc", llvmModule);
+				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
+				                                                llvm::Type::getInt64Ty(llCtx)},
+				                                               false),
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "realloc", llvmModule);
 			}
 			return "realloc";
 		}
 		case InternalDependency::pthreadCreate: {
 			if (!llvmModule->getFunction("pthread_create")) {
 				llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(llCtx)->getPointerTo();
-				llvm::Type* voidPtrTy	 = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
-				auto*		pthreadFnTy	 = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
+				llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
+				auto*       pthreadFnTy  = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
 				if (!llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
 					llvm::StructType::create(
-						llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
-						"pthread_attr_t");
+					    llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
+					    "pthread_attr_t");
 				}
 				llvm::Function::Create(
-					llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-											{pthreadPtrTy,
-											 llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo(),
-											 pthreadFnTy->getPointerTo(), voidPtrTy},
-											false),
-					llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_create", llvmModule);
+				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
+				                            {pthreadPtrTy,
+				                             llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo(),
+				                             pthreadFnTy->getPointerTo(), voidPtrTy},
+				                            false),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_create", llvmModule);
 				linkPthread = true;
 			}
 			return "pthread_create";
@@ -3588,8 +3588,8 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 				llvm::Type* pthreadTy = llvm::Type::getInt64Ty(llCtx);
 				llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-															   {pthreadTy, voidPtrTy->getPointerTo()}, false),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
+				                                               {pthreadTy, voidPtrTy->getPointerTo()}, false),
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
 				linkPthread = true;
 			}
 			return "pthread_join";
@@ -3597,8 +3597,8 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::pthreadExit: {
 			if (!llvmModule->getFunction("pthread_exit")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-															   {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
+				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
 				linkPthread = true;
 			}
 			return "pthread_exit";
@@ -3606,12 +3606,12 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::windowsExitThread: {
 			if (!llvmModule->getGlobalVariable("__imp_ExitThread")) {
 				new llvm::GlobalVariable(
-					*llvmModule,
-					llvm::PointerType::get(
-						llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt32Ty(llCtx)}, false),
-						0u),
-					true, llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, "__imp_ExitThread", nullptr,
-					llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
+				    *llvmModule,
+				    llvm::PointerType::get(
+				        llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt32Ty(llCtx)}, false),
+				        0u),
+				    true, llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, "__imp_ExitThread", nullptr,
+				    llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
 			}
 			return "__imp_ExitThread";
 		}
@@ -3619,14 +3619,14 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			if (!llvmModule->getFunction("pthread_attr_init")) {
 				if (!llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
 					llvm::StructType::create(
-						llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
-						"pthread_attr_t");
+					    llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
+					    "pthread_attr_t");
 				}
 				llvm::Function::Create(
-					llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-											{llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo()},
-											false),
-					llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_attr_init", llvmModule);
+				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
+				                            {llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo()},
+				                            false),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_attr_init", llvmModule);
 				linkPthread = true;
 			}
 			return "pthread_attr_init";
@@ -3634,8 +3634,8 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::exitProgram: {
 			if (not llvmModule->getFunction("exit")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-															   {NativeType::get_int(irCtx)->get_llvm_type()}, false),
-									   llvm::GlobalValue::LinkageTypes::ExternalLinkage, "exit", llvmModule);
+				                                               {NativeType::get_int(irCtx)->get_llvm_type()}, false),
+				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "exit", llvmModule);
 			}
 			return "exit";
 		}

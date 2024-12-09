@@ -25,7 +25,7 @@
 namespace qat::ir {
 
 ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
-										FileRange valueRange) {
+                                        FileRange valueRange) {
 	if (expectedType->is_same(value->get_ir_type())) {
 		if (value->is_ghost_reference()) {
 			auto valueType = value->get_ir_type();
@@ -34,30 +34,30 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 				if (not valueType->is_trivially_copyable()) {
 					if (not value->is_variable()) {
 						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
-								   valueRange);
+						           valueRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(valueType->get_llvm_type()),
-													value->get_llvm());
+					                                value->get_llvm());
 				}
 				return ir::Value::get(loadRes, valueType, false);
 			} else {
 				ctx->Error("This expression is of type " + ctx->color(valueType->to_string()) +
-							   " which is not trivially copyable or movable. Please use " + ctx->color("'copy") +
-							   " or " + ctx->color("'move") + " accordingly",
-						   valueRange);
+				               " which is not trivially copyable or movable. Please use " + ctx->color("'copy") +
+				               " or " + ctx->color("'move") + " accordingly",
+				           valueRange);
 			}
 		} else {
 			return value;
 		}
 	} else if ((expectedType->is_reference() && expectedType->as_reference()->is_same(value->get_ir_type()) &&
-				(value->is_ghost_reference() &&
-				 (expectedType->as_reference()->isSubtypeVariable() ? value->is_variable() : true))) ||
-			   (expectedType->is_reference() && value->is_reference() &&
-				expectedType->as_reference()->get_subtype()->is_same(
-					value->get_ir_type()->as_reference()->get_subtype()) &&
-				(expectedType->as_reference()->isSubtypeVariable()
-					 ? value->get_ir_type()->as_reference()->isSubtypeVariable()
-					 : true))) {
+	            (value->is_ghost_reference() &&
+	             (expectedType->as_reference()->isSubtypeVariable() ? value->is_variable() : true))) ||
+	           (expectedType->is_reference() && value->is_reference() &&
+	            expectedType->as_reference()->get_subtype()->is_same(
+	                value->get_ir_type()->as_reference()->get_subtype()) &&
+	            (expectedType->as_reference()->isSubtypeVariable()
+	                 ? value->get_ir_type()->as_reference()->isSubtypeVariable()
+	                 : true))) {
 		if (value->is_reference()) {
 			value->load_ghost_reference(ctx->irCtx->builder);
 		}
@@ -70,69 +70,69 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 			if (!memType->is_trivially_copyable()) {
 				if (!value->get_ir_type()->as_reference()->isSubtypeVariable()) {
 					ctx->Error("This expression is of type " + ctx->color(value->get_ir_type()->to_string()) +
-								   " which is a reference without variability and hence cannot be trivially moved from",
-							   valueRange);
+					               " which is a reference without variability and hence cannot be trivially moved from",
+					           valueRange);
 				}
 			}
 			return ir::Value::get(loadRes, memType, false);
 		} else {
 			ctx->Error("This expression is a reference of type " + ctx->color(memType->to_string()) +
-						   " which is not trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
-						   ctx->color("'move") + " accordingly",
-					   valueRange);
+			               " which is not trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
+			               ctx->color("'move") + " accordingly",
+			           valueRange);
 		}
 	} else {
 		ctx->Error("Expected expression of type " + ctx->color(expectedType->to_string()) +
-					   ", but the provided expression is of type " + ctx->color(value->get_ir_type()->to_string()),
-				   valueRange);
+		               ", but the provided expression is of type " + ctx->color(value->get_ir_type()->to_string()),
+		           valueRange);
 	}
 	return nullptr;
 }
 
 ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange) {
 	if (ir::StdLib::is_std_lib_found() &&
-		ir::StdLib::stdLib->has_generic_function(isSigned ? "signed_to_string" : "unsigned_to_string",
-												 AccessInfo::GetPrivileged())) {
-		auto stringTy	   = ir::StdLib::get_string_type();
+	    ir::StdLib::stdLib->has_generic_function(isSigned ? "signed_to_string" : "unsigned_to_string",
+	                                             AccessInfo::GetPrivileged())) {
+		auto stringTy      = ir::StdLib::get_string_type();
 		auto convGenericFn = ir::StdLib::stdLib->get_generic_function(
-			isSigned ? "signed_to_string" : "unsigned_to_string", AccessInfo::GetPrivileged());
+		    isSigned ? "signed_to_string" : "unsigned_to_string", AccessInfo::GetPrivileged());
 		auto intTy = value->is_reference() ? value->get_ir_type()->as_reference()->get_subtype() : value->get_ir_type();
 		auto convFn =
-			convGenericFn->fill_generics({ir::GenericToFill::GetType(intTy, fileRange)}, ctx->irCtx, fileRange);
+		    convGenericFn->fill_generics({ir::GenericToFill::GetType(intTy, fileRange)}, ctx->irCtx, fileRange);
 		if (value->is_reference() || value->is_ghost_reference()) {
 			value->load_ghost_reference(ctx->irCtx->builder);
 			if (value->is_reference()) {
 				value = ir::Value::get(ctx->irCtx->builder.CreateLoad(intTy->get_llvm_type(), value->get_llvm()), intTy,
-									   false);
+				                       false);
 			}
 		}
 		auto strRes = convFn->call(ctx->irCtx, {value->get_llvm()}, None, ctx->mod);
 		ctx->irCtx->builder.CreateStore(
-			strRes->get_llvm(), ctx->get_fn()
-									->get_block()
-									->new_value(ctx->get_fn()->get_random_alloca_name(), stringTy, true, fileRange)
-									->get_llvm());
+		    strRes->get_llvm(), ctx->get_fn()
+		                            ->get_block()
+		                            ->new_value(ctx->get_fn()->get_random_alloca_name(), stringTy, true, fileRange)
+		                            ->get_llvm());
 		return strRes;
 	} else {
 		ctx->Error("Cannot convert integer of type " +
-					   ctx->color(value->is_reference()
-									  ? value->get_ir_type()->as_reference()->get_subtype()->to_string()
-									  : value->get_ir_type()->to_string()) +
-					   " to " + ctx->color("std:String") + " as the standard library function " +
-					   ctx->color(isSigned ? "signed_to_string:[T]" : "unsigned_to_string:[T]") + " could not be found",
-				   fileRange);
+		               ctx->color(value->is_reference()
+		                              ? value->get_ir_type()->as_reference()->get_subtype()->to_string()
+		                              : value->get_ir_type()->to_string()) +
+		               " to " + ctx->color("std:String") + " as the standard library function " +
+		               ctx->color(isSigned ? "signed_to_string:[T]" : "unsigned_to_string:[T]") + " could not be found",
+		           fileRange);
 	}
 	return nullptr;
 }
 
 Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
-													 FileRange fileRange) {
+                                                     FileRange fileRange) {
 	Vec<llvm::Value*> printVals;
-	String			  formatString;
+	String            formatString;
 
 	std::function<void(ir::Value*, FileRange)> formatValue = [&](ir::Value* val, FileRange valRange) {
 		auto valTy =
-			val->get_ir_type()->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
+		    val->get_ir_type()->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
 		if (valTy->is_string_slice()) {
 			formatString += "%.*s";
 			if (val->is_prerun_value()) {
@@ -140,17 +140,17 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(val->get_llvm_constant()->getAggregateElement(0u));
 			} else if (val->is_ghost_reference() || val->is_reference()) {
 				auto* strTy =
-					val->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
+				    val->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
 				if (val->is_reference()) {
 					val->load_ghost_reference(ctx->irCtx->builder);
 				}
 				printVals.push_back(ctx->irCtx->builder.CreateLoad(
-					llvm::Type::getInt64Ty(ctx->irCtx->llctx),
-					ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 1u)));
+				    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 1u)));
 				printVals.push_back(ctx->irCtx->builder.CreateLoad(
-					llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-						->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
-					ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 0u)));
+				    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+				        ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 0u)));
 			} else {
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}));
@@ -161,18 +161,18 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				val->load_ghost_reference(ctx->irCtx->builder);
 				if (val->is_reference()) {
 					val = ir::Value::get(ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), val->get_llvm()),
-										 val->get_ir_type()->as_reference()->get_subtype(), false);
+					                     val->get_ir_type()->as_reference()->get_subtype(), false);
 				}
 			}
 			printVals.push_back(val->get_llvm());
 		} else if (valTy->is_integer() ||
-				   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_integer())) {
+		           (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_integer())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
 				auto intTy =
-					valTy->is_integer() ? valTy->as_integer() : valTy->as_native_type()->get_subtype()->as_integer();
+				    valTy->is_integer() ? valTy->as_integer() : valTy->as_native_type()->get_subtype()->as_integer();
 				// auto strVal =
 				//     int_to_std_string(true, ctx, ir::Value::get(val->get_llvm(), intTy, false),
 				//     valRange);
@@ -195,14 +195,14 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(intVal);
 			}
 		} else if (valTy->is_unsigned_integer() ||
-				   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
+		           (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
 				auto uintTy = valTy->is_unsigned_integer()
-								  ? valTy->as_unsigned_integer()
-								  : valTy->as_native_type()->get_subtype()->as_unsigned_integer();
+				                  ? valTy->as_unsigned_integer()
+				                  : valTy->as_native_type()->get_subtype()->as_unsigned_integer();
 				// auto strVal =
 				//     int_to_std_string(false, ctx, ir::Value::get(val->get_llvm(), uintTy, false),
 				//     valRange);
@@ -220,19 +220,19 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				}
 				if (uintTy->get_bitwidth() < 64u) {
 					intVal =
-						ctx->irCtx->builder.CreateIntCast(intVal, llvm::Type::getInt64Ty(ctx->irCtx->llctx), false);
+					    ctx->irCtx->builder.CreateIntCast(intVal, llvm::Type::getInt64Ty(ctx->irCtx->llctx), false);
 				}
 				formatString += "%u";
 				printVals.push_back(intVal);
 			}
 		} else if (valTy->is_float() ||
-				   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_float())) {
+		           (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_float())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
 				auto floatTy =
-					valTy->is_float() ? valTy->as_float() : valTy->as_native_type()->get_subtype()->as_float();
+				    valTy->is_float() ? valTy->as_float() : valTy->as_native_type()->get_subtype()->as_float();
 				llvm::Value* floatVal = nullptr;
 				if (val->is_ghost_reference() || val->is_reference()) {
 					if (val->is_reference()) {
@@ -259,25 +259,25 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 							val->load_ghost_reference(ctx->irCtx->builder);
 						}
 						val = ir::Value::get(
-							ctx->irCtx->builder.CreateLoad(
-								valTy->as_mark()->get_subtype()->get_llvm_type()->getPointerTo(
-									ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
-								ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u)),
-							ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false, MarkOwner::of_anonymous(),
-											  false, ctx->irCtx),
-							false);
+						    ctx->irCtx->builder.CreateLoad(
+						        valTy->as_mark()->get_subtype()->get_llvm_type()->getPointerTo(
+						            ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+						        ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u)),
+						    ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false, MarkOwner::of_anonymous(),
+						                      false, ctx->irCtx),
+						    false);
 					} else {
 						val = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
-											 ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false,
-															   MarkOwner::of_anonymous(), false, ctx->irCtx),
-											 false);
+						                     ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false,
+						                                       MarkOwner::of_anonymous(), false, ctx->irCtx),
+						                     false);
 					}
 				} else {
 					if (val->is_reference() || val->is_ghost_reference()) {
 						val->load_ghost_reference(ctx->irCtx->builder);
 						if (val->is_reference()) {
 							val = ir::Value::get(
-								ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), val->get_llvm()), valTy, false);
+							    ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), val->get_llvm()), valTy, false);
 						}
 					}
 				}
@@ -294,23 +294,23 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subVal = val->get_llvm();
 				subVal =
-					(val->is_reference() || val->is_ghost_reference())
-						? ctx->irCtx->builder.CreateStructGEP(subTypes.at(i)->get_llvm_type(), subVal, i)
-						: (val->is_prerun_value() ? val->get_llvm_constant()->getAggregateElement(i)
-												  : ctx->irCtx->builder.CreateExtractValue(subVal, {(unsigned int)i}));
+				    (val->is_reference() || val->is_ghost_reference())
+				        ? ctx->irCtx->builder.CreateStructGEP(subTypes.at(i)->get_llvm_type(), subVal, i)
+				        : (val->is_prerun_value() ? val->get_llvm_constant()->getAggregateElement(i)
+				                                  : ctx->irCtx->builder.CreateExtractValue(subVal, {(unsigned int)i}));
 				if (subTypes.at(i)->is_reference() && (val->is_reference() || val->is_ghost_reference())) {
 					subVal = ctx->irCtx->builder.CreateLoad(subTypes.at(i)->get_llvm_type(), subVal);
 				}
 				formatValue(ir::Value::get(subVal,
-										   (val->is_reference() || val->is_ghost_reference())
-											   ? ir::ReferenceType::get(
-													 val->is_reference()
-														 ? val->get_ir_type()->as_reference()->isSubtypeVariable()
-														 : val->is_variable(),
-													 subTypes.at(i), ctx->irCtx)
-											   : subTypes.at(i),
-										   val->is_variable()),
-							valRange);
+				                           (val->is_reference() || val->is_ghost_reference())
+				                               ? ir::ReferenceType::get(
+				                                     val->is_reference()
+				                                         ? val->get_ir_type()->as_reference()->isSubtypeVariable()
+				                                         : val->is_variable(),
+				                                     subTypes.at(i), ctx->irCtx)
+				                               : subTypes.at(i),
+				                           val->is_variable()),
+				            valRange);
 				if (i != (subTypes.size() - 1)) {
 					formatString += "; ";
 				}
@@ -318,10 +318,10 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			formatString += ")";
 			if (val->is_value()) {
 				ctx->irCtx->builder.CreateStore(
-					val->get_llvm(), ctx->get_fn()
-										 ->get_block()
-										 ->new_value(ctx->get_fn()->get_random_alloca_name(), valTy, true, valRange)
-										 ->get_llvm());
+				    val->get_llvm(), ctx->get_fn()
+				                         ->get_block()
+				                         ->new_value(ctx->get_fn()->get_random_alloca_name(), valTy, true, valRange)
+				                         ->get_llvm());
 			}
 		} else if (valTy->is_array()) {
 			formatString += "[";
@@ -329,27 +329,27 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			if (valTy->as_array()->get_length() > 0) {
 				for (usize i = 0; i < valTy->as_array()->get_length(); i++) {
 					auto* subVal = (val->is_reference() || val->is_ghost_reference())
-									   ? ctx->irCtx->builder.CreateInBoundsGEP(
-											 valTy->get_llvm_type(), val->get_llvm(),
-											 // TODO - Change index type to usize llvm equivalent
-											 {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 0u),
-											  llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), i)})
-									   : (val->is_prerun_value()
-											  ? val->get_llvm_constant()->getAggregateElement(i)
-											  : ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {(u32)i}));
+					                   ? ctx->irCtx->builder.CreateInBoundsGEP(
+					                         valTy->get_llvm_type(), val->get_llvm(),
+					                         // TODO - Change index type to usize llvm equivalent
+					                         {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 0u),
+					                          llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), i)})
+					                   : (val->is_prerun_value()
+					                          ? val->get_llvm_constant()->getAggregateElement(i)
+					                          : ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {(u32)i}));
 					if (subType->is_reference() && (val->is_reference() || val->is_ghost_reference())) {
 						subVal = ctx->irCtx->builder.CreateLoad(subType->get_llvm_type(), subVal);
 					}
 					formatValue(ir::Value::get(subVal,
-											   (val->is_reference() || val->is_ghost_reference())
-												   ? (ir::ReferenceType::get(
-														 val->is_reference()
-															 ? val->get_ir_type()->as_reference()->isSubtypeVariable()
-															 : val->is_variable(),
-														 subType, ctx->irCtx))
-												   : subType,
-											   val->is_variable()),
-								valRange);
+					                           (val->is_reference() || val->is_ghost_reference())
+					                               ? (ir::ReferenceType::get(
+					                                     val->is_reference()
+					                                         ? val->get_ir_type()->as_reference()->isSubtypeVariable()
+					                                         : val->is_variable(),
+					                                     subType, ctx->irCtx))
+					                               : subType,
+					                           val->is_variable()),
+					            valRange);
 					if (i != (valTy->as_array()->get_length() - 1)) {
 						formatString += ", ";
 					}
@@ -358,14 +358,14 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			formatString += "]";
 		} else {
 			if ((!val->is_prerun_value()) && valTy->is_expanded() && ir::StdLib::is_std_lib_found() &&
-				ir::StdLib::has_string_type() &&
-				valTy->as_expanded()->has_to_convertor(ir::StdLib::get_string_type())) {
+			    ir::StdLib::has_string_type() &&
+			    valTy->as_expanded()->has_to_convertor(ir::StdLib::get_string_type())) {
 				auto stringTy = ir::StdLib::get_string_type();
-				auto eTy	  = valTy->as_expanded();
-				auto toFn	  = eTy->get_to_convertor(stringTy);
+				auto eTy      = valTy->as_expanded();
+				auto toFn     = eTy->get_to_convertor(stringTy);
 				if (!val->is_reference() && !val->is_ghost_reference()) {
 					auto candVal = ctx->get_fn()->get_block()->new_value(ctx->get_fn()->get_random_alloca_name(), valTy,
-																		 true, valRange);
+					                                                     true, valRange);
 					ctx->irCtx->builder.CreateStore(val->get_llvm(), candVal->get_llvm());
 					val = candVal;
 				} else if (val->is_reference()) {
@@ -376,9 +376,9 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(stringVal->get_llvm(), {1u}));
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(stringVal->get_llvm(), {0u, 0u}));
 				(void)ctx->get_fn()->get_block()->new_value(ctx->get_fn()->get_random_alloca_name(), stringTy, false,
-															valRange);
+				                                            valRange);
 			} else if (!val->is_prerun_value() && ir::StdLib::is_std_lib_found() && ir::StdLib::has_string_type() &&
-					   valTy->is_same(ir::StdLib::get_string_type())) {
+			           valTy->is_same(ir::StdLib::get_string_type())) {
 				auto stringTy = ir::StdLib::get_string_type();
 				if (val->is_reference() || val->is_ghost_reference()) {
 					if (val->is_reference()) {
@@ -386,24 +386,24 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 					}
 					formatString += "%.*s";
 					printVals.push_back(ctx->irCtx->builder.CreateLoad(
-						ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(),
-						ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 1u)));
+					    ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(),
+					    ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 1u)));
 					printVals.push_back(ctx->irCtx->builder.CreateLoad(
-						llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-							->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
-						ctx->irCtx->builder.CreateStructGEP(
-							stringTy->get_llvm_type()->getStructElementType(0u),
-							ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 0u), 0u)));
+					    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+					        ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+					    ctx->irCtx->builder.CreateStructGEP(
+					        stringTy->get_llvm_type()->getStructElementType(0u),
+					        ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 0u), 0u)));
 				} else {
 					formatString += "%.*s";
 					printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
 					printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u, 0u}));
 					ctx->irCtx->builder.CreateStore(val->get_llvm(),
-													ctx->get_fn()
-														->get_block()
-														->new_value(ctx->get_fn()->get_random_alloca_name(),
-																	ir::StdLib::get_string_type(), true, valRange)
-														->get_llvm());
+					                                ctx->get_fn()
+					                                    ->get_block()
+					                                    ->new_value(ctx->get_fn()->get_random_alloca_name(),
+					                                                ir::StdLib::get_string_type(), true, valRange)
+					                                    ->get_llvm());
 				}
 			} else {
 				ctx->Error("Cannot format expression of type " + ctx->color(valTy->to_string()), valRange);
@@ -421,46 +421,46 @@ void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal
 	auto triple = ctx->irCtx->clangTargetInfo->getTriple();
 	if (triple.isWindowsMSVCEnvironment()) {
 		auto exitFnName =
-			ctx->mod->link_internal_dependency(InternalDependency::windowsExitThread, ctx->irCtx, rangeVal);
-		auto exitThreadPtr	= ctx->mod->get_llvm_module()->getGlobalVariable(exitFnName);
+		    ctx->mod->link_internal_dependency(InternalDependency::windowsExitThread, ctx->irCtx, rangeVal);
+		auto exitThreadPtr  = ctx->mod->get_llvm_module()->getGlobalVariable(exitFnName);
 		auto exitThreadFnTy = llvm::FunctionType::get(llvm::Type::getVoidTy(ctx->irCtx->llctx),
-													  {llvm::Type::getInt32Ty(ctx->irCtx->llctx)}, false);
+		                                              {llvm::Type::getInt32Ty(ctx->irCtx->llctx)}, false);
 		ctx->irCtx->builder.CreateCall(
-			exitThreadFnTy, ctx->irCtx->builder.CreateLoad(llvm::PointerType::get(exitThreadFnTy, 0u), exitThreadPtr),
-			{llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 1u)});
+		    exitThreadFnTy, ctx->irCtx->builder.CreateLoad(llvm::PointerType::get(exitThreadFnTy, 0u), exitThreadPtr),
+		    {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 1u)});
 	} else {
-		auto exitFnName	   = ctx->mod->link_internal_dependency(InternalDependency::pthreadExit, ctx->irCtx, rangeVal);
+		auto exitFnName    = ctx->mod->link_internal_dependency(InternalDependency::pthreadExit, ctx->irCtx, rangeVal);
 		auto pthreadExitFn = ctx->mod->get_llvm_module()->getFunction(exitFnName);
 		ctx->irCtx->builder.CreateCall(
-			pthreadExitFn->getFunctionType(), pthreadExitFn,
-			{llvm::ConstantPointerNull::get(
-				llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-					->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()))});
+		    pthreadExitFn->getFunctionType(), pthreadExitFn,
+		    {llvm::ConstantPointerNull::get(
+		        llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+		            ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()))});
 	}
 }
 
 void Logic::exit_program(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal) {
 	auto exitFnName = ctx->mod->link_internal_dependency(InternalDependency::exitProgram, ctx->irCtx, rangeVal);
-	auto exitFun	= ctx->mod->get_llvm_module()->getFunction(exitFnName);
+	auto exitFun    = ctx->mod->get_llvm_module()->getFunction(exitFnName);
 	ctx->irCtx->builder.CreateCall(exitFun->getFunctionType(), exitFun,
-								   {llvm::ConstantInt::get(NativeType::get_int(ctx->irCtx)->get_llvm_type(), 1u)});
+	                               {llvm::ConstantInt::get(NativeType::get_int(ctx->irCtx)->get_llvm_type(), 1u)});
 }
 
 void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
-							  ast::EmitCtx* ctx) {
-	fileRange.file	  = fs::absolute(fileRange.file);
+                              ast::EmitCtx* ctx) {
+	fileRange.file    = fs::absolute(fileRange.file);
 	auto startMessage = ir::StringSliceType::create_value(
-		ctx->irCtx, "\nFunction " + fun->get_full_name() + " panicked at " + fileRange.start_to_string() + " => ");
-	auto* mod		 = fun->get_module();
+	    ctx->irCtx, "\nFunction " + fun->get_full_name() + " panicked at " + fileRange.start_to_string() + " => ");
+	auto* mod        = fun->get_module();
 	auto  printfName = mod->link_internal_dependency(InternalDependency::printf, ctx->irCtx, fileRange);
-	auto  printFn	 = mod->get_llvm_module()->getFunction(printfName);
-	auto  formatRes	 = format_values(ctx, values, ranges, fileRange);
+	auto  printFn    = mod->get_llvm_module()->getFunction(printfName);
+	auto  formatRes  = format_values(ctx, values, ranges, fileRange);
 
 	Vec<llvm::Value*> printVals{ctx->irCtx->builder.CreateGlobalStringPtr(
-									"%.*s" + formatRes.first + "\n\n", ctx->irCtx->get_global_string_name(),
-									ctx->irCtx->dataLayout.value().getDefaultGlobalsAddressSpace()),
-								startMessage->get_llvm_constant()->getAggregateElement(1u),
-								startMessage->get_llvm_constant()->getAggregateElement(0u)};
+	                                "%.*s" + formatRes.first + "\n\n", ctx->irCtx->get_global_string_name(),
+	                                ctx->irCtx->dataLayout.value().getDefaultGlobalsAddressSpace()),
+	                            startMessage->get_llvm_constant()->getAggregateElement(1u),
+	                            startMessage->get_llvm_constant()->getAggregateElement(0u)};
 	for (auto* val : formatRes.second) {
 		printVals.push_back(val);
 	}
@@ -478,8 +478,8 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
 			}
 			case cli::PanicStrategy::handler: {
 				auto handlerName = fun->get_module()->link_internal_dependency(InternalDependency::panicHandler,
-																			   ctx->irCtx, fileRange);
-				auto handlerFn	 = mod->get_llvm_module()->getFunction(handlerName);
+				                                                               ctx->irCtx, fileRange);
+				auto handlerFn   = mod->get_llvm_module()->getFunction(handlerName);
 				ctx->irCtx->builder.CreateCall(handlerFn->getFunctionType(), handlerFn, printVals);
 				break;
 			}
@@ -500,8 +500,8 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
 			}
 			case cli::PanicStrategy::handler: {
 				auto handlerName = fun->get_module()->link_internal_dependency(InternalDependency::panicHandler,
-																			   ctx->irCtx, fileRange);
-				auto handlerFn	 = mod->get_llvm_module()->getFunction(handlerName);
+				                                                               ctx->irCtx, fileRange);
+				auto handlerFn   = mod->get_llvm_module()->getFunction(handlerName);
 				ctx->irCtx->builder.CreateCall(handlerFn->getFunctionType(), handlerFn, printVals);
 				break;
 			}
@@ -528,7 +528,7 @@ String Logic::get_generic_variant_name(String mainName, Vec<ir::GenericToFill*>&
 
 llvm::AllocaInst* Logic::newAlloca(ir::Function* fun, Maybe<String> name, llvm::Type* type) {
 	llvm::AllocaInst* result = nullptr;
-	llvm::Function*	  func	 = fun->get_llvm_function();
+	llvm::Function*   func   = fun->get_llvm_function();
 	if (func->getEntryBlock().empty()) {
 		result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
 	} else {
@@ -546,21 +546,21 @@ llvm::AllocaInst* Logic::newAlloca(ir::Function* fun, Maybe<String> name, llvm::
 			result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), inst);
 		} else {
 			result =
-				new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
+			    new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
 		}
 	}
 	return result;
 }
 
 bool Logic::compareConstantStrings(llvm::Constant* lhsBuff, llvm::Constant* lhsCount, llvm::Constant* rhsBuff,
-								   llvm::Constant* rhsCount, llvm::LLVMContext& llCtx) {
+                                   llvm::Constant* rhsCount, llvm::LLVMContext& llCtx) {
 	if ((*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()) ==
-		(*llvm::cast<llvm::ConstantInt>(rhsCount)->getValue().getRawData())) {
+	    (*llvm::cast<llvm::ConstantInt>(rhsCount)->getValue().getRawData())) {
 		if ((*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()) == 0u) {
 			return true;
 		}
 		return llvm::cast<llvm::ConstantDataArray>(lhsBuff->getOperand(0u))->getAsString() ==
-			   llvm::cast<llvm::ConstantDataArray>(rhsBuff->getOperand(0u))->getAsString();
+		       llvm::cast<llvm::ConstantDataArray>(rhsBuff->getOperand(0u))->getAsString();
 	} else {
 		return false;
 	}

@@ -90,7 +90,7 @@ String FloatType::to_string() const {
 
 Maybe<String> FloatType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	if (val->get_ir_type()->is_float()) {
-		String					 strRef;
+		String                   strRef;
 		llvm::raw_string_ostream stream(strRef);
 		val->get_llvm_constant()->printAsOperand(stream);
 		return strRef.find(' ') != String::npos ? strRef.substr(strRef.find(' ') + 1) : strRef;
@@ -102,10 +102,10 @@ Maybe<String> FloatType::to_prerun_generic_string(ir::PrerunValue* val) const {
 Maybe<bool> FloatType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	if (first->get_ir_type()->is_same(second->get_ir_type()) && first->get_ir_type()->is_float()) {
 		return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::FCMP_OEQ,
-																				  first->get_llvm_constant(),
-																				  second->get_llvm_constant()))
-			->getValue()
-			.getBoolValue();
+		                                                                          first->get_llvm_constant(),
+		                                                                          second->get_llvm_constant()))
+		    ->getValue()
+		    .getBoolValue();
 	} else {
 		return None;
 	}

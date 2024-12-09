@@ -7,19 +7,19 @@
 namespace qat::ir {
 
 OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
-					   Maybe<OpaqueSubtypeKind> _subtypeKind, ir::Mod* _parent, Maybe<usize> _size,
-					   VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
-	: EntityOverview(
-		  _subtypeKind.has_value()
-			  ? (_subtypeKind.value() == OpaqueSubtypeKind::core
-					 ? "coreType"
-					 : (_subtypeKind.value() == OpaqueSubtypeKind::mix
-							? "mixType"
-							: (_subtypeKind.value() == OpaqueSubtypeKind::Union ? "unionType" : "opaqueType")))
-			  : "opaqueType",
-		  Json(), _name.range),
-	  name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
-	  visibility(_visibility), metaInfo(_metaInfo) {
+                       Maybe<OpaqueSubtypeKind> _subtypeKind, ir::Mod* _parent, Maybe<usize> _size,
+                       VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
+    : EntityOverview(
+          _subtypeKind.has_value()
+              ? (_subtypeKind.value() == OpaqueSubtypeKind::core
+                     ? "coreType"
+                     : (_subtypeKind.value() == OpaqueSubtypeKind::mix
+                            ? "mixType"
+                            : (_subtypeKind.value() == OpaqueSubtypeKind::Union ? "unionType" : "opaqueType")))
+              : "opaqueType",
+          Json(), _name.range),
+      name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
+      visibility(_visibility), metaInfo(_metaInfo) {
 	Maybe<String> foreignID;
 	Maybe<String> linkAlias;
 	if (metaInfo.has_value()) {
@@ -30,26 +30,26 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 		foreignID = parent->get_relevant_foreign_id();
 	}
 	auto linkNames = parent->get_link_names().newWith(
-		LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::mix)
-									 ? LinkUnitType::mix
-									 : (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::Union
-											? LinkUnitType::toggle
-											: LinkUnitType::type)),
-		foreignID);
+	    LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::mix)
+	                                 ? LinkUnitType::mix
+	                                 : (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::Union
+	                                        ? LinkUnitType::toggle
+	                                        : LinkUnitType::type)),
+	    foreignID);
 	if (is_generic()) {
 		Vec<LinkNames> genericLinkNames;
 		for (auto* param : generics) {
 			if (param->is_typed()) {
 				genericLinkNames.push_back(
-					LinkNames({LinkNameUnit(param->as_typed()->get_type()->get_name_for_linking(),
-											LinkUnitType::genericTypeValue)},
-							  None, nullptr));
+				    LinkNames({LinkNameUnit(param->as_typed()->get_type()->get_name_for_linking(),
+				                            LinkUnitType::genericTypeValue)},
+				              None, nullptr));
 			} else if (param->is_prerun()) {
 				auto preRes = param->as_prerun();
 				genericLinkNames.push_back(LinkNames(
-					{LinkNameUnit(preRes->get_type()->to_prerun_generic_string(preRes->get_expression()).value(),
-								  LinkUnitType::genericPrerunValue)},
-					None, nullptr));
+				    {LinkNameUnit(preRes->get_type()->to_prerun_generic_string(preRes->get_expression()).value(),
+				                  LinkUnitType::genericPrerunValue)},
+				    None, nullptr));
 			}
 		}
 		linkNames.addUnit(LinkNameUnit("", LinkUnitType::genericList, genericLinkNames), None);
@@ -64,10 +64,10 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 }
 
 OpaqueType* OpaqueType::get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
-							Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
-							VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
+                            Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
+                            VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
 	return std::construct_at(OwnNormal(OpaqueType), name, generics, genericID, subtypeKind, parent, size, visibility,
-							 llCtx, metaInfo);
+	                         llCtx, metaInfo);
 }
 
 String OpaqueType::get_full_name() const {

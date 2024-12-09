@@ -9,9 +9,9 @@ class IsExpression final : public Expression, public LocalDeclCompatible, public
 	friend class Assignment;
 	friend class LocalDeclaration;
 
-	Expression* subExpr		 = nullptr;
-	bool		confirmedRef = false;
-	bool		isRefVar	 = false;
+	Expression* subExpr      = nullptr;
+	bool        confirmedRef = false;
+	bool        isRefVar     = false;
 
   public:
 	IsExpression(Expression* _subExpr, FileRange _fileRange) : Expression(_fileRange), subExpr(_subExpr) {}
@@ -28,8 +28,8 @@ class IsExpression final : public Expression, public LocalDeclCompatible, public
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::IS; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::IS; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

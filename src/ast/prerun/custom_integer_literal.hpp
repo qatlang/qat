@@ -8,9 +8,9 @@
 namespace qat::ast {
 
 class CustomIntegerLiteral final : public PrerunExpression, public TypeInferrable {
-	String		value;
-	Maybe<u32>	bitWidth;
-	Maybe<u8>	radix;
+	String      value;
+	Maybe<u32>  bitWidth;
+	Maybe<u8>   radix;
 	Maybe<bool> isUnsigned;
 
 	Maybe<Identifier> suffix;
@@ -20,14 +20,14 @@ class CustomIntegerLiteral final : public PrerunExpression, public TypeInferrabl
 
   public:
 	CustomIntegerLiteral(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth, Maybe<u8> _radix,
-						 Maybe<Identifier> _suffix, FileRange _fileRange)
-		: PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth), radix(_radix),
-		  isUnsigned(_isUnsigned), suffix(_suffix) {}
+	                     Maybe<Identifier> _suffix, FileRange _fileRange)
+	    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bitWidth(_bitWidth), radix(_radix),
+	      isUnsigned(_isUnsigned), suffix(_suffix) {}
 
 	useit static CustomIntegerLiteral* create(String _value, Maybe<bool> _isUnsigned, Maybe<u32> _bitWidth,
-											  Maybe<u8> _radix, Maybe<Identifier> _suffix, FileRange _fileRange) {
+	                                          Maybe<u8> _radix, Maybe<Identifier> _suffix, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(CustomIntegerLiteral), _value, _isUnsigned, _bitWidth, _radix, _suffix,
-								 _fileRange);
+		                         _fileRange);
 	}
 
 	TYPE_INFERRABLE_FUNCTIONS
@@ -39,7 +39,7 @@ class CustomIntegerLiteral final : public PrerunExpression, public TypeInferrabl
 
 	useit static String radixToString(u8 val);
 
-	useit Json	 to_json() const final;
+	useit Json   to_json() const final;
 	useit String to_string() const final;
 
 	useit NodeType nodeType() const final { return NodeType::CUSTOM_INTEGER_LITERAL; }

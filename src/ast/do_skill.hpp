@@ -8,21 +8,21 @@
 namespace qat::ast {
 
 struct SkillName {
-	u32				relative;
+	u32             relative;
 	Vec<Identifier> names;
 };
 
 class DoSkill final : public IsEntity, public MemberParentLike {
-	bool			 isDefaultSkill;
+	bool             isDefaultSkill;
 	Maybe<SkillName> name;
-	ast::Type*		 targetType;
+	ast::Type*       targetType;
 
-	mutable ir::DoneSkill*	  doneSkill = nullptr;
-	mutable ir::MethodParent* parent	= nullptr;
+	mutable ir::DoneSkill*    doneSkill = nullptr;
+	mutable ir::MethodParent* parent    = nullptr;
 
   public:
 	DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)
-		: IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
+	    : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
 
 	useit static DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
@@ -36,10 +36,10 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 	void define_members(ir::Ctx* irCtx);
 	void emit_members(ir::Ctx* irCtx);
 
-	useit bool	   is_done_skill() const final { return true; }
+	useit bool     is_done_skill() const final { return true; }
 	useit DoSkill* as_done_skill() final { return this; }
 
-	Json	 to_json() const final;
+	Json     to_json() const final;
 	NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };
 

@@ -134,11 +134,11 @@ class LibToLink {
 	LibToLink(LibToLinkType _type, FileRange _fileRange) : type(_type), fileRange(_fileRange) {}
 
   public:
-	Maybe<Identifier>			   name;
+	Maybe<Identifier>              name;
 	Maybe<Pair<String, FileRange>> path;
 	Maybe<Pair<String, FileRange>> sharedPath;
-	LibToLinkType				   type;
-	FileRange					   fileRange;
+	LibToLinkType                  type;
+	FileRange                      fileRange;
 
 	useit static LibToLink fromName(Identifier _name, FileRange _fileRange) {
 		LibToLink result(LibToLinkType::namedLib, _fileRange);
@@ -153,9 +153,9 @@ class LibToLink {
 	}
 
 	useit static LibToLink fromStaticAndShared(Pair<String, FileRange> _staticPath, Pair<String, FileRange> _sharedPath,
-											   FileRange _fileRange) {
+	                                           FileRange _fileRange) {
 		LibToLink result(LibToLinkType::staticAndSharedPaths, _fileRange);
-		result.path		  = _staticPath;
+		result.path       = _staticPath;
 		result.sharedPath = _sharedPath;
 		return result;
 	}
@@ -180,30 +180,30 @@ class LibToLink {
 				}
 				case LibToLinkType::libPath: {
 					return fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
-																			: fs::path(path->first)) ==
-						   fs::absolute(fs::path(other.path->first).is_relative() ? (fileRange.file / other.path->first)
-																				  : fs::path(other.path->first));
+					                                                        : fs::path(path->first)) ==
+					       fs::absolute(fs::path(other.path->first).is_relative() ? (fileRange.file / other.path->first)
+					                                                              : fs::path(other.path->first));
 				}
 				case LibToLinkType::staticAndSharedPaths: {
 					return (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
-																			 : fs::path(path->first)) ==
-							fs::absolute(fs::path(other.path->first).is_relative()
-											 ? (fileRange.file / other.path->first)
-											 : fs::path(other.path->first))) &&
-						   (fs::absolute(fs::path(sharedPath->first).is_relative()
-											 ? (fileRange.file / sharedPath->first)
-											 : fs::path(sharedPath->first)) ==
-							fs::absolute(fs::path(other.sharedPath->first).is_relative()
-											 ? (fileRange.file / other.sharedPath->first)
-											 : fs::path(other.sharedPath->first)));
+					                                                         : fs::path(path->first)) ==
+					        fs::absolute(fs::path(other.path->first).is_relative()
+					                         ? (fileRange.file / other.path->first)
+					                         : fs::path(other.path->first))) &&
+					       (fs::absolute(fs::path(sharedPath->first).is_relative()
+					                         ? (fileRange.file / sharedPath->first)
+					                         : fs::path(sharedPath->first)) ==
+					        fs::absolute(fs::path(other.sharedPath->first).is_relative()
+					                         ? (fileRange.file / other.sharedPath->first)
+					                         : fs::path(other.sharedPath->first)));
 				}
 				case LibToLinkType::nameWithLookupPath: {
 					return (name.value().value == other.name.value().value) &&
-						   (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
-																			 : fs::path(path->first)) ==
-							fs::absolute(fs::path(other.path->first).is_relative()
-											 ? (fileRange.file / other.path->first)
-											 : fs::path(other.path->first)));
+					       (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+					                                                         : fs::path(path->first)) ==
+					        fs::absolute(fs::path(other.path->first).is_relative()
+					                         ? (fileRange.file / other.path->first)
+					                         : fs::path(other.path->first)));
 				}
 			}
 		} else {
@@ -282,23 +282,23 @@ inline String entity_child_type_to_string(EntityChildType type) {
 struct EntityState;
 struct EntityDependency {
 	EntityState* entity;
-	DependType	 type;
-	EmitPhase	 phase;
+	DependType   type;
+	EmitPhase    phase;
 };
 
 struct EntityState {
-	Maybe<Identifier>	  name;
-	EntityType			  type;
-	EntityStatus		  status;
-	ast::IsEntity*		  astNode = nullptr;
-	EmitPhase			  maxPhase;
+	Maybe<Identifier>     name;
+	EntityType            type;
+	EntityStatus          status;
+	ast::IsEntity*        astNode = nullptr;
+	EmitPhase             maxPhase;
 	Vec<EntityDependency> dependencies;
 
 	std::set<Pair<EntityChildType, String>> children;
 
 	Maybe<EmitPhase> phaseToCompletion;
 	Maybe<EmitPhase> phaseToPartial;
-	bool			 supportsChildren = false;
+	bool             supportsChildren = false;
 	Maybe<EmitPhase> phaseToChildrenPartial;
 
 	Maybe<EmitPhase> currentPhase;
@@ -306,11 +306,11 @@ struct EntityState {
 	usize iterations = 0;
 
 	EntityState(Maybe<Identifier> _name, EntityType _type, EntityStatus _status, ast::IsEntity* _astEntity,
-				EmitPhase _maxPhase)
-		: name(_name), type(_type), status(_status), astNode(_astEntity), maxPhase(_maxPhase) {}
+	            EmitPhase _maxPhase)
+	    : name(_name), type(_type), status(_status), astNode(_astEntity), maxPhase(_maxPhase) {}
 
 	useit static EntityState* create(Maybe<Identifier> name, EntityType type, EntityStatus status,
-									 ast::IsEntity* astEntity, EmitPhase maxPhase) {
+	                                 ast::IsEntity* astEntity, EmitPhase maxPhase) {
 		return std::construct_at(OwnNormal(EntityState), std::move(name), type, status, astEntity, maxPhase);
 	}
 
@@ -371,7 +371,7 @@ struct EntityState {
 						}
 					} else if (dep.type == DependType::childrenPartial) {
 						if (dep.entity->supportsChildren ? (dep.entity->status < EntityStatus::childrenPartial)
-														 : (dep.entity->status < EntityStatus::complete)) {
+						                                 : (dep.entity->status < EntityStatus::complete)) {
 							isAllDepsComplete = false;
 							break;
 						}
@@ -411,9 +411,9 @@ class Mod final : public Uniq, public EntityOverview {
 
   public:
 	Mod(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
-		ir::Ctx* irCtx);
+	    ir::Ctx* irCtx);
 
-	static Vec<Mod*>	 allModules;
+	static Vec<Mod*>     allModules;
 	static Vec<fs::path> usableNativeLibPaths;
 	static Maybe<String> usableClangPath;
 
@@ -431,65 +431,65 @@ class Mod final : public Uniq, public EntityOverview {
 	useit static Mod* get_folder_module(const fs::path& fPath);
 
   private:
-	Identifier		  name;
-	ModuleType		  moduleType;
-	bool			  rootLib = false;
-	Maybe<MetaInfo>	  metaInfo;
+	Identifier        name;
+	ModuleType        moduleType;
+	bool              rootLib = false;
+	Maybe<MetaInfo>   metaInfo;
 	Deque<LibToLink>  nativeLibsToLink;
-	fs::path		  filePath;
-	fs::path		  basePath;
-	VisibilityInfo	  visibility;
-	Mod*			  parent = nullptr;
-	Mod*			  active = nullptr;
-	std::set<Mod*>	  dependencies;
-	Vec<Mod*>		  submodules;
+	fs::path          filePath;
+	fs::path          basePath;
+	VisibilityInfo    visibility;
+	Mod*              parent = nullptr;
+	Mod*              active = nullptr;
+	std::set<Mod*>    dependencies;
+	Vec<Mod*>         submodules;
 	Vec<Brought<Mod>> broughtModules;
 
-	Deque<OpaqueType*>		 opaqueTypes;
+	Deque<OpaqueType*>       opaqueTypes;
 	Vec<Brought<OpaqueType>> broughtOpaqueTypes;
 	Vec<Brought<OpaqueType>> broughtGenericOpaqueTypes;
 
-	Vec<StructType*>		 coreTypes;
+	Vec<StructType*>         coreTypes;
 	Vec<Brought<StructType>> broughtCoreTypes;
 
-	Vec<ChoiceType*>		 choiceTypes;
+	Vec<ChoiceType*>         choiceTypes;
 	Vec<Brought<ChoiceType>> broughtChoiceTypes;
 
-	Vec<MixType*>		  mixTypes;
+	Vec<MixType*>         mixTypes;
 	Vec<Brought<MixType>> broughtMixTypes;
 
-	Vec<DefinitionType*>		 typeDefs;
+	Vec<DefinitionType*>         typeDefs;
 	Vec<Brought<DefinitionType>> broughtTypeDefs;
 
-	Vec<Function*>		   functions;
+	Vec<Function*>         functions;
 	Vec<Brought<Function>> broughtFunctions;
 
-	Vec<PrerunFunction*>		 prerunFunctions;
+	Vec<PrerunFunction*>         prerunFunctions;
 	Vec<Brought<PrerunFunction>> broughtPrerunFunctions;
 
-	Vec<GenericFunction*>		  genericFunctions;
+	Vec<GenericFunction*>         genericFunctions;
 	Vec<Brought<GenericFunction>> broughtGenericFunctions;
 
-	Vec<GenericStructType*>			genericStructTypes;
+	Vec<GenericStructType*>         genericStructTypes;
 	Vec<Brought<GenericStructType>> broughtGenericStructTypes;
 
-	Vec<GenericDefinitionType*>			genericTypeDefinitions;
+	Vec<GenericDefinitionType*>         genericTypeDefinitions;
 	Vec<Brought<GenericDefinitionType>> broughtGenericTypeDefinitions;
 
-	Vec<GlobalEntity*>		   globalEntities;
+	Vec<GlobalEntity*>         globalEntities;
 	Vec<Brought<GlobalEntity>> broughtGlobalEntities;
 
-	Vec<PrerunGlobal*>		   prerunGlobals;
+	Vec<PrerunGlobal*>         prerunGlobals;
 	Vec<Brought<PrerunGlobal>> broughtPrerunGlobals;
 
-	Vec<Region*>		 regions;
+	Vec<Region*>         regions;
 	Vec<Brought<Region>> broughtRegions;
 
 	Vec<EntityState*> entityEntries;
 
-	Function* moduleInitialiser	  = nullptr;
+	Function* moduleInitialiser   = nullptr;
 	Function* moduleDeinitialiser = nullptr;
-	u64		  nonConstantGlobals  = 0;
+	u64       nonConstantGlobals  = 0;
 
 	std::set<u64> integerBitwidths;
 	std::set<u64> unsignedBitwidths;
@@ -499,27 +499,27 @@ class Mod final : public Uniq, public EntityOverview {
 	Vec<Pair<Mod*, FileRange>> fsBroughtMentions;
 
 	Vec<ast::Node*> nodes;
-	bool			hasMain = false;
-	fs::path		llPath;
+	bool            hasMain = false;
+	fs::path        llPath;
 	Maybe<fs::path> objectFilePath;
 
 	mutable llvm::Module* llvmModule;
 	mutable Maybe<String> moduleForeignID;
 
-	mutable bool linkPthread				  = false;
-	mutable bool hasCreatedModules			  = false;
-	mutable bool hasHandledFilesystemBrings	  = false;
-	mutable bool hasCreatedEntities			  = false;
+	mutable bool linkPthread                  = false;
+	mutable bool hasCreatedModules            = false;
+	mutable bool hasHandledFilesystemBrings   = false;
+	mutable bool hasCreatedEntities           = false;
 	mutable bool hasUpdatedEntityDependencies = false;
-	mutable bool isOverviewOutputted		  = false;
+	mutable bool isOverviewOutputted          = false;
 
 	bool isCompiledToObject = false;
-	bool isBundled			= false;
+	bool isBundled          = false;
 
 	void addMember(Mod* mod);
 
 	void addNamedSubmodule(const Identifier& name, const String& _filename, ModuleType type,
-						   const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+	                       const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 	void closeSubmodule();
 
 	useit bool should_be_named() const;
@@ -530,13 +530,13 @@ class Mod final : public Uniq, public EntityOverview {
 	~Mod();
 
 	useit static Mod* create(const Identifier& name, const fs::path& filepath, const fs::path& basePath,
-							 ModuleType type, const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+	                         ModuleType type, const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 	useit static Mod* create_submodule(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
-									   ModuleType type, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
+	                                   ModuleType type, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
 	useit static Mod* create_file_mod(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
-									  Vec<ast::Node*>, VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
+	                                  Vec<ast::Node*>, VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
 	useit static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
-									  Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+	                                  Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
 	useit static bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
 	static void add_provided_function(InternalDependency unit, Function* fnVal) { providedFunctions[unit] = fnVal; }
@@ -600,22 +600,22 @@ class Mod final : public Uniq, public EntityOverview {
 	void entity_name_check(ir::Ctx* irCtx, Identifier name, ir::EntityType entTy);
 
 	useit ModuleType get_mod_type() const;
-	useit String	 get_full_name() const;
-	useit String	 get_writable_name() const;
-	useit String	 get_name() const;
+	useit String     get_full_name() const;
+	useit String     get_writable_name() const;
+	useit String     get_name() const;
 	useit Identifier get_identifier() const;
-	useit String	 get_fullname_with_child(const String& name) const;
-	useit Mod*		 get_active();
-	useit Mod*		 get_parent_file();
+	useit String     get_fullname_with_child(const String& name) const;
+	useit Mod*       get_active();
+	useit Mod*       get_parent_file();
 
 	useit String get_file_path() const { return filePath.string(); }
 
-	void			set_file_range(FileRange fileRange);
+	void            set_file_range(FileRange fileRange);
 	useit FileRange get_file_range() const;
 
 	useit Function* get_mod_initialiser(ir::Ctx* irCtx);
-	useit bool		should_call_initialiser() const;
-	void			add_non_const_global_counter();
+	useit bool      should_call_initialiser() const;
+	void            add_non_const_global_counter();
 
 	useit LinkNames get_link_names() const;
 
@@ -636,8 +636,8 @@ class Mod final : public Uniq, public EntityOverview {
 	useit const VisibilityInfo& get_visibility() const;
 
 	useit Function* create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
-									const FileRange& fileRange, const VisibilityInfo& visibility,
-									Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
+	                                const FileRange& fileRange, const VisibilityInfo& visibility,
+	                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
 	useit bool is_submodule() const { return parent != nullptr; }
 	useit bool has_submodules() const { return !submodules.empty(); }
@@ -646,11 +646,11 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit bool has_integer_bitwidth(u64 bits) const {
 		return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
-			   integerBitwidths.contains(bits);
+		       integerBitwidths.contains(bits);
 	}
 	useit bool has_unsigned_bitwidth(u64 bits) const {
 		return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
-			   unsignedBitwidths.contains(bits);
+		       unsignedBitwidths.contains(bits);
 	}
 	useit bool has_float_kind(FloatTypeKind kind) const {
 		return (kind == FloatTypeKind::_32 || kind == FloatTypeKind::_64) || floatKinds.contains(kind);
@@ -663,50 +663,50 @@ class Mod final : public Uniq, public EntityOverview {
 	void add_float_kind(FloatTypeKind kind) { floatKinds.insert(kind); }
 
 	useit bool has_main_function() const { return hasMain; }
-	void	   set_has_main_function() { hasMain = true; }
+	void       set_has_main_function() { hasMain = true; }
 
 	useit std::set<String> getAllObjectPaths() const;
 	useit std::set<String> getAllLinkableLibs() const;
 
-	void							  add_fs_bring_mention(ir::Mod* otherMod, const FileRange& fileRange);
+	void                              add_fs_bring_mention(ir::Mod* otherMod, const FileRange& fileRange);
 	Vec<Pair<Mod*, FileRange>> const& get_fs_bring_mentions() const;
 
 	void update_overview() final;
 	void output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-							 Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
-							 Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
-							 Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
-							 Vec<JsonValue>& defsJson);
+	                         Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
+	                         Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
+	                         Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
+	                         Vec<JsonValue>& defsJson);
 
 	// LIB
 
 	useit bool has_lib(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_lib(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_lib_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit Mod*				 get_lib(const String& name, const AccessInfo& reqInfo);
+	useit Mod*               get_lib(const String& name, const AccessInfo& reqInfo);
 
 	void open_lib_for_creation(const Identifier& name, const String& filename, const VisibilityInfo& visib_info,
-							   ir::Ctx* irCtx);
+	                           ir::Ctx* irCtx);
 	void close_lib_after_creation();
 
 	// FUNCTION
 
-	useit bool		has_function(const String& name, AccessInfo reqInfo) const;
-	useit bool		has_brought_function(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool      has_function(const String& name, AccessInfo reqInfo) const;
+	useit bool      has_brought_function(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Function* get_function(const String& name, const AccessInfo& reqInfo);
 	useit Pair<bool, String> has_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// PRERUN FUNCTION
 
-	useit bool			  has_prerun_function(String const& name, AccessInfo reqInfo) const;
-	useit bool			  has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool            has_prerun_function(String const& name, AccessInfo reqInfo) const;
+	useit bool            has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
 	useit PrerunFunction* get_prerun_function(String const& name, const AccessInfo& reqInfo);
 	useit Pair<bool, String> has_prerun_function_in_imports(String const& name, AccessInfo const& reqInfo) const;
 
 	// GENERIC FUNCTIONS
 
-	useit bool			   has_generic_function(const String& name, AccessInfo reqInfo) const;
-	useit bool			   has_brought_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool             has_generic_function(const String& name, AccessInfo reqInfo) const;
+	useit bool             has_brought_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit GenericFunction* get_generic_function(const String& name, const AccessInfo& reqInfo);
 	useit Pair<bool, String> has_generic_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
@@ -715,35 +715,35 @@ class Mod final : public Uniq, public EntityOverview {
 	useit bool has_region(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_region(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_region_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit Region*			 get_region(const String& name, const AccessInfo& reqInfo) const;
+	useit Region*            get_region(const String& name, const AccessInfo& reqInfo) const;
 
 	// OPAQUE TYPES
 
 	useit bool has_opaque_type(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_opaque_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit OpaqueType*		 get_opaque_type(const String& name, const AccessInfo& reqInfo) const;
+	useit OpaqueType*        get_opaque_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// CORE TYPE
 
 	useit bool has_struct_type(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit StructType*		 get_struct_type(const String& name, const AccessInfo& reqInfo) const;
+	useit StructType*        get_struct_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// MIX TYPE
 
 	useit bool has_mix_type(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_mix_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit MixType*			 get_mix_type(const String& name, const AccessInfo& reqInfo) const;
+	useit MixType*           get_mix_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// CHOICE TYPE
 
 	useit bool has_choice_type(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit ChoiceType*		 get_choice_type(const String& name, const AccessInfo& reqInfo) const;
+	useit ChoiceType*        get_choice_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// GENERIC STRUCT TYPES
 
@@ -756,7 +756,7 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit bool has_generic_type_def(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_generic_type_def(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String>	 has_generic_type_def_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	useit Pair<bool, String>     has_generic_type_def_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit GenericDefinitionType* get_generic_type_def(const String& name, const AccessInfo& reqInfo);
 
 	// TYPEDEFS
@@ -764,21 +764,21 @@ class Mod final : public Uniq, public EntityOverview {
 	useit bool has_type_definition(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_type_definition_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit DefinitionType*	 get_type_def(const String& name, const AccessInfo& reqInfo) const;
+	useit DefinitionType*    get_type_def(const String& name, const AccessInfo& reqInfo) const;
 
 	// GLOBAL
 
 	useit bool has_global(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_global(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit GlobalEntity*		 get_global(const String& name, const AccessInfo& reqInfo) const;
+	useit GlobalEntity*      get_global(const String& name, const AccessInfo& reqInfo) const;
 
 	// PRERUN GLOBAL
 
 	useit bool has_prerun_global(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_prerun_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit PrerunGlobal*		 get_prerun_global(const String& name, const AccessInfo& reqInfo) const;
+	useit PrerunGlobal*      get_prerun_global(const String& name, const AccessInfo& reqInfo) const;
 
 	// IMPORT
 
@@ -800,10 +800,10 @@ class Mod final : public Uniq, public EntityOverview {
 	void bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_prerun_global(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib,
-								   Maybe<Identifier> bName = None);
+	                               Maybe<Identifier> bName = None);
 	void bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_generic_type_definition(GenericDefinitionType* gTDef, VisibilityInfo const& visib,
-									   Maybe<Identifier> bName = None);
+	                                   Maybe<Identifier> bName = None);
 
 	useit fs::path get_resolved_output_path(const String& extension, Ctx* irCtx);
 	useit llvm::Module* get_llvm_module() const;
@@ -812,7 +812,7 @@ class Mod final : public Uniq, public EntityOverview {
 	useit bool find_clang_path(Ctx* irCtx);
 	useit bool find_windows_sdk_paths(Ctx* irCtx);
 	useit bool find_windows_toolchain_libs(Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath,
-										   bool findUCRTLibPath, bool findUMLibPath);
+	                                       bool findUCRTLibPath, bool findUMLibPath);
 
 	static void find_native_library_paths();
 

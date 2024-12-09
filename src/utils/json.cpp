@@ -209,16 +209,16 @@ JsonValue& JsonValue::operator=(const std::initializer_list<JsonValue>& val) {
 }
 
 JsonValue::JsonValue(JsonValue&& other) noexcept {
-	type	   = other.type;
-	data	   = other.data;
+	type       = other.type;
+	data       = other.data;
 	other.data = nullptr;
 	other.type = JsonValueType::none;
 }
 
 JsonValue& JsonValue::operator=(JsonValue&& other) noexcept {
 	clear();
-	type	   = other.type;
-	data	   = other.data;
+	type       = other.type;
+	data       = other.data;
 	other.data = nullptr;
 	other.type = JsonValueType::none;
 	return *this;
@@ -247,7 +247,7 @@ JsonValue::JsonValue(JsonValue const& other) : data(nullptr), type(JsonValueType
 			break;
 		}
 		case JsonValueType::list: {
-			data				   = new Vec<JsonValue>();
+			data                   = new Vec<JsonValue>();
 			*(Vec<JsonValue>*)data = *((Vec<JsonValue>*)other.data);
 			break;
 		}
@@ -285,7 +285,7 @@ JsonValue& JsonValue::operator=(JsonValue const& other) {
 			break;
 		}
 		case JsonValueType::list: {
-			data				   = new Vec<JsonValue>();
+			data                   = new Vec<JsonValue>();
 			*(Vec<JsonValue>*)data = *((Vec<JsonValue>*)other.data);
 			break;
 		}
@@ -595,7 +595,7 @@ std::string JsonValue::toString(const bool isJson) const {
 		}
 		case JsonValueType::list: {
 			std::string result("[");
-			auto*		list = (Vec<JsonValue>*)data;
+			auto*       list = (Vec<JsonValue>*)data;
 			for (std::size_t i = 0; i < list->size(); i++) {
 				result += list->at(i).toString(isJson);
 				if (i != (list->size() - 1)) {

@@ -21,8 +21,8 @@ class ExpressionSentence final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx);
-	useit Json		 to_json() const;
-	useit NodeType	 nodeType() const { return NodeType::EXPRESSION_SENTENCE; }
+	useit Json       to_json() const;
+	useit NodeType   nodeType() const { return NodeType::EXPRESSION_SENTENCE; }
 };
 
 } // namespace qat::ast

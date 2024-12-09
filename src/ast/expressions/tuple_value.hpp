@@ -10,7 +10,7 @@ namespace qat::ast {
 class TupleValue final : public Expression, public LocalDeclCompatible, public TypeInferrable {
 	friend class LocalDeclaration;
 
-	bool			 isPacked = false;
+	bool             isPacked = false;
 	Vec<Expression*> members;
 
   public:
@@ -30,8 +30,8 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public T
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx);
-	useit Json		 to_json() const;
-	useit NodeType	 nodeType() const { return NodeType::TUPLE_VALUE; }
+	useit Json       to_json() const;
+	useit NodeType   nodeType() const { return NodeType::TUPLE_VALUE; }
 };
 
 } // namespace qat::ast

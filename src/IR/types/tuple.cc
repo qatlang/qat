@@ -8,12 +8,12 @@
 namespace qat::ir {
 
 TupleType::TupleType(Vec<Type*> _types, bool _isPacked, llvm::LLVMContext& llctx)
-	: subTypes(std::move(_types)), isPacked(_isPacked) {
+    : subTypes(std::move(_types)), isPacked(_isPacked) {
 	Vec<llvm::Type*> subTypesLLVM;
 	for (auto* typ : subTypes) {
 		subTypesLLVM.push_back(typ->get_llvm_type());
 	}
-	llvmType	= llvm::StructType::get(llctx, subTypesLLVM, isPacked);
+	llvmType    = llvm::StructType::get(llctx, subTypesLLVM, isPacked);
 	linkingName = "qat'tuple:[" + String(isPacked ? "pack," : "");
 	for (usize i = 0; i < subTypes.size(); i++) {
 		linkingName += subTypes.at(i)->get_name_for_linking();
@@ -77,12 +77,12 @@ void TupleType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
 				subTy->copy_construct_value(
-					irCtx,
-					ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-								   ir::ReferenceType::get(true, subTy, irCtx), false),
-					ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-								   ir::ReferenceType::get(false, subTy, irCtx), false),
-					fun);
+				    irCtx,
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
+				                   ir::ReferenceType::get(true, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
+				                   ir::ReferenceType::get(false, subTy, irCtx), false),
+				    fun);
 			}
 		} else {
 			irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()), None);
@@ -98,11 +98,11 @@ void TupleType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
 				subTy->copy_assign_value(irCtx,
-										 ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-														ir::ReferenceType::get(true, subTy, irCtx), false),
-										 ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-														ir::ReferenceType::get(false, subTy, irCtx), false),
-										 fun);
+				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
+				                                        ir::ReferenceType::get(true, subTy, irCtx), false),
+				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
+				                                        ir::ReferenceType::get(false, subTy, irCtx), false),
+				                         fun);
 			}
 		} else {
 			irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()), None);
@@ -119,12 +119,12 @@ void TupleType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
 				subTy->move_construct_value(
-					irCtx,
-					ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-								   ir::ReferenceType::get(true, subTy, irCtx), false),
-					ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-								   ir::ReferenceType::get(false, subTy, irCtx), false),
-					fun);
+				    irCtx,
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
+				                   ir::ReferenceType::get(true, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
+				                   ir::ReferenceType::get(false, subTy, irCtx), false),
+				    fun);
 			}
 		} else {
 			irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()), None);
@@ -141,11 +141,11 @@ void TupleType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
 				subTy->move_assign_value(irCtx,
-										 ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-														ir::ReferenceType::get(true, subTy, irCtx), false),
-										 ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-														ir::ReferenceType::get(false, subTy, irCtx), false),
-										 fun);
+				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
+				                                        ir::ReferenceType::get(true, subTy, irCtx), false),
+				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
+				                                        ir::ReferenceType::get(false, subTy, irCtx), false),
+				                         fun);
 			}
 		} else {
 			irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
@@ -161,9 +161,9 @@ void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
 				subTy->destroy_value(irCtx,
-									 ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), i),
-													ir::ReferenceType::get(false, subTy, irCtx), false),
-									 fun);
+				                     ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), i),
+				                                    ir::ReferenceType::get(false, subTy, irCtx), false),
+				                     fun);
 			}
 		} else {
 			irCtx->Error("Could not destroy an instance of type " + irCtx->color(to_string()), None);
@@ -174,7 +174,7 @@ void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMContext& llctx) {
 	for (auto* typ : allTypes) {
 		if (typ->is_tuple()) {
-			auto subTys	 = typ->as_tuple()->getSubTypes();
+			auto subTys  = typ->as_tuple()->getSubTypes();
 			bool is_same = true;
 			if (typ->as_tuple()->isPackedTuple() != isPacked) {
 				is_same = false;

@@ -8,18 +8,18 @@
 namespace qat::ast {
 
 class LoopIf final : public Sentence {
-	Expression*		  condition;
-	Vec<Sentence*>	  sentences;
+	Expression*       condition;
+	Vec<Sentence*>    sentences;
 	Maybe<Identifier> tag;
-	bool			  isDoAndLoop = false;
+	bool              isDoAndLoop = false;
 
   public:
 	LoopIf(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag,
-		   FileRange _fileRange)
-		: Sentence(_fileRange), condition(_condition), sentences(_sentences), tag(_tag), isDoAndLoop(_isDoAndLoop) {}
+	       FileRange _fileRange)
+	    : Sentence(_fileRange), condition(_condition), sentences(_sentences), tag(_tag), isDoAndLoop(_isDoAndLoop) {}
 
 	useit static LoopIf* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences,
-								Maybe<Identifier> _tag, FileRange _fileRange) {
+	                            Maybe<Identifier> _tag, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(LoopIf), _isDoAndLoop, _condition, _sentences, _tag, _fileRange);
 	}
 
@@ -31,8 +31,8 @@ class LoopIf final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::LOOP_WHILE; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::LOOP_WHILE; }
 };
 
 } // namespace qat::ast

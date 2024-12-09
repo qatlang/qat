@@ -11,11 +11,11 @@ enum class SayType { say, dbg, only };
 class SayLike final : public Sentence {
   private:
 	Vec<Expression*> expressions;
-	SayType			 sayType;
+	SayType          sayType;
 
   public:
 	SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange)
-		: Sentence(_fileRange), expressions(_expressions), sayType(_sayTy) {}
+	    : Sentence(_fileRange), expressions(_expressions), sayType(_sayTy) {}
 
 	useit static SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(SayLike), _sayTy, _expressions, _fileRange);
@@ -28,8 +28,8 @@ class SayLike final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::SAY_LIKE; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::SAY_LIKE; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

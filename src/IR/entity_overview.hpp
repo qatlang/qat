@@ -13,11 +13,11 @@ class EntityOverview {
 	friend class MixType;
 
   protected:
-	String		   ovKind;
-	Json		   ovInfo;
-	FileRange	   ovRange;
+	String         ovKind;
+	Json           ovInfo;
+	FileRange      ovRange;
 	Vec<FileRange> ovMentions;
-	bool		   isOverviewUpdated = false;
+	bool           isOverviewUpdated = false;
 
 	Vec<Pair<Mod*, FileRange>> ovBroughtMentions;
 
@@ -32,7 +32,7 @@ class EntityOverview {
 	Vec<Pair<Mod*, FileRange>> const& get_brought_mentions() const;
 
 	virtual void update_overview() {}
-	Json		 overviewToJson();
+	Json         overviewToJson();
 };
 
 } // namespace qat::ir

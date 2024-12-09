@@ -7,8 +7,8 @@
 namespace qat::ast {
 
 class PrerunLoopTo final : public PrerunSentence {
-	PrerunExpression*	 count;
-	Maybe<Identifier>	 tag;
+	PrerunExpression*    count;
+	Maybe<Identifier>    tag;
 	Vec<PrerunSentence*> sentences;
 
   public:

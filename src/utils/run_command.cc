@@ -7,14 +7,14 @@ namespace qat {
 
 int run_command_get_code(String command, Vec<String> args) {
 	boost::process::ipstream outStream;
-	boost::process::child	 childProcess(command, args, boost::process::std_out > boost::process::null);
+	boost::process::child    childProcess(command, args, boost::process::std_out > boost::process::null);
 	childProcess.wait();
 	return childProcess.exit_code();
 }
 
 Pair<int, String> run_command_get_stdout(String command, Vec<String> args) {
 	boost::process::ipstream outStream;
-	boost::process::child	 childProcess(command, args, boost::process::std_out > outStream);
+	boost::process::child    childProcess(command, args, boost::process::std_out > outStream);
 	childProcess.wait();
 	String output;
 	for (String line; std::getline(outStream, line);) {
@@ -36,7 +36,7 @@ Pair<int, String> run_command_get_output(String command, Vec<String> args) {
 
 Pair<int, String> run_command_get_stderr(String command, Vec<String> args) {
 	boost::process::ipstream errorStream;
-	boost::process::child	 childProcess(command, args, boost::process::std_err > errorStream);
+	boost::process::child    childProcess(command, args, boost::process::std_err > errorStream);
 	childProcess.wait();
 	String errorOutput;
 	for (String line; !std::getline(errorStream, line).eof();) {
@@ -48,8 +48,8 @@ Pair<int, String> run_command_get_stderr(String command, Vec<String> args) {
 std::tuple<int, String, String> run_command_get_stdout_and_stderr(String command, Vec<String> args) {
 	boost::process::ipstream errorStream;
 	boost::process::ipstream outStream;
-	boost::process::child	 childProcess(command, args, boost::process::std_out > outStream,
-										  boost::process::std_err > errorStream);
+	boost::process::child    childProcess(command, args, boost::process::std_out > outStream,
+	                                      boost::process::std_err > errorStream);
 	childProcess.wait();
 	String output;
 	String errorOutput;

@@ -8,12 +8,12 @@ namespace qat::ast {
 
 class UnsignedLiteral final : public PrerunExpression, public TypeInferrable {
   private:
-	String						value;
+	String                      value;
 	Maybe<Pair<u64, FileRange>> bits;
 
   public:
 	UnsignedLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange)
-		: PrerunExpression(_fileRange), value(_value), bits(_bits) {}
+	    : PrerunExpression(_fileRange), value(_value), bits(_bits) {}
 
 	useit static UnsignedLiteral* create(String _value, Maybe<Pair<u64, FileRange>> bits, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(UnsignedLiteral), _value, bits, _fileRange);
@@ -25,9 +25,9 @@ class UnsignedLiteral final : public PrerunExpression, public TypeInferrable {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
-	useit Json			   to_json() const override;
-	useit String		   to_string() const final;
-	useit NodeType		   nodeType() const override { return NodeType::UNSIGNED_LITERAL; }
+	useit Json             to_json() const override;
+	useit String           to_string() const final;
+	useit NodeType         nodeType() const override { return NodeType::UNSIGNED_LITERAL; }
 };
 
 } // namespace qat::ast

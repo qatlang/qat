@@ -4,7 +4,7 @@
 namespace qat::ir {
 
 EntityOverview::EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange)
-	: ovKind(std::move(_ovKind)), ovInfo(std::move(_ovInfo)), ovRange(std::move(_ovRange)) {}
+    : ovKind(std::move(_ovKind)), ovInfo(std::move(_ovInfo)), ovRange(std::move(_ovRange)) {}
 
 void EntityOverview::add_mention(FileRange _range) { ovMentions.push_back(std::move(_range)); }
 
@@ -28,11 +28,11 @@ Json EntityOverview::overviewToJson() {
 		broughtMentionsJson.push_back(Json()._("module", bMention.first->get_id())._("range", bMention.second));
 	}
 	return Json()
-		._("kind", ovKind)
-		._("info", ovInfo)
-		._("origin", ovRange)
-		._("mentions", mentionsJson)
-		._("broughtMentions", broughtMentionsJson);
+	    ._("kind", ovKind)
+	    ._("info", ovInfo)
+	    ._("origin", ovRange)
+	    ._("mentions", mentionsJson)
+	    ._("broughtMentions", broughtMentionsJson);
 }
 
 } // namespace qat::ir

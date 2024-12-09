@@ -14,9 +14,9 @@ class ReferenceType : public Type {
 	ReferenceType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
 	useit static ReferenceType* get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx);
 
-	useit Type*	   get_subtype() const;
-	useit bool	   isSubtypeVariable() const;
-	useit bool	   is_type_sized() const final;
+	useit Type*    get_subtype() const;
+	useit bool     isSubtypeVariable() const;
+	useit bool     is_type_sized() const final;
 	useit TypeKind type_kind() const final;
 	useit String   to_string() const final;
 };

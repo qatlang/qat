@@ -11,7 +11,7 @@ namespace qat::ir {
 bool has_terminator_instruction(llvm::BasicBlock* bb) {
 	for (auto& inst : *bb) {
 		if (llvm::isa<llvm::BranchInst>(&inst) || llvm::isa<llvm::ReturnInst>(&inst) ||
-			llvm::isa<llvm::InvokeInst>(&inst) || llvm::isa<llvm::SwitchInst>(&inst)) {
+		    llvm::isa<llvm::InvokeInst>(&inst) || llvm::isa<llvm::SwitchInst>(&inst)) {
 			return true;
 		}
 	}
@@ -20,7 +20,7 @@ bool has_terminator_instruction(llvm::BasicBlock* bb) {
 
 bool is_terminator_instruction(llvm::Value* value) {
 	return llvm::isa<llvm::BranchInst>(value) || llvm::isa<llvm::ReturnInst>(value) ||
-		   llvm::isa<llvm::InvokeInst>(value) || llvm::isa<llvm::SwitchInst>(value);
+	       llvm::isa<llvm::InvokeInst>(value) || llvm::isa<llvm::SwitchInst>(value);
 }
 
 llvm::Instruction* add_branch(llvm::IRBuilder<>& builder, llvm::BasicBlock* dest) {

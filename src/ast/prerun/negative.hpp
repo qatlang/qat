@@ -22,9 +22,9 @@ class PrerunNegative final : public PrerunExpression, public TypeInferrable {
 	}
 
 	ir::PrerunValue* emit(EmitCtx* ctx);
-	useit Json		 to_json() const;
-	useit String	 to_string() const;
-	useit NodeType	 nodeType() const { return NodeType::PRERUN_NEGATIVE; }
+	useit Json       to_json() const;
+	useit String     to_string() const;
+	useit NodeType   nodeType() const { return NodeType::PRERUN_NEGATIVE; }
 };
 
 } // namespace qat::ast

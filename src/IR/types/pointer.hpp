@@ -21,7 +21,7 @@ enum class PointerOwnerType {
 
 class MarkOwner {
   public:
-	void*			 owner;
+	void*            owner;
 	PointerOwnerType ownerTy;
 
 	useit static MarkOwner of_heap();
@@ -32,10 +32,10 @@ class MarkOwner {
 	useit static MarkOwner of_region(Region* region);
 	useit static MarkOwner of_any_region();
 
-	useit Type*		owner_as_type() const { return (Type*)owner; }
-	useit Region*	owner_as_region() const { return ((Type*)owner)->as_region(); }
+	useit Type*     owner_as_type() const { return (Type*)owner; }
+	useit Region*   owner_as_region() const { return ((Type*)owner)->as_region(); }
 	useit Function* owner_as_parent_function() const { return (Function*)owner; }
-	useit Type*		owner_as_parent_type() const { return (Type*)owner; }
+	useit Type*     owner_as_parent_type() const { return (Type*)owner; }
 
 	useit bool is_of_type() const { return ownerTy == PointerOwnerType::type; }
 	useit bool is_of_anonymous() const { return ownerTy == PointerOwnerType::anonymous; }
@@ -53,19 +53,19 @@ class MarkOwner {
 
 class MarkType : public Type {
   private:
-	Type*	  subType;
-	bool	  isSubtypeVar;
+	Type*     subType;
+	bool      isSubtypeVar;
 	MarkOwner owner;
-	bool	  hasMulti;
-	bool	  nonNullable;
+	bool      hasMulti;
+	bool      nonNullable;
 
   public:
 	MarkType(bool _isSubVar, Type* _subtype, bool nonNullable, MarkOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
 
 	useit static MarkType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner,
-							   bool _hasMulti, ir::Ctx* irCtx);
+	                           bool _hasMulti, ir::Ctx* irCtx);
 
-	useit Type*		get_subtype() const;
+	useit Type*     get_subtype() const;
 	useit MarkOwner get_owner() const;
 
 	useit bool is_subtype_variable() const;

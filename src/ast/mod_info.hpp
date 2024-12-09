@@ -26,7 +26,7 @@ class ModInfo : public Node {
 	void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
 	useit NodeType nodeType() const final { return NodeType::MODULE_INFO; }
-	useit Json	   to_json() const final;
+	useit Json     to_json() const final;
 };
 
 } // namespace qat::ast

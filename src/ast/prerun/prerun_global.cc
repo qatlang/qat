@@ -29,24 +29,24 @@ void PrerunGlobal::define(ir::Mod* mod, ir::Ctx* irCtx) const {
 	if (type.has_value()) {
 		if (!valTy->is_same(resVal->get_ir_type())) {
 			irCtx->Error("The provided type for the prerun global is " + irCtx->color(valTy->to_string()) +
-							 " but the value is of type " + irCtx->color(resVal->get_ir_type()->to_string()),
-						 value->fileRange);
+			                 " but the value is of type " + irCtx->color(resVal->get_ir_type()->to_string()),
+			             value->fileRange);
 		}
 	} else {
 		valTy = resVal->get_ir_type();
 	}
 	new ir::PrerunGlobal(mod, name, valTy, resVal->get_llvm_constant(), emitCtx->get_visibility_info(visibSpec),
-						 name.range);
+	                     name.range);
 }
 
 Json PrerunGlobal::to_json() const {
 	return Json()
-		._("nodeType", "prerunGlobal")
-		._("name", name)
-		._("hasType", type.has_value())
-		._("type", type.has_value() ? type.value()->to_json() : JsonValue())
-		._("value", value->to_json())
-		._("fileRange", fileRange);
+	    ._("nodeType", "prerunGlobal")
+	    ._("name", name)
+	    ._("hasType", type.has_value())
+	    ._("type", type.has_value() ? type.value()->to_json() : JsonValue())
+	    ._("value", value->to_json())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

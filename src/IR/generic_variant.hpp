@@ -12,7 +12,7 @@ namespace qat::ir {
 
 template <typename T> class GenericVariant {
   private:
-	T*						entity;
+	T*                      entity;
 	Vec<ir::GenericToFill*> genericTypes;
 
   public:
@@ -25,7 +25,7 @@ template <typename T> class GenericVariant {
 	}
 
 	useit bool check(ir::Ctx* irCtx, std::function<void(const String&, const FileRange&)> errorFn,
-					 Vec<GenericToFill*> dest) const {
+	                 Vec<GenericToFill*> dest) const {
 		if (genericTypes.size() != dest.size()) {
 			return false;
 		} else {
@@ -53,7 +53,7 @@ template <typename T> class GenericVariant {
 						if (genExp->get_ir_type()->is_typed()) {
 							if (destExp->get_ir_type()->is_typed()) {
 								if (!genExp->get_ir_type()->as_typed()->get_subtype()->is_same(
-										destExp->get_ir_type()->as_typed()->get_subtype())) {
+								        destExp->get_ir_type()->as_typed()->get_subtype())) {
 									return false;
 								}
 							} else {
@@ -76,7 +76,7 @@ template <typename T> class GenericVariant {
 					} else {
 						if (genTy->as_prerun()->get_ir_type()->is_typed()) {
 							if (!dest.at(i)->as_type()->is_same(
-									genTy->as_prerun()->get_ir_type()->as_typed()->get_subtype())) {
+							        genTy->as_prerun()->get_ir_type()->as_typed()->get_subtype())) {
 								return false;
 							}
 						} else {

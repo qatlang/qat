@@ -24,7 +24,7 @@ ir::Value* MetaTodo::emit(EmitCtx* ctx) {
 	}
 	if (ctx->has_fn()) {
 		if (ctx->get_fn()->get_block()->get_bb()->empty() ||
-			!llvm::isa<llvm::UnreachableInst>(*ctx->get_fn()->get_block()->get_bb()->end())) {
+		    !llvm::isa<llvm::UnreachableInst>(*ctx->get_fn()->get_block()->get_bb()->end())) {
 			ctx->irCtx->builder.CreateUnreachable();
 		}
 		ctx->get_fn()->get_block()->set_has_todo();
@@ -34,8 +34,8 @@ ir::Value* MetaTodo::emit(EmitCtx* ctx) {
 
 Json MetaTodo::to_json() const {
 	return Json()
-		._("hasMessage", message.has_value())
-		._("message", message.has_value() ? message.value() : JsonValue());
+	    ._("hasMessage", message.has_value())
+	    ._("message", message.has_value() ? message.value() : JsonValue());
 }
 
 } // namespace qat::ast

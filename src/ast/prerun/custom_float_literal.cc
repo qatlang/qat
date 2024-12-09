@@ -8,17 +8,17 @@ ir::PrerunValue* CustomFloatLiteral::emit(EmitCtx* ctx) {
 	ir::Type* floatResTy = nullptr;
 	if (is_type_inferred()) {
 		if (inferredType->is_float() ||
-			(inferredType->is_native_type() && inferredType->as_native_type()->get_subtype()->is_float())) {
+		    (inferredType->is_native_type() && inferredType->as_native_type()->get_subtype()->is_float())) {
 			if (!kind.empty() && inferredType->to_string() != kind) {
 				ctx->Error("The suffix provided here is " + ctx->color(kind) + " but the inferred type is " +
-							   ctx->color(inferredType->to_string()),
-						   fileRange);
+				               ctx->color(inferredType->to_string()),
+				           fileRange);
 			}
 			floatResTy = inferredType;
 		} else {
 			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-						   " but this literal is expected to have a floating point type",
-					   fileRange);
+			               " but this literal is expected to have a floating point type",
+			           fileRange);
 		}
 	} else if (!kind.empty()) {
 		if (kind == "f16") {

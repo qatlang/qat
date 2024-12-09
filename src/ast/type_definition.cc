@@ -11,7 +11,7 @@ void TypeDefinition::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	typeSize = subType->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
 	mod->entity_name_check(irCtx, name, isGeneric() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition);
 	entityState = mod->add_entity(name, isGeneric() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition,
-								  this, ir::EmitPhase::phase_1);
+	                              this, ir::EmitPhase::phase_1);
 }
 
 void TypeDefinition::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
@@ -23,10 +23,10 @@ void TypeDefinition::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 		for (auto gen : generics) {
 			if (gen->is_prerun() && gen->as_prerun()->hasDefault()) {
 				gen->as_prerun()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete,
-																	   entityState, ctx);
+				                                                       entityState, ctx);
 			} else if (gen->is_typed() && gen->as_typed()->hasDefault()) {
 				gen->as_typed()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete,
-																	  entityState, ctx);
+				                                                      entityState, ctx);
 			}
 		}
 	}
@@ -45,13 +45,13 @@ void TypeDefinition::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx)
 			}
 		} else {
 			irCtx->Error("The condition for this type definition should be of " + irCtx->color("bool") +
-							 " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
-						 checker.value()->fileRange);
+			                 " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
+			             checker.value()->fileRange);
 		}
 	}
 	if (isGeneric()) {
 		genericTypeDefinition = ir::GenericDefinitionType::create(name, generics, constraint, this, mod,
-																  emitCtx->get_visibility_info(visibSpec));
+		                                                          emitCtx->get_visibility_info(visibSpec));
 	} else {
 		create_type(mod, irCtx);
 	}
@@ -66,7 +66,7 @@ void TypeDefinition::unset_variant_name() const { variantName = None; }
 void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
 	emitCtx->name_check_in_module(name, isGeneric() ? "generic type definition" : "type definition",
-								  isGeneric() ? Maybe<String>(genericTypeDefinition->get_id()) : None);
+	                              isGeneric() ? Maybe<String>(genericTypeDefinition->get_id()) : None);
 	auto dTyName = name;
 	if (isGeneric()) {
 		dTyName = Identifier(variantName.value(), name.range);
@@ -76,12 +76,12 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 		if (!gen->isSet()) {
 			if (gen->is_typed()) {
 				irCtx->Error("No type is set for the generic type " + irCtx->color(gen->get_name().value) +
-								 " and there is no default type provided",
-							 gen->get_range());
+				                 " and there is no default type provided",
+				             gen->get_range());
 			} else if (gen->as_typed()) {
 				irCtx->Error("No value is set for the generic prerun expression " +
-								 irCtx->color(gen->get_name().value) + " and there is no default expression provided",
-							 gen->get_range());
+				                 irCtx->color(gen->get_name().value) + " and there is no default expression provided",
+				             gen->get_range());
 			} else {
 				irCtx->Error("Invalid generic kind", gen->get_range());
 			}
@@ -93,7 +93,7 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 	}
 	SHOW("Type definition " << dTyName.value)
 	typeDefinition = ir::DefinitionType::create(dTyName, subType->emit(emitCtx), genericsIR, mod,
-												emitCtx->get_visibility_info(visibSpec));
+	                                            emitCtx->get_visibility_info(visibSpec));
 }
 
 ir::DefinitionType* TypeDefinition::getDefinition() const { return typeDefinition; }
@@ -104,14 +104,14 @@ Json TypeDefinition::to_json() const {
 		genJson.push_back(gen->to_json());
 	}
 	return Json()
-		._("nodeType", "typeDefinition")
-		._("name", name)
-		._("subType", subType->to_json())
-		._("hasGenerics", !generics.empty())
-		._("generics", genJson)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "typeDefinition")
+	    ._("name", name)
+	    ._("subType", subType->to_json())
+	    ._("hasGenerics", !generics.empty())
+	    ._("generics", genJson)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

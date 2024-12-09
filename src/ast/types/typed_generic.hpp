@@ -9,18 +9,18 @@
 namespace qat::ast {
 
 class TypedGenericAbstract final : public GenericAbstractType {
-	Maybe<ast::Type*>	   defaultTypeAST;
-	mutable ir::Type*	   defaultType = nullptr;
+	Maybe<ast::Type*>      defaultTypeAST;
+	mutable ir::Type*      defaultType = nullptr;
 	mutable Vec<ir::Type*> typeValue;
 
   public:
 	TypedGenericAbstract(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy, FileRange _fileRange)
-		: GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
+	    : GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
 
 	useit static TypedGenericAbstract* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
-											  FileRange _fileRange) {
+	                                          FileRange _fileRange) {
 		return std::construct_at(OwnNormal(TypedGenericAbstract), _index, std::move(_name), _defaultTy,
-								 std::move(_fileRange));
+		                         std::move(_fileRange));
 	}
 
 	useit bool hasDefault() const final;
@@ -28,7 +28,7 @@ class TypedGenericAbstract final : public GenericAbstractType {
 	useit ir::Type* getDefault() const;
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-							 EmitCtx* ctx) final {
+	                         EmitCtx* ctx) final {
 		if (defaultTypeAST.has_value()) {
 			UPDATE_DEPS(defaultTypeAST.value());
 		}
@@ -40,8 +40,8 @@ class TypedGenericAbstract final : public GenericAbstractType {
 	useit ir::TypedGeneric* toIR() const;
 
 	useit bool isSet() const final;
-	void	   setType(ir::Type* typ) const;
-	void	   unset() const final;
+	void       setType(ir::Type* typ) const;
+	void       unset() const final;
 
 	useit Json to_json() const final;
 

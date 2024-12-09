@@ -10,10 +10,10 @@
 #else
 #define SHOW(val)                                                                                                      \
 	std::cout << qat::cli::get_color(qat::cli::Color::cyan) << val << qat::cli::get_color(qat::cli::Color::reset)      \
-			  << "\n";
+	          << "\n";
 #define HIGHLIGHT(col, val)                                                                                            \
 	std::cout << qat::cli::get_color(qat::cli::Color::yellow) << val << qat::cli::get_color(qat::cli::Color::reset)    \
-			  << "\n";
+	          << "\n";
 #endif
 
 #endif

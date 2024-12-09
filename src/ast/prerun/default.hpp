@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 class PrerunDefault final : public PrerunExpression, public TypeInferrable {
-	mutable Maybe<ast::Type*>				 theType;
+	mutable Maybe<ast::Type*>                theType;
 	mutable Maybe<ast::GenericAbstractType*> genericAbstractType;
 
   public:
@@ -28,9 +28,9 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
-	useit NodeType		   nodeType() const final { return NodeType::PRERUN_DEFAULT; }
-	useit String		   to_string() const final;
-	useit Json			   to_json() const final;
+	useit NodeType         nodeType() const final { return NodeType::PRERUN_DEFAULT; }
+	useit String           to_string() const final;
+	useit Json             to_json() const final;
 };
 
 } // namespace qat::ast

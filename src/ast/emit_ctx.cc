@@ -6,7 +6,7 @@
 namespace qat::ast {
 
 AccessInfo EmitCtx::get_access_info() const {
-	Maybe<ir::Type*>	  type	= None;
+	Maybe<ir::Type*>      type  = None;
 	Maybe<ir::DoneSkill*> skill = None;
 	if (has_member_parent()) {
 		if (get_member_parent()->is_expanded()) {
@@ -21,36 +21,36 @@ AccessInfo EmitCtx::get_access_info() const {
 String EmitCtx::color(String const& message) const {
 	auto* cfg = cli::Config::get();
 	return (cfg->color_mode() == cli::ColorMode::none ? "`"
-													  : String(colors::bold) + cli::get_color(cli::Color::yellow)) +
-		   message +
-		   (cfg->color_mode() == cli::ColorMode::none ? "`"
-													  : String(colors::reset) + cli::get_color(cli::Color::white));
+	                                                  : String(colors::bold) + cli::get_color(cli::Color::yellow)) +
+	       message +
+	       (cfg->color_mode() == cli::ColorMode::none ? "`"
+	                                                  : String(colors::reset) + cli::get_color(cli::Color::white));
 }
 
 void EmitCtx::genericNameCheck(String const& name, FileRange const& range) {
 	if (has_fn() && get_fn()->has_generic_parameter(name)) {
 		Error("A generic parameter named " + color(name) + " is present in this function. This will lead to ambiguity.",
-			  range);
+		      range);
 	} else if (has_member_parent()) {
 		if (get_member_parent()->is_expanded() && get_member_parent()->as_expanded()->has_generic_parameter(name)) {
 			Error("A generic parameter named " + color(name) + " is present in the parent type " +
-					  color(get_member_parent()->as_expanded()->to_string()) + ", so this will lead to ambiguity",
-				  range);
+			          color(get_member_parent()->as_expanded()->to_string()) + ", so this will lead to ambiguity",
+			      range);
 		} else if (get_member_parent()->is_done_skill() &&
-				   get_member_parent()->as_done_skill()->has_generic_parameter(name)) {
+		           get_member_parent()->as_done_skill()->has_generic_parameter(name)) {
 			Error("A generic parameter named " + color(name) + " is present in the parent implementation " +
-					  color(get_member_parent()->as_done_skill()->to_string()) + ", so this will lead to ambiguity",
-				  range);
+			          color(get_member_parent()->as_done_skill()->to_string()) + ", so this will lead to ambiguity",
+			      range);
 		}
 	} else if (has_opaque_parent() && get_opaque_parent()->has_generic_parameter(name)) {
 		Error("A generic parameter named " + color(name) + " is present in the parent type " +
-				  color(get_opaque_parent()->to_string()) + ", so this will lead to ambiguity",
-			  range);
+		          color(get_opaque_parent()->to_string()) + ", so this will lead to ambiguity",
+		      range);
 	}
 }
 
 void EmitCtx::name_check_in_module(const Identifier& name, const String& entityType, Maybe<String> genericID,
-								   Maybe<String> opaqueID) {
+                                   Maybe<String> opaqueID) {
 	auto reqInfo = get_access_info();
 	if (mod->has_opaque_type(name.value, reqInfo)) {
 		auto* opq = mod->get_opaque_type(name.value, get_access_info());
@@ -74,201 +74,201 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 			tyDesc = opq->is_generic() ? "generic type" : "type";
 		}
 		Error("A " + tyDesc + " named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_struct_type(name.value, reqInfo)) {
 		Error("A core type named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_struct_type(name.value, None)) {
 		Error("A core type named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_struct_type_in_imports(name.value, reqInfo).first) {
 		Error("A core type named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_struct_type_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_struct_type_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_generic_struct_type(name.value, reqInfo)) {
 		if (genericID.has_value() &&
-			mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
+		    mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
 		Error("A generic core type named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_generic_struct_type(name.value, None)) {
 		if (genericID.has_value() &&
-			mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
+		    mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
 		Error("A generic core type named " + color(name.value) +
-				  " is brought into this module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          " is brought into this module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_generic_struct_type_in_imports(name.value, reqInfo).first) {
 		Error("A generic core type named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_generic_struct_type_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_generic_struct_type_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_mix_type(name.value, reqInfo)) {
 		Error("A mix type named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_mix_type(name.value, None)) {
 		Error("A mix type named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_mix_type_in_imports(name.value, reqInfo).first) {
 		Error("A mix type named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_mix_type_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_mix_type_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_choice_type(name.value, reqInfo)) {
 		Error("A choice type named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_choice_type(name.value, None)) {
 		Error("A choice type named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_choice_type_in_imports(name.value, reqInfo).first) {
 		Error("A choice type named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_choice_type_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_choice_type_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_type_definition(name.value, reqInfo)) {
 		Error("A type definition named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_type_definition(name.value, None)) {
 		Error("A type definition named " + color(name.value) +
-				  " is brought into this module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          " is brought into this module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_type_definition_in_imports(name.value, reqInfo).first) {
 		Error("A type definition named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_type_definition_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_type_definition_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_function(name.value, reqInfo)) {
 		Error("A function named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_function(name.value, None)) {
 		Error("A function named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_function_in_imports(name.value, reqInfo).first) {
 		Error("A function named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_function_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_function_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_prerun_function(name.value, reqInfo)) {
 		Error("A prerun function named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_prerun_function(name.value, None)) {
 		Error("A prerun function named " + color(name.value) +
-				  " is brought into this module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          " is brought into this module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_prerun_function_in_imports(name.value, reqInfo).first) {
 		Error("A prerun function named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_function_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_function_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_generic_function(name.value, reqInfo)) {
 		if (genericID.has_value() &&
-			mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
+		    mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
 		Error("A generic function named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_generic_function(name.value, None)) {
 		if (genericID.has_value() &&
-			mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
+		    mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
 		Error("A generic function named " + color(name.value) +
-				  " is brought into this module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          " is brought into this module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_generic_function_in_imports(name.value, reqInfo).first) {
 		if (genericID.has_value() &&
-			mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
+		    mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
 		Error("A generic function named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_generic_function_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_generic_function_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_global(name.value, reqInfo)) {
 		Error("A global named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_global(name.value, None)) {
 		Error("A global named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_global_in_imports(name.value, reqInfo).first) {
 		Error("A global named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_global_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_global_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_prerun_global(name.value, reqInfo)) {
 		Error("A prerun global named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_prerun_global(name.value, None)) {
 		Error("A prerun global named " + color(name.value) +
-				  " is brought into this module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          " is brought into this module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_prerun_global_in_imports(name.value, reqInfo).first) {
 		Error("A prerun global named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_global_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_global_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_region(name.value, reqInfo)) {
 		Error("A region named " + color(name.value) + " exists in this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_region(name.value, None)) {
 		Error("A region named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_region_in_imports(name.value, reqInfo).first) {
 		Error("A region named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_region_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_region_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_lib(name.value, reqInfo)) {
 		Error("A lib named " + color(name.value) + " exists in this module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_brought_lib(name.value, None)) {
 		Error("A lib named " + color(name.value) + " is brought into this module. Please change name of this " +
-				  entityType + " or check the codebase for inconsistencies",
-			  name.range);
+		          entityType + " or check the codebase for inconsistencies",
+		      name.range);
 	} else if (mod->has_lib_in_imports(name.value, reqInfo).first) {
 		Error("A lib named " + color(name.value) + " is present inside the module " +
-				  color(mod->has_region_in_imports(name.value, reqInfo).second) +
-				  " which is brought into the current module. Please change name of this " + entityType +
-				  " or check the codebase for inconsistencies",
-			  name.range);
+		          color(mod->has_region_in_imports(name.value, reqInfo).second) +
+		          " which is brought into the current module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
+		      name.range);
 	}
 }
 
@@ -305,7 +305,7 @@ VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
 					return VisibilityInfo::type(get_member_parent()->get_parent_type());
 				} else {
 					Error("There is no parent type and hence " + color("type") + " visibility cannot be used here",
-						  spec->range);
+					      spec->range);
 				}
 			}
 			case VisibilityKind::pub: {

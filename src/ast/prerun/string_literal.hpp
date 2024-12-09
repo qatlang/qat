@@ -12,7 +12,7 @@ class StringLiteral final : public PrerunExpression {
 
   public:
 	StringLiteral(String _value, FileRange _fileRange)
-		: PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
+	    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
 	useit static StringLiteral* create(String _value, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(StringLiteral), _value, _fileRange);
@@ -26,9 +26,9 @@ class StringLiteral final : public PrerunExpression {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
-	useit Json			   to_json() const override;
-	useit String		   to_string() const final;
-	useit NodeType		   nodeType() const override { return NodeType::STRING_LITERAL; }
+	useit Json             to_json() const override;
+	useit String           to_string() const final;
+	useit NodeType         nodeType() const override { return NodeType::STRING_LITERAL; }
 };
 
 } // namespace qat::ast

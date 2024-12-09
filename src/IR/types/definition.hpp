@@ -27,25 +27,25 @@ class DefinitionType : public ExpandedType, public EntityOverview {
 
   public:
 	DefinitionType(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
-				   const VisibilityInfo& _visibInfo);
+	               const VisibilityInfo& _visibInfo);
 
 	useit static DefinitionType* create(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
-										const VisibilityInfo& _visibInfo) {
+	                                    const VisibilityInfo& _visibInfo) {
 		return std::construct_at(OwnNormal(DefinitionType), std::move(_name), _actualType, std::move(_generics), mod,
-								 _visibInfo);
+		                         _visibInfo);
 	}
 
 	void setSubType(Type* _subType);
 
 	useit Identifier get_name() const;
-	useit String	 get_full_name() const;
-	useit Mod*		 get_module();
-	useit Type*		 get_subtype();
-	useit TypeKind	 type_kind() const final;
-	useit LinkNames	 get_link_names() const final;
-	useit String	 to_string() const final;
-	useit bool		 is_expanded() const final;
-	useit bool		 is_type_sized() const final;
+	useit String     get_full_name() const;
+	useit Mod*       get_module();
+	useit Type*      get_subtype();
+	useit TypeKind   type_kind() const final;
+	useit LinkNames  get_link_names() const final;
+	useit String     to_string() const final;
+	useit bool       is_expanded() const final;
+	useit bool       is_type_sized() const final;
 
 	useit bool is_trivially_copyable() const final;
 	useit bool is_trivially_movable() const final;
@@ -72,11 +72,11 @@ class DefinitionType : public ExpandedType, public EntityOverview {
 
 class GenericDefinitionType : public Uniq, public EntityOverview {
   private:
-	Identifier					   name;
+	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;
-	ast::TypeDefinition*		   defineTypeDef;
-	Mod*						   parent;
-	VisibilityInfo				   visibility;
+	ast::TypeDefinition*           defineTypeDef;
+	Mod*                           parent;
+	VisibilityInfo                 visibility;
 
 	Maybe<ast::PrerunExpression*> constraint;
 
@@ -84,28 +84,28 @@ class GenericDefinitionType : public Uniq, public EntityOverview {
 
   public:
 	GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics,
-						  Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType, Mod* parent,
-						  const VisibilityInfo& visibInfo);
+	                      Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType, Mod* parent,
+	                      const VisibilityInfo& visibInfo);
 
 	useit static GenericDefinitionType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
-											   Maybe<ast::PrerunExpression*> constraint,
-											   ast::TypeDefinition* defineCoreType, Mod* parent,
-											   const VisibilityInfo& visibInfo) {
+	                                           Maybe<ast::PrerunExpression*> constraint,
+	                                           ast::TypeDefinition* defineCoreType, Mod* parent,
+	                                           const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericDefinitionType), std::move(name), std::move(generics), constraint,
-								 defineCoreType, parent, visibInfo);
+		                         defineCoreType, parent, visibInfo);
 	}
 
 	~GenericDefinitionType() = default;
 
-	useit Identifier	  get_name() const;
-	useit usize			  get_generic_count() const;
-	useit bool			  all_generics_have_defaults() const;
-	useit usize			  get_variant_count() const;
-	useit Mod*			  get_module() const;
+	useit Identifier      get_name() const;
+	useit usize           get_generic_count() const;
+	useit bool            all_generics_have_defaults() const;
+	useit usize           get_variant_count() const;
+	useit Mod*            get_module() const;
 	useit DefinitionType* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
 
 	useit ast::GenericAbstractType* get_generic_at(usize index) const;
-	useit VisibilityInfo			get_visibility() const;
+	useit VisibilityInfo            get_visibility() const;
 };
 
 } // namespace qat::ir

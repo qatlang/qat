@@ -12,7 +12,7 @@ enum class VectorKind {
 
 class VectorType : public Type {
 	ir::Type*  subType;
-	usize	   count;
+	usize      count;
 	VectorKind kind;
 
   public:
@@ -20,9 +20,9 @@ class VectorType : public Type {
 	useit static VectorType* create(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
 
 	useit ir::Type* get_element_type() const { return subType; }
-	useit usize		get_count() const { return count; }
-	useit bool		is_scalable() const { return kind == VectorKind::scalable; }
-	useit bool		is_fixed() const { return kind == VectorKind::fixed; }
+	useit usize     get_count() const { return count; }
+	useit bool      is_scalable() const { return kind == VectorKind::scalable; }
+	useit bool      is_fixed() const { return kind == VectorKind::fixed; }
 	useit ir::VectorType* get_non_scalable_type(ir::Ctx* irCtx) const {
 		return VectorType::create(subType, count, VectorKind::fixed, irCtx);
 	}

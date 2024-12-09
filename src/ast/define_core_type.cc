@@ -15,24 +15,24 @@ namespace qat::ast {
 
 Json DefineCoreType::Member::to_json() const {
 	return Json()
-		._("nodeType", "coreTypeMember")
-		._("name", name)
-		._("type", type->to_json())
-		._("variability", variability)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "coreTypeMember")
+	    ._("name", name)
+	    ._("type", type->to_json())
+	    ._("variability", variability)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 Json DefineCoreType::StaticMember::to_json() const {
 	return Json()
-		._("nodeType", "coreTypeMember")
-		._("name", name)
-		._("type", type->to_json())
-		._("variability", variability)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "coreTypeMember")
+	    ._("name", name)
+	    ._("type", type->to_json())
+	    ._("variability", variability)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 bool DefineCoreType::isGeneric() const { return !(generics.empty()); }
@@ -50,7 +50,7 @@ void DefineCoreType::unsetOpaque() const { opaquedTypes.pop_back(); }
 
 void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 	if (!isGeneric()) {
-		bool			 hasAllMems = true;
+		bool             hasAllMems = true;
 		Vec<llvm::Type*> allMemEqTys;
 		for (auto* mem : members) {
 			auto memSize = mem->type->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
@@ -62,69 +62,69 @@ void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 		Maybe<ir::MetaInfo> irMeta;
-		bool				isTypeNatureUnion = false;
+		bool                isTypeNatureUnion = false;
 		if (metaInfo.has_value()) {
 			irMeta = metaInfo.value().toIR(EmitCtx::get(irCtx, mod));
 			if (irMeta->has_key(ir::MetaInfo::unionKey)) {
 				if (!irMeta->has_key("foreign") && !mod->get_relevant_foreign_id().has_value()) {
 					irCtx->Error(
-						"This type is not a foreign entity and is not part of any foreign module, and hence cannot be considered as a " +
-							irCtx->color(ir::MetaInfo::unionKey),
-						metaInfo.value().fileRange);
+					    "This type is not a foreign entity and is not part of any foreign module, and hence cannot be considered as a " +
+					        irCtx->color(ir::MetaInfo::unionKey),
+					    metaInfo.value().fileRange);
 				}
 				auto typeNatVal = irMeta->get_value_for(ir::MetaInfo::unionKey);
 				if (!typeNatVal->get_ir_type()->is_bool()) {
 					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::unionKey) + " expects a value of type " +
-									 irCtx->color("bool"),
-								 metaInfo.value().fileRange);
+					                 irCtx->color("bool"),
+					             metaInfo.value().fileRange);
 				}
 				isTypeNatureUnion =
-					llvm::cast<llvm::ConstantInt>(typeNatVal->get_llvm_constant())->getValue().getBoolValue();
+				    llvm::cast<llvm::ConstantInt>(typeNatVal->get_llvm_constant())->getValue().getBoolValue();
 			}
 			if (irMeta->has_key(ir::MetaInfo::packedKey)) {
 				auto packVal = irMeta->get_value_for(ir::MetaInfo::packedKey);
 				if (!packVal->get_ir_type()->is_bool()) {
 					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
-									 irCtx->color("bool"),
-								 metaInfo.value().fileRange);
+					                 irCtx->color("bool"),
+					             metaInfo.value().fileRange);
 				}
 				isPackedStruct = llvm::cast<llvm::ConstantInt>(packVal->get_llvm_constant())->getValue().getBoolValue();
 			}
 		}
 		auto eqStructTy =
-			hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
+		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
 		setOpaque(ir::OpaqueType::get(
-			name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::core, mod,
-			eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-			EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, irMeta));
+		    name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::core, mod,
+		    eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+		    EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, irMeta));
 	}
 }
 
 void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ctx* irCtx) const {
 	bool needsDestructor = false;
-	auto cTyName		 = name;
+	auto cTyName         = name;
 	SHOW("Creating IR generics")
 	Vec<ir::GenericArgument*> genericsIR;
 	for (auto* gen : generics) {
 		if (!gen->isSet()) {
 			if (gen->is_typed()) {
 				irCtx->Error("No type is set for the generic type " + irCtx->color(gen->get_name().value) +
-								 " and there is no default type provided",
-							 gen->get_range());
+				                 " and there is no default type provided",
+				             gen->get_range());
 			} else if (gen->is_prerun()) {
 				irCtx->Error("No value is set for the generic prerun expression " +
-								 irCtx->color(gen->get_name().value) + " and there is no default expression provided",
-							 gen->get_range());
+				                 irCtx->color(gen->get_name().value) + " and there is no default expression provided",
+				             gen->get_range());
 			} else {
 				irCtx->Error("Invalid generic kind", gen->get_range());
 			}
 		}
 		genericsIR.push_back(gen->toIRGenericType());
 	}
-	auto globalEmitCtx	= EmitCtx::get(irCtx, mod);
+	auto globalEmitCtx  = EmitCtx::get(irCtx, mod);
 	auto mainVisibility = globalEmitCtx->get_visibility_info(visibSpec);
 	if (isGeneric()) {
-		bool			 hasAllMems = true;
+		bool             hasAllMems = true;
 		Vec<llvm::Type*> allMemEqTys;
 		for (auto* mem : members) {
 			auto memSize = mem->type->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
@@ -142,21 +142,21 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 				auto packVal = irMeta->get_value_for(ir::MetaInfo::packedKey);
 				if (!packVal->get_ir_type()->is_bool()) {
 					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
-									 irCtx->color("bool"),
-								 metaInfo.value().fileRange);
+					                 irCtx->color("bool"),
+					             metaInfo.value().fileRange);
 				}
 				isPackedStruct = llvm::cast<llvm::ConstantInt>(packVal->get_llvm_constant())->getValue().getBoolValue();
 			}
 		}
 		auto eqStructTy =
-			hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
+		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
 		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
-											   << genericCoreType << "; datalayout: " << irCtx->dataLayout.has_value())
+		                                       << genericCoreType << "; datalayout: " << irCtx->dataLayout.has_value())
 		setOpaque(
-			ir::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->get_id()) : None,
-								ir::OpaqueSubtypeKind::core, mod,
-								eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
-								mainVisibility, irCtx->llctx, irMeta));
+		    ir::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->get_id()) : None,
+		                        ir::OpaqueSubtypeKind::core, mod,
+		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+		                        mainVisibility, irCtx->llctx, irMeta));
 	}
 	SHOW("Set opaque")
 	if (genericCoreType) {
@@ -172,25 +172,25 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 			// NOTE - Support sized opaques?
 			if (memTy->is_same(get_opaque())) {
 				irCtx->Error(
-					"Type nesting found. Member field " + irCtx->color(mem->name.value) + " is of type " +
-						irCtx->color(get_opaque()->to_string()) +
-						" which is the same as its parent type. Check the logic for mistakes or try using a pointer or a reference to the parent as the type instead",
-					mem->type->fileRange);
+				    "Type nesting found. Member field " + irCtx->color(mem->name.value) + " is of type " +
+				        irCtx->color(get_opaque()->to_string()) +
+				        " which is the same as its parent type. Check the logic for mistakes or try using a pointer or a reference to the parent as the type instead",
+				    mem->type->fileRange);
 			} else {
 				irCtx->Error("Member field " + irCtx->color(mem->name.value) + " has an incomplete type " +
-								 irCtx->color(memTy->to_string()) + " with an unknown size",
-							 mem->type->fileRange);
+				                 irCtx->color(memTy->to_string()) + " with an unknown size",
+				             mem->type->fileRange);
 			}
 		}
 		if (memTy->is_destructible()) {
 			needsDestructor = true;
 		}
 		mems.push_back(ir::StructField::create(mem->name, memTy, mem->variability, mem->expression,
-											   typeEmitCtx->get_visibility_info(mem->visibSpec)));
+		                                       typeEmitCtx->get_visibility_info(mem->visibSpec)));
 	}
 	SHOW("Creating core type: " << cTyName.value)
 	*resultTy = ir::StructType::create(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
-									   isPackedStruct.value_or(false));
+	                                   isPackedStruct.value_or(false));
 	if (genericCoreType) {
 		genericCoreType->variants.push_back(ir::GenericVariant<ir::StructType>(*resultTy, genericsToFill));
 	}
@@ -199,7 +199,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 	(*resultTy)->explicitTrivialMove = trivialMove.has_value();
 	if (genericCoreType) {
 		for (auto item = genericCoreType->opaqueVariants.begin(); item != genericCoreType->opaqueVariants.end();
-			 item++) {
+		     item++) {
 			SHOW("Opaque variant: " << item->get())
 			if (item->get()->get_id() == get_opaque()->get_id()) {
 				genericCoreType->opaqueVariants.erase(item);
@@ -219,28 +219,28 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 	auto emitCtx   = EmitCtx::get(irCtx, mod)->with_member_parent(memParent);
 	for (auto* stm : staticMembers) {
 		(*resultTy)->addStaticMember(stm->name, stm->type->emit(emitCtx), stm->variability,
-									 stm->value ? stm->value->emit(emitCtx) : nullptr,
-									 emitCtx->get_visibility_info(stm->visibSpec), irCtx->llctx);
+		                             stm->value ? stm->value->emit(emitCtx) : nullptr,
+		                             emitCtx->get_visibility_info(stm->visibSpec), irCtx->llctx);
 	}
 	if (copyConstructor && !copyAssignment) {
 		irCtx->Error("Copy constructor is defined for the type " + irCtx->color((*resultTy)->to_string()) +
-						 ", and hence copy assignment operator is also required to be defined",
-					 fileRange);
+		                 ", and hence copy assignment operator is also required to be defined",
+		             fileRange);
 	}
 	if (moveConstructor && !moveAssignment) {
 		irCtx->Error("Move constructor is defined for the type " + irCtx->color((*resultTy)->to_string()) +
-						 ", and hence move assignment operator is also required to be defined",
-					 fileRange);
+		                 ", and hence move assignment operator is also required to be defined",
+		             fileRange);
 	}
 	if (copyAssignment && !copyConstructor) {
 		irCtx->Error("Copy assignment operator is defined for the type " + irCtx->color((*resultTy)->to_string()) +
-						 ", and hence copy constructor is also required to be defined",
-					 fileRange);
+		                 ", and hence copy constructor is also required to be defined",
+		             fileRange);
 	}
 	if (moveAssignment && !moveConstructor) {
 		irCtx->Error("Move assignment operator is defined for the type " + irCtx->color((*resultTy)->to_string()) +
-						 ", and hence move constructor is also required to be defined",
-					 fileRange);
+		                 ", and hence move constructor is also required to be defined",
+		             fileRange);
 	}
 }
 
@@ -254,7 +254,7 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 			gen->emit(emitCtx);
 		}
 		genericCoreType = new ir::GenericStructType(name, generics, genericConstraint, this, mod,
-													emitCtx->get_visibility_info(visibSpec));
+		                                            emitCtx->get_visibility_info(visibSpec));
 	}
 }
 
@@ -312,11 +312,11 @@ void DefineCoreType::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("CreateEntity: " << name.value)
 	mod->entity_name_check(irCtx, name, ir::EntityType::structType);
 	entityState = mod->add_entity(name, isGeneric() ? ir::EntityType::genericStructType : ir::EntityType::structType,
-								  this, isGeneric() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_4);
+	                              this, isGeneric() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_4);
 	if (!isGeneric()) {
-		entityState->phaseToPartial			= ir::EmitPhase::phase_1;
-		entityState->phaseToCompletion		= ir::EmitPhase::phase_2;
-		entityState->supportsChildren		= true;
+		entityState->phaseToPartial         = ir::EmitPhase::phase_1;
+		entityState->phaseToCompletion      = ir::EmitPhase::phase_2;
+		entityState->supportsChildren       = true;
 		entityState->phaseToChildrenPartial = ir::EmitPhase::phase_3;
 		for (auto memFn : memberDefinitions) {
 			memFn->prototype->add_to_parent(entityState, irCtx);
@@ -339,10 +339,10 @@ void DefineCoreType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 	for (auto mem : members) {
 		mem->type->update_dependencies(isGeneric() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_2,
-									   ir::DependType::complete, entityState, ctx);
+		                               ir::DependType::complete, entityState, ctx);
 		if (mem->expression.has_value()) {
 			mem->expression.value()->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState,
-														 ctx);
+			                                             ctx);
 		}
 	}
 	for (auto stat : staticMembers) {
@@ -351,32 +351,32 @@ void DefineCoreType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	if (!isGeneric()) {
 		if (defaultConstructor) {
 			defaultConstructor->prototype->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete,
-															   entityState, ctx);
+			                                                   entityState, ctx);
 			defaultConstructor->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState, ctx);
 		}
 		if (copyConstructor) {
 			copyConstructor->prototype->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete,
-															entityState, ctx);
+			                                                entityState, ctx);
 			copyConstructor->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState, ctx);
 		}
 		if (moveConstructor) {
 			moveConstructor->prototype->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete,
-															entityState, ctx);
+			                                                entityState, ctx);
 			moveConstructor->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState, ctx);
 		}
 		if (copyAssignment) {
 			copyAssignment->prototype->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete,
-														   entityState, ctx);
+			                                               entityState, ctx);
 			copyAssignment->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState, ctx);
 		}
 		if (moveAssignment) {
 			moveAssignment->prototype->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete,
-														   entityState, ctx);
+			                                               entityState, ctx);
 			moveAssignment->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState, ctx);
 		}
 		if (destructorDefinition) {
 			destructorDefinition->update_dependencies(ir::EmitPhase::phase_4, ir::DependType::complete, entityState,
-													  ctx);
+			                                          ctx);
 		}
 		for (auto cons : constructorDefinitions) {
 			cons->prototype->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
@@ -410,8 +410,8 @@ void DefineCoreType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx)
 			}
 		} else {
 			irCtx->Error("The condition for defining this struct type should be of " + irCtx->color("bool") +
-							 " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
-						 defineChecker->fileRange);
+			                 " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
+			             defineChecker->fileRange);
 		}
 	}
 	if (isGeneric()) {
@@ -489,12 +489,12 @@ Json DefineCoreType::to_json() const {
 		staticMembersJsonValue.emplace_back(mem->to_json());
 	}
 	return Json()
-		._("nodeType", "defineCoreType")
-		._("members", membersJsonValue)
-		._("staticMembers", staticMembersJsonValue)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "defineCoreType")
+	    ._("members", membersJsonValue)
+	    ._("staticMembers", staticMembersJsonValue)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 DefineCoreType::~DefineCoreType() {

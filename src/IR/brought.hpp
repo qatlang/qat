@@ -14,12 +14,12 @@ template <class T> class Brought {
 	friend bool matchBroughtEntity(Brought<E> brought, String candName, Maybe<AccessInfo> reqInfo);
 
 	Maybe<Identifier> name;
-	T*				  entity;
-	VisibilityInfo	  visibility;
+	T*                entity;
+	VisibilityInfo    visibility;
 
   public:
 	Brought(Identifier _name, T* _entity, const VisibilityInfo& _visibility)
-		: name(_name), entity(_entity), visibility(_visibility) {}
+	    : name(_name), entity(_entity), visibility(_visibility) {}
 
 	Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
@@ -35,10 +35,10 @@ template <class T> class Brought {
 template <typename T> useit bool matchBroughtEntity(Brought<T> brought, String candName, Maybe<AccessInfo> reqInfo) {
 	if (brought.is_named()) {
 		return (brought.name.value().value == candName) && brought.visibility.is_accessible(reqInfo) &&
-			   brought.entity->get_visibility().is_accessible(reqInfo);
+		       brought.entity->get_visibility().is_accessible(reqInfo);
 	} else {
 		return (brought.entity->get_name().value == candName) && brought.visibility.is_accessible(reqInfo) &&
-			   brought.entity->get_visibility().is_accessible(reqInfo);
+		       brought.entity->get_visibility().is_accessible(reqInfo);
 	}
 }
 

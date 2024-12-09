@@ -9,14 +9,14 @@ namespace qat::ir {
 
 class Argument {
 	friend class Function;
-	Identifier	 name;
-	Type*		 type;
-	bool		 variability;
-	u64			 argIndex;
+	Identifier   name;
+	Type*        type;
+	bool         variability;
+	u64          argIndex;
 	ArgumentKind kind;
 
 	Argument(ArgumentKind _kind, Identifier _name, Type* _type, bool _variability, u64 _arg_index)
-		: name(std::move(_name)), type(_type), variability(_variability), argIndex(_arg_index), kind(_kind) {}
+	    : name(std::move(_name)), type(_type), variability(_variability), argIndex(_arg_index), kind(_kind) {}
 
   public:
 	useit static Argument Create(const Identifier& name, Type* type, u64 arg_index) {
@@ -49,17 +49,17 @@ class Argument {
 	}
 
 	useit Type* get_type() const { return type; }
-	useit bool	get_variability() const { return variability; }
-	useit u64	get_arg_index() const { return argIndex; }
-	useit Json	to_json() const {
-		 return Json()
-			 ._("name", name)
-			 ._("index", argIndex)
-			 ._("hasType", type != nullptr)
-			 ._("type", type ? type->get_id() : JsonValue())
-			 ._("isVar", variability)
-			 ._("kind",
-				kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
+	useit bool  get_variability() const { return variability; }
+	useit u64   get_arg_index() const { return argIndex; }
+	useit Json  to_json() const {
+        return Json()
+            ._("name", name)
+            ._("index", argIndex)
+            ._("hasType", type != nullptr)
+            ._("type", type ? type->get_id() : JsonValue())
+		     ._("isVar", variability)
+            ._("kind",
+               kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
 	}
 };
 

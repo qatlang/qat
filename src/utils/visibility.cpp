@@ -5,7 +5,7 @@
 
 namespace qat {
 
-#define VISIB_KIND	"visibility_kind"
+#define VISIB_KIND  "visibility_kind"
 #define VISIB_VALUE "visibility_value"
 
 String kind_to_string(VisibilityKind kind) {
@@ -28,10 +28,10 @@ String kind_to_string(VisibilityKind kind) {
 }
 
 AccessInfo::AccessInfo(ir::Mod* _module, Maybe<ir::Type*> _type, Maybe<ir::DoneSkill*> _skill)
-	: module(_module), type(_type), skill(_skill) {}
+    : module(_module), type(_type), skill(_skill) {}
 
 AccessInfo AccessInfo::GetPrivileged() {
-	AccessInfo result	= AccessInfo(nullptr, None, None);
+	AccessInfo result   = AccessInfo(nullptr, None, None);
 	result.isPrivileged = true;
 	return result;
 }
@@ -48,7 +48,7 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
 		case VisibilityKind::lib: {
 			SHOW("VisibilityInfo: Module")
 			return reqInfo.has_value() && ((visibility.moduleVal->get_id() == reqInfo->get_module()->get_id()) ||
-										   visibility.moduleVal->is_parent_mod_of(reqInfo->get_module()));
+			                               visibility.moduleVal->is_parent_mod_of(reqInfo->get_module()));
 		}
 		case VisibilityKind::pub: {
 			SHOW("VisibilityInfo: PUB")
@@ -78,7 +78,7 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
 				return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
 			} else if (visibility.moduleVal && reqInfo->get_module()) {
 				return (visibility.moduleVal->get_id() == reqInfo->get_module()->get_id()) ||
-					   visibility.moduleVal->is_parent_mod_of(reqInfo->get_module());
+				       visibility.moduleVal->is_parent_mod_of(reqInfo->get_module());
 			}
 			return false;
 		}
@@ -95,25 +95,25 @@ bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
 
 VisibilityInfo::operator Json() const {
 	return Json()
-		._("nature", Visibility::getValue(kind))
-		._("hasModule", moduleVal != nullptr)
-		._("moduleID", moduleVal ? moduleVal->get_id() : "")
-		._("hasType", typePtr != nullptr)
-		._("typeID", typePtr ? typePtr->get_id() : "");
+	    ._("nature", Visibility::getValue(kind))
+	    ._("hasModule", moduleVal != nullptr)
+	    ._("moduleID", moduleVal ? moduleVal->get_id() : "")
+	    ._("hasType", typePtr != nullptr)
+	    ._("typeID", typePtr ? typePtr->get_id() : "");
 }
 
 VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
 
 VisibilityInfo::VisibilityInfo(const VisibilityInfo& other)
-	: kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
+    : kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
 
 const std::map<VisibilityKind, String> Visibility::kind_value_map = {
-	{VisibilityKind::pub, "public"}, {VisibilityKind::type, "type"},	 {VisibilityKind::lib, "library"},
-	{VisibilityKind::file, "file"},	 {VisibilityKind::parent, "parent"}, {VisibilityKind::folder, "folder"}};
+    {VisibilityKind::pub, "public"}, {VisibilityKind::type, "type"},     {VisibilityKind::lib, "library"},
+    {VisibilityKind::file, "file"},  {VisibilityKind::parent, "parent"}, {VisibilityKind::folder, "folder"}};
 
 const std::map<String, VisibilityKind> Visibility::value_kind_map = {
-	{"public", VisibilityKind::pub}, {"type", VisibilityKind::type},	 {"library", VisibilityKind::lib},
-	{"file", VisibilityKind::file},	 {"parent", VisibilityKind::parent}, {"folder", VisibilityKind::folder}};
+    {"public", VisibilityKind::pub}, {"type", VisibilityKind::type},     {"library", VisibilityKind::lib},
+    {"file", VisibilityKind::file},  {"parent", VisibilityKind::parent}, {"folder", VisibilityKind::folder}};
 
 String Visibility::getValue(VisibilityKind kind) { return kind_value_map.find(kind)->second; }
 

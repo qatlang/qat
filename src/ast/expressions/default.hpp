@@ -15,7 +15,7 @@ class Default final : public Expression, public LocalDeclCompatible, public Type
 
   public:
 	Default(Maybe<ast::Type*> _providedType, FileRange _fileRange)
-		: Expression(std::move(_fileRange)), providedType(_providedType) {}
+	    : Expression(std::move(_fileRange)), providedType(_providedType) {}
 
 	useit static Default* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(Default), _providedType, _fileRange);
@@ -31,8 +31,8 @@ class Default final : public Expression, public LocalDeclCompatible, public Type
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::DEFAULT; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::DEFAULT; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

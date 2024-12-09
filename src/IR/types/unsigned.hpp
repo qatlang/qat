@@ -10,7 +10,7 @@ namespace qat::ir {
 // Unsigned integer datatype in the language
 class UnsignedType : public Type {
   private:
-	u64	 bitWidth;
+	u64  bitWidth;
 	bool isTypeBool;
 
 	ir::Ctx* irCtx;
@@ -20,9 +20,9 @@ class UnsignedType : public Type {
 	useit static UnsignedType* create(u64 bits, ir::Ctx* llctx);
 	useit static UnsignedType* create_bool(ir::Ctx* llctx);
 
-	useit u64	   get_bitwidth() const { return bitWidth; }
-	useit bool	   is_bitWidth(u64 width) const { return bitWidth == width; }
-	useit bool	   is_this_bool_type() const { return isTypeBool; }
+	useit u64      get_bitwidth() const { return bitWidth; }
+	useit bool     is_bitWidth(u64 width) const { return bitWidth == width; }
+	useit bool     is_this_bool_type() const { return isTypeBool; }
 	useit TypeKind type_kind() const final { return TypeKind::unsignedInteger; }
 	useit String   to_string() const final { return isTypeBool ? "bool" : ("u" + std::to_string(bitWidth)); }
 

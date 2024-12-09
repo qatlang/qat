@@ -7,23 +7,23 @@
 namespace qat::ast {
 
 class MixOrChoiceInitialiser final : public Expression,
-									 public LocalDeclCompatible,
-									 public InPlaceCreatable,
-									 public TypeInferrable {
+                                     public LocalDeclCompatible,
+                                     public InPlaceCreatable,
+                                     public TypeInferrable {
 	friend class LocalDeclaration;
 
   private:
-	Maybe<Type*>	   type;
-	Identifier		   subName;
+	Maybe<Type*>       type;
+	Identifier         subName;
 	Maybe<Expression*> expression;
 
   public:
 	MixOrChoiceInitialiser(Maybe<Type*> _type, Identifier _subName, Maybe<Expression*> _expression,
-						   FileRange _fileRange)
-		: Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
+	                       FileRange _fileRange)
+	    : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
 	useit static MixOrChoiceInitialiser* create(Maybe<Type*> type, Identifier subName, Maybe<Expression*> expression,
-												FileRange fileRange) {
+	                                            FileRange fileRange) {
 		return std::construct_at(OwnNormal(MixOrChoiceInitialiser), type, subName, expression, fileRange);
 	}
 
@@ -41,8 +41,8 @@ class MixOrChoiceInitialiser final : public Expression,
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
 };
 
 } // namespace qat::ast

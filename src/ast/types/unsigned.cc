@@ -5,7 +5,7 @@ namespace qat::ast {
 
 Maybe<usize> UnsignedType::getTypeSizeInBits(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-		llvm::Type::getIntNTy(ctx->irCtx->llctx, bitWidth)));
+	    llvm::Type::getIntNTy(ctx->irCtx->llctx, bitWidth)));
 }
 
 ir::Type* UnsignedType::emit(EmitCtx* ctx) {
@@ -18,9 +18,9 @@ ir::Type* UnsignedType::emit(EmitCtx* ctx) {
 		return ir::UnsignedType::create(bitWidth, ctx->irCtx);
 	} else {
 		ctx->Error("The unsigned integer bitwidth " + ctx->color(std::to_string(bitWidth)) +
-					   " is not allowed to be used since it is not brought into the module " +
-					   ctx->color(ctx->mod->get_name()) + " in file " + ctx->mod->get_file_path(),
-				   fileRange);
+		               " is not allowed to be used since it is not brought into the module " +
+		               ctx->color(ctx->mod->get_name()) + " in file " + ctx->mod->get_file_path(),
+		           fileRange);
 	}
 	return nullptr;
 }
@@ -31,10 +31,10 @@ AstTypeKind UnsignedType::type_kind() const { return AstTypeKind::UNSIGNED_INTEG
 
 Json UnsignedType::to_json() const {
 	return Json()
-		._("typeKind", "unsignedInteger")
-		._("is_bool", is_bool)
-		._("bitWidth", bitWidth)
-		._("fileRange", fileRange);
+	    ._("typeKind", "unsignedInteger")
+	    ._("is_bool", is_bool)
+	    ._("bitWidth", bitWidth)
+	    ._("fileRange", fileRange);
 }
 
 String UnsignedType::to_string() const { return is_bool ? "bool" : ("u" + std::to_string(bitWidth)); }

@@ -7,25 +7,25 @@ Maybe<usize> FloatType::getTypeSizeInBits(EmitCtx* ctx) const {
 	switch (kind) {
 		case ir::FloatTypeKind::_32:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getFloatTy(ctx->irCtx->llctx));
+			    llvm::Type::getFloatTy(ctx->irCtx->llctx));
 		case ir::FloatTypeKind::_64:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getDoubleTy(ctx->irCtx->llctx));
+			    llvm::Type::getDoubleTy(ctx->irCtx->llctx));
 		case ir::FloatTypeKind::_80:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getX86_FP80Ty(ctx->irCtx->llctx));
+			    llvm::Type::getX86_FP80Ty(ctx->irCtx->llctx));
 		case ir::FloatTypeKind::_128:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getFP128Ty(ctx->irCtx->llctx));
+			    llvm::Type::getFP128Ty(ctx->irCtx->llctx));
 		case ir::FloatTypeKind::_128PPC:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getPPC_FP128Ty(ctx->irCtx->llctx));
+			    llvm::Type::getPPC_FP128Ty(ctx->irCtx->llctx));
 		case ir::FloatTypeKind::_16:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getHalfTy(ctx->irCtx->llctx));
+			    llvm::Type::getHalfTy(ctx->irCtx->llctx));
 		case ir::FloatTypeKind::_brain:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-				llvm::Type::getBFloatTy(ctx->irCtx->llctx));
+			    llvm::Type::getBFloatTy(ctx->irCtx->llctx));
 	}
 }
 

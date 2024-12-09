@@ -35,8 +35,8 @@ class VisibilityInfo {
 
   public:
 	VisibilityKind kind;
-	ir::Mod*	   moduleVal = nullptr;
-	ir::Type*	   typePtr	 = nullptr;
+	ir::Mod*       moduleVal = nullptr;
+	ir::Type*      typePtr   = nullptr;
 
 	VisibilityInfo(const VisibilityInfo& other);
 
@@ -56,8 +56,8 @@ class VisibilityInfo {
 
 class AccessInfo {
   private:
-	ir::Mod*			  module;
-	Maybe<ir::Type*>	  type;
+	ir::Mod*              module;
+	Maybe<ir::Type*>      type;
 	Maybe<ir::DoneSkill*> skill;
 
 	bool isPrivileged = false;
@@ -80,9 +80,9 @@ class Visibility {
 	static const std::map<VisibilityKind, String> kind_value_map;
 	static const std::map<String, VisibilityKind> value_kind_map;
 
-	useit static String			getValue(VisibilityKind kind);
+	useit static String         getValue(VisibilityKind kind);
 	useit static VisibilityKind getKind(const String& value);
-	useit static bool			is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
+	useit static bool           is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
 };
 
 } // namespace qat

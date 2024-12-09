@@ -9,7 +9,7 @@ TypedType::TypedType(ir::Type* _subTy) : subTy(_subTy) {
 	while (subTy->is_typed()) {
 		subTy = subTy->as_typed()->get_subtype();
 	}
-	llvmType	= subTy->get_llvm_type();
+	llvmType    = subTy->get_llvm_type();
 	linkingName = "type(" + subTy->get_name_for_linking() + ")";
 }
 
@@ -31,7 +31,7 @@ String TypedType::to_string() const { return subTy->to_string(); }
 Maybe<bool> TypedType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	if (first->get_ir_type()->is_typed() && second->get_ir_type()->is_typed()) {
 		return first->get_ir_type()->as_typed()->get_subtype()->is_same(
-			second->get_ir_type()->as_typed()->get_subtype());
+		    second->get_ir_type()->as_typed()->get_subtype());
 	}
 	return None;
 }

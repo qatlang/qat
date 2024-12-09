@@ -25,13 +25,13 @@ void BringBitwidths::create_module(ir::Mod* mod, ir::Ctx* irCtx) const {
 			}
 			if (mod->has_unsigned_bitwidth(uintAst->bitWidth)) {
 				irCtx->Error("This unsigned integer bitwidth is already brought into the current scope",
-							 typ->fileRange);
+				             typ->fileRange);
 			} else {
 				mod->add_unsigned_bitwidth(uintAst->bitWidth);
 			}
 		} else {
 			irCtx->Error("Expected either a signed or unsigned integer type to be brought into the current scope",
-						 typ->fileRange);
+			             typ->fileRange);
 		}
 		SHOW("Brought integer bitwidth")
 	}

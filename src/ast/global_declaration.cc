@@ -36,9 +36,9 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("Got type for global")
 	llvm::GlobalVariable*  gvar = nullptr;
 	Maybe<llvm::Constant*> initialValue;
-	Maybe<String>		   foreignID;
-	Maybe<String>		   linkAlias;
-	Maybe<ir::MetaInfo>	   irMetaInfo;
+	Maybe<String>          foreignID;
+	Maybe<String>          linkAlias;
+	Maybe<ir::MetaInfo>    irMetaInfo;
 	if (metaInfo.has_value()) {
 		irMetaInfo = metaInfo.value().toIR(emitCtx);
 		foreignID  = irMetaInfo.value().get_value_as_string_for("foreign");
@@ -61,11 +61,11 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 		if (value.value()->isInPlaceCreatable()) {
 			SHOW("Is in place creatable")
 			gvar = new llvm::GlobalVariable(
-				*mod->get_llvm_module(), typ->get_llvm_type(), false, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-				typ->get_llvm_type()->isPointerTy()
-					? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->get_llvm_type()))
-					: llvm::Constant::getNullValue(typ->get_llvm_type()),
-				linkingName);
+			    *mod->get_llvm_module(), typ->get_llvm_type(), false, llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+			    typ->get_llvm_type()->isPointerTy()
+			        ? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->get_llvm_type()))
+			        : llvm::Constant::getNullValue(typ->get_llvm_type()),
+			    linkingName);
 			value.value()->asInPlaceCreatable()->setCreateIn(ir::Value::get(gvar, typ, false));
 			SHOW("Emitting in-place creatable")
 			(void)value.value()->emit(valEmitCtx);
@@ -80,9 +80,9 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 			SHOW("Emitted value")
 			if (val->is_prerun_value()) {
 				SHOW("Value is prerun")
-				gvar		 = new llvm::GlobalVariable(*mod->get_llvm_module(), typ->get_llvm_type(), !is_variable,
-														irCtx->getGlobalLinkageForVisibility(visibInfo),
-														llvm::dyn_cast<llvm::Constant>(val->get_llvm()), linkingName);
+				gvar         = new llvm::GlobalVariable(*mod->get_llvm_module(), typ->get_llvm_type(), !is_variable,
+				                                        irCtx->getGlobalLinkageForVisibility(visibInfo),
+				                                        llvm::dyn_cast<llvm::Constant>(val->get_llvm()), linkingName);
 				initialValue = val->get_llvm_constant();
 			} else {
 				SHOW("Value is not prerun")
@@ -91,12 +91,12 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 				}
 				mod->add_non_const_global_counter();
 				gvar = new llvm::GlobalVariable(
-					*mod->get_llvm_module(), typ->get_llvm_type(), false,
-					llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
-					typ->get_llvm_type()->isPointerTy()
-						? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->get_llvm_type()))
-						: llvm::Constant::getNullValue(typ->get_llvm_type()),
-					linkingName);
+				    *mod->get_llvm_module(), typ->get_llvm_type(), false,
+				    llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
+				    typ->get_llvm_type()->isPointerTy()
+				        ? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->get_llvm_type()))
+				        : llvm::Constant::getNullValue(typ->get_llvm_type()),
+				    linkingName);
 				if (val->is_value()) {
 					irCtx->builder.CreateStore(val->get_llvm(), gvar);
 				} else {
@@ -105,23 +105,23 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 							val->load_ghost_reference(irCtx->builder);
 						}
 						auto origVal = val;
-						auto result	 = irCtx->builder.CreateLoad(typ->get_llvm_type(), val->get_llvm());
+						auto result  = irCtx->builder.CreateLoad(typ->get_llvm_type(), val->get_llvm());
 						if (!typ->is_trivially_copyable()) {
 							if (origVal->is_reference() ? origVal->get_ir_type()->as_reference()->isSubtypeVariable()
-														: origVal->is_variable()) {
+							                            : origVal->is_variable()) {
 								irCtx->Error(
-									"This expression does not have variability and hence cannot be trivially moved from",
-									value.value()->fileRange);
+								    "This expression does not have variability and hence cannot be trivially moved from",
+								    value.value()->fileRange);
 							}
 							irCtx->builder.CreateStore(llvm::Constant::getNullValue(typ->get_llvm_type()),
-													   origVal->get_llvm());
+							                           origVal->get_llvm());
 						}
 						irCtx->builder.CreateStore(result, gvar);
 					} else {
 						irCtx->Error("This expression is a reference to the type " + irCtx->color(typ->to_string()) +
-										 " which is not trivially copyable or movable. Please use " +
-										 irCtx->color("'copy") + " or " + irCtx->color("'move") + " accordingly",
-									 fileRange);
+						                 " which is not trivially copyable or movable. Please use " +
+						                 irCtx->color("'copy") + " or " + irCtx->color("'move") + " accordingly",
+						             fileRange);
 					}
 				}
 			}
@@ -129,13 +129,13 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 	} else {
 		if (!foreignID.has_value()) {
 			irCtx->Error(
-				"This global entity is not a foreign entity, and not part of a foreign module, so it is required to have a value",
-				fileRange);
+			    "This global entity is not a foreign entity, and not part of a foreign module, so it is required to have a value",
+			    fileRange);
 		}
 		SHOW("Creating global variable")
 		gvar = new llvm::GlobalVariable(*mod->get_llvm_module(), typ->get_llvm_type(), !is_variable,
-										llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, linkingName,
-										nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
+		                                llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, linkingName,
+		                                nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
 		SHOW("Created global")
 	}
 	(void)ir::GlobalEntity::get(mod, name, typ, is_variable, initialValue, gvar, visibInfo);
@@ -144,15 +144,15 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 
 Json GlobalDeclaration::to_json() const {
 	return Json()
-		._("nodeType", "globalDeclaration")
-		._("name", name)
-		._("type", type ? type->to_json() : Json())
-		._("hasValue", value.has_value())
-		._("value", value ? value.value()->to_json() : JsonValue())
-		._("variability", is_variable)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "globalDeclaration")
+	    ._("name", name)
+	    ._("type", type ? type->to_json() : Json())
+	    ._("hasValue", value.has_value())
+	    ._("value", value ? value.value()->to_json() : JsonValue())
+	    ._("variability", is_variable)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

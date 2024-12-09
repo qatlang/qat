@@ -9,12 +9,12 @@ ir::PrerunValue* FloatLiteral::emit(EmitCtx* ctx) {
 	ir::Type* floatResTy = nullptr;
 	if (is_type_inferred()) {
 		if (inferredType->is_float() ||
-			(inferredType->is_native_type() && inferredType->as_native_type()->get_subtype()->is_float())) {
+		    (inferredType->is_native_type() && inferredType->as_native_type()->get_subtype()->is_float())) {
 			floatResTy = inferredType;
 		} else {
 			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-						   " but this expression is expected to have a floating point type",
-					   fileRange);
+			               " but this expression is expected to have a floating point type",
+			           fileRange);
 		}
 	} else {
 		floatResTy = ir::FloatType::get(ir::FloatTypeKind::_64, ctx->irCtx->llctx);

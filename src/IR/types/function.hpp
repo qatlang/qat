@@ -15,13 +15,13 @@ enum class ArgumentKind : u8 { NORMAL, MEMBER, VARIADIC };
 class ArgumentType {
   private:
 	Maybe<String> name;
-	Type*		  type;
-	bool		  variability;
+	Type*         type;
+	bool          variability;
 	ArgumentKind  kind;
 
   public:
 	ArgumentType(ArgumentKind _kind, Maybe<String> _name, Type* _type, bool _isVar)
-		: name(std::move(_name)), type(_type), variability(_isVar), kind(_kind) {}
+	    : name(std::move(_name)), type(_type), variability(_isVar), kind(_kind) {}
 
 	useit static ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
 		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::NORMAL, std::move(name), type, isVar);
@@ -48,7 +48,7 @@ class ArgumentType {
 			}
 			case ArgumentKind::VARIADIC: {
 				return (type != nullptr) ? ((other->type != nullptr) && type->is_same(other->type))
-										 : (other->type == nullptr);
+				                         : (other->type == nullptr);
 			}
 		}
 	}
@@ -69,25 +69,25 @@ class ArgumentType {
 
 	useit Json to_json() const {
 		return Json()
-			._("hasName", name.has_value())
-			._("name", name.has_value() ? name.value() : JsonValue())
-			._("hasType", type != nullptr)
-			._("type", type ? type->get_id() : JsonValue())
-			._("isVar", variability)
-			._("kind",
-			   kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
+		    ._("hasName", name.has_value())
+		    ._("name", name.has_value() ? name.value() : JsonValue())
+		    ._("hasType", type != nullptr)
+		    ._("type", type ? type->get_id() : JsonValue())
+		    ._("isVar", variability)
+		    ._("kind",
+		       kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
 	}
 
 	useit String to_string() const {
 		switch (kind) {
 			case ArgumentKind::NORMAL:
 				return (variability ? "var " : "") + (name.has_value() ? (name.value() + " :: ") : "") +
-					   type->to_string();
+				       type->to_string();
 			case ArgumentKind::MEMBER:
 				return "''" + name.value();
 			case ArgumentKind::VARIADIC:
 				return "variadic " + (name.has_value() ? name.value() : "") +
-					   (type ? (" :: " + type->to_string()) : "");
+				       (type ? (" :: " + type->to_string()) : "");
 		}
 	}
 };
@@ -104,15 +104,15 @@ class ReturnType {
 		return std::construct_at(OwnNormal(ReturnType), _retTy, _isRetSelf);
 	}
 
-	useit Type*	 get_type() const;
-	useit bool	 is_return_self() const;
+	useit Type*  get_type() const;
+	useit bool   is_return_self() const;
 	useit String to_string() const;
 };
 
 class FunctionType final : public Type {
-	ReturnType*		   returnType;
+	ReturnType*        returnType;
 	Vec<ArgumentType*> argTypes;
-	bool			   isVariadicArgs;
+	bool               isVariadicArgs;
 
   public:
 	FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);

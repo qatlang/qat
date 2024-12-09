@@ -13,7 +13,7 @@ enum class FillGenericKind {
 };
 
 class FillGeneric {
-	void*			data;
+	void*           data;
 	FillGenericKind kind;
 
   public:
@@ -26,14 +26,14 @@ class FillGeneric {
 	useit bool is_type() const;
 	useit bool is_prerun() const;
 
-	useit Type*				as_type() const;
+	useit Type*             as_type() const;
 	useit PrerunExpression* as_prerun() const;
 
 	useit FileRange const& get_range() const;
 
 	useit ir::GenericToFill* toFill(EmitCtx* ctx) const;
 
-	useit Json	 to_json() const;
+	useit Json   to_json() const;
 	useit String to_string() const;
 };
 

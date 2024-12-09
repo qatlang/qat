@@ -9,14 +9,14 @@ namespace qat::ir {
 
 class ToggleType : public ExpandedType {
 	Vec<Pair<Identifier, Type*>> variants;
-	Maybe<MetaInfo>				 metaInfo;
+	Maybe<MetaInfo>              metaInfo;
 
   public:
 	ToggleType(Identifier _name, Vec<Pair<Identifier, Type*>> _subTypes, ir::Mod* _parent, VisibilityInfo _visibility,
-			   Maybe<MetaInfo> _metaInfo, ir::Ctx* irCtx);
+	           Maybe<MetaInfo> _metaInfo, ir::Ctx* irCtx);
 
 	useit static ToggleType* create(Identifier name, Vec<Pair<Identifier, Type*>> variants, ir::Mod* parent,
-									VisibilityInfo visibility, Maybe<MetaInfo> metaInfo, ir::Ctx* irCtx) {
+	                                VisibilityInfo visibility, Maybe<MetaInfo> metaInfo, ir::Ctx* irCtx) {
 		return std::construct_at(OwnNormal(ToggleType), name, variants, parent, visibility, metaInfo, irCtx);
 	}
 

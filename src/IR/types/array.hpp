@@ -11,14 +11,14 @@ namespace qat::ir {
 class ArrayType : public Type {
   private:
 	Type* elementType;
-	u64	  length;
+	u64   length;
 
   public:
 	ArrayType(Type* _element_type, u64 _length, llvm::LLVMContext& llctx);
 	useit static ArrayType* get(Type* elementType, u64 length, llvm::LLVMContext& llctx);
 
-	useit Type*	   get_element_type();
-	useit u64	   get_length() const;
+	useit Type*    get_element_type();
+	useit u64      get_length() const;
 	useit TypeKind type_kind() const final;
 	useit String   to_string() const final;
 
@@ -26,9 +26,9 @@ class ArrayType : public Type {
 	useit bool can_be_prerun_generic() const final { return elementType->can_be_prerun_generic(); }
 	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
-	useit bool		  is_type_sized() const final;
-	useit bool		  is_trivially_copyable() const final { return elementType->is_trivially_copyable(); }
-	useit bool		  is_trivially_movable() const final { return elementType->is_trivially_movable(); }
+	useit bool        is_type_sized() const final;
+	useit bool        is_trivially_copyable() const final { return elementType->is_trivially_copyable(); }
+	useit bool        is_trivially_movable() const final { return elementType->is_trivially_movable(); }
 
 	useit bool has_prerun_default_value() const final { return elementType->has_prerun_default_value(); }
 	useit bool is_copy_constructible() const final;

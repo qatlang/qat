@@ -21,12 +21,12 @@ class PrerunValue;
 class GenericToFill;
 
 void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
-				   FileRange const& fileRange);
+                   FileRange const& fileRange);
 
 class GenericToFill {
-	void*		data = nullptr;
+	void*       data = nullptr;
 	GenericKind kind;
-	FileRange	range;
+	FileRange   range;
 
   public:
 	GenericToFill(void* _data, GenericKind _kind, FileRange _range);
@@ -46,28 +46,28 @@ class GenericToFill {
 
 class GenericArgument {
   protected:
-	Identifier	name;
+	Identifier  name;
 	GenericKind kind;
-	FileRange	range;
+	FileRange   range;
 
 	GenericArgument(Identifier name, GenericKind kind, FileRange range);
 
   public:
 	useit Identifier get_name() const;
-	useit FileRange	 get_range() const;
-	useit bool		 is_same(const String& name) const;
+	useit FileRange  get_range() const;
+	useit bool       is_same(const String& name) const;
 
-	useit bool			is_typed() const;
+	useit bool          is_typed() const;
 	useit TypedGeneric* as_typed() const;
 
-	useit bool			 is_prerun() const;
+	useit bool           is_prerun() const;
 	useit PrerunGeneric* as_prerun() const;
 
 	useit bool is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const;
 
-	useit String	   to_string() const;
+	useit String       to_string() const;
 	useit virtual Json to_json() const = 0;
-	virtual ~GenericArgument()		   = default;
+	virtual ~GenericArgument()         = default;
 };
 
 class TypedGeneric : public GenericArgument {

@@ -4,31 +4,31 @@ namespace qat::ast {
 
 ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred() &&
-		(!inferredType->is_integer() && !inferredType->is_unsigned_integer() &&
-		 (!bits.has_value() && !inferredType->is_float()) &&
-		 (!bits.has_value() && inferredType->is_native_type() &&
-		  !inferredType->as_native_type()->get_subtype()->is_float()) &&
-		 (inferredType->is_native_type() && !(inferredType->as_native_type()->get_subtype()->is_unsigned_integer() ||
-											  inferredType->as_native_type()->get_subtype()->is_integer())))) {
+	    (!inferredType->is_integer() && !inferredType->is_unsigned_integer() &&
+	     (!bits.has_value() && !inferredType->is_float()) &&
+	     (!bits.has_value() && inferredType->is_native_type() &&
+	      !inferredType->as_native_type()->get_subtype()->is_float()) &&
+	     (inferredType->is_native_type() && !(inferredType->as_native_type()->get_subtype()->is_unsigned_integer() ||
+	                                          inferredType->as_native_type()->get_subtype()->is_integer())))) {
 		if (bits.has_value()) {
 			ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
-						   ". The only supported types for this literal are signed & unsigned integers",
-					   fileRange);
+			               ". The only supported types for this literal are signed & unsigned integers",
+			           fileRange);
 		} else {
 			ctx->Error(
-				"This inferred type is " + ctx->color(inferredType->to_string()) +
-					". The only supported types for this literal are signed integers, unsigned integers and floating point types",
-				fileRange);
+			    "This inferred type is " + ctx->color(inferredType->to_string()) +
+			        ". The only supported types for this literal are signed integers, unsigned integers and floating point types",
+			    fileRange);
 		}
 	}
 	ir::Type* resTy =
-		is_type_inferred()
-			? (inferredType->is_native_type() ? inferredType->as_native_type()->get_subtype() : inferredType)
-			: ir::IntegerType::get(32, ctx->irCtx);
+	    is_type_inferred()
+	        ? (inferredType->is_native_type() ? inferredType->as_native_type()->get_subtype() : inferredType)
+	        : ir::IntegerType::get(32, ctx->irCtx);
 	if (bits.has_value() && !ctx->mod->has_integer_bitwidth(bits.value().first)) {
 		ctx->Error("The custom integer bitwidth " + ctx->color(std::to_string(bits.value().first)) +
-					   " is not brought into the current module",
-				   bits.value().second);
+		               " is not brought into the current module",
+		           bits.value().second);
 	}
 	String numValue = value;
 	if (value.find('_') != String::npos) {
@@ -44,13 +44,13 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 		return ir::PrerunValue::get(llvm::ConstantFP::get(inferredType->get_llvm_type(), numValue), inferredType);
 	} else {
 		return ir::PrerunValue::get(
-			llvm::ConstantInt::get(
-				is_type_inferred()
-					? llvm::cast<llvm::IntegerType>(inferredType->get_llvm_type())
-					: llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
-				numValue, 10u),
-			is_type_inferred() ? inferredType
-							   : ir::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
+		    llvm::ConstantInt::get(
+		        is_type_inferred()
+		            ? llvm::cast<llvm::IntegerType>(inferredType->get_llvm_type())
+		            : llvm::Type::getIntNTy(ctx->irCtx->llctx, bits.has_value() ? bits.value().first : 32u),
+		        numValue, 10u),
+		    is_type_inferred() ? inferredType
+		                       : ir::IntegerType::get(bits.has_value() ? bits.value().first : 32u, ctx->irCtx));
 	}
 	// NOLINTEND(readability-magic-numbers)
 }

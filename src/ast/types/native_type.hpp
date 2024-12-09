@@ -9,15 +9,15 @@ namespace qat::ast {
 class NativeType final : public Type {
 	ir::NativeTypeKind nativeKind;
 
-	Type* subType				   = nullptr;
+	Type* subType                  = nullptr;
 	bool  isPointerSubTypeVariable = false;
 
   public:
 	NativeType(ir::NativeTypeKind _cTypeKind, FileRange _fileRange) : Type(_fileRange), nativeKind(_cTypeKind) {}
 
 	NativeType(Type* _pointerSubTy, bool _isPtrSubTyVar, FileRange _fileRange)
-		: Type(_fileRange), nativeKind(ir::NativeTypeKind::Pointer), subType(_pointerSubTy),
-		  isPointerSubTypeVariable(_isPtrSubTyVar) {}
+	    : Type(_fileRange), nativeKind(ir::NativeTypeKind::Pointer), subType(_pointerSubTy),
+	      isPointerSubTypeVariable(_isPtrSubTyVar) {}
 
 	useit static NativeType* create(ir::NativeTypeKind _cTypeKind, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(NativeType), _cTypeKind, _fileRange);
@@ -34,10 +34,10 @@ class NativeType final : public Type {
 	}
 
 	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
-	useit ir::Type*	  emit(EmitCtx* ctx) final;
+	useit ir::Type*   emit(EmitCtx* ctx) final;
 	useit AstTypeKind type_kind() const final { return AstTypeKind::C_TYPE; }
-	useit Json		  to_json() const final;
-	useit String	  to_string() const final;
+	useit Json        to_json() const final;
+	useit String      to_string() const final;
 };
 
 } // namespace qat::ast

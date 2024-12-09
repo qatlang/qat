@@ -9,15 +9,15 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 		if (isMember) {
 			if (visibSpec->kind != VisibilityKind::pub) {
 				irCtx->Error("This is a bring'member sentence and hence cannot have any visibility other than " +
-								 irCtx->color("pub"),
-							 fileRange);
+				                 irCtx->color("pub"),
+				             fileRange);
 			}
 		}
 	}
 	for (usize i = 0; i < paths.size(); i++) {
 		auto path = fs::path(paths.at(i)->get_value()).is_relative()
-						? fileRange.file.parent_path() / paths.at(i)->get_value()
-						: fs::path(paths.at(i)->get_value());
+		                ? fileRange.file.parent_path() / paths.at(i)->get_value()
+		                : fs::path(paths.at(i)->get_value());
 		if (fs::exists(path)) {
 			path = fs::canonical(path);
 			if (fs::is_directory(path)) {
@@ -26,8 +26,8 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 						if (isMember) {
 							// FIXME - Maybe change this
 							irCtx->Error("This is a " + irCtx->color("bring:member") +
-											 " sentence and names are not allowed",
-										 names.at(i).value()->fileRange);
+							                 " sentence and names are not allowed",
+							             names.at(i).value()->fileRange);
 						}
 						auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
 						emitCtx->name_check_in_module(name, "named folder module", None);
@@ -36,15 +36,15 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 						mod->entity_name_check(irCtx, name, ir::EntityType::bringEntity);
 						mod->bring_module(folderModule, emitCtx->get_visibility_info(visibSpec), name);
 						auto foldEnt =
-							mod->add_entity(name, ir::EntityType::bringEntity, nullptr, ir::EmitPhase::phase_1);
+						    mod->add_entity(name, ir::EntityType::bringEntity, nullptr, ir::EmitPhase::phase_1);
 						foldEnt->currentPhase = ir::EmitPhase::phase_1;
 						foldEnt->updateStatus(ir::EntityStatus::complete);
 					} else {
 						if (isMember) {
 							if (ir::Mod::get_folder_module(path)->parent) {
 								irCtx->Error("Module at " + irCtx->color(path.string()) +
-												 " already has a parent module",
-											 paths.at(i)->fileRange);
+								                 " already has a parent module",
+								             paths.at(i)->fileRange);
 							}
 							auto* folderModule = ir::Mod::get_folder_module(path);
 							folderModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
@@ -64,8 +64,8 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 						if (isMember) {
 							// FIXME - Maybe change this
 							irCtx->Error("This is a " + irCtx->color("bring'member") +
-											 " sentence and names are not allowed",
-										 names.at(i).value()->fileRange);
+							                 " sentence and names are not allowed",
+							             names.at(i).value()->fileRange);
 						}
 						auto const name = Identifier(names.at(i).value()->get_value(), names.at(i).value()->fileRange);
 						emitCtx->name_check_in_module(name, "named file module", None);
@@ -74,15 +74,15 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 						mod->entity_name_check(irCtx, name, ir::EntityType::bringEntity);
 						mod->bring_module(fileModule, emitCtx->get_visibility_info(visibSpec), name);
 						auto fileEnt =
-							mod->add_entity(name, ir::EntityType::bringEntity, nullptr, ir::EmitPhase::phase_1);
+						    mod->add_entity(name, ir::EntityType::bringEntity, nullptr, ir::EmitPhase::phase_1);
 						fileEnt->currentPhase = ir::EmitPhase::phase_1;
 						fileEnt->updateStatus(ir::EntityStatus::complete);
 					} else {
 						if (isMember) {
 							if (ir::Mod::get_file_module(path)->parent) {
 								irCtx->Error("Module at " + irCtx->color(path.string()) +
-												 " already has a parent module",
-											 paths.at(i)->fileRange);
+								                 " already has a parent module",
+								             paths.at(i)->fileRange);
 							}
 							auto* fileModule = ir::Mod::get_file_module(path);
 							fileModule->add_fs_bring_mention(mod, paths.at(i)->fileRange);
@@ -101,7 +101,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 			}
 		} else {
 			irCtx->Error("The path provided does not exist: " + path.string() + " and cannot be brought in.",
-						 paths.at(i)->fileRange);
+			             paths.at(i)->fileRange);
 		}
 	}
 }
@@ -112,11 +112,11 @@ Json BringPaths::to_json() const {
 		pths.push_back(path->to_json());
 	}
 	return Json()
-		._("nodeType", "bringPaths")
-		._("paths", std::move(pths))
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "bringPaths")
+	    ._("paths", std::move(pths))
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

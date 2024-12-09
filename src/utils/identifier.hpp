@@ -10,7 +10,7 @@ class Identifier {
   public:
 	Identifier(String value, FileRange range);
 
-	String	  value;
+	String    value;
 	FileRange range;
 
 	operator JsonValue() const;

@@ -21,9 +21,9 @@ class FloatLiteral final : public PrerunExpression, public TypeInferrable {
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
-	useit Json			   to_json() const override;
-	useit String		   to_string() const override;
-	useit NodeType		   nodeType() const override { return NodeType::FLOAT_LITERAL; }
+	useit Json             to_json() const override;
+	useit String           to_string() const override;
+	useit NodeType         nodeType() const override { return NodeType::FLOAT_LITERAL; }
 };
 
 } // namespace qat::ast

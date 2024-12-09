@@ -18,15 +18,15 @@ class QatSitter {
 
   private:
 	Deque<ir::Mod*> fileEntities;
-	ir::Ctx*		ctx	   = nullptr;
-	lexer::Lexer*	Lexer  = nullptr;
+	ir::Ctx*        ctx    = nullptr;
+	lexer::Lexer*   Lexer  = nullptr;
 	parser::Parser* Parser = nullptr;
 	std::thread::id mainThread;
 
   public:
 	QatSitter();
 	useit static QatSitter* get();
-	static QatSitter*		instance;
+	static QatSitter*       instance;
 
 	void initialise();
 	void destroy();

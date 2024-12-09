@@ -71,7 +71,7 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 		}
 	}
 	ctx->Error("Compiler Internal Error - Cannot retrieve native type for kind " + std::to_string((int)nativeKind),
-			   fileRange);
+	           fileRange);
 }
 
 Maybe<usize> NativeType::getTypeSizeInBits(EmitCtx* ctx) const {
@@ -115,10 +115,10 @@ Maybe<usize> NativeType::getTypeSizeInBits(EmitCtx* ctx) const {
 			return ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getUIntPtrType());
 		case ir::NativeTypeKind::PtrDiff:
 			return ctx->irCtx->clangTargetInfo->getTypeWidth(
-				ctx->irCtx->clangTargetInfo->getPtrDiffType(ctx->irCtx->get_language_address_space()));
+			    ctx->irCtx->clangTargetInfo->getPtrDiffType(ctx->irCtx->get_language_address_space()));
 		case ir::NativeTypeKind::UPtrDiff:
 			return ctx->irCtx->clangTargetInfo->getTypeWidth(
-				ctx->irCtx->clangTargetInfo->getUnsignedPtrDiffType(ctx->irCtx->get_language_address_space()));
+			    ctx->irCtx->clangTargetInfo->getUnsignedPtrDiffType(ctx->irCtx->get_language_address_space()));
 		case ir::NativeTypeKind::Pointer:
 			return ctx->irCtx->clangTargetInfo->getPointerWidth(ctx->irCtx->get_language_address_space());
 		case ir::NativeTypeKind::SigAtomic:
@@ -136,9 +136,9 @@ Maybe<usize> NativeType::getTypeSizeInBits(EmitCtx* ctx) const {
 
 Json NativeType::to_json() const {
 	return Json()
-		._("typeKind", "nativeType")
-		._("nativeKind", ir::native_type_kind_to_string(nativeKind))
-		._("fileRange", fileRange);
+	    ._("typeKind", "nativeType")
+	    ._("nativeKind", ir::native_type_kind_to_string(nativeKind))
+	    ._("fileRange", fileRange);
 }
 
 String NativeType::to_string() const { return ir::native_type_kind_to_string(nativeKind); }

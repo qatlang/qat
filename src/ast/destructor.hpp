@@ -16,24 +16,24 @@ class DestructorDefinition {
 	friend DefineCoreType;
 	friend DoSkill;
 
-	FileRange	   nameRange;
+	FileRange      nameRange;
 	Vec<Sentence*> sentences;
-	FileRange	   fileRange;
+	FileRange      fileRange;
 
 	PrerunExpression* defineChecker;
-	Maybe<MetaInfo>	  metaInfo;
+	Maybe<MetaInfo>   metaInfo;
 
   public:
 	DestructorDefinition(FileRange _nameRange, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo,
-						 Vec<Sentence*> _sentences, FileRange _fileRange)
-		: nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange), defineChecker(_defineChecker),
-		  metaInfo(std::move(_metaInfo)) {}
+	                     Vec<Sentence*> _sentences, FileRange _fileRange)
+	    : nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange), defineChecker(_defineChecker),
+	      metaInfo(std::move(_metaInfo)) {}
 
 	useit static DestructorDefinition* create(FileRange nameRange, PrerunExpression* _defineChecker,
-											  Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences,
-											  FileRange fileRange) {
+	                                          Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences,
+	                                          FileRange fileRange) {
 		return std::construct_at(OwnNormal(DestructorDefinition), nameRange, _defineChecker, std::move(metaInfo),
-								 std::move(_sentences), fileRange);
+		                         std::move(_sentences), fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
@@ -47,8 +47,8 @@ class DestructorDefinition {
 
 	void  define(MethodState& state, ir::Ctx* irCtx);
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
-	useit Json		 to_json() const;
-	useit NodeType	 nodeType() const { return NodeType::MEMBER_DEFINITION; }
+	useit Json       to_json() const;
+	useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

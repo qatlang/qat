@@ -18,10 +18,10 @@ FileRange::FileRange(fs::path _filePath) : file(std::move(_filePath)), start({0u
 FileRange::FileRange(fs::path _file, FilePos _start, FilePos _end) : file(std::move(_file)), start(_start), end(_end) {}
 
 FileRange::FileRange(const FileRange& first, const FileRange& second)
-	: file(first.file), start(first.start), end((first.file == second.file) ? second.end : first.end) {}
+    : file(first.file), start(first.start), end((first.file == second.file) ? second.end : first.end) {}
 
 FileRange::FileRange(Json json)
-	: file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
+    : file(json["file"].asString()), start(json["start"].asJson()), end(json["end"].asJson()) {}
 
 FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*this, other}; }
 
@@ -33,8 +33,8 @@ String FileRange::start_to_string() const {
 
 bool FileRange::is_before(FileRange another) const {
 	return std::filesystem::equivalent(file, another.file) &&
-		   ((end.line < another.start.line) ||
-			((end.line == another.start.line) && (end.character < another.start.character)));
+	       ((end.line < another.start.line) ||
+	        ((end.line == another.start.line) && (end.character < another.start.character)));
 }
 
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }

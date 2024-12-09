@@ -6,7 +6,7 @@ namespace qat {
 LinkNames::LinkNames() : units(), foreignID(), parentMod(nullptr) {}
 
 LinkNames::LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, ir::Mod* _mod)
-	: units(_units), foreignID(_foreignID), parentMod(_mod) {}
+    : units(_units), foreignID(_foreignID), parentMod(_mod) {}
 
 void LinkNames::setLinkAlias(Maybe<String> _linkAlias) { linkAlias = _linkAlias; }
 
@@ -46,10 +46,10 @@ String LinkNames::toName() const {
 		return result;
 	} else {
 		String result = ((!units.empty()) && (units.front().unitType == LinkUnitType::name ||
-											  units.front().unitType == LinkUnitType::genericTypeValue ||
-											  units.front().unitType == LinkUnitType::genericPrerunValue))
-							? ""
-							: "qat'";
+		                                      units.front().unitType == LinkUnitType::genericTypeValue ||
+		                                      units.front().unitType == LinkUnitType::genericPrerunValue))
+		                    ? ""
+		                    : "qat'";
 		for (usize i = 0; i < units.size(); i++) {
 			auto& unit = units.at(i);
 			if (i != 0 && unit.unitType != LinkUnitType::genericList) {
@@ -205,6 +205,6 @@ String LinkNames::toName() const {
 }
 
 LinkNameUnit::LinkNameUnit(String _name, LinkUnitType _namingType, Vec<LinkNames> _subNames)
-	: name(_name), unitType(_namingType), subNames(_subNames) {}
+    : name(_name), unitType(_namingType), subNames(_subNames) {}
 
 } // namespace qat

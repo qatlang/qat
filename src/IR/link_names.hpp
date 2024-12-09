@@ -51,22 +51,22 @@ class LinkNameUnit;
 class LinkNames {
   public:
 	Vec<LinkNameUnit> units;
-	Maybe<String>	  linkAlias;
-	Maybe<String>	  foreignID;
-	ir::Mod*		  parentMod;
+	Maybe<String>     linkAlias;
+	Maybe<String>     foreignID;
+	ir::Mod*          parentMod;
 
 	LinkNames();
 	LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, ir::Mod* _mod);
 
-	void			setLinkAlias(Maybe<String> _linkAlias);
-	void			addUnit(LinkNameUnit unit, Maybe<String> foreignID);
+	void            setLinkAlias(Maybe<String> _linkAlias);
+	void            addUnit(LinkNameUnit unit, Maybe<String> foreignID);
 	useit LinkNames newWith(LinkNameUnit unit, Maybe<String> foreignID);
-	useit String	toName() const;
+	useit String    toName() const;
 };
 
 class LinkNameUnit {
   public:
-	String		   name;
+	String         name;
 	LinkUnitType   unitType;
 	Vec<LinkNames> subNames;
 

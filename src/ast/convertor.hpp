@@ -19,39 +19,39 @@ class ConvertorPrototype {
 	friend class ConvertorDefinition;
 
   private:
-	Maybe<Identifier>	  argName;
-	Type*				  candidateType;
-	bool				  isMemArg;
+	Maybe<Identifier>     argName;
+	Type*                 candidateType;
+	bool                  isMemArg;
 	Maybe<VisibilitySpec> visibSpec;
-	bool				  isFrom;
-	FileRange			  nameRange;
-	Maybe<FileRange>	  definitionRange;
-	FileRange			  fileRange;
+	bool                  isFrom;
+	FileRange             nameRange;
+	Maybe<FileRange>      definitionRange;
+	FileRange             fileRange;
 
 	PrerunExpression* defineChecker;
-	Maybe<MetaInfo>	  metaInfo;
+	Maybe<MetaInfo>   metaInfo;
 
   public:
 	ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
-					   bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-					   PrerunExpression* _defineCondition, Maybe<MetaInfo> _metaInfo)
-		: argName(std::move(_argName)), candidateType(_candidateType), isMemArg(_is_member_argument),
-		  visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)), fileRange(_fileRange),
-		  defineChecker(_defineCondition), metaInfo(std::move(_metaInfo)) {}
+	                   bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	                   PrerunExpression* _defineCondition, Maybe<MetaInfo> _metaInfo)
+	    : argName(std::move(_argName)), candidateType(_candidateType), isMemArg(_is_member_argument),
+	      visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)), fileRange(_fileRange),
+	      defineChecker(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 
 	static ConvertorPrototype* create_from(FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
-										   bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec,
-										   const FileRange& _fileRange, PrerunExpression* _defineCondition,
-										   Maybe<MetaInfo> _metaInfo) {
+	                                       bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec,
+	                                       const FileRange& _fileRange, PrerunExpression* _defineCondition,
+	                                       Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(ConvertorPrototype), true, _nameRange, _argName, _candidateType,
-								 _is_member_argument, _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
+		                         _is_member_argument, _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
 	}
 
 	static ConvertorPrototype* create_to(FileRange _nameRange, Type* _candidateType, Maybe<VisibilitySpec> _visibSpec,
-										 const FileRange& _fileRange, PrerunExpression* _defineCondition,
-										 Maybe<MetaInfo> _metaInfo) {
+	                                     const FileRange& _fileRange, PrerunExpression* _defineCondition,
+	                                     Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(ConvertorPrototype), false, _nameRange, None, _candidateType, false,
-								 _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
+		                         _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
@@ -63,8 +63,8 @@ class ConvertorPrototype {
 		}
 	}
 
-	void		   define(MethodState& state, ir::Ctx* irCtx);
-	useit Json	   to_json() const;
+	void           define(MethodState& state, ir::Ctx* irCtx);
+	useit Json     to_json() const;
 	useit NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
 };
 
@@ -73,18 +73,18 @@ class ConvertorDefinition {
 	friend class DoSkill;
 
   private:
-	Vec<Sentence*>		sentences;
+	Vec<Sentence*>      sentences;
 	ConvertorPrototype* prototype;
-	FileRange			fileRange;
+	FileRange           fileRange;
 
   public:
 	ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
-		: sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {
+	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {
 		prototype->definitionRange = fileRange;
 	}
 
 	useit static ConvertorDefinition* create(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
-											 FileRange _fileRange) {
+	                                         FileRange _fileRange) {
 		return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
 	}
 
@@ -96,8 +96,8 @@ class ConvertorDefinition {
 
 	void  define(MethodState& state, ir::Ctx* irCtx);
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
-	useit Json		 to_json() const;
-	useit NodeType	 nodeType() const { return NodeType::FUNCTION_DEFINITION; }
+	useit Json       to_json() const;
+	useit NodeType   nodeType() const { return NodeType::FUNCTION_DEFINITION; }
 };
 
 } // namespace qat::ast

@@ -22,8 +22,8 @@ class Negative final : public Expression, public TypeInferrable {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::NEGATIVE; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::NEGATIVE; }
 };
 
 } // namespace qat::ast

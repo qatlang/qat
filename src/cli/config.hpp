@@ -19,8 +19,8 @@ class Config {
 	static Config* instance;
 
 	fs::path qatDirPath;
-	String	 buildCommit;
-	String	 invokePath;
+	String   buildCommit;
+	String   invokePath;
 
 	Maybe<fs::path> stdLibPath;
 	Maybe<fs::path> toolchainPath;
@@ -35,20 +35,20 @@ class Config {
 
 	llvm::VersionTuple versionTuple;
 
-	bool exitAfter		 = false;
-	bool verbose		 = false;
-	bool saveDocs		 = false;
-	bool showReport		 = false;
-	bool exportAST		 = false;
-	bool buildWorkflow	 = false;
-	bool runWorkflow	 = false;
-	bool bundleWorkflow	 = false;
+	bool exitAfter       = false;
+	bool verbose         = false;
+	bool saveDocs        = false;
+	bool showReport      = false;
+	bool exportAST       = false;
+	bool buildWorkflow   = false;
+	bool runWorkflow     = false;
+	bool bundleWorkflow  = false;
 	bool analyseWorkflow = false;
-	bool clearLLVMFiles	 = false;
-	bool exportCodeInfo	 = false;
-	bool isFreestanding	 = false;
-	bool isNoStd		 = false;
-	bool diagnostic		 = false;
+	bool clearLLVMFiles  = false;
+	bool exportCodeInfo  = false;
+	bool isFreestanding  = false;
+	bool isNoStd         = false;
+	bool diagnostic      = false;
 
 	ColorMode colorMode = ColorMode::color256;
 	BuildMode buildMode = BuildMode::debug;
@@ -61,8 +61,8 @@ class Config {
   public:
 	Config(u64 count, const char** args);
 
-	static Config const* init(u64		   count,
-							  const char** args); // NOLINT(modernize-avoid-c-arrays)
+	static Config const* init(u64          count,
+	                          const char** args); // NOLINT(modernize-avoid-c-arrays)
 	static Config const* get();
 
 	static bool hasInstance();
@@ -92,7 +92,7 @@ class Config {
 	useit bool export_code_metadata() const { return exportCodeInfo; }
 
 	useit ColorMode color_mode() const { return colorMode; }
-	useit bool		is_no_color_mode() const { return colorMode == ColorMode::none; }
+	useit bool      is_no_color_mode() const { return colorMode == ColorMode::none; }
 
 	useit bool is_build_mode_debug() const { return buildMode == BuildMode::debug; }
 	useit bool is_build_mode_release() const { return buildMode == BuildMode::release; }

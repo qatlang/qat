@@ -17,20 +17,20 @@ class MatchValue {
 	~MatchValue() = default;
 
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-									 EmitCtx* ctx) = 0;
+	                                 EmitCtx* ctx) = 0;
 
 	useit MixOrChoiceMatchValue* asMixOrChoice();
-	useit ExpressionMatchValue*	 asExp();
-	useit virtual FileRange		 getMainRange() const = 0;
-	useit virtual MatchType		 getType() const	  = 0;
-	useit virtual Json			 to_json() const	  = 0;
+	useit ExpressionMatchValue*  asExp();
+	useit virtual FileRange      getMainRange() const = 0;
+	useit virtual MatchType      getType() const      = 0;
+	useit virtual Json           to_json() const      = 0;
 };
 
 class MixOrChoiceMatchValue final : public MatchValue {
   private:
-	Identifier		  name;
+	Identifier        name;
 	Maybe<Identifier> valueName;
-	bool			  isVar;
+	bool              isVar;
 
   public:
 	MixOrChoiceMatchValue(Identifier name, Maybe<Identifier> valueName, bool isVar);
@@ -42,12 +42,12 @@ class MixOrChoiceMatchValue final : public MatchValue {
 	}
 
 	useit Identifier get_name() const;
-	useit bool		 hasValueName() const;
+	useit bool       hasValueName() const;
 	useit Identifier getValueName() const;
-	useit bool		 is_variable() const;
-	useit MatchType	 getType() const final { return MatchType::mixOrChoice; }
-	useit FileRange	 getMainRange() const final { return name.range; }
-	useit Json		 to_json() const final;
+	useit bool       is_variable() const;
+	useit MatchType  getType() const final { return MatchType::mixOrChoice; }
+	useit FileRange  getMainRange() const final { return name.range; }
+	useit Json       to_json() const final;
 };
 
 class ExpressionMatchValue final : public MatchValue {
@@ -66,34 +66,34 @@ class ExpressionMatchValue final : public MatchValue {
 	}
 
 	useit Expression* getExpression() const;
-	useit MatchType	  getType() const final { return MatchType::Exp; }
-	useit FileRange	  getMainRange() const final { return exp->fileRange; }
-	useit Json		  to_json() const final;
+	useit MatchType   getType() const final { return MatchType::Exp; }
+	useit FileRange   getMainRange() const final { return exp->fileRange; }
+	useit Json        to_json() const final;
 };
 
 struct CaseResult {
 	Maybe<bool> result;
-	bool		areAllConstant = false;
+	bool        areAllConstant = false;
 	CaseResult(Maybe<bool> result, bool areAllConstant);
 };
 
 class Match final : public Sentence {
   private:
-	bool										isTypeMatch;
-	Expression*									candidate;
+	bool                                        isTypeMatch;
+	Expression*                                 candidate;
 	Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> chain;
-	Maybe<Pair<Vec<Sentence*>, FileRange>>		elseCase;
+	Maybe<Pair<Vec<Sentence*>, FileRange>>      elseCase;
 
 	Vec<CaseResult> matchResult;
 
   public:
 	Match(bool _isTypeMatch, Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-		  Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
-		: Sentence(_fileRange), isTypeMatch(_isTypeMatch), candidate(_candidate), chain(_chain), elseCase(_elseCase) {}
+	      Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
+	    : Sentence(_fileRange), isTypeMatch(_isTypeMatch), candidate(_candidate), chain(_chain), elseCase(_elseCase) {}
 
 	useit static Match* create(bool _isTypeMatch, Expression* _candidate,
-							   Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-							   Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange) {
+	                           Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
+	                           Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(Match), _isTypeMatch, _candidate, _chain, _elseCase, _fileRange);
 	}
 
@@ -119,8 +119,8 @@ class Match final : public Sentence {
 	useit bool isTrueForACase();
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::MATCH; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::MATCH; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

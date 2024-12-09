@@ -22,7 +22,7 @@ class Skill;
 struct SkillArg {
 	ast::Type* type;
 	Identifier name;
-	bool	   isVar;
+	bool       isVar;
 
 	SkillArg(ast::Type* _type, Identifier _name, bool _isVar);
 };
@@ -36,45 +36,45 @@ enum class SkillFnType {
 
 class SkillPrototype {
 	friend class Skill;
-	Skill*		   parent;
-	Identifier	   name;
-	SkillFnType	   fnTy;
-	ast::Type*	   returnType;
+	Skill*         parent;
+	Identifier     name;
+	SkillFnType    fnTy;
+	ast::Type*     returnType;
 	Vec<SkillArg*> arguments;
 
   public:
 	SkillPrototype(SkillFnType _fnTy, Skill* _parent, Identifier _name, ast::Type* _returnType,
-				   Vec<SkillArg*> _arguments);
+	               Vec<SkillArg*> _arguments);
 
 	useit static SkillPrototype* create_static_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-													  Vec<SkillArg*> _arguments);
+	                                                  Vec<SkillArg*> _arguments);
 	useit static SkillPrototype* create_method(Skill* _parent, Identifier _name, bool _isVar, ast::Type* _returnType,
-											   Vec<SkillArg*> _arguments);
+	                                           Vec<SkillArg*> _arguments);
 	useit static SkillPrototype* create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-													  Vec<SkillArg*> _arguments);
+	                                                  Vec<SkillArg*> _arguments);
 
-	useit Skill*	  get_parent_skill() const { return parent; }
+	useit Skill*      get_parent_skill() const { return parent; }
 	useit SkillFnType get_method_type() const { return fnTy; }
 	useit Identifier  get_name() const { return name; }
 	useit ast::Type* get_return_type() const { return returnType; }
 	useit Vec<SkillArg*>& get_args() { return arguments; }
-	useit usize			  get_arg_count() const { return arguments.size(); }
-	useit SkillArg*		  get_arg_at(usize index) { return arguments.at(index); }
+	useit usize           get_arg_count() const { return arguments.size(); }
+	useit SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
 };
 
 class Skill : public Uniq {
-	Identifier			 name;
-	Mod*				 parent;
+	Identifier           name;
+	Mod*                 parent;
 	Vec<SkillPrototype*> prototypes;
-	VisibilityInfo		 visibInfo;
+	VisibilityInfo       visibInfo;
 
   public:
-	useit String		  get_full_name() const;
-	useit Identifier	  get_name() const;
-	useit Mod*			  get_module() const;
+	useit String          get_full_name() const;
+	useit Identifier      get_name() const;
+	useit Mod*            get_module() const;
 	useit VisibilityInfo& get_visibility();
 
-	useit bool			  has_proto_with_name(String const& name) const;
+	useit bool            has_proto_with_name(String const& name) const;
 	useit SkillPrototype* get_proto_with_name(String const& name) const;
 
 	LinkNames get_link_names() const;
@@ -84,12 +84,12 @@ class DoneSkill : public Uniq {
 	friend class Method;
 	friend class ast::ConvertorPrototype;
 
-	Mod*					  parent;
-	Maybe<Skill*>			  skill;
+	Mod*                      parent;
+	Maybe<Skill*>             skill;
 	Vec<ir::GenericArgument*> generics;
-	FileRange				  fileRange;
-	Type*					  candidateType;
-	FileRange				  typeRange;
+	FileRange                 fileRange;
+	Type*                     candidateType;
+	FileRange                 typeRange;
 
 	Maybe<Method*> defaultConstructor;
 	Vec<Method*>   staticFunctions;
@@ -111,9 +111,9 @@ class DoneSkill : public Uniq {
 
   public:
 	useit static DoneSkill* create_extension(Mod* parent, FileRange fileRange, Type* candidateType,
-											 FileRange typeRange);
+	                                         FileRange typeRange);
 	useit static DoneSkill* create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
-										  FileRange typeRange);
+	                                      FileRange typeRange);
 
 	useit bool is_generic() const { return !generics.empty(); }
 	useit bool has_generic_parameter(String const& name) {
@@ -167,16 +167,16 @@ class DoneSkill : public Uniq {
 	useit ir::Method* get_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
 	useit ir::Method* get_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
 
-	useit bool			 is_type_extension() const;
-	useit bool			 is_normal_skill() const;
-	useit Skill*		 get_skill() const;
-	useit FileRange		 get_type_range() const;
-	useit FileRange		 get_file_range() const;
-	useit Type*			 get_ir_type() const;
-	useit Mod*			 get_module() const;
+	useit bool           is_type_extension() const;
+	useit bool           is_normal_skill() const;
+	useit Skill*         get_skill() const;
+	useit FileRange      get_type_range() const;
+	useit FileRange      get_file_range() const;
+	useit Type*          get_ir_type() const;
+	useit Mod*           get_module() const;
 	useit VisibilityInfo get_visibility() const;
-	useit LinkNames		 get_link_names() const;
-	useit String		 to_string() const;
+	useit LinkNames      get_link_names() const;
+	useit String         to_string() const;
 };
 
 } // namespace qat::ir

@@ -18,10 +18,10 @@ class FloatType final : public Type {
 
 	useit static String kindToString(ir::FloatTypeKind kind);
 	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
-	useit ir::Type*	  emit(EmitCtx* ctx);
+	useit ir::Type*   emit(EmitCtx* ctx);
 	useit AstTypeKind type_kind() const;
-	useit Json		  to_json() const;
-	useit String	  to_string() const;
+	useit Json        to_json() const;
+	useit String      to_string() const;
 };
 
 } // namespace qat::ast

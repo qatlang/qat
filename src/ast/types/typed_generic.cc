@@ -26,13 +26,13 @@ ir::Type* TypedGenericAbstract::get_type() const { return !typeValue.empty() ? t
 
 Json TypedGenericAbstract::to_json() const {
 	return Json()
-		._("genericKind", "typedGeneric")
-		._("index", index)
-		._("name", name)
-		._("hasDefault", defaultTypeAST.has_value())
-		._("defaultType", defaultTypeAST.has_value() ? defaultTypeAST.value()->to_json() : JsonValue())
-		._("defaultValueString", defaultTypeAST.has_value() ? defaultTypeAST.value()->to_string() : JsonValue())
-		._("range", range);
+	    ._("genericKind", "typedGeneric")
+	    ._("index", index)
+	    ._("name", name)
+	    ._("hasDefault", defaultTypeAST.has_value())
+	    ._("defaultType", defaultTypeAST.has_value() ? defaultTypeAST.value()->to_json() : JsonValue())
+	    ._("defaultValueString", defaultTypeAST.has_value() ? defaultTypeAST.value()->to_string() : JsonValue())
+	    ._("range", range);
 }
 
 TypedGenericAbstract::~TypedGenericAbstract() {}

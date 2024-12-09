@@ -14,11 +14,11 @@ namespace qat::lexer {
 
 class Lexer {
   private:
-	fs::path	  filePath;
+	fs::path      filePath;
 	std::ifstream file;
-	char		  prev;
-	char		  current;
-	Vec<Token>*	  tokens = nullptr;
+	char          prev;
+	char          current;
+	Vec<Token>*   tokens = nullptr;
 	Deque<Token>  buffer;
 
 	Vec<TokenType> bracketOccurences;
@@ -31,8 +31,8 @@ class Lexer {
 
 	~Lexer();
 
-	u64		   lineNumber	   = 1;
-	u64		   characterNumber = 0;
+	u64        lineNumber      = 1;
+	u64        characterNumber = 0;
 	Maybe<u64> previousLineEnd;
 	static u64 timeInMicroSeconds;
 	static u64 lineCount;
@@ -45,7 +45,7 @@ class Lexer {
 
 	useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
 	useit Vec<Token>* get_tokens();
-	useit Token		  tokeniser();
+	useit Token       tokeniser();
 
 	useit FileRange get_position(u64 length);
 };

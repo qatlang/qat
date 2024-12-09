@@ -11,7 +11,7 @@
 namespace qat::ir {
 
 Value::Value(llvm::Value* _llvmValue, ir::Type* _type, bool _isVariable)
-	: type(_type), variable(_isVariable), ll(_llvmValue) {
+    : type(_type), variable(_isVariable), ll(_llvmValue) {
 	allValues.push_back(this);
 }
 
@@ -20,7 +20,7 @@ Vec<Value*> Value::allValues = {};
 Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange) {
 	if (!is_ghost_reference()) {
 		auto result = ctx->get_fn()->get_block()->new_value(name.value_or(ctx->get_fn()->get_random_alloca_name()),
-															type, true, fileRange);
+		                                                    type, true, fileRange);
 		ctx->irCtx->builder.CreateStore(get_llvm(), result->get_llvm());
 		return result;
 	} else {
@@ -29,9 +29,9 @@ Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRa
 }
 
 Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> _localID,
-				   Mod* mod) { // NOLINT(misc-unused-parameters)
+                   Mod* mod) { // NOLINT(misc-unused-parameters)
 	llvm::FunctionType* fnTy  = nullptr;
-	ir::FunctionType*	funTy = nullptr;
+	ir::FunctionType*   funTy = nullptr;
 	if (type->is_mark() && type->as_mark()->get_subtype()->is_function()) {
 		fnTy  = llvm::dyn_cast<llvm::FunctionType>(type->as_mark()->get_subtype()->get_llvm_type());
 		funTy = type->as_mark()->get_subtype()->as_function();
@@ -40,10 +40,10 @@ Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> 
 		funTy = type->as_function();
 	}
 	auto result =
-		new Value(irCtx->builder.CreateCall(fnTy, ll, args),
-				  type->is_mark() ? type->as_mark()->get_subtype()->as_function()->get_return_type()->get_type()
-								  : type->as_function()->get_return_type()->get_type(),
-				  false);
+	    new Value(irCtx->builder.CreateCall(fnTy, ll, args),
+	              type->is_mark() ? type->as_mark()->get_subtype()->as_function()->get_return_type()->get_type()
+	                              : type->as_function()->get_return_type()->get_type(),
+	              false);
 	if (_localID && funTy->get_return_type()->is_return_self()) {
 		result->set_local_id(_localID.value());
 	}
@@ -76,7 +76,7 @@ bool PrerunValue::is_equal_to(ir::Ctx* irCtx, PrerunValue* other) {
 		if (as_prerun()->get_ir_type()->is_typed()) {
 			if (other->get_ir_type()->is_typed()) {
 				return as_prerun()->get_ir_type()->as_typed()->get_subtype()->is_same(
-					other->get_ir_type()->as_typed()->get_subtype());
+				    other->get_ir_type()->as_typed()->get_subtype());
 			} else {
 				return false;
 			}

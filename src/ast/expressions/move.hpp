@@ -11,13 +11,13 @@ class Move final : public Expression, public LocalDeclCompatible, public InPlace
 
   private:
 	Expression* exp;
-	bool		isExpSelf = false;
+	bool        isExpSelf = false;
 
 	bool isAssignment = false;
 
   public:
 	Move(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
-		: Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
+	    : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
 
 	useit static Move* create(Expression* _exp, bool _isExpSelf, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(Move), _exp, _isExpSelf, _fileRange);
@@ -31,8 +31,8 @@ class Move final : public Expression, public LocalDeclCompatible, public InPlace
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::MOVE_EXPRESSION; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::MOVE_EXPRESSION; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

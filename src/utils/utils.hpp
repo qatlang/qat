@@ -36,7 +36,7 @@ useit inline String number_to_position(u64 number) {
 
 useit inline Vec<String> split_string(const String& value, const String& slice) {
 	Vec<String> result;
-	int			index = 0;
+	int         index = 0;
 	while (index < value.length()) {
 		auto pos = value.find(slice, index);
 		if (pos != String::npos) {
@@ -53,8 +53,8 @@ useit inline Vec<String> split_string(const String& value, const String& slice) 
 }
 
 useit inline u64 random_number() {
-	std::random_device											dev;
-	std::mt19937_64												rng(dev());
+	std::random_device                                          dev;
+	std::mt19937_64                                             rng(dev());
 	std::uniform_int_distribution<std::mt19937_64::result_type> dist(1, UINT_FAST64_MAX);
 	return dist(rng);
 }

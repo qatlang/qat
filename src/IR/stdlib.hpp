@@ -17,7 +17,7 @@ class StdLib {
 
 	useit static bool is_std_lib_found();
 
-	useit static bool			 has_string_type();
+	useit static bool            has_string_type();
 	useit static DefinitionType* get_string_type();
 };
 

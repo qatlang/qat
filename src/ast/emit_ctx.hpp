@@ -19,15 +19,15 @@ enum class LoopType {
 struct LoopInfo {
 	Maybe<Identifier> name;
 	Maybe<Identifier> secondaryName;
-	ir::Block*		  mainBlock;
-	ir::Block*		  condBlock;
-	ir::Block*		  restBlock;
-	ir::LocalValue*	  index;
-	LoopType		  type;
+	ir::Block*        mainBlock;
+	ir::Block*        condBlock;
+	ir::Block*        restBlock;
+	ir::LocalValue*   index;
+	LoopType          type;
 
 	LoopInfo(Maybe<Identifier> _name, ir::Block* _mainB, ir::Block* _condB, ir::Block* _restB, ir::LocalValue* _index,
-			 LoopType _type)
-		: name(_name), mainBlock(_mainB), condBlock(_condB), restBlock(_restB), index(_index), type(_type) {}
+	         LoopType _type)
+	    : name(_name), mainBlock(_mainB), condBlock(_condB), restBlock(_restB), index(_index), type(_type) {}
 
 	void set_secondary_name(Identifier other) { secondaryName = std::move(other); }
 
@@ -41,12 +41,12 @@ enum class BreakableType {
 
 struct Breakable {
 	Maybe<Identifier> tag;
-	ir::Block*		  restBlock;
-	ir::Block*		  trueBlock;
-	BreakableType	  type;
+	ir::Block*        restBlock;
+	ir::Block*        trueBlock;
+	BreakableType     type;
 
 	Breakable(BreakableType _type, Maybe<Identifier> _tag, ir::Block* _restBlock, ir::Block* _trueBlock)
-		: tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock), type(_type) {}
+	    : tag(std::move(_tag)), restBlock(_restBlock), trueBlock(_trueBlock), type(_type) {}
 
 	String type_to_string() const {
 		switch (type) {
@@ -62,10 +62,10 @@ struct EmitCtx {
 	ir::Ctx* irCtx = nullptr;
 	ir::Mod* mod   = nullptr;
 
-	ir::Skill*		  skill;
+	ir::Skill*        skill;
 	ir::MethodParent* memberParent;
-	ir::OpaqueType*	  parentOpaque;
-	ir::Function*	  fn;
+	ir::OpaqueType*   parentOpaque;
+	ir::Function*     fn;
 
 	ir::PrerunCallState* prerunCallState;
 
@@ -73,8 +73,8 @@ struct EmitCtx {
 	Vec<Breakable> breakables;
 
 	EmitCtx(ir::Ctx* _irCtx, ir::Mod* _mod)
-		: irCtx(_irCtx), mod(_mod), skill(nullptr), memberParent(nullptr), parentOpaque(nullptr), fn(nullptr),
-		  prerunCallState(nullptr) {}
+	    : irCtx(_irCtx), mod(_mod), skill(nullptr), memberParent(nullptr), parentOpaque(nullptr), fn(nullptr),
+	      prerunCallState(nullptr) {}
 
 	useit static EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) {
 		return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod);
@@ -122,7 +122,7 @@ struct EmitCtx {
 	void genericNameCheck(String const& name, FileRange const& range);
 
 	void name_check_in_module(const Identifier& name, const String& entityType, Maybe<String> genericID = None,
-							  Maybe<String> opaqueID = None);
+	                          Maybe<String> opaqueID = None);
 
 	void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
 

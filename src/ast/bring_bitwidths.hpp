@@ -11,14 +11,14 @@ class BringBitwidths : public Node {
 
   public:
 	BringBitwidths(Vec<ast::Type*> _broughtTypes, FileRange _fileRange)
-		: Node(_fileRange), broughtTypes(_broughtTypes) {}
+	    : Node(_fileRange), broughtTypes(_broughtTypes) {}
 
 	useit static BringBitwidths* create(Vec<ast::Type*> _broughtTypes, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(BringBitwidths), _broughtTypes, _fileRange);
 	}
 
-	void		   create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
-	useit Json	   to_json() const final;
+	void           create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
+	useit Json     to_json() const final;
 	useit NodeType nodeType() const final { return NodeType::BRING_BITWIDTHS; }
 };
 

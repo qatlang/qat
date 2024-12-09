@@ -37,7 +37,7 @@ class JsonParser {
 		Token(TokenType _type) : type(_type) {}
 		Token(TokenType _type, String _val) : type(_type), value(std::move(_val)) {}
 
-		TokenType	type;
+		TokenType   type;
 		std::string value;
 	};
 

@@ -10,9 +10,9 @@ ir::Value* SayLike::emit(EmitCtx* ctx) {
 		SHOW("Say sentence emitting..")
 		SHOW("Current block is: " << ctx->get_fn()->get_block()->get_name())
 		auto  printfName = ctx->mod->link_internal_dependency(ir::InternalDependency::printf, ctx->irCtx, fileRange);
-		auto* printfFn	 = ctx->mod->get_llvm_module()->getFunction(printfName);
+		auto* printfFn   = ctx->mod->get_llvm_module()->getFunction(printfName);
 		Vec<ir::Value*> valuesIR;
-		Vec<FileRange>	valuesRange;
+		Vec<FileRange>  valuesRange;
 		for (usize i = 0; i < expressions.size(); i++) {
 			valuesRange.push_back(expressions[i]->fileRange);
 			valuesIR.push_back(expressions[i]->emit(ctx));

@@ -12,43 +12,43 @@ namespace qat::ast {
 
 class FunctionPrototype final : public IsEntity {
 	friend class ir::GenericFunction;
-	Identifier			  name;
-	Vec<Argument*>		  arguments;
-	Maybe<Type*>		  returnType;
-	Maybe<MetaInfo>		  metaInfo;
+	Identifier            name;
+	Vec<Argument*>        arguments;
+	Maybe<Type*>          returnType;
+	Maybe<MetaInfo>       metaInfo;
 	Maybe<VisibilitySpec> visibSpec;
-	PrerunExpression*	  defineChecker;
-	PrerunExpression*	  genericConstraint;
+	PrerunExpression*     defineChecker;
+	PrerunExpression*     genericConstraint;
 
 	Maybe<Pair<Vec<Sentence*>, FileRange>> definition;
 
 	Vec<GenericAbstractType*> generics;
-	ir::GenericFunction*	  genericFn = nullptr;
+	ir::GenericFunction*      genericFn = nullptr;
 
 	mutable Maybe<llvm::GlobalValue::LinkageTypes> linkageType;
 
 	mutable Maybe<String> variantName;
 	mutable ir::Function* function = nullptr;
-	mutable bool		  isMainFn = false;
-	mutable Maybe<bool>	  checkResult;
+	mutable bool          isMainFn = false;
+	mutable Maybe<bool>   checkResult;
 
   public:
 	FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-					  PrerunExpression* _checker, PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
-					  Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-					  Vec<GenericAbstractType*> _generics, Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
-		: IsEntity(_fileRange), name(_name), arguments(_arguments), returnType(_returnType), metaInfo(_metaInfo),
-		  visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint),
-		  definition(_definition), generics(_generics) {}
+	                  PrerunExpression* _checker, PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
+	                  Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	                  Vec<GenericAbstractType*> _generics, Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
+	    : IsEntity(_fileRange), name(_name), arguments(_arguments), returnType(_returnType), metaInfo(_metaInfo),
+	      visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint),
+	      definition(_definition), generics(_generics) {}
 
 	useit static FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic,
-										   Maybe<Type*> _returnType, PrerunExpression* _checker,
-										   PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
-										   Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-										   Vec<GenericAbstractType*>			  _generics,
-										   Maybe<Pair<Vec<Sentence*>, FileRange>> _definition) {
+	                                       Maybe<Type*> _returnType, PrerunExpression* _checker,
+	                                       PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
+	                                       Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	                                       Vec<GenericAbstractType*>              _generics,
+	                                       Maybe<Pair<Vec<Sentence*>, FileRange>> _definition) {
 		return std::construct_at(OwnNormal(FunctionPrototype), _name, _arguments, _isVariadic, _returnType, _checker,
-								 _genericConstraint, _metaInfo, _visibSpec, _fileRange, _generics, _definition);
+		                         _genericConstraint, _metaInfo, _visibSpec, _fileRange, _generics, _definition);
 	}
 
 	useit bool is_generic() const;
@@ -63,8 +63,8 @@ class FunctionPrototype final : public IsEntity {
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	void		   emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
-	useit Json	   to_json() const final;
+	void           emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
+	useit Json     to_json() const final;
 	useit NodeType nodeType() const final { return NodeType::FUNCTION_PROTOTYPE; }
 	~FunctionPrototype() final;
 };

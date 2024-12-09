@@ -9,18 +9,18 @@ namespace qat::ast {
 
 class MemberAccess final : public Expression {
 	Expression* instance;
-	bool		isExpSelf = false;
+	bool        isExpSelf = false;
 	Maybe<bool> isVariationAccess;
-	Identifier	name;
+	Identifier  name;
 
   public:
 	MemberAccess(Expression* _instance, bool _isExpSelf, Maybe<bool> _isVariationAccess, Identifier _name,
-				 FileRange _fileRange)
-		: Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
-		  isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
+	             FileRange _fileRange)
+	    : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
+	      isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
 
 	useit static MemberAccess* create(Expression* _instance, bool isExpSelf, Maybe<bool> _isVariationAccess,
-									  Identifier _name, FileRange _fileRange) {
+	                                  Identifier _name, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(MemberAccess), _instance, isExpSelf, _isVariationAccess, _name, _fileRange);
 	}
 
@@ -42,8 +42,8 @@ class MemberAccess final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
-	useit Json		 to_json() const override;
-	useit NodeType	 nodeType() const override { return NodeType::MEMBER_ACCESS; }
+	useit Json       to_json() const override;
+	useit NodeType   nodeType() const override { return NodeType::MEMBER_ACCESS; }
 };
 
 } // namespace qat::ast

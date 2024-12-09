@@ -24,14 +24,14 @@ namespace qat::ir {
 #define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(cli::Color::yellow))
 
 CodeProblem::CodeProblem(bool _isError, String _message, Maybe<FileRange> _range)
-	: isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
+    : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
 
 CodeProblem::operator Json() const {
 	return Json()
-		._("isError", isError)
-		._("message", message)
-		._("hasRange", range.has_value())
-		._("fileRange", range.has_value() ? (Json)(range.value()) : Json());
+	    ._("isError", isError)
+	    ._("message", message)
+	    ._("hasRange", range.has_value())
+	    ._("fileRange", range.has_value() ? (Json)(range.value()) : Json());
 }
 
 QatError::QatError() = default;
@@ -57,12 +57,12 @@ Ctx::Ctx() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
 	SHOW("llctx address: " << &llctx)
 	SHOW("Builder llctx address: " << &builder.getContext())
 	auto diagnosticEngine =
-		clang::DiagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
-								 llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions()));
-	auto targetOpts	   = std::make_shared<clang::TargetOptions>();
+	    clang::DiagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
+	                             llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions()));
+	auto targetOpts    = std::make_shared<clang::TargetOptions>();
 	targetOpts->Triple = cli::Config::get()->get_target_triple();
-	clangTargetInfo	   = clang::TargetInfo::CreateTargetInfo(diagnosticEngine, targetOpts);
-	dataLayout		   = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
+	clangTargetInfo    = clang::TargetInfo::CreateTargetInfo(diagnosticEngine, targetOpts);
+	dataLayout         = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
 }
 
 llvm::GlobalValue::LinkageTypes Ctx::getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const {
@@ -99,7 +99,7 @@ llvm::GlobalValue::LinkageTypes Ctx::getGlobalLinkageForVisibility(VisibilityInf
 String Ctx::highlightWarning(const String& message) {
 	auto* cfg = cli::Config::get();
 	return ColoredOr(cli::Color::yellow, "`") + String(cfg->is_no_color_mode() ? "" : colors::bold) + message +
-		   (cfg->is_no_color_mode() ? "" : colors::reset) + ColoredOr(cli::Color::white, "`");
+	       (cfg->is_no_color_mode() ? "" : colors::reset) + ColoredOr(cli::Color::white, "`");
 }
 
 void Ctx::write_json_result(bool status) const {
@@ -118,17 +118,17 @@ void Ctx::write_json_result(bool status) const {
 	}
 	SHOW("Creating JSON object for result")
 	result._("status", status)
-		._("problems", problems)
-		._("lineCount", lexer::Lexer::lineCount > 0 ? lexer::Lexer::lineCount - 1 : 0)
-		._("lexerTime", lexer::Lexer::timeInMicroSeconds)
-		._("parserTime", parser::Parser::timeInMicroSeconds)
-		._("compilationTime", qatCompileTimeInMs.has_value() ? qatCompileTimeInMs.value() : JsonValue())
-		._("linkingTime", clangAndLinkTimeInMs.has_value() ? clangAndLinkTimeInMs.value() : JsonValue())
-		._("binarySizes", binarySizesJson)
-		._("hasMain", hasMain);
+	    ._("problems", problems)
+	    ._("lineCount", lexer::Lexer::lineCount > 0 ? lexer::Lexer::lineCount - 1 : 0)
+	    ._("lexerTime", lexer::Lexer::timeInMicroSeconds)
+	    ._("parserTime", parser::Parser::timeInMicroSeconds)
+	    ._("compilationTime", qatCompileTimeInMs.has_value() ? qatCompileTimeInMs.value() : JsonValue())
+	    ._("linkingTime", clangAndLinkTimeInMs.has_value() ? clangAndLinkTimeInMs.value() : JsonValue())
+	    ._("binarySizes", binarySizesJson)
+	    ._("hasMain", hasMain);
 	SHOW("Creating compilation result file")
 	std::ofstream output;
-	auto		  outPath = cli::Config::get()->get_output_path() / "QatCompilationResult.json";
+	auto          outPath = cli::Config::get()->get_output_path() / "QatCompilationResult.json";
 	if (fs::exists(outPath)) {
 		fs::remove(outPath);
 	}
@@ -169,37 +169,37 @@ GenericArgument* Ctx::get_generic_parameter_from_entity(String const& name) cons
 }
 
 void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> fileRange,
-					Maybe<Pair<String, FileRange>> pointTo) {
+                    Maybe<Pair<String, FileRange>> pointTo) {
 	auto* cfg = cli::Config::get();
 	if (has_active_generic()) {
 		codeProblems.push_back(
-			CodeProblem(true, "Errors generated while creating generic variant: " + get_active_generic().name,
-						get_active_generic().fileRange));
+		    CodeProblem(true, "Errors generated while creating generic variant: " + get_active_generic().name,
+		                get_active_generic().fileRange));
 		std::cerr << "\n"
-				  << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_color(cli::Color::reset)
-				  << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-				  << get_active_generic().fileRange.file.string() << ":" << get_active_generic().fileRange.start << "\n"
-				  << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
-				  << "\n";
+		          << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_color(cli::Color::reset)
+		          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+		          << get_active_generic().fileRange.file.string() << ":" << get_active_generic().fileRange.start << "\n"
+		          << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
+		          << "\n";
 	}
 	codeProblems.push_back(CodeProblem(
-		true, (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") + message, fileRange));
+	    true, (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") + message, fileRange));
 	std::cerr << "\n" << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_bg_color(cli::Color::reset) << " ";
 	std::cerr << (cfg->is_no_color_mode() ? "- " : "") << cli::get_color(cli::Color::white)
-			  << (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") << message
-			  << cli::get_color(cli::Color::reset) << "\n";
+	          << (has_active_generic() ? ("Creating " + get_active_generic().name + " => ") : "") << message
+	          << cli::get_color(cli::Color::reset) << "\n";
 	if (fileRange) {
 		std::cerr << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-				  << fileRange.value().file.string() << ":" << fileRange.value().start << " to "
-				  << fileRange.value().end;
+		          << fileRange.value().file.string() << ":" << fileRange.value().start << " to "
+		          << fileRange.value().end;
 		print_range_content(fileRange.value(), true, true);
 	}
 	if (pointTo.has_value()) {
 		std::cerr << (fileRange.has_value() ? "" : "\n") << cli::get_color(cli::Color::white) << pointTo.value().first
-				  << cli::get_color(cli::Color::reset) << "\n"
-				  << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-				  << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
-				  << pointTo.value().second.end;
+		          << cli::get_color(cli::Color::reset) << "\n"
+		          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+		          << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
+		          << pointTo.value().second.end;
 		print_range_content(pointTo.value().second, true, false);
 	}
 	std::cerr << "\n";
@@ -218,8 +218,8 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
 	if (not fs::is_regular_file(fileRange.file)) {
 		return;
 	}
-	auto  lines		  = get_range_content(fileRange);
-	auto  endLine	  = lines.first + lines.second.size();
+	auto  lines       = get_range_content(fileRange);
+	auto  endLine     = lines.first + lines.second.size();
 	usize lineNumSize = std::to_string(lines.first).size();
 	if (lineNumSize < std::to_string(endLine).size()) {
 		lineNumSize = std::to_string(endLine).size();
@@ -232,7 +232,7 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
 			lineNum += " ";
 		}
 		(isError ? std::cerr : std::cout) << lineNum << " | " << cli::get_color(cli::Color::grey)
-										  << std::get<0>(lineInfo) << cli::get_color(cli::Color::reset) << "\n";
+		                                  << std::get<0>(lineInfo) << cli::get_color(cli::Color::reset) << "\n";
 		if (std::get<1>(lineInfo) != std::get<2>(lineInfo)) {
 			String spacing;
 			if (std::get<1>(lineInfo) > 0) {
@@ -248,9 +248,9 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
 			auto   indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
 			String indicator(indicatorCount, '^');
 			(isError ? std::cerr : std::cout)
-				<< String(lineNumSize, ' ') << " | " << spacing
-				<< (isContentError ? cli::get_color(cli::Color::red) : cli::get_color(cli::Color::purple)) << indicator
-				<< cli::get_color(cli::Color::reset) << "\n";
+			    << String(lineNumSize, ' ') << " | " << spacing
+			    << (isContentError ? cli::get_color(cli::Color::red) : cli::get_color(cli::Color::purple)) << indicator
+			    << cli::get_color(cli::Color::reset) << "\n";
 		}
 		lineIndex++;
 	}
@@ -268,7 +268,7 @@ void Ctx::finalise_errors() {
 }
 
 void Ctx::Error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
-				Maybe<Pair<String, FileRange>> pointTo) {
+                Maybe<Pair<String, FileRange>> pointTo) {
 	add_error(activeMod, message, fileRange, pointTo);
 	finalise_errors();
 }
@@ -296,13 +296,13 @@ Pair<usize, Vec<std::tuple<String, u64, u64>>> Ctx::get_range_content(FileRange 
 	Vec<std::tuple<String, u64, u64>> result;
 
 	std::ifstream file(_range.file);
-	String		  line;
-	u64			  lineCount = 0;
-	const usize	  startLine = _range.start.line;
-	const usize	  startChar = _range.start.character;
-	const usize	  endLine	= _range.end.line;
-	const usize	  endChar	= _range.end.character;
-	usize		  firstLine = startLine;
+	String        line;
+	u64           lineCount = 0;
+	const usize   startLine = _range.start.line;
+	const usize   startChar = _range.start.character;
+	const usize   endLine   = _range.end.line;
+	const usize   endChar   = _range.end.character;
+	usize         firstLine = startLine;
 	while (std::getline(file, line)) {
 		lineCount++;
 		usize i = 0;
@@ -342,16 +342,16 @@ void Ctx::Warning(const String& message, const FileRange& fileRange) {
 		get_active_generic().warningCount++;
 	}
 	codeProblems.push_back(CodeProblem(
-		false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
-		fileRange));
+	    false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
+	    fileRange));
 	auto* cfg = cli::Config::get();
 	std::cout << "\n"
-			  << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
-			  << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-			  << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
-			  << cli::get_color(cli::Color::white) << "\n"
-			  << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
-			  << cli::get_color(cli::Color::reset) << "\n";
+	          << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
+	          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
+	          << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
+	          << cli::get_color(cli::Color::white) << "\n"
+	          << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
+	          << cli::get_color(cli::Color::reset) << "\n";
 	print_range_content(fileRange, false, false);
 }
 

@@ -16,8 +16,8 @@ bool ReturnType::is_return_self() const { return isReturnSelfRef; }
 String ReturnType::to_string() const { return isReturnSelfRef ? "''" : retTy->to_string(); }
 
 FunctionType::FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& llctx)
-	: returnType(_retType), argTypes(std::move(_argTypes)),
-	  isVariadicArgs((not argTypes.empty()) && (argTypes.back()->is_variadic_argument())) {
+    : returnType(_retType), argTypes(std::move(_argTypes)),
+      isVariadicArgs((not argTypes.empty()) && (argTypes.back()->is_variadic_argument())) {
 	SHOW("Creating function type")
 	linkingName = "qat'fn_type:[(";
 	for (usize i = 0; i < argTypes.size(); i++) {

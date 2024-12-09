@@ -20,10 +20,10 @@ class FloatType : public Type {
 	useit bool is_trivially_copyable() const final { return true; }
 	useit bool is_trivially_movable() const final { return true; }
 
-	useit bool			is_type_sized() const final;
+	useit bool          is_type_sized() const final;
 	useit FloatTypeKind get_float_kind() const;
-	useit TypeKind		type_kind() const final;
-	useit String		to_string() const final;
+	useit TypeKind      type_kind() const final;
+	useit String        to_string() const final;
 
 	useit bool can_be_prerun() const final { return true; }
 	useit bool can_be_prerun_generic() const final { return true; }

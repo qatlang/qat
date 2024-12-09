@@ -29,21 +29,21 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 						if (!retType->is_trivially_copyable()) {
 							if (!retVal->is_variable()) {
 								ctx->Error(
-									"This expression does not have variability, and hence cannot be trivially moved from",
-									give_expr.value()->fileRange);
+								    "This expression does not have variability, and hence cannot be trivially moved from",
+								    give_expr.value()->fileRange);
 							}
 							ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(retType->get_llvm_type()),
-															retVal->get_llvm());
+							                                retVal->get_llvm());
 						}
 						ir::destructor_caller(ctx->irCtx, fun);
 						ir::method_handler(ctx->irCtx, fun);
 						return ir::Value::get(ctx->irCtx->builder.CreateRet(loadRes), retType, false);
 					} else {
 						ctx->Error(
-							"This expression is of type " + ctx->color(retType->to_string()) +
-								" which is not trivially copyable or movable. To convert the expression to a value, please use " +
-								ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
-							fileRange);
+						    "This expression is of type " + ctx->color(retType->to_string()) +
+						        " which is not trivially copyable or movable. To convert the expression to a value, please use " +
+						        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
+						    fileRange);
 					}
 				} else {
 					ir::destructor_caller(ctx->irCtx, fun);
@@ -52,19 +52,19 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 				}
 			}
 		} else if (retType->is_reference() &&
-				   retType->as_reference()->get_subtype()->is_same(
-					   retVal->is_reference() ? retVal->get_ir_type()->as_reference()->get_subtype()
-											  : retVal->get_ir_type()) &&
-				   (retType->as_reference()->isSubtypeVariable()
-						? (retVal->is_ghost_reference()
-							   ? retVal->is_variable()
-							   : (retVal->is_reference() && retVal->get_ir_type()->as_reference()->isSubtypeVariable()))
-						: true)) {
+		           retType->as_reference()->get_subtype()->is_same(
+		               retVal->is_reference() ? retVal->get_ir_type()->as_reference()->get_subtype()
+		                                      : retVal->get_ir_type()) &&
+		           (retType->as_reference()->isSubtypeVariable()
+		                ? (retVal->is_ghost_reference()
+		                       ? retVal->is_variable()
+		                       : (retVal->is_reference() && retVal->get_ir_type()->as_reference()->isSubtypeVariable()))
+		                : true)) {
 			SHOW("Return type is compatible")
 			if (retType->is_reference() && !retVal->is_reference() && retVal->is_local_value()) {
 				ctx->irCtx->Warning(
-					"Returning reference to a local value. The value pointed to by the reference might be destroyed before the function call is complete",
-					fileRange);
+				    "Returning reference to a local value. The value pointed to by the reference might be destroyed before the function call is complete",
+				    fileRange);
 			}
 			if (retVal->is_reference()) {
 				retVal->load_ghost_reference(ctx->irCtx->builder);
@@ -73,35 +73,35 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 			ir::method_handler(ctx->irCtx, fun);
 			return ir::Value::get(ctx->irCtx->builder.CreateRet(retVal->get_llvm()), retType, false);
 		} else if (retVal->get_ir_type()->is_reference() &&
-				   retVal->get_ir_type()->as_reference()->get_subtype()->is_same(retType)) {
+		           retVal->get_ir_type()->as_reference()->get_subtype()->is_same(retType)) {
 			if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
 				retVal->load_ghost_reference(ctx->irCtx->builder);
 				auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
 				if (!retType->is_trivially_copyable()) {
 					if (!retVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
 						ctx->Error(
-							"The expression is of type " + ctx->irCtx->color(retVal->get_ir_type()->to_string()) +
-								" which is a reference without variability, and hence cannot be trivially moved from",
-							give_expr.value()->fileRange);
+						    "The expression is of type " + ctx->irCtx->color(retVal->get_ir_type()->to_string()) +
+						        " which is a reference without variability, and hence cannot be trivially moved from",
+						    give_expr.value()->fileRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(retType->get_llvm_type()),
-													retVal->get_llvm());
+					                                retVal->get_llvm());
 				}
 				ir::destructor_caller(ctx->irCtx, fun);
 				ir::method_handler(ctx->irCtx, fun);
 				return ir::Value::get(ctx->irCtx->builder.CreateRet(loadRes), retType, false);
 			} else {
 				ctx->Error(
-					"This expression is of type " + ctx->color(retType->to_string()) +
-						" which is not trivially copyable or movable. To convert the expression to a value, please use " +
-						ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
-					fileRange);
+				    "This expression is of type " + ctx->color(retType->to_string()) +
+				        " which is not trivially copyable or movable. To convert the expression to a value, please use " +
+				        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
+				    fileRange);
 			}
 		} else {
 			ctx->Error("Given value type of the function is " +
-						   fun->get_ir_type()->as_function()->get_return_type()->to_string() +
-						   ", but the provided value in the give sentence is " + retVal->get_ir_type()->to_string(),
-					   give_expr.value()->fileRange);
+			               fun->get_ir_type()->as_function()->get_return_type()->to_string() +
+			               ", but the provided value in the give sentence is " + retVal->get_ir_type()->to_string(),
+			           give_expr.value()->fileRange);
 		}
 	} else {
 		if (fun->get_ir_type()->as_function()->get_return_type()->get_type()->is_void()) {
@@ -110,19 +110,19 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 			return ir::Value::get(ctx->irCtx->builder.CreateRetVoid(), ir::VoidType::get(ctx->irCtx->llctx), false);
 		} else {
 			ctx->Error("No value is provided to give while the given type of the function is " +
-						   ctx->color(fun->get_ir_type()->as_function()->get_return_type()->to_string()) +
-						   ". Please provide a value of the appropriate type",
-					   fileRange);
+			               ctx->color(fun->get_ir_type()->as_function()->get_return_type()->to_string()) +
+			               ". Please provide a value of the appropriate type",
+			           fileRange);
 		}
 	}
 }
 
 Json GiveSentence::to_json() const {
 	return Json()
-		._("nodeType", "giveSentence")
-		._("hasValue", give_expr.has_value())
-		._("value", give_expr.has_value() ? give_expr.value()->to_json() : Json())
-		._("fileRange", fileRange);
+	    ._("nodeType", "giveSentence")
+	    ._("hasValue", give_expr.has_value())
+	    ._("value", give_expr.has_value() ? give_expr.value()->to_json() : Json())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

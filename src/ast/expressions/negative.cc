@@ -8,15 +8,15 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 	if (is_type_inferred() && value->has_type_inferrance()) {
 		value->as_type_inferrable()->set_inference_type(inferredType);
 	}
-	auto irVal	   = value->emit(ctx);
-	auto valTy	   = irVal->get_ir_type()->is_reference() ? irVal->get_ir_type()->as_reference()->get_subtype()
-														  : irVal->get_ir_type();
+	auto irVal     = value->emit(ctx);
+	auto valTy     = irVal->get_ir_type()->is_reference() ? irVal->get_ir_type()->as_reference()->get_subtype()
+	                                                      : irVal->get_ir_type();
 	auto typeCheck = [&](ir::Type* candTy) {
 		if (is_type_inferred()) {
 			if (!candTy->is_same(inferredType)) {
 				ctx->Error("The expression is of type " + ctx->color(candTy->to_string()) +
-							   ", but the type inferred from scope is " + ctx->color(inferredType->to_string()),
-						   value->fileRange);
+				               ", but the type inferred from scope is " + ctx->color(inferredType->to_string()),
+				           value->fileRange);
 			}
 		}
 	};
@@ -28,7 +28,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 			irVal->load_ghost_reference(ctx->irCtx->builder);
 			if (irVal->get_ir_type()->is_reference()) {
 				irVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), irVal->get_llvm()), valTy,
-									   false);
+				                       false);
 			}
 			return ir::Value::get(ctx->irCtx->builder.CreateNeg(irVal->get_llvm()), valTy, false);
 		}
@@ -36,22 +36,22 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 		typeCheck(valTy);
 		if (irVal->is_prerun_value()) {
 			return ir::PrerunValue::get(
-				llvm::cast<llvm::Constant>(ctx->irCtx->builder.CreateFNeg(irVal->get_llvm_constant())), valTy);
+			    llvm::cast<llvm::Constant>(ctx->irCtx->builder.CreateFNeg(irVal->get_llvm_constant())), valTy);
 		} else {
 			irVal->load_ghost_reference(ctx->irCtx->builder);
 			if (irVal->get_ir_type()->is_reference()) {
 				irVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), irVal->get_llvm()), valTy,
-									   false);
+				                       false);
 			}
 			return ir::Value::get(
-				ctx->irCtx->builder.CreateFSub(llvm::ConstantFP::getZero(valTy->get_llvm_type()), irVal->get_llvm()),
-				valTy, false);
+			    ctx->irCtx->builder.CreateFSub(llvm::ConstantFP::getZero(valTy->get_llvm_type()), irVal->get_llvm()),
+			    valTy, false);
 		}
 	} else if (valTy->is_unsigned_integer() ||
-			   (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
+	           (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
 		ctx->Error("The value of this expression is of the unsigned integer type " + ctx->color(valTy->to_string()) +
-					   " and cannot use the " + ctx->color("unary -") + " operator",
-				   fileRange);
+		               " and cannot use the " + ctx->color("unary -") + " operator",
+		           fileRange);
 	} else if (valTy->is_expanded()) {
 		// FIXME - Prerun expanded type values
 		if (valTy->as_expanded()->has_unary_operator("-")) {
@@ -65,20 +65,20 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 				ctx->irCtx->builder.CreateStore(irVal->get_llvm(), loc->get_llvm());
 				irVal = loc;
 			}
-			auto opFn	= valTy->as_expanded()->get_unary_operator("-");
+			auto opFn   = valTy->as_expanded()->get_unary_operator("-");
 			auto result = opFn->call(ctx->irCtx, {irVal->get_llvm()}, localID, ctx->mod);
 			typeCheck(result->get_ir_type());
 			return result;
 		} else {
 			ctx->Error("Type " + ctx->color(valTy->to_string()) + " does not have the " + ctx->color("unary -") +
-						   " operator",
-					   fileRange);
+			               " operator",
+			           fileRange);
 		}
 	} else {
 		// FIXME - Add default skill support
 		ctx->Error("Type " + ctx->color(valTy->to_string()) + " does not support the " + ctx->color("unary -") +
-					   " operator",
-				   fileRange);
+		               " operator",
+		           fileRange);
 	}
 }
 

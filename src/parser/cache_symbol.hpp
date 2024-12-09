@@ -18,14 +18,14 @@ class CacheSymbol {
 	CacheSymbol(Vec<Identifier> _name, usize _tokenIndex, FileRange _fileRange);
 	CacheSymbol(u32 _relative, Vec<Identifier> _name, usize _tokenIndex, FileRange _fileRange);
 
-	u32				relative;
+	u32             relative;
 	Vec<Identifier> name;
-	FileRange		fileRange;
-	usize			tokenIndex;
+	FileRange       fileRange;
+	usize           tokenIndex;
 
 	useit String to_string() const;
 
-	useit bool		hasRelative() const;
+	useit bool      hasRelative() const;
 	useit FileRange extend_fileRange(const FileRange& upto);
 };
 

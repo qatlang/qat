@@ -40,9 +40,9 @@ String FillGeneric::to_string() const {
 
 Json FillGeneric::to_json() const {
 	return Json()
-		._("kind", (kind == FillGenericKind::typed) ? "typed" : "prerun")
-		._("type", is_type() ? as_type()->to_json() : Json())
-		._("constant", is_prerun() ? as_prerun()->to_json() : Json());
+	    ._("kind", (kind == FillGenericKind::typed) ? "typed" : "prerun")
+	    ._("type", is_type() ? as_type()->to_json() : Json())
+	    ._("constant", is_prerun() ? as_prerun()->to_json() : Json());
 }
 
 } // namespace qat::ast

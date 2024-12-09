@@ -8,7 +8,7 @@ namespace qat {
 
 bool JsonParser::lex(String val) {
 	const String digits = "0123456789";
-	const String alpha	= "truefalsn";
+	const String alpha  = "truefalsn";
 	for (usize i = 0; i < val.size(); i++) {
 		auto chr = val.at(i);
 		if (chr == ' ' || chr == '\n' || chr == '\r' || chr == '\t') {
@@ -28,7 +28,7 @@ bool JsonParser::lex(String val) {
 		} else if (chr == '"') {
 			String str;
 			bool   isEscape = false;
-			usize  j		= i + 1; // NOLINT(readability-identifier-length)
+			usize  j        = i + 1; // NOLINT(readability-identifier-length)
 			for (; (isEscape ? true : val.at(j) != '"') && (j < val.size()); j++) {
 				if (isEscape) {
 					if (val.at(j) == '"') {
@@ -63,9 +63,9 @@ bool JsonParser::lex(String val) {
 			String decimal;
 			usize  jInd = i + 1;
 			for (; ((is_float ? (digits.find(val.at(jInd)) != String::npos)
-							  : ((digits.find(val.at(jInd)) != String::npos) || (val.at(jInd) == '.'))) &&
-					(jInd < val.size()));
-				 jInd++) {
+			                  : ((digits.find(val.at(jInd)) != String::npos) || (val.at(jInd) == '.'))) &&
+			        (jInd < val.size()));
+			     jInd++) {
 				if (is_float) {
 					decimal += val.at(jInd);
 				} else {
@@ -155,7 +155,7 @@ Maybe<bool> JsonParser::hasPrimaryCommas(usize from, usize upto) const {
 		switch (tok.type) {
 			case TokenType::curlyBraceOpen:
 			case TokenType::bracketOpen: {
-				bool isList	   = (tok.type == TokenType::bracketOpen);
+				bool isList    = (tok.type == TokenType::bracketOpen);
 				auto bCloseRes = getPairEnd(isList, i, upto);
 				if (bCloseRes.has_value()) {
 					i = bCloseRes.value();
@@ -182,7 +182,7 @@ Maybe<Vec<usize>> JsonParser::getPrimaryCommas(usize from, usize upto) const {
 		switch (tok.type) {
 			case TokenType::curlyBraceOpen:
 			case TokenType::bracketOpen: {
-				bool isList	   = (tok.type == TokenType::bracketOpen);
+				bool isList    = (tok.type == TokenType::bracketOpen);
 				auto bCloseRes = getPairEnd(isList, i, upto);
 				if (bCloseRes.has_value()) {
 					i = bCloseRes.value();
@@ -240,9 +240,9 @@ Maybe<JsonValue> JsonParser::parseValue(usize from, usize upto) const {
 			case TokenType::bracketOpen: {
 				auto bCloseRes = getPairEnd(true, i, upto);
 				if (bCloseRes.has_value()) {
-					auto		   bClose = bCloseRes.value();
+					auto           bClose = bCloseRes.value();
 					Vec<JsonValue> vals;
-					auto		   hasPComma = hasPrimaryCommas(i, bClose);
+					auto           hasPComma = hasPrimaryCommas(i, bClose);
 					if (hasPComma) {
 						if (hasPComma.value()) {
 							auto sepPos = getPrimaryCommas(i, bClose);

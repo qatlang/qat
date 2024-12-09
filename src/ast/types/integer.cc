@@ -8,7 +8,7 @@ namespace qat::ast {
 
 Maybe<usize> IntegerType::getTypeSizeInBits(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-		llvm::Type::getIntNTy(ctx->irCtx->llctx, bitWidth)));
+	    llvm::Type::getIntNTy(ctx->irCtx->llctx, bitWidth)));
 }
 
 ir::Type* IntegerType::emit(EmitCtx* ctx) {
@@ -19,9 +19,9 @@ ir::Type* IntegerType::emit(EmitCtx* ctx) {
 		return ir::IntegerType::get(bitWidth, ctx->irCtx);
 	} else {
 		ctx->Error("The signed integer bitwidth " + ctx->color(std::to_string(bitWidth)) +
-					   " is not allowed to be used since it is not brought into into the module " +
-					   ctx->color(ctx->mod->get_name()) + " in file " + ctx->mod->get_file_path(),
-				   fileRange);
+		               " is not allowed to be used since it is not brought into into the module " +
+		               ctx->color(ctx->mod->get_name()) + " in file " + ctx->mod->get_file_path(),
+		           fileRange);
 	}
 	return nullptr;
 }

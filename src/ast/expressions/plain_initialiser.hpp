@@ -10,18 +10,18 @@ class PlainInitialiser final : public Expression, public LocalDeclCompatible, pu
 	friend class LocalDeclaration;
 
   private:
-	Maybe<Type*>				 type;
+	Maybe<Type*>                 type;
 	Vec<Pair<String, FileRange>> fields;
-	Vec<u64>					 indices;
-	Vec<Expression*>			 fieldValues;
+	Vec<u64>                     indices;
+	Vec<Expression*>             fieldValues;
 
   public:
 	PlainInitialiser(Maybe<Type*> _type, Vec<Pair<String, FileRange>> _fields, Vec<Expression*> _fieldValues,
-					 FileRange _fileRange)
-		: Expression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
+	                 FileRange _fileRange)
+	    : Expression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
 	useit static PlainInitialiser* create(Maybe<Type*> _type, Vec<Pair<String, FileRange>> _fields,
-										  Vec<Expression*> _fieldValues, FileRange _fileRange) {
+	                                      Vec<Expression*> _fieldValues, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(PlainInitialiser), _type, _fields, _fieldValues, _fileRange);
 	}
 
@@ -38,8 +38,8 @@ class PlainInitialiser final : public Expression, public LocalDeclCompatible, pu
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::PLAIN_INITIALISER; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::PLAIN_INITIALISER; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

@@ -18,11 +18,11 @@ void DefineRegion::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
 
 Json DefineRegion::to_json() const {
 	return Json()
-		._("nodeType", "defineRegion")
-		._("name", name)
-		._("hasVisibility", visibSpec.has_value())
-		._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "defineRegion")
+	    ._("name", name)
+	    ._("hasVisibility", visibSpec.has_value())
+	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

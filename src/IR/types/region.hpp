@@ -12,28 +12,28 @@ class Mod;
 
 class Region : public Type, public EntityOverview {
   private:
-	Identifier	   name;
-	Mod*		   parent;
+	Identifier     name;
+	Mod*           parent;
 	VisibilityInfo visibInfo;
-	FileRange	   fileRange;
+	FileRange      fileRange;
 
 	llvm::GlobalVariable* blocks;
 	llvm::GlobalVariable* blockCount;
-	llvm::Function*		  ownFn;
-	llvm::Function*		  destructor;
+	llvm::Function*       ownFn;
+	llvm::Function*       destructor;
 
   public:
 	Region(Identifier _name, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx, FileRange fileRange);
 	static Region* get(Identifier name, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
-					   FileRange fileRange);
+	                   FileRange fileRange);
 
 	useit Identifier get_name() const;
-	useit String	 get_full_name() const;
+	useit String     get_full_name() const;
 	useit ir::Mod* getParent() const;
 	useit ir::Value* ownData(ir::Type* _type, Maybe<llvm::Value*> count, ir::Ctx* irCtx);
-	void			 destroyObjects(ir::Ctx* irCtx);
+	void             destroyObjects(ir::Ctx* irCtx);
 
-	useit bool					is_accessible(const AccessInfo& reqInfo) const;
+	useit bool                  is_accessible(const AccessInfo& reqInfo) const;
 	useit const VisibilityInfo& get_visibility() const;
 
 	void update_overview() final;

@@ -10,7 +10,7 @@
 namespace qat::ir {
 
 void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec<GenericToFill*>& types,
-				   FileRange const& fileRange) {
+                   FileRange const& fileRange) {
 	for (usize i = 0; i < generics.size(); i++) {
 		if (generics.at(i)->is_typed()) {
 			if ((types.size() > i)) {
@@ -19,24 +19,24 @@ void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec
 				} else {
 					if (types.at(i)->as_prerun()->get_ir_type()->is_typed()) {
 						generics.at(i)->as_typed()->setType(
-							types.at(i)->as_prerun()->get_ir_type()->as_typed()->get_subtype());
+						    types.at(i)->as_prerun()->get_ir_type()->as_typed()->get_subtype());
 					} else {
 						irCtx->Error(
-							utils::number_to_position(i + 1) + " Generic Parameter " +
-								irCtx->color(generics.at(i)->get_name().value) +
-								" expects a type or a constant expression that gives a type, but a normal constant expression was provided",
-							fileRange);
+						    utils::number_to_position(i + 1) + " Generic Parameter " +
+						        irCtx->color(generics.at(i)->get_name().value) +
+						        " expects a type or a constant expression that gives a type, but a normal constant expression was provided",
+						    fileRange);
 					}
 				}
 			} else {
 				if (generics.at(i)->isSet()) {
 					types.push_back(ir::GenericToFill::GetType(generics.at(i)->as_typed()->get_type(),
-															   generics.at(i)->get_range()));
+					                                           generics.at(i)->get_range()));
 				} else {
 					irCtx->Error("No type set for " + utils::number_to_position(i + 1) + " Generic Parameter " +
-									 irCtx->color(generics.at(i)->get_name().value) +
-									 " and it doesn't have a default type associated with it",
-								 generics.at(i)->get_range());
+					                 irCtx->color(generics.at(i)->get_name().value) +
+					                 " and it doesn't have a default type associated with it",
+					             generics.at(i)->get_range());
 				}
 			}
 		} else {
@@ -46,23 +46,23 @@ void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec
 						generics.at(i)->as_prerun()->setExpression(types.at(i)->as_prerun());
 					} else {
 						generics.at(i)->as_prerun()->setExpression(
-							ir::PrerunValue::get_typed_prerun(ir::TypedType::get(types.at(i)->as_type())));
+						    ir::PrerunValue::get_typed_prerun(ir::TypedType::get(types.at(i)->as_type())));
 					}
 				} else {
 					irCtx->Error(utils::number_to_position(i + 1) + " Generic Parameter " +
-									 irCtx->color(generics.at(i)->get_name().value) +
-									 " expects a constant expression, not a type",
-								 fileRange);
+					                 irCtx->color(generics.at(i)->get_name().value) +
+					                 " expects a constant expression, not a type",
+					             fileRange);
 				}
 			} else {
 				if (generics.at(i)->isSet()) {
 					types.push_back(ir::GenericToFill::GetPrerun(generics.at(i)->as_prerun()->getPrerun(),
-																 generics.at(i)->get_range()));
+					                                             generics.at(i)->get_range()));
 				} else {
 					irCtx->Error("No const expression set for " + utils::number_to_position(i + 1) +
-									 " Generic Parameter " + irCtx->color(generics.at(i)->get_name().value) +
-									 " and it doesn't have a default const expression associated with it",
-								 generics.at(i)->get_range());
+					                 " Generic Parameter " + irCtx->color(generics.at(i)->get_name().value) +
+					                 " and it doesn't have a default const expression associated with it",
+					             generics.at(i)->get_range());
 				}
 			}
 		}
@@ -70,7 +70,7 @@ void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec
 }
 
 GenericToFill::GenericToFill(void* _data, GenericKind _kind, FileRange _range)
-	: data(_data), kind(_kind), range(std::move(_range)) {}
+    : data(_data), kind(_kind), range(std::move(_range)) {}
 
 GenericToFill* GenericToFill::GetPrerun(ir::PrerunValue* constVal, FileRange _range) {
 	return std::construct_at(OwnNormal(GenericToFill), constVal, GenericKind::prerunGeneric, std::move(_range));
@@ -102,7 +102,7 @@ String GenericToFill::to_string() const {
 }
 
 GenericArgument::GenericArgument(Identifier _name, GenericKind _kind, FileRange _range)
-	: name(std::move(_name)), kind(_kind), range(std::move(_range)) {}
+    : name(std::move(_name)), kind(_kind), range(std::move(_range)) {}
 
 Identifier GenericArgument::get_name() const { return name; }
 
@@ -145,10 +145,10 @@ PrerunGeneric* GenericArgument::as_prerun() const { return (PrerunGeneric*)this;
 String GenericArgument::to_string() const {
 	if (is_prerun()) {
 		return as_prerun()
-			->get_expression()
-			->get_ir_type()
-			->to_prerun_generic_string(as_prerun()->get_expression())
-			.value();
+		    ->get_expression()
+		    ->get_ir_type()
+		    ->to_prerun_generic_string(as_prerun()->get_expression())
+		    .value();
 	} else if (is_typed()) {
 		return as_typed()->get_type()->to_string();
 	} else {
@@ -157,7 +157,7 @@ String GenericArgument::to_string() const {
 }
 
 TypedGeneric::TypedGeneric(Identifier _name, ir::Type* _type, FileRange _range)
-	: GenericArgument(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
+    : GenericArgument(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
 
 TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRange range) {
 	return std::construct_at(OwnNormal(TypedGeneric), std::move(name), type, std::move(range));
@@ -167,15 +167,15 @@ ir::Type* TypedGeneric::get_type() const { return type; }
 
 Json TypedGeneric::to_json() const {
 	return Json()
-		._("name", name)
-		._("genericKind", "typedGeneric")
-		._("typeID", type->get_id())
-		._("valueString", type->to_string())
-		._("range", range);
+	    ._("name", name)
+	    ._("genericKind", "typedGeneric")
+	    ._("typeID", type->get_id())
+	    ._("valueString", type->to_string())
+	    ._("range", range);
 }
 
 PrerunGeneric::PrerunGeneric(Identifier _name, ir::PrerunValue* _val, FileRange _range)
-	: GenericArgument(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
+    : GenericArgument(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
 
 PrerunGeneric* PrerunGeneric::get(Identifier name, ir::PrerunValue* val, FileRange range) {
 	return std::construct_at(OwnNormal(PrerunGeneric), std::move(name), val, std::move(range));
@@ -187,13 +187,13 @@ ir::Type* PrerunGeneric::get_type() const { return constant->get_ir_type(); };
 
 Json PrerunGeneric::to_json() const {
 	return Json()
-		._("name", name)
-		._("genericKind", "prerunGeneric")
-		._("typeID", constant->get_ir_type()->get_id())
-		._("valueString", constant->get_ir_type()->can_be_prerun_generic()
-							  ? constant->get_ir_type()->to_prerun_generic_string(constant).value_or("")
-							  : "")
-		._("range", range);
+	    ._("name", name)
+	    ._("genericKind", "prerunGeneric")
+	    ._("typeID", constant->get_ir_type()->get_id())
+	    ._("valueString", constant->get_ir_type()->can_be_prerun_generic()
+	                          ? constant->get_ir_type()->to_prerun_generic_string(constant).value_or("")
+	                          : "")
+	    ._("range", range);
 }
 
 } // namespace qat::ir

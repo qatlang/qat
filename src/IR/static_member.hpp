@@ -16,27 +16,27 @@ class Mod;
 
 class StaticMember final : public Value, public EntityOverview {
   private:
-	Identifier	   name;
-	StructType*	   parent;
-	Value*		   initial;
+	Identifier     name;
+	StructType*    parent;
+	Value*         initial;
 	VisibilityInfo visibility;
 
   public:
 	StaticMember(StructType* _parent, Identifier name, Type* _type, bool _is_variable, Value* _initial,
-				 const VisibilityInfo& _visibility);
+	             const VisibilityInfo& _visibility);
 
 	useit static StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable,
-								   Value* _initial, const VisibilityInfo& _visibility) {
+	                               Value* _initial, const VisibilityInfo& _visibility) {
 		return new StaticMember(_parent, name, _type, _is_variable, _initial, _visibility);
 	}
 
-	useit StructType*			get_parent_type();
-	useit Identifier			get_name() const;
-	useit String				get_full_name() const;
+	useit StructType*           get_parent_type();
+	useit Identifier            get_name() const;
+	useit String                get_full_name() const;
 	useit const VisibilityInfo& get_visibility() const;
-	useit bool					has_initial() const;
-	useit Json					to_json() const;
-	void						update_overview() final;
+	useit bool                  has_initial() const;
+	useit Json                  to_json() const;
+	void                        update_overview() final;
 
 	~StaticMember() final = default;
 };

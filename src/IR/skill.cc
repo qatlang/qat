@@ -10,22 +10,22 @@ namespace qat::ir {
 SkillArg::SkillArg(ast::Type* _type, Identifier _name, bool _isVar) : type(_type), name(_name), isVar(_isVar) {}
 
 SkillPrototype::SkillPrototype(SkillFnType _fnTy, Skill* _skill, Identifier _name, ast::Type* _returnType,
-							   Vec<SkillArg*> _arguments)
-	: parent(_skill), name(_name), fnTy(_fnTy), returnType(_returnType), arguments(_arguments) {}
+                               Vec<SkillArg*> _arguments)
+    : parent(_skill), name(_name), fnTy(_fnTy), returnType(_returnType), arguments(_arguments) {}
 
 SkillPrototype* SkillPrototype::create_static_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-													 Vec<SkillArg*> _arguments) {
+                                                     Vec<SkillArg*> _arguments) {
 	return new SkillPrototype(SkillFnType::static_method, _parent, _name, _returnType, _arguments);
 }
 
 SkillPrototype* SkillPrototype::create_method(Skill* _parent, Identifier _name, bool _isVar, ast::Type* _returnType,
-											  Vec<SkillArg*> _arguments) {
+                                              Vec<SkillArg*> _arguments) {
 	return new SkillPrototype(_isVar ? SkillFnType::variation_method : SkillFnType::normal_method, _parent, _name,
-							  _returnType, _arguments);
+	                          _returnType, _arguments);
 }
 
 SkillPrototype* SkillPrototype::create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-													 Vec<SkillArg*> _arguments) {
+                                                     Vec<SkillArg*> _arguments) {
 	return new SkillPrototype(SkillFnType::value_method, _parent, _name, _returnType, _arguments);
 }
 
@@ -60,8 +60,8 @@ LinkNames Skill::get_link_names() const {
 }
 
 DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType,
-					 FileRange _typeRange)
-	: parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType), typeRange(_typeRange) {
+                     FileRange _typeRange)
+    : parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType), typeRange(_typeRange) {
 	candidateType->doneSkills.push_back(this);
 }
 
@@ -70,7 +70,7 @@ DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* c
 }
 
 DoneSkill* DoneSkill::create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
-									FileRange typeRange) {
+                                    FileRange typeRange) {
 	return new DoneSkill(parent, skill, fileRange, candidateType, typeRange);
 }
 
@@ -194,17 +194,17 @@ ir::Method* DoneSkill::get_destructor() const { return destructor.value(); }
 
 LinkNames DoneSkill::get_link_names() const {
 	return parent->get_link_names().newWith(
-		LinkNameUnit(
-			is_type_extension() ? "" : skill.value()->get_link_names().toName(),
-			is_type_extension() ? LinkUnitType::doType : LinkUnitType::doSkill,
-			{LinkNames({LinkNameUnit(candidateType->get_name_for_linking(), LinkUnitType::name)}, None, nullptr)}),
-		None);
+	    LinkNameUnit(
+	        is_type_extension() ? "" : skill.value()->get_link_names().toName(),
+	        is_type_extension() ? LinkUnitType::doType : LinkUnitType::doSkill,
+	        {LinkNames({LinkNameUnit(candidateType->get_name_for_linking(), LinkUnitType::name)}, None, nullptr)}),
+	    None);
 }
 
 VisibilityInfo DoneSkill::get_visibility() const {
 	return skill.has_value() ? skill.value()->get_visibility()
-							 : (candidateType->is_expanded() ? candidateType->as_expanded()->get_visibility()
-															 : VisibilityInfo::pub());
+	                         : (candidateType->is_expanded() ? candidateType->as_expanded()->get_visibility()
+	                                                         : VisibilityInfo::pub());
 }
 
 String DoneSkill::to_string() const {
@@ -217,8 +217,8 @@ String DoneSkill::to_string() const {
 	}
 	genStr += "]";
 	return "do" + (is_generic() ? genStr : "") + " " +
-		   (is_type_extension() ? ("type " + candidateType->to_string())
-								: (skill.value()->get_full_name() + " for " + candidateType->to_string()));
+	       (is_type_extension() ? ("type " + candidateType->to_string())
+	                            : (skill.value()->get_full_name() + " for " + candidateType->to_string()));
 }
 
 } // namespace qat::ir

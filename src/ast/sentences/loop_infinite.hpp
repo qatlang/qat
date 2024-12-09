@@ -7,12 +7,12 @@
 namespace qat::ast {
 
 class LoopInfinite final : public Sentence {
-	Vec<Sentence*>	  sentences;
+	Vec<Sentence*>    sentences;
 	Maybe<Identifier> tag;
 
   public:
 	LoopInfinite(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange)
-		: Sentence(_fileRange), sentences(_sentences), tag(_tag) {}
+	    : Sentence(_fileRange), sentences(_sentences), tag(_tag) {}
 
 	useit static LoopInfinite* create(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(LoopInfinite), _sentences, _tag, _fileRange);
@@ -25,8 +25,8 @@ class LoopInfinite final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::LOOP_NORMAL; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::LOOP_NORMAL; }
 };
 
 } // namespace qat::ast

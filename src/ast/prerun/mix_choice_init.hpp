@@ -11,16 +11,16 @@ class PrerunMixOrChoiceInit final : public PrerunExpression, public TypeInferrab
 
   private:
 	Maybe<PrerunExpression*> type;
-	Identifier				 subName;
+	Identifier               subName;
 	Maybe<PrerunExpression*> expression;
 
   public:
 	PrerunMixOrChoiceInit(Maybe<PrerunExpression*> _type, Identifier _subName, Maybe<PrerunExpression*> _expression,
-						  FileRange _fileRange)
-		: PrerunExpression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
+	                      FileRange _fileRange)
+	    : PrerunExpression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
 	useit static PrerunMixOrChoiceInit* create(Maybe<PrerunExpression*> type, Identifier subName,
-											   Maybe<PrerunExpression*> expression, FileRange fileRange) {
+	                                           Maybe<PrerunExpression*> expression, FileRange fileRange) {
 		return std::construct_at(OwnNormal(PrerunMixOrChoiceInit), type, subName, expression, fileRange);
 	}
 
@@ -38,9 +38,9 @@ class PrerunMixOrChoiceInit final : public PrerunExpression, public TypeInferrab
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
-	useit Json			   to_json() const final;
-	useit String		   to_string() const final;
-	useit NodeType		   nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
+	useit Json             to_json() const final;
+	useit String           to_string() const final;
+	useit NodeType         nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
 };
 
 } // namespace qat::ast

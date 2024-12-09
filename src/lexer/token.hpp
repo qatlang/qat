@@ -15,10 +15,10 @@ namespace qat::lexer {
 class Token {
   private:
 	Token(TokenType _type, FileRange _fileRange)
-		: type(_type), value(), hasValue(false), fileRange(std::move(_fileRange)) {}
+	    : type(_type), value(), hasValue(false), fileRange(std::move(_fileRange)) {}
 
 	Token(TokenType _type, String _value, FileRange _fileRange)
-		: type(_type), value(std::move(_value)), hasValue(true), fileRange(std::move(_fileRange)) {}
+	    : type(_type), value(std::move(_value)), hasValue(true), fileRange(std::move(_fileRange)) {}
 
   public:
 	/**
@@ -48,8 +48,8 @@ class Token {
 	static Token normal(TokenType _type, FileRange fileRange);
 
 	TokenType type;
-	String	  value;
-	bool	  hasValue = false;
+	String    value;
+	bool      hasValue = false;
 	FileRange fileRange;
 
 	operator Identifier() const;

@@ -141,19 +141,19 @@ class JsonValue {
 
 	useit JsonValueType getType() const;
 
-	useit bool	  isInt() const;
+	useit bool    isInt() const;
 	useit int64_t asInt() const;
-	useit bool	  isDouble() const;
+	useit bool    isDouble() const;
 	useit double  asDouble() const;
-	useit bool	  isNull() const;
-	useit bool	  isString() const;
+	useit bool    isNull() const;
+	useit bool    isString() const;
 	useit std::string asString() const;
-	useit bool		  is_bool() const;
-	useit bool		  asBool() const;
-	useit bool		  isJson() const;
-	useit Json		  asJson() const;
-	useit bool		  isNone() const;
-	useit bool		  isList() const;
+	useit bool        is_bool() const;
+	useit bool        asBool() const;
+	useit bool        isJson() const;
+	useit Json        asJson() const;
+	useit bool        isNone() const;
+	useit bool        isList() const;
 	useit std::vector<JsonValue> asList() const;
 
 	friend std::ostream& operator<<(std::ostream& os, const JsonValue& val);
@@ -166,9 +166,9 @@ class JsonValue {
 class Json {
   private:
 	std::vector<std::string> keys;
-	std::vector<JsonValue>	 values;
+	std::vector<JsonValue>   values;
 
-	mutable unsigned level	= 0;
+	mutable unsigned level  = 0;
 	mutable unsigned spaces = 2;
 
 	void setLevel(unsigned lev) const;

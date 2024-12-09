@@ -41,19 +41,19 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 	restBlock->link_previous_block(ctx->get_fn()->get_block());
 	for (usize i = 0; i < chain.size(); i++) {
 		const auto& section = chain.at(i);
-		auto*		exp		= std::get<0>(section)->emit(ctx);
-		auto*		expTy	= exp->get_ir_type();
+		auto*       exp     = std::get<0>(section)->emit(ctx);
+		auto*       expTy   = exp->get_ir_type();
 		if (expTy->is_reference()) {
 			expTy = expTy->as_reference()->get_subtype();
 		}
 		if (!expTy->is_bool()) {
 			ctx->Error("Condition in an " + ctx->color("if") + " block should be of " + ctx->color("bool") + " type",
-					   std::get<0>(section)->fileRange);
+			           std::get<0>(section)->fileRange);
 		}
 		if (exp->is_prerun_value()) {
 			SHOW("Is const condition in if-else")
 			auto condConstVal =
-				*(llvm::dyn_cast<llvm::ConstantInt>(exp->as_prerun()->get_llvm())->getValue().getRawData());
+			    *(llvm::dyn_cast<llvm::ConstantInt>(exp->as_prerun()->get_llvm())->getValue().getRawData());
 			knownVals.push_back(condConstVal == 1u);
 		} else {
 			knownVals.push_back(None);
@@ -76,7 +76,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 				ir::Block* falseBlock = nullptr;
 				if (exp->is_ghost_reference() || exp->is_reference()) {
 					exp = ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), exp->get_llvm()), expTy,
-										 false);
+					                     false);
 				}
 				if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
 					falseBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
@@ -131,11 +131,11 @@ Json IfElse::to_json() const {
 			snts.push_back(snt->to_json());
 		}
 		_chain.push_back(Json()
-							 ._("expression", std::get<0>(elem)->to_json())
-							 ._("sentences", snts)
-							 ._("fileRange", std::get<2>(elem)));
+		                     ._("expression", std::get<0>(elem)->to_json())
+		                     ._("sentences", snts)
+		                     ._("fileRange", std::get<2>(elem)));
 	}
-	Json		   elseJson;
+	Json           elseJson;
 	Vec<JsonValue> elseSnts;
 	if (elseCase.has_value()) {
 		for (auto* snt : elseCase.value().first) {
@@ -146,11 +146,11 @@ Json IfElse::to_json() const {
 	}
 
 	return Json()
-		._("nodeType", "ifElse")
-		._("chain", _chain)
-		._("hasElse", (elseCase.has_value()))
-		._("else", elseJson)
-		._("fileRange", fileRange);
+	    ._("nodeType", "ifElse")
+	    ._("chain", _chain)
+	    ._("hasElse", (elseCase.has_value()))
+	    ._("else", elseJson)
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

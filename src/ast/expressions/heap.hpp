@@ -8,12 +8,12 @@ namespace qat::ast {
 
 class HeapGet final : public Expression {
   private:
-	Type*		type;
+	Type*       type;
 	Expression* count = nullptr;
 
   public:
 	HeapGet(Type* _type, Expression* _count, FileRange _fileRange)
-		: Expression(std::move(_fileRange)), type(_type), count(_count) {}
+	    : Expression(std::move(_fileRange)), type(_type), count(_count) {}
 
 	useit static HeapGet* create(Type* _type, Expression* _count, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(HeapGet), _type, _count, _fileRange);
@@ -27,8 +27,8 @@ class HeapGet final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::HEAP_GET; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::HEAP_GET; }
+	useit Json       to_json() const final;
 };
 
 class HeapPut final : public Expression {
@@ -47,8 +47,8 @@ class HeapPut final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::HEAP_PUT; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::HEAP_PUT; }
+	useit Json       to_json() const final;
 };
 
 class HeapGrow final : public Expression {
@@ -60,7 +60,7 @@ class HeapGrow final : public Expression {
 
   public:
 	HeapGrow(Type* _type, Expression* _ptr, Expression* _count, FileRange _fileRange)
-		: Expression(_fileRange), type(_type), ptr(_ptr), count(_count) {}
+	    : Expression(_fileRange), type(_type), ptr(_ptr), count(_count) {}
 
 	useit static HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRange fileRange) {
 		return std::construct_at(OwnNormal(HeapGrow), type, ptr, count, fileRange);
@@ -73,8 +73,8 @@ class HeapGrow final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::HEAP_GROW; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::HEAP_GROW; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

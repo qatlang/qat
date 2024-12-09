@@ -50,12 +50,12 @@ void PrerunFunction::update_overview() {
 		argTyJSON.push_back(argTy->to_json());
 	}
 	ovInfo = Json()
-				 ._("name", name)
-				 ._("fullName", get_full_name())
-				 ._("arguments", argTyJSON)
-				 ._("parent", parent->get_id())
-				 ._("givenType", returnType->get_id())
-				 ._("visibility", visibility);
+	             ._("name", name)
+	             ._("fullName", get_full_name())
+	             ._("arguments", argTyJSON)
+	             ._("parent", parent->get_id())
+	             ._("givenType", returnType->get_id())
+	             ._("visibility", visibility);
 }
 
 } // namespace qat::ir

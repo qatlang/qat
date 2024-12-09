@@ -19,14 +19,14 @@ class MixType : public ExpandedType, public EntityOverview {
   private:
 	Vec<Pair<Identifier, Maybe<Type*>>> subtypes;
 
-	u64	 maxSize	   = 8u;
-	bool isPack		   = false;
+	u64  maxSize       = 8u;
+	bool isPack        = false;
 	bool isTrivialCopy = true;
 	bool isTrivialMove = true;
 
-	usize			tagBitWidth = 1;
-	Maybe<usize>	defaultVal;
-	FileRange		fileRange;
+	usize           tagBitWidth = 1;
+	Maybe<usize>    defaultVal;
+	FileRange       fileRange;
 	Maybe<MetaInfo> metaInfo;
 
 	ir::OpaqueType* opaquedType = nullptr;
@@ -35,34 +35,34 @@ class MixType : public ExpandedType, public EntityOverview {
 
   public:
 	MixType(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics, Mod* parent,
-			Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool isPacked,
-			const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
+	        Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool isPacked,
+	        const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
 	useit static MixType* create(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics,
-								 Mod* parent, Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal,
-								 ir::Ctx* irCtx, bool isPacked, const VisibilityInfo& visibility, FileRange fileRange,
-								 Maybe<MetaInfo> metaInfo) {
+	                             Mod* parent, Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal,
+	                             ir::Ctx* irCtx, bool isPacked, const VisibilityInfo& visibility, FileRange fileRange,
+	                             Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(MixType), std::move(name), opaquedTy, std::move(_generics), parent,
-								 std::move(subtypes), defaultVal, irCtx, isPacked, visibility, std::move(fileRange),
-								 std::move(metaInfo));
+		                         std::move(subtypes), defaultVal, irCtx, isPacked, visibility, std::move(fileRange),
+		                         std::move(metaInfo));
 	}
 
 	useit usize get_index_of(const String& name) const;
 
 	useit Pair<bool, bool> has_variant_with_name(const String& sname) const;
-	useit Type*			   get_variant_with_name(const String& sname) const;
+	useit Type*            get_variant_with_name(const String& sname) const;
 
-	useit bool		has_default_variant() const;
-	useit usize		get_default_index() const;
-	useit usize		get_variant_count() const;
-	useit bool		is_packed() const;
-	useit usize		get_tag_bitwidth() const;
-	useit u64		get_data_bitwidth() const;
+	useit bool      has_default_variant() const;
+	useit usize     get_default_index() const;
+	useit usize     get_variant_count() const;
+	useit bool      is_packed() const;
+	useit usize     get_tag_bitwidth() const;
+	useit u64       get_data_bitwidth() const;
 	useit FileRange get_file_range() const;
-	useit String	to_string() const final;
-	useit TypeKind	type_kind() const final;
+	useit String    to_string() const final;
+	useit TypeKind  type_kind() const final;
 	useit LinkNames get_link_names() const final;
-	useit bool		is_type_sized() const final;
+	useit bool      is_type_sized() const final;
 
 	useit bool can_be_prerun() const final {
 		for (auto sub : subtypes) {

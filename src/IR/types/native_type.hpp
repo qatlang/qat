@@ -43,7 +43,7 @@ String native_type_kind_to_string(NativeTypeKind kind);
 
 class NativeType : public Type {
   private:
-	ir::Type*	   subType;
+	ir::Type*      subType;
 	NativeTypeKind nativeKind;
 
   public:
@@ -121,7 +121,7 @@ class NativeType : public Type {
 	useit static NativeType* get_processid(ir::Ctx* irCtx);
 	useit static NativeType* get_cstr(ir::Ctx* irCtx);
 
-	useit static bool		 has_long_double(ir::Ctx* irCtx);
+	useit static bool        has_long_double(ir::Ctx* irCtx);
 	useit static NativeType* get_long_double(ir::Ctx* irCtx);
 
 	useit bool is_type_sized() const final { return true; }
@@ -129,7 +129,7 @@ class NativeType : public Type {
 	useit bool is_trivially_movable() const final { return true; }
 
 	TypeKind type_kind() const final { return TypeKind::nativeType; }
-	String	 to_string() const final;
+	String   to_string() const final;
 };
 
 } // namespace qat::ir

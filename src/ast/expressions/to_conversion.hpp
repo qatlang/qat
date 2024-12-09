@@ -8,11 +8,11 @@ namespace qat::ast {
 
 class ToConversion final : public Expression {
 	Expression* source;
-	Type*		destinationType;
+	Type*       destinationType;
 
   public:
 	ToConversion(Expression* _source, Type* _destinationType, FileRange _fileRange)
-		: Expression(_fileRange), source(_source), destinationType(_destinationType) {}
+	    : Expression(_fileRange), source(_source), destinationType(_destinationType) {}
 
 	useit static ToConversion* create(Expression* _source, Type* _destinationType, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(ToConversion), _source, _destinationType, _fileRange);
@@ -24,8 +24,8 @@ class ToConversion final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
-	useit Json		 to_json() const override;
-	useit NodeType	 nodeType() const override { return NodeType::TO_CONVERSION; };
+	useit Json       to_json() const override;
+	useit NodeType   nodeType() const override { return NodeType::TO_CONVERSION; };
 };
 
 } // namespace qat::ast

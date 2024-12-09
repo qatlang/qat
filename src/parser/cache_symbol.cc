@@ -3,10 +3,10 @@
 namespace qat::parser {
 
 CacheSymbol::CacheSymbol(Vec<Identifier> _name, usize _tokenIndex, qat::FileRange _fileRange)
-	: relative(0), name(std::move(_name)), fileRange(std::move(_fileRange)), tokenIndex(_tokenIndex) {}
+    : relative(0), name(std::move(_name)), fileRange(std::move(_fileRange)), tokenIndex(_tokenIndex) {}
 
 CacheSymbol::CacheSymbol(u32 _relative, Vec<Identifier> _name, usize _tokenIndex, qat::FileRange _fileRange)
-	: relative(_relative), name(std::move(_name)), fileRange(std::move(_fileRange)), tokenIndex(_tokenIndex) {}
+    : relative(_relative), name(std::move(_name)), fileRange(std::move(_fileRange)), tokenIndex(_tokenIndex) {}
 
 String CacheSymbol::to_string() const {
 	String result;

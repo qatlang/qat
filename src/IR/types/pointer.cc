@@ -73,37 +73,37 @@ String MarkOwner::to_string() const {
 }
 
 MarkType::MarkType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner, bool _hasMulti,
-				   ir::Ctx* irCtx)
-	: subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable) {
+                   ir::Ctx* irCtx)
+    : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable) {
 	if (_hasMulti) {
 		linkingName = (nonNullable ? "qat'slice![" : "qat'slice:[") + String(isSubtypeVar ? "var " : "") +
-					  subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
+		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
 		if (llvm::StructType::getTypeByName(irCtx->llctx, linkingName)) {
 			llvmType = llvm::StructType::getTypeByName(irCtx->llctx, linkingName);
 		} else {
 			llvmType = llvm::StructType::create(
-				{llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-										irCtx->dataLayout->getProgramAddressSpace()),
-				 llvm::Type::getIntNTy(irCtx->llctx,
-									   irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()))},
-				linkingName);
+			    {llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
+			                            irCtx->dataLayout->getProgramAddressSpace()),
+			     llvm::Type::getIntNTy(irCtx->llctx,
+			                           irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()))},
+			    linkingName);
 		}
 	} else {
 		linkingName = (nonNullable ? "qat'mark![" : "qat'mark:[") + String(isSubtypeVar ? "var " : "") +
-					  subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
+		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
 		llvmType =
-			llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout->getProgramAddressSpace());
+		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout->getProgramAddressSpace());
 	}
 }
 
 MarkType* MarkType::get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner, bool _hasMulti,
-						ir::Ctx* irCtx) {
+                        ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->is_mark()) {
 			if (typ->as_mark()->get_subtype()->is_same(_type) &&
-				(typ->as_mark()->is_subtype_variable() == _isSubtypeVariable) &&
-				typ->as_mark()->get_owner().is_same(_owner) && (typ->as_mark()->is_slice() == _hasMulti) &&
-				(typ->as_mark()->nonNullable == _nonNullable)) {
+			    (typ->as_mark()->is_subtype_variable() == _isSubtypeVariable) &&
+			    typ->as_mark()->get_owner().is_same(_owner) && (typ->as_mark()->is_slice() == _hasMulti) &&
+			    (typ->as_mark()->nonNullable == _nonNullable)) {
 				return typ->as_mark();
 			}
 		}
@@ -121,15 +121,15 @@ PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
 	if (has_prerun_default_value()) {
 		if (is_slice()) {
 			return ir::PrerunValue::get(
-				llvm::ConstantStruct::get(
-					llvm::cast<llvm::StructType>(get_llvm_type()),
-					{llvm::ConstantPointerNull::get(llvm::PointerType::get(
-						get_subtype()->is_void() ? llvm::Type::getInt8Ty(irCtx->llctx) : get_subtype()->get_llvm_type(),
-						irCtx->dataLayout.value().getProgramAddressSpace()))}),
-				this);
+			    llvm::ConstantStruct::get(
+			        llvm::cast<llvm::StructType>(get_llvm_type()),
+			        {llvm::ConstantPointerNull::get(llvm::PointerType::get(
+			            get_subtype()->is_void() ? llvm::Type::getInt8Ty(irCtx->llctx) : get_subtype()->get_llvm_type(),
+			            irCtx->dataLayout.value().getProgramAddressSpace()))}),
+			    this);
 		} else {
 			return ir::PrerunValue::get(llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(get_llvm_type())),
-										this);
+			                            this);
 		}
 	} else {
 		irCtx->Error("Type " + irCtx->color(to_string()) + " do not have a default value", None);
@@ -155,8 +155,8 @@ TypeKind MarkType::type_kind() const { return TypeKind::pointer; }
 
 String MarkType::to_string() const {
 	return String(is_slice() ? (nonNullable ? "slice![" : "slice:[") : (nonNullable ? "mark![" : "mark:[")) +
-		   String(is_subtype_variable() ? "var " : "") + subType->to_string() + (owner.is_of_anonymous() ? "" : " ") +
-		   owner.to_string() + "]";
+	       String(is_subtype_variable() ? "var " : "") + subType->to_string() + (owner.is_of_anonymous() ? "" : " ") +
+	       owner.to_string() + "]";
 }
 
 } // namespace qat::ir

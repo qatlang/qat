@@ -5,18 +5,18 @@
 namespace qat::ir {
 
 PrerunGlobal::PrerunGlobal(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant,
-						   VisibilityInfo _visibility, FileRange _fileRange)
-	: PrerunValue(_constant, _type), EntityOverview("prerunGlobal", Json(), _fileRange), name(_name),
-	  visibility(_visibility), parent(_parent) {
+                           VisibilityInfo _visibility, FileRange _fileRange)
+    : PrerunValue(_constant, _type), EntityOverview("prerunGlobal", Json(), _fileRange), name(_name),
+      visibility(_visibility), parent(_parent) {
 	parent->prerunGlobals.push_back(this);
 }
 
 String PrerunGlobal::get_full_name() const { return parent->get_fullname_with_child(name.value); }
 
 GlobalEntity::GlobalEntity(Mod* _parent, Identifier _name, Type* _type, bool _is_variable,
-						   Maybe<llvm::Constant*> _initialValue, llvm::Value* _value, const VisibilityInfo& _visibility)
-	: Value(_value, _type, _is_variable), EntityOverview("global", Json(), _name.range), name(std::move(_name)),
-	  visibility(_visibility), parent(_parent), initialValue(_initialValue) {
+                           Maybe<llvm::Constant*> _initialValue, llvm::Value* _value, const VisibilityInfo& _visibility)
+    : Value(_value, _type, _is_variable), EntityOverview("global", Json(), _name.range), name(std::move(_name)),
+      visibility(_visibility), parent(_parent), initialValue(_initialValue) {
 	parent->globalEntities.push_back(this);
 }
 

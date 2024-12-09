@@ -60,7 +60,7 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
 
 	useit String get_name() const;
 	useit llvm::AllocaInst* get_alloca() const;
-	useit FileRange			get_file_range() const;
+	useit FileRange         get_file_range() const;
 	useit ir::Value* to_new_ir_value() const;
 };
 
@@ -68,18 +68,18 @@ class Block : public Uniq {
 	friend Method;
 
   private:
-	String				name;
-	llvm::BasicBlock*	bb;
-	Vec<LocalValue*>	values;
-	Block*				parent = nullptr;
-	Vec<Block*>			children;
-	Function*			fn;
-	usize				index;
-	Maybe<usize>		active;
+	String              name;
+	llvm::BasicBlock*   bb;
+	Vec<LocalValue*>    values;
+	Block*              parent = nullptr;
+	Vec<Block*>         children;
+	Function*           fn;
+	usize               index;
+	Maybe<usize>        active;
 	mutable Vec<String> movedValues;
-	mutable bool		isGhost = false;
-	mutable bool		hasGive = false;
-	mutable bool		hasTodo = false;
+	mutable bool        isGhost = false;
+	mutable bool        hasGive = false;
+	mutable bool        hasTodo = false;
 
 	Block* prevBlock = nullptr;
 	Block* nextBlock = nullptr;
@@ -94,15 +94,15 @@ class Block : public Uniq {
 	useit String get_name() const { return name; }
 	useit llvm::BasicBlock* get_bb() const { return bb; }
 
-	useit bool	 has_previous_block() const { return prevBlock != nullptr; }
+	useit bool   has_previous_block() const { return prevBlock != nullptr; }
 	useit Block* get_previous_block() const { return prevBlock; }
-	useit bool	 has_next_block() const { return nextBlock != nullptr; }
+	useit bool   has_next_block() const { return nextBlock != nullptr; }
 	useit Block* get_next_block() const { return nextBlock; }
 
-	useit bool		  has_parent() const { return parent != nullptr; }
-	useit Block*	  get_parent() const { return parent; }
-	useit Function*	  get_fn() const { return fn; }
-	useit bool		  has_value(const String& name) const;
+	useit bool        has_parent() const { return parent != nullptr; }
+	useit Block*      get_parent() const { return parent; }
+	useit Function*   get_fn() const { return fn; }
+	useit bool        has_value(const String& name) const;
 	useit LocalValue* get_value(const String& name) const;
 	useit LocalValue* new_value(const String& name, ir::Type* type, bool isVar, FileRange fileRange) {
 		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
@@ -111,7 +111,7 @@ class Block : public Uniq {
 	useit bool is_moved(const String& locID) const;
 	useit bool has_give_in_all_control_paths() const;
 
-	useit bool	 has_todo() const { return hasTodo; }
+	useit bool   has_todo() const { return hasTodo; }
 	useit Block* get_active() {
 		if (active) {
 			return children.at(active.value())->get_active();
@@ -132,7 +132,7 @@ class Block : public Uniq {
 	}
 
 	void link_previous_block(Block* block) {
-		prevBlock		 = block;
+		prevBlock        = block;
 		block->nextBlock = this;
 	}
 	void set_file_range(FileRange _fileRange) { fileRange = _fileRange; }
@@ -152,58 +152,58 @@ class Function : public Value, public Uniq, public EntityOverview {
 	friend class Block;
 
   protected:
-	Identifier			  name;
-	LinkNames			  namingInfo;
-	String				  linkingName;
+	Identifier            name;
+	LinkNames             namingInfo;
+	String                linkingName;
 	Vec<GenericArgument*> generics;
-	Mod*				  mod;
-	Vec<Argument>		  arguments;
-	VisibilityInfo		  visibilityInfo;
-	Maybe<FileRange>	  fileRange;
-	bool				  hasVariadicArguments;
-	bool				  isInline;
-	Vec<Block*>			  blocks;
-	ir::LocalValue*		  strComparisonIndex = nullptr;
-	Maybe<MetaInfo>		  metaInfo;
-	Ctx*				  ctx;
+	Mod*                  mod;
+	Vec<Argument>         arguments;
+	VisibilityInfo        visibilityInfo;
+	Maybe<FileRange>      fileRange;
+	bool                  hasVariadicArguments;
+	bool                  isInline;
+	Vec<Block*>           blocks;
+	ir::LocalValue*       strComparisonIndex = nullptr;
+	Maybe<MetaInfo>       metaInfo;
+	Ctx*                  ctx;
 
-	mutable u64	  localNameCounter = 0;
-	mutable usize activeBlock	   = 0;
+	mutable u64   localNameCounter = 0;
+	mutable usize activeBlock      = 0;
 
   public:
 	Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics, bool isInline,
-			 ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> fileRange,
-			 const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool _isMemberFn = false,
-			 Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
+	         ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> fileRange,
+	         const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool _isMemberFn = false,
+	         Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
 
 	static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-							bool isInline, ReturnType* return_type, Vec<Argument> args, Maybe<FileRange> fileRange,
-							const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
-							Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
+	                        bool isInline, ReturnType* return_type, Vec<Argument> args, Maybe<FileRange> fileRange,
+	                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+	                        Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
-	useit Value*			 call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
-	useit virtual bool		 is_method() const { return false; }
-	useit bool				 has_variadic_args() const { return hasVariadicArguments; }
-	useit Identifier		 arg_name_at(u32 index) const { return arguments[index].get_name(); }
+	useit Value*             call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
+	useit virtual bool       is_method() const { return false; }
+	useit bool               has_variadic_args() const { return hasVariadicArguments; }
+	useit Identifier         arg_name_at(u32 index) const { return arguments[index].get_name(); }
 	useit virtual Identifier get_name() const { return name; }
-	useit virtual String	 get_full_name() const;
+	useit virtual String     get_full_name() const;
 	useit bool is_accessible(const AccessInfo& req_info) const { return visibilityInfo.is_accessible(req_info); }
 	useit VisibilityInfo const& get_visibility() const { return visibilityInfo; }
 	useit ir::Mod* get_module() const { return mod; }
 	useit llvm::Function* get_llvm_function() { return llvm::cast<llvm::Function>(ll); }
-	useit Block*		  get_block() const { return blocks.at(activeBlock)->get_active(); }
-	useit Block*		  get_first_block() const { return blocks[0]; }
-	useit usize			  get_block_count() const { return blocks.size(); }
-	useit bool			  is_inline() const { return isInline; }
-	useit LocalValue*	  get_str_comparison_index();
-	useit bool			  is_generic() const { return !generics.empty(); }
-	useit bool			  has_generic_parameter(const String& name) const {
-		   for (auto* gen : generics) {
-			   if (gen->get_name().value == name) {
-				   return true;
-			   }
-		   }
-		   return false;
+	useit Block*          get_block() const { return blocks.at(activeBlock)->get_active(); }
+	useit Block*          get_first_block() const { return blocks[0]; }
+	useit usize           get_block_count() const { return blocks.size(); }
+	useit bool            is_inline() const { return isInline; }
+	useit LocalValue*     get_str_comparison_index();
+	useit bool            is_generic() const { return !generics.empty(); }
+	useit bool            has_generic_parameter(const String& name) const {
+        for (auto* gen : generics) {
+            if (gen->get_name().value == name) {
+                return true;
+            }
+        }
+        return false;
 	}
 	useit GenericArgument* get_generic_parameter(const String& name) const {
 		for (auto* gen : generics) {
@@ -213,7 +213,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 		}
 		return nullptr;
 	}
-	useit bool		has_definition_range() const { return fileRange.has_value(); }
+	useit bool      has_definition_range() const { return fileRange.has_value(); }
 	useit FileRange get_definition_range() const { return fileRange.value(); }
 
 	useit String get_random_alloca_name() const {
@@ -230,36 +230,36 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 class GenericFunction : public Uniq, public EntityOverview {
   private:
-	Identifier					   name;
+	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;
-	ast::FunctionPrototype*		   functionDefinition;
+	ast::FunctionPrototype*        functionDefinition;
 	Maybe<ast::PrerunExpression*>  constraint;
-	Mod*						   parent;
-	VisibilityInfo				   visibInfo;
+	Mod*                           parent;
+	VisibilityInfo                 visibInfo;
 
 	mutable Vec<GenericVariant<Function>> variants;
 
   public:
 	GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, Maybe<ast::PrerunExpression*> constraint,
-					ast::FunctionPrototype* functionDef, Mod* parent, const VisibilityInfo& _visibInfo);
+	                ast::FunctionPrototype* functionDef, Mod* parent, const VisibilityInfo& _visibInfo);
 
 	useit static GenericFunction* create(Identifier name, Vec<ast::GenericAbstractType*> _generics,
-										 Maybe<ast::PrerunExpression*> constraint, ast::FunctionPrototype* functionDef,
-										 Mod* parent, const VisibilityInfo& _visibInfo) {
+	                                     Maybe<ast::PrerunExpression*> constraint, ast::FunctionPrototype* functionDef,
+	                                     Mod* parent, const VisibilityInfo& _visibInfo) {
 		return std::construct_at(OwnNormal(GenericFunction), std::move(name), std::move(_generics), constraint,
-								 functionDef, parent, _visibInfo);
+		                         functionDef, parent, _visibInfo);
 	}
 
 	~GenericFunction() = default;
 
 	useit Identifier get_name() const;
-	useit usize		 getTypeCount() const;
-	useit usize		 getVariantCount() const;
-	useit Mod*		 get_module() const;
+	useit usize      getTypeCount() const;
+	useit usize      getVariantCount() const;
+	useit Mod*       get_module() const;
 	useit ast::GenericAbstractType* getGenericAt(usize index) const;
-	useit VisibilityInfo			get_visibility() const;
+	useit VisibilityInfo            get_visibility() const;
 	useit Function* fill_generics(Vec<ir::GenericToFill*> _types, ir::Ctx* irCtx, const FileRange& fileRange);
-	useit bool		all_generics_have_default() const;
+	useit bool      all_generics_have_default() const;
 
 	void update_overview() final;
 };

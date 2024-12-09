@@ -11,10 +11,10 @@ class VoidType final : public Type {
 
 	useit static VoidType* create(FileRange _fileRange) { return std::construct_at(OwnNormal(VoidType), _fileRange); }
 
-	useit ir::Type*	  emit(EmitCtx* ctx);
+	useit ir::Type*   emit(EmitCtx* ctx);
 	useit AstTypeKind type_kind() const;
-	useit Json		  to_json() const;
-	useit String	  to_string() const;
+	useit Json        to_json() const;
+	useit String      to_string() const;
 };
 
 } // namespace qat::ast

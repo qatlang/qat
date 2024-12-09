@@ -19,14 +19,14 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 				if (subRes.second) {
 					if (!expression.has_value()) {
 						ctx->Error("Field " + ctx->color(subName.value) + " of mix type " +
-									   ctx->color(mixTy->get_full_name()) + " expects a value to be associated with it",
-								   fileRange);
+						               ctx->color(mixTy->get_full_name()) + " expects a value to be associated with it",
+						           fileRange);
 					}
 				} else {
 					if (expression.has_value()) {
 						ctx->Error("Field " + ctx->color(subName.value) + " of mix type " +
-									   ctx->color(mixTy->get_full_name()) + " cannot have any value associated with it",
-								   fileRange);
+						               ctx->color(mixTy->get_full_name()) + " cannot have any value associated with it",
+						           fileRange);
 					}
 				}
 				llvm::Value* exp = nullptr;
@@ -40,33 +40,33 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 						expEmit->load_ghost_reference(ctx->irCtx->builder);
 						exp = expEmit->get_llvm();
 					} else if (expEmit->is_reference() &&
-							   expEmit->get_ir_type()->as_reference()->get_subtype()->is_same(typ)) {
+					           expEmit->get_ir_type()->as_reference()->get_subtype()->is_same(typ)) {
 						exp = ctx->irCtx->builder.CreateLoad(
-							expEmit->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
-							expEmit->get_llvm());
+						    expEmit->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
+						    expEmit->get_llvm());
 					} else if (typ->is_reference() &&
-							   typ->as_reference()->get_subtype()->is_same(expEmit->get_ir_type())) {
+					           typ->as_reference()->get_subtype()->is_same(expEmit->get_ir_type())) {
 						if (expEmit->is_ghost_reference()) {
 							exp = expEmit->get_llvm();
 						} else {
 							ctx->Error("The expected type is " + ctx->color(typ->to_string()) +
-										   ", but the expression is of type " +
-										   ctx->color(expEmit->get_ir_type()->to_string()),
-									   expression.value()->fileRange);
+							               ", but the expression is of type " +
+							               ctx->color(expEmit->get_ir_type()->to_string()),
+							           expression.value()->fileRange);
 						}
 					} else {
 						ctx->Error("The expected type is " + ctx->color(typ->to_string()) +
-									   ", but the expression is of type " +
-									   ctx->color(expEmit->get_ir_type()->to_string()),
-								   expression.value()->fileRange);
+						               ", but the expression is of type " +
+						               ctx->color(expEmit->get_ir_type()->to_string()),
+						           expression.value()->fileRange);
 					}
 				} else {
 					exp = llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, mixTy->get_data_bitwidth()),
-												 0u);
+					                             0u);
 				}
 				auto* index =
-					llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, mixTy->get_tag_bitwidth()),
-										   mixTy->get_index_of(subName.value));
+				    llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, mixTy->get_tag_bitwidth()),
+				                           mixTy->get_index_of(subName.value));
 				if (isLocalDecl()) {
 					SHOW("Is local decl")
 					if (localValue->get_ir_type()->is_same(mixTy)) {
@@ -78,40 +78,40 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					SHOW("Is createIn")
 					if (createIn->is_reference() || createIn->is_ghost_reference()) {
 						auto expTy = createIn->is_ghost_reference()
-										 ? createIn->get_ir_type()
-										 : createIn->get_ir_type()->as_reference()->get_subtype();
+						                 ? createIn->get_ir_type()
+						                 : createIn->get_ir_type()->as_reference()->get_subtype();
 						if (!expTy->is_same(mixTy)) {
 							ctx->Error(
-								"Trying to optimise the mix type initialisation by creating in-place, but the expression type is " +
-									ctx->color(mixTy->to_string()) +
-									" which does not match with the underlying type for in-place creation which is " +
-									ctx->color(expTy->to_string()),
-								fileRange);
+							    "Trying to optimise the mix type initialisation by creating in-place, but the expression type is " +
+							        ctx->color(mixTy->to_string()) +
+							        " which does not match with the underlying type for in-place creation which is " +
+							        ctx->color(expTy->to_string()),
+							    fileRange);
 						}
 					} else {
 						ctx->Error(
-							"Trying to optimise the copy by creating in-place, but the containing type is not a reference",
-							fileRange);
+						    "Trying to optimise the copy by creating in-place, but the containing type is not a reference",
+						    fileRange);
 					}
 				} else {
 					createIn = ctx->get_fn()->get_block()->new_value(
-						irName.has_value() ? irName->value : utils::unique_id(), mixTy, isVar,
-						irName.has_value() ? irName->range : fileRange);
+					    irName.has_value() ? irName->value : utils::unique_id(), mixTy, isVar,
+					    irName.has_value() ? irName->range : fileRange);
 				}
 				SHOW("Creating mix store")
 				ctx->irCtx->builder.CreateStore(
-					index, ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 0));
+				    index, ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 0));
 				if (subRes.second) {
 					ctx->irCtx->builder.CreateStore(
-						exp, ctx->irCtx->builder.CreatePointerCast(
-								 ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 1),
-								 mixTy->get_variant_with_name(subName.value)->get_llvm_type()->getPointerTo()));
+					    exp, ctx->irCtx->builder.CreatePointerCast(
+					             ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 1),
+					             mixTy->get_variant_with_name(subName.value)->get_llvm_type()->getPointerTo()));
 				}
 				return createIn;
 			} else {
 				ctx->Error("No field named " + ctx->color(subName.value) + " is present inside mix type " +
-							   ctx->color(mixTy->get_full_name()),
-						   fileRange);
+				               ctx->color(mixTy->get_full_name()),
+				           fileRange);
 			}
 		} else {
 			ctx->Error("Mix type " + ctx->color(mixTy->get_full_name()) + " is not accessible here", fileRange);
@@ -119,8 +119,8 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 	} else if (typeEmit->is_choice()) {
 		if (expression.has_value()) {
 			ctx->Error("An expression is provided here, but the recognised type is a choice type: " +
-						   ctx->color(typeEmit->to_string()) + ". Please remove the expression or check the logic here",
-					   expression.value()->fileRange);
+			               ctx->color(typeEmit->to_string()) + ". Please remove the expression or check the logic here",
+			           expression.value()->fileRange);
 		}
 		auto* chTy = typeEmit->as_choice();
 		if (chTy->has_field(subName.value)) {
@@ -130,20 +130,20 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 			} else if (canCreateIn()) {
 				if (createIn->is_reference() || createIn->is_ghost_reference()) {
 					auto expTy = createIn->is_ghost_reference()
-									 ? createIn->get_ir_type()
-									 : createIn->get_ir_type()->as_reference()->get_subtype();
+					                 ? createIn->get_ir_type()
+					                 : createIn->get_ir_type()->as_reference()->get_subtype();
 					if (!expTy->is_same(chTy)) {
 						ctx->Error(
-							"Trying to optimise the choice type initialisation by creating in-place, but the expression type is " +
-								ctx->color(chTy->to_string()) +
-								" which does not match with the underlying type for in-place creation which is " +
-								ctx->color(expTy->to_string()),
-							fileRange);
+						    "Trying to optimise the choice type initialisation by creating in-place, but the expression type is " +
+						        ctx->color(chTy->to_string()) +
+						        " which does not match with the underlying type for in-place creation which is " +
+						        ctx->color(expTy->to_string()),
+						    fileRange);
 					}
 				} else {
 					ctx->Error(
-						"Trying to optimise the choice type initialisation by creating in-place, but the containing type is not a reference",
-						fileRange);
+					    "Trying to optimise the choice type initialisation by creating in-place, but the containing type is not a reference",
+					    fileRange);
 				}
 				ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), createIn->get_llvm());
 			} else if (irName.has_value()) {
@@ -155,8 +155,8 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 			}
 		} else {
 			ctx->Error("Choice type " + ctx->color(chTy->to_string()) + " does not have a variant named " +
-						   ctx->color(subName.value),
-					   subName.range);
+			               ctx->color(subName.value),
+			           subName.range);
 		}
 	} else {
 		ctx->Error(ctx->color(typeEmit->to_string()) + " is not a mix type or a choice type", fileRange);
@@ -166,13 +166,13 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 
 Json MixOrChoiceInitialiser::to_json() const {
 	return Json()
-		._("nodeType", "mixTypeInitialiser")
-		._("hasType", type.has_value())
-		._("type", type.has_value() ? type.value()->to_json() : JsonValue())
-		._("subName", subName)
-		._("hasExpression", expression.has_value())
-		._("expression", expression.has_value() ? expression.value()->to_json() : JsonValue())
-		._("fileRange", fileRange);
+	    ._("nodeType", "mixTypeInitialiser")
+	    ._("hasType", type.has_value())
+	    ._("type", type.has_value() ? type.value()->to_json() : JsonValue())
+	    ._("subName", subName)
+	    ._("hasExpression", expression.has_value())
+	    ._("expression", expression.has_value() ? expression.value()->to_json() : JsonValue())
+	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

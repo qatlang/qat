@@ -24,9 +24,9 @@ void PrerunGenericAbstract::emit(EmitCtx* ctx) const {
 		if (defaultValue) {
 			if (!defaultValue->get_ir_type()->is_same(expressionType)) {
 				ctx->Error("The expected type for the prerun generic expression is " +
-							   ctx->color(expressionType->to_string()) + " but the provided expression is of type " +
-							   ctx->color(defaultValue->get_ir_type()->to_string()),
-						   astVal->fileRange);
+				               ctx->color(expressionType->to_string()) + " but the provided expression is of type " +
+				               ctx->color(defaultValue->get_ir_type()->to_string()),
+				           astVal->fileRange);
 			}
 		} else {
 			ctx->Error("No prerun expression generated from the default expression provided", astVal->fileRange);
@@ -50,13 +50,13 @@ ir::PrerunGeneric* PrerunGenericAbstract::toIR() const { return ir::PrerunGeneri
 
 Json PrerunGenericAbstract::to_json() const {
 	return Json()
-		._("genericKind", "prerunGeneric")
-		._("index", index)
-		._("name", name)
-		._("hasDefault", defaultValueAST.has_value())
-		._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->to_json() : JsonValue())
-		._("defaultValueString", defaultValueAST.has_value() ? defaultValueAST.value()->to_string() : JsonValue())
-		._("range", range);
+	    ._("genericKind", "prerunGeneric")
+	    ._("index", index)
+	    ._("name", name)
+	    ._("hasDefault", defaultValueAST.has_value())
+	    ._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->to_json() : JsonValue())
+	    ._("defaultValueString", defaultValueAST.has_value() ? defaultValueAST.value()->to_string() : JsonValue())
+	    ._("range", range);
 }
 
 PrerunGenericAbstract::~PrerunGenericAbstract() {}

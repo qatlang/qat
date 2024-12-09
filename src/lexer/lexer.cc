@@ -8,7 +8,7 @@
 
 #define NanosecondsInMicroseconds 1000
 #define NanosecondsInMilliseconds 1000000
-#define NanosecondsInSeconds	  1000000000
+#define NanosecondsInSeconds      1000000000
 
 #define Check_Normal_Keyword(ident, tokenName)                                                                         \
 	if (wordValue == ident)                                                                                            \
@@ -37,18 +37,18 @@ Lexer::~Lexer() {
 }
 
 u64 Lexer::timeInMicroSeconds = 0;
-u64 Lexer::lineCount		  = 0;
+u64 Lexer::lineCount          = 0;
 
 Vec<Token>* Lexer::get_tokens() {
 	auto* res = tokens;
-	tokens	  = nullptr;
+	tokens    = nullptr;
 	return res;
 }
 
 void Lexer::read() {
 	//   try {
 	if (file.eof()) {
-		prev	= current;
+		prev    = current;
 		current = -1;
 	} else {
 		prev = current;
@@ -101,17 +101,17 @@ void Lexer::analyse() {
 		tokens->push_back(Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0)));
 	}
 	timeInMicroSeconds +=
-		std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime)
-			.count();
+	    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime)
+	        .count();
 	lineCount += lineNumber;
 }
 
 void Lexer::change_file(fs::path newFilePath) {
-	tokens			= new Vec<Token>();
-	filePath		= std::move(newFilePath);
-	prev			= -1;
-	current			= -1;
-	lineNumber		= 1;
+	tokens          = new Vec<Token>();
+	filePath        = std::move(newFilePath);
+	prev            = -1;
+	current         = -1;
+	lineNumber      = 1;
 	characterNumber = 0;
 }
 
@@ -119,8 +119,8 @@ void Lexer::change_file(fs::path newFilePath) {
 #define LOWER_LETTER_LAST  'z'
 #define UPPER_LETTER_FIRST 'A'
 #define UPPER_LETTER_LAST  'Z'
-#define DIGIT_FIRST		   '0'
-#define DIGIT_LAST		   '9'
+#define DIGIT_FIRST        '0'
+#define DIGIT_LAST         '9'
 #define CURRENT_IS_ALPHABET                                                                                            \
 	((current >= LOWER_LETTER_FIRST && current <= LOWER_LETTER_LAST) ||                                                \
 	 (current >= UPPER_LETTER_FIRST && current <= UPPER_LETTER_LAST))
@@ -431,22 +431,22 @@ Token Lexer::tokeniser() {
 		case '8':
 		case '9': {
 			String numVal;
-			bool   is_float			= false;
+			bool   is_float         = false;
 			bool   exponentialFloat = false;
-			bool   foundRadix		= false;
+			bool   foundRadix       = false;
 			if (current == '0') {
 				read();
 				if (current == 'b') {
 					read();
-					numVal	   = "0b";
+					numVal     = "0b";
 					foundRadix = true;
 				} else if (current == 'c') {
 					read();
-					numVal	   = "0c";
+					numVal     = "0c";
 					foundRadix = true;
 				} else if (current == 'x') {
 					read();
-					numVal	   = "0x";
+					numVal     = "0x";
 					foundRadix = true;
 				} else if (current == 'r') {
 					numVal += "0r";
@@ -468,11 +468,11 @@ Token Lexer::tokeniser() {
 			}
 			bool foundSpec = false;
 			while ((CURRENT_IS_DIGIT || (foundRadix && !foundSpec && CURRENT_IS_ALPHABET) ||
-					(!is_float && (current == '.')) || (!foundRadix && !exponentialFloat && (current == 'e')) ||
-					(!foundSpec && (current == '_'))) &&
-				   !file.eof()) {
+			        (!is_float && (current == '.')) || (!foundRadix && !exponentialFloat && (current == 'e')) ||
+			        (!foundSpec && (current == '_'))) &&
+			       !file.eof()) {
 				if (!foundRadix && !exponentialFloat && current == 'e') {
-					is_float		 = true;
+					is_float         = true;
 					exponentialFloat = true;
 					String expStr("e");
 					read();
@@ -491,8 +491,8 @@ Token Lexer::tokeniser() {
 					if (CURRENT_IS_DIGIT) {
 						if (foundRadix) {
 							throw_error(
-								"This literal is in custom radix format and hence cannot contain decimal point ",
-								numVal.length() + 1);
+							    "This literal is in custom radix format and hence cannot contain decimal point ",
+							    numVal.length() + 1);
 						}
 						is_float = true;
 						numVal += '.';
@@ -505,7 +505,7 @@ Token Lexer::tokeniser() {
 							fileRange.end.character--;
 						}
 						buffer.push_back(Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral,
-													   numVal, fileRange));
+						                               numVal, fileRange));
 						return tokeniser();
 					}
 				} else if (current == '_') {
@@ -522,12 +522,12 @@ Token Lexer::tokeniser() {
 						}
 						numVal += specString;
 						if (specString == "_f32" || specString == "_f64" || specString == "_f128" ||
-							specString == "_f128ppc" || specString == "_f16" || specString == "_fbrain" ||
-							specString == "_float" || specString == "_double" || specString == "_longdouble") {
+						    specString == "_f128ppc" || specString == "_f16" || specString == "_fbrain" ||
+						    specString == "_float" || specString == "_double" || specString == "_longdouble") {
 							is_float = true;
 						}
 						return Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
-											 this->get_position(numVal.length()));
+						                     this->get_position(numVal.length()));
 					} else {
 						throw_error("Invalid literal. Found _ without anything following");
 					}
@@ -536,7 +536,7 @@ Token Lexer::tokeniser() {
 				read();
 			}
 			return Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
-								 this->get_position(numVal.length()));
+			                     this->get_position(numVal.length()));
 		}
 		case -1: {
 			return Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0));
@@ -668,22 +668,22 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_VALUED_Keyword("cBool", nativeType);
 	else Check_VALUED_Keyword("cPtr", nativeType);
 	else if (wordValue.substr(0, 1) == "u" &&
-			 ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+	         ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
 		return Token::valued(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),
-							 getPos(wordValue.length()));
+		                     getPos(wordValue.length()));
 	}
 	else if (wordValue.substr(0, 1) == "i" &&
-			 ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+	         ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
 		return Token::valued(TokenType::integerType, wordValue.substr(1, wordValue.length() - 1),
-							 getPos(wordValue.length()));
+		                     getPos(wordValue.length()));
 	}
-#define FBRAIN_NAME	 "fbrain"
-#define F16_NAME	 "f16"
-#define F32_NAME	 "f32"
-#define F64_NAME	 "f64"
-#define F80_NAME	 "f80"
+#define FBRAIN_NAME  "fbrain"
+#define F16_NAME     "f16"
+#define F32_NAME     "f32"
+#define F64_NAME     "f64"
+#define F80_NAME     "f80"
 #define F128PPC_NAME "f128ppc"
-#define F128_NAME	 "f128"
+#define F128_NAME    "f128"
 	// Yes, I know the lengths of these literals, however repeating the strings can lead me into a rabbit hole
 	// of confusing behaviour. It has happened before
 	else if (wordValue == FBRAIN_NAME) {
@@ -703,7 +703,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	}
 	else if (wordValue == F128PPC_NAME) {
 		return Token::valued(TokenType::floatType, F128PPC_NAME,
-							 getPos(std::string::traits_type::length(F128PPC_NAME)));
+		                     getPos(std::string::traits_type::length(F128PPC_NAME)));
 	}
 	else if (wordValue == F128_NAME) {
 		return Token::valued(TokenType::floatType, F128_NAME, getPos(std::string::traits_type::length(F128_NAME)));
@@ -713,7 +713,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 			return None;
 		}
 		if (!((wordValue[0] >= LOWER_LETTER_FIRST && wordValue[0] <= LOWER_LETTER_LAST) ||
-			  (wordValue[0] >= UPPER_LETTER_FIRST && wordValue[0] <= UPPER_LETTER_LAST))) {
+		      (wordValue[0] >= UPPER_LETTER_FIRST && wordValue[0] <= UPPER_LETTER_LAST))) {
 			return None;
 		}
 		for (auto current : wordValue) {
@@ -727,8 +727,8 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 
 void Lexer::throw_error(const String& message, Maybe<usize> offset) {
 	irCtx->Error(message, offset.has_value() ? get_position(offset.value())
-											 : FileRange{filePath, FilePos{lineNumber, characterNumber},
-														 FilePos{lineNumber, characterNumber + 1}});
+	                                         : FileRange{filePath, FilePos{lineNumber, characterNumber},
+	                                                     FilePos{lineNumber, characterNumber + 1}});
 }
 
 } // namespace qat::lexer

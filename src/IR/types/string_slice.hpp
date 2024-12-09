@@ -14,10 +14,10 @@ class StringSliceType : public Type {
 	useit static StringSliceType* get(ir::Ctx* irCtx, bool isPacked = false);
 
 	useit static ir::PrerunValue* create_value(ir::Ctx* irCtx, String value);
-	useit static String			  value_to_string(ir::PrerunValue* value);
-	useit bool					  isPacked() const;
-	useit TypeKind				  type_kind() const override;
-	useit String				  to_string() const override;
+	useit static String           value_to_string(ir::PrerunValue* value);
+	useit bool                    isPacked() const;
+	useit TypeKind                type_kind() const override;
+	useit String                  to_string() const override;
 
 	useit bool can_be_prerun() const final { return true; }
 	useit bool can_be_prerun_generic() const final { return true; }

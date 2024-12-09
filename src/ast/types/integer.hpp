@@ -24,11 +24,11 @@ class IntegerType final : public Type {
 
 	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
 
-	ir::Type*	emit(EmitCtx* ctx);
+	ir::Type*   emit(EmitCtx* ctx);
 	AstTypeKind type_kind() const;
-	bool		isBitWidth(const u32 width) const;
-	Json		to_json() const;
-	String		to_string() const;
+	bool        isBitWidth(const u32 width) const;
+	Json        to_json() const;
+	String      to_string() const;
 };
 
 } // namespace qat::ast

@@ -20,13 +20,13 @@ namespace qat::ir {
 class PrerunFunction;
 
 class PrerunLocal {
-	Identifier	 name;
-	Type*		 type = nullptr;
-	bool		 isVar;
+	Identifier   name;
+	Type*        type = nullptr;
+	bool         isVar;
 	PrerunValue* value = nullptr;
 
 	PrerunLocal(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal)
-		: name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
+	    : name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
 
   public:
 	useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
@@ -34,20 +34,20 @@ class PrerunLocal {
 	}
 
 	useit Identifier   get_name() const { return name; }
-	useit Type*		   get_type() const { return type; }
-	useit bool		   is_variable() const { return isVar; }
+	useit Type*        get_type() const { return type; }
+	useit bool         is_variable() const { return isVar; }
 	useit PrerunValue* get_value() const { return value; }
 
 	void change_value(PrerunValue* other) { value = other; }
 };
 
 class PreBlock {
-	PrerunFunction*	  function = nullptr;
+	PrerunFunction*   function = nullptr;
 	Vec<PrerunLocal*> locals;
-	Vec<PreBlock*>	  children;
-	PreBlock*		  parent   = nullptr;
-	PreBlock*		  previous = nullptr;
-	PreBlock*		  next	   = nullptr;
+	Vec<PreBlock*>    children;
+	PreBlock*         parent   = nullptr;
+	PreBlock*         previous = nullptr;
+	PreBlock*         next     = nullptr;
 
 	PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {
 		if (parent) {
@@ -101,7 +101,7 @@ enum class PreLoopKind {
 };
 
 struct PreLoopInfo {
-	PreLoopKind		  kind;
+	PreLoopKind       kind;
 	Maybe<Identifier> tag;
 
 	useit String kind_to_string() const {
@@ -124,15 +124,15 @@ class PrerunCallState {
 	friend class ast::PrerunBreak;
 	friend class ast::PrerunContinue;
 
-	PrerunFunction*	  function = nullptr;
+	PrerunFunction*   function = nullptr;
 	Vec<PrerunValue*> argumentValues;
-	Vec<PreBlock*>	  blocks;
-	usize			  activeBlock = 0;
+	Vec<PreBlock*>    blocks;
+	usize             activeBlock = 0;
 	Vec<PreLoopInfo>  loopsInfo;
-	usize			  emitNesting = 0;
+	usize             emitNesting = 0;
 
 	PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
-		: function(_function), argumentValues(_argVals) {}
+	    : function(_function), argumentValues(_argVals) {}
 
   public:
 	~PrerunCallState() {
@@ -146,38 +146,38 @@ class PrerunCallState {
 	}
 
 	useit PrerunFunction* get_function() const { return function; }
-	useit bool			  has_arg_with_name(String const& name);
-	useit PrerunValue*	  get_arg_value_for(String const& name);
+	useit bool            has_arg_with_name(String const& name);
+	useit PrerunValue*    get_arg_value_for(String const& name);
 
-	void		increment_emit_nesting() { emitNesting++; }
-	void		decrement_emit_nesting() { emitNesting--; }
+	void        increment_emit_nesting() { emitNesting++; }
+	void        decrement_emit_nesting() { emitNesting--; }
 	useit usize get_emit_nesting() const { return emitNesting; }
 };
 
 class PrerunFunction : public PrerunValue, public EntityOverview {
 	friend class PrerunCallState;
-	Identifier		   name;
-	Type*			   returnType;
+	Identifier         name;
+	Type*              returnType;
 	Vec<ArgumentType*> argTypes;
-	Mod*			   parent;
-	VisibilityInfo	   visibility;
+	Mod*               parent;
+	VisibilityInfo     visibility;
 
 	Pair<Vec<ast::PrerunSentence*>, FileRange> sentences;
 
   public:
 	PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
-				   Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx)
-		: PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)),
-		  EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
-		  parent(_parent), visibility(visib), sentences(_sentences) {}
+	               Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx)
+	    : PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)),
+	      EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
+	      parent(_parent), visibility(visib), sentences(_sentences) {}
 
 	void update_overview() final;
 
-	useit Identifier	get_name() const { return name; }
-	useit String		get_full_name() const;
-	useit Type*			get_return_type() const { return returnType; }
+	useit Identifier    get_name() const { return name; }
+	useit String        get_full_name() const;
+	useit Type*         get_return_type() const { return returnType; }
 	useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
-	useit Mod*			get_module() const { return parent; }
+	useit Mod*          get_module() const { return parent; }
 
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
 

@@ -11,7 +11,7 @@ class SelfType final : public Type {
 	bool isJustType;
 
 	bool canBeSelfInstance = false;
-	bool isVarRef		   = false;
+	bool isVarRef          = false;
 
   public:
 	SelfType(bool _isJustType, FileRange _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
@@ -20,9 +20,9 @@ class SelfType final : public Type {
 		return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
 	}
 
-	useit ir::Type*	  emit(EmitCtx* ctx);
-	useit Json		  to_json() const;
-	useit String	  to_string() const;
+	useit ir::Type*   emit(EmitCtx* ctx);
+	useit Json        to_json() const;
+	useit String      to_string() const;
 	useit AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
 };
 

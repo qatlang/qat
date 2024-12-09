@@ -10,12 +10,12 @@ class ConstructorCall final : public Expression, public LocalDeclCompatible, pub
 	friend class LocalDeclaration;
 
   private:
-	Maybe<Type*>	 type;
+	Maybe<Type*>     type;
 	Vec<Expression*> args;
 
   public:
 	ConstructorCall(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange)
-		: Expression(_fileRange), type(_type), args(_args) {}
+	    : Expression(_fileRange), type(_type), args(_args) {}
 
 	useit static ConstructorCall* create(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _fileRange);
@@ -34,8 +34,8 @@ class ConstructorCall final : public Expression, public LocalDeclCompatible, pub
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType	 nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
-	useit Json		 to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
+	useit Json       to_json() const final;
 };
 
 } // namespace qat::ast

@@ -13,7 +13,7 @@ class IndexAccess final : public Expression {
 
   public:
 	IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange)
-		: Expression(_fileRange), instance(_instance), index(_index) {}
+	    : Expression(_fileRange), instance(_instance), index(_index) {}
 
 	useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
@@ -25,8 +25,8 @@ class IndexAccess final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json		 to_json() const final;
-	useit NodeType	 nodeType() const final { return NodeType::INDEX_ACCESS; }
+	useit Json       to_json() const final;
+	useit NodeType   nodeType() const final { return NodeType::INDEX_ACCESS; }
 };
 
 } // namespace qat::ast

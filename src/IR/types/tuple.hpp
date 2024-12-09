@@ -13,7 +13,7 @@ namespace qat::ir {
 class TupleType : public Type {
   private:
 	Vec<Type*> subTypes;
-	bool	   isPacked;
+	bool       isPacked;
 
   public:
 	TupleType(Vec<Type*> _types, bool _isPacked, llvm::LLVMContext& llctx);
@@ -50,11 +50,11 @@ class TupleType : public Type {
 	}
 
 	useit Vec<Type*> getSubTypes() const;
-	useit Type*		 getSubtypeAt(u32 index);
-	useit u32		 getSubTypeCount() const;
-	useit bool		 isPackedTuple() const;
-	useit TypeKind	 type_kind() const final;
-	useit String	 to_string() const final;
+	useit Type*      getSubtypeAt(u32 index);
+	useit u32        getSubTypeCount() const;
+	useit bool       isPackedTuple() const;
+	useit TypeKind   type_kind() const final;
+	useit String     to_string() const final;
 };
 
 } // namespace qat::ir

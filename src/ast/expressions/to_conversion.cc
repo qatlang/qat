@@ -279,6 +279,39 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 							   ", but the target type for conversion is " + ctx->color(destTy->to_string()),
 						   fileRange);
 			}
+		} else if (valType->is_expanded() && valType->as_expanded()->has_to_convertor(destTy)) {
+			auto convFn = valType->as_expanded()->get_to_convertor(destTy);
+			if (val->get_ir_type()->is_reference()) {
+				val->load_ghost_reference(ctx->irCtx->builder);
+			} else if (not val->is_ghost_reference()) {
+				ctx->Error(
+					"This expression is a value and hence cannot call the convertor on this expression. Expected a reference, a local or global value or something similar. Consider saving this value in a local value first and then the convertor on it",
+					source->fileRange);
+			}
+			return convFn->call(ctx->irCtx, {val->get_llvm()}, None, ctx->mod);
+		} else if (valType->has_default_implementations()) {
+			auto		defImps = valType->get_all_default_implementations();
+			ir::Method* convFn	= nullptr;
+			for (auto imp : defImps) {
+				if (imp->has_to_convertor(destTy)) {
+					convFn = imp->get_to_convertor(destTy);
+					break;
+				}
+			}
+			if (not convFn) {
+				ctx->Error("Type " + ctx->color(valType->to_string()) +
+							   " does not have any convertor that converts to the type " +
+							   ctx->color(destTy->to_string()),
+						   fileRange);
+			}
+			if (val->get_ir_type()->is_reference()) {
+				val->load_ghost_reference(ctx->irCtx->builder);
+			} else if (not val->is_ghost_reference()) {
+				ctx->Error(
+					"This expression is a value and hence cannot call the convertor on this expression. Expected a reference, a local or global value or something similar. Consider saving this value in a local value first and then the convertor on it",
+					source->fileRange);
+			}
+			return convFn->call(ctx->irCtx, {val->get_llvm()}, None, ctx->mod);
 		} else {
 			ctx->Error("Conversion from " + ctx->color(typ->to_string()) + " to " + ctx->color(destTy->to_string()) +
 						   " is not supported",

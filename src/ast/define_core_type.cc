@@ -189,8 +189,8 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 											   typeEmitCtx->get_visibility_info(mem->visibSpec)));
 	}
 	SHOW("Creating core type: " << cTyName.value)
-	*resultTy = new ir::StructType(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
-								   isPackedStruct.value_or(false));
+	*resultTy = ir::StructType::create(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
+									   isPackedStruct.value_or(false));
 	if (genericCoreType) {
 		genericCoreType->variants.push_back(ir::GenericVariant<ir::StructType>(*resultTy, genericsToFill));
 	}

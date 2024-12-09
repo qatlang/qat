@@ -25,7 +25,7 @@ UnsignedType* UnsignedType::create(u64 bits, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	return new UnsignedType(bits, irCtx, false);
+	return std::construct_at(OwnNormal(UnsignedType), bits, irCtx, false);
 }
 
 UnsignedType* UnsignedType::create_bool(ir::Ctx* irCtx) {
@@ -36,7 +36,7 @@ UnsignedType* UnsignedType::create_bool(ir::Ctx* irCtx) {
 			}
 		}
 	}
-	return new UnsignedType(1u, irCtx, true);
+	return std::construct_at(OwnNormal(UnsignedType), 1u, irCtx, true);
 }
 
 ir::PrerunValue* UnsignedType::get_prerun_default_value(ir::Ctx* irCtx) {

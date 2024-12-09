@@ -4,6 +4,7 @@
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
+#include "../utils/qat_region.hpp"
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./entity_overview.hpp"
@@ -241,6 +242,13 @@ class GenericFunction : public Uniq, public EntityOverview {
   public:
 	GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, Maybe<ast::PrerunExpression*> constraint,
 					ast::FunctionPrototype* functionDef, Mod* parent, const VisibilityInfo& _visibInfo);
+
+	useit static GenericFunction* create(Identifier name, Vec<ast::GenericAbstractType*> _generics,
+										 Maybe<ast::PrerunExpression*> constraint, ast::FunctionPrototype* functionDef,
+										 Mod* parent, const VisibilityInfo& _visibInfo) {
+		return std::construct_at(OwnNormal(GenericFunction), std::move(name), std::move(_generics), constraint,
+								 functionDef, parent, _visibInfo);
+	}
 
 	~GenericFunction() = default;
 

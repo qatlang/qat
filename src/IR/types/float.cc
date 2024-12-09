@@ -1,3 +1,4 @@
+
 #include "./float.hpp"
 #include "../../show.hpp"
 #include "../context.hpp"
@@ -52,7 +53,7 @@ FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {
 			}
 		}
 	}
-	return new FloatType(_kind, llctx);
+	return std::construct_at(OwnNormal(FloatType), _kind, llctx);
 }
 
 TypeKind FloatType::type_kind() const { return TypeKind::Float; }

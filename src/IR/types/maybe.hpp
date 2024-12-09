@@ -12,9 +12,8 @@ class MaybeType : public Type {
 	Type* subTy;
 	bool  isPacked;
 
-	MaybeType(Type* subTy, bool isPacked, ir::Ctx* irCtx);
-
   public:
+	MaybeType(Type* subTy, bool isPacked, ir::Ctx* irCtx);
 	useit static MaybeType* get(Type* subTy, bool isPacked, ir::Ctx* irCtx);
 
 	useit bool	has_sized_sub_type(ir::Ctx* irCtx) const;

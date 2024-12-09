@@ -17,7 +17,7 @@ class ToggleType : public ExpandedType {
 
 	useit static ToggleType* create(Identifier name, Vec<Pair<Identifier, Type*>> variants, ir::Mod* parent,
 									VisibilityInfo visibility, Maybe<MetaInfo> metaInfo, ir::Ctx* irCtx) {
-		return new ToggleType(name, variants, parent, visibility, metaInfo, irCtx);
+		return std::construct_at(OwnNormal(ToggleType), name, variants, parent, visibility, metaInfo, irCtx);
 	}
 
 	useit usize get_variant_count() const { return variants.size(); }

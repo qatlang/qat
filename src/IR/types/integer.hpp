@@ -13,9 +13,8 @@ class IntegerType final : public Type {
 	const u64 bitWidth;
 	ir::Ctx*  irCtx;
 
-	IntegerType(u64 _bitWidth, ir::Ctx* irCtx);
-
   public:
+	IntegerType(u64 _bitWidth, ir::Ctx* irCtx);
 	useit static IntegerType* get(u64 _bits, ir::Ctx* irCtx);
 
 	useit bool is_bitwidth(u64 width) const { return bitWidth == width; }

@@ -553,11 +553,17 @@ void QatSitter::destroy() {
 	delete Lexer;
 	delete Parser;
 	ir::Value::replace_uses_for_all();
+	SHOW("Replaced uses for all llvm values")
 	ir::Mod::clear_all();
+	SHOW("Cleared all modules")
 	ast::Node::clear_all();
+	SHOW("Cleared all AST nodes")
 	ast::Type::clear_all();
+	SHOW("Cleared all AST types")
 	ir::Value::clear_all();
+	SHOW("Cleared all IR values")
 	ir::Type::clear_all();
+	SHOW("Cleared all IR types")
 }
 
 QatSitter::~QatSitter() { destroy(); }

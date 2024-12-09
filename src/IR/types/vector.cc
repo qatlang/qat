@@ -1,4 +1,5 @@
 #include "./vector.hpp"
+#include "../../utils/qat_region.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
 
@@ -19,7 +20,7 @@ VectorType* VectorType::create(ir::Type* subType, usize count, VectorKind kind, 
 			}
 		}
 	}
-	return new VectorType(subType, count, kind, irCtx);
+	return std::construct_at(OwnNormal(VectorType), subType, count, kind, irCtx);
 }
 
 String VectorType::to_string() const {

@@ -65,6 +65,14 @@ class StructType final : public ExpandedType, public EntityOverview {
 			   Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
 			   Maybe<MetaInfo> metaInfo, bool isPacked);
 
+	useit static StructType* create(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics,
+									ir::OpaqueType* _opaqued, Vec<StructField*> _members,
+									const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+									Maybe<MetaInfo> metaInfo, bool isPacked) {
+		return std::construct_at(OwnNormal(StructType), mod, std::move(_name), std::move(_generics), _opaqued,
+								 std::move(_members), _visibility, llctx, std::move(metaInfo), isPacked);
+	}
+
 	~StructType() final;
 
 	useit Maybe<usize> get_index_of(const String& member) const;
@@ -160,6 +168,14 @@ class GenericStructType : public Uniq, public EntityOverview {
 	GenericStructType(Identifier name, Vec<ast::GenericAbstractType*> generics,
 					  Maybe<ast::PrerunExpression*> _constraint, ast::DefineCoreType* defineCoreType, Mod* parent,
 					  const VisibilityInfo& visibInfo);
+
+	useit static GenericStructType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
+										   Maybe<ast::PrerunExpression*> _constraint,
+										   ast::DefineCoreType* defineCoreType, Mod* parent,
+										   const VisibilityInfo& visibInfo) {
+		return std::construct_at(OwnNormal(GenericStructType), std::move(name), std::move(generics), _constraint,
+								 defineCoreType, parent, visibInfo);
+	}
 
 	~GenericStructType() = default;
 

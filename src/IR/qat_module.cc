@@ -151,18 +151,16 @@ Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _t
 Mod::~Mod() {
 	SHOW("Deleting module " << name.value << " in file " << filePath.string())
 	delete llvmModule;
-	for (auto* tFn : genericFunctions) {
-		delete tFn;
+	for (auto* fn : genericFunctions) {
+		std::destroy_at(fn);
 	}
-	for (auto* tCty : genericCoreTypes) {
-		delete tCty;
+	for (auto* ty : genericStructTypes) {
+		std::destroy_at(ty);
 	}
-	for (auto* gTdef : genericTypeDefinitions) {
-		delete gTdef;
+	for (auto* ty : genericTypeDefinitions) {
+		std::destroy_at(ty);
 	}
-	for (auto* ent : entityEntries) {
-		delete ent;
-	}
+	SHOW("Deleted generic functions, generic struct types, generic type definitions")
 }
 
 void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
@@ -426,7 +424,7 @@ void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& funct
 		for (auto* cTy : coreTypes) {
 			coreTypesJson.push_back(cTy->overviewToJson());
 		}
-		for (auto* cTy : genericCoreTypes) {
+		for (auto* cTy : genericStructTypes) {
 			genericCoreTypesJson.push_back(cTy->overviewToJson());
 		}
 		for (auto* mTy : mixTypes) {
@@ -750,9 +748,9 @@ void Mod::bring_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<
 
 void Mod::bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
-		broughtGenericCoreTypes.push_back(Brought<GenericStructType>(bName.value(), gCTy, visib));
+		broughtGenericStructTypes.push_back(Brought<GenericStructType>(bName.value(), gCTy, visib));
 	} else {
-		broughtGenericCoreTypes.push_back(Brought<GenericStructType>(gCTy, visib));
+		broughtGenericStructTypes.push_back(Brought<GenericStructType>(gCTy, visib));
 	}
 }
 
@@ -1495,7 +1493,7 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 // GENERIC CORE TYPE
 
 bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const {
-	for (auto* tempCTy : genericCoreTypes) {
+	for (auto* tempCTy : genericStructTypes) {
 		SHOW("Generic core type: " << tempCTy->get_name().value)
 		if ((tempCTy->get_name().value == name) && tempCTy->get_visibility().is_accessible(reqInfo)) {
 			SHOW("Found generic core type")
@@ -1515,7 +1513,7 @@ bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const 
 }
 
 bool Mod::has_brought_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const {
-	for (const auto& brought : broughtGenericCoreTypes) {
+	for (const auto& brought : broughtGenericStructTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
 		}
@@ -1542,7 +1540,7 @@ Pair<bool, String> Mod::has_generic_struct_type_in_imports(const String& name, c
 }
 
 GenericStructType* Mod::get_generic_struct_type(const String& name, const AccessInfo& reqInfo) {
-	for (auto* tempCore : genericCoreTypes) {
+	for (auto* tempCore : genericStructTypes) {
 		if ((tempCore->get_name().value == name) && tempCore->get_visibility().is_accessible(reqInfo)) {
 			return tempCore;
 		}
@@ -1554,7 +1552,7 @@ GenericStructType* Mod::get_generic_struct_type(const String& name, const Access
 			}
 		}
 	}
-	for (const auto& brought : broughtGenericCoreTypes) {
+	for (const auto& brought : broughtGenericStructTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return brought.get();
 		}
@@ -2210,7 +2208,7 @@ std::set<String> Mod::getAllObjectPaths() const {
 	for (auto& bTy : broughtCoreTypes) {
 		moduleHandler(bTy.get()->get_module());
 	}
-	for (auto& bTy : broughtGenericCoreTypes) {
+	for (auto& bTy : broughtGenericStructTypes) {
 		moduleHandler(bTy.get()->get_module());
 	}
 	for (auto& bTy : broughtChoiceTypes) {
@@ -2279,7 +2277,7 @@ std::set<String> Mod::getAllLinkableLibs() const {
 	for (auto& bTy : broughtCoreTypes) {
 		moduleHandler(bTy.get()->get_module());
 	}
-	for (auto& bTy : broughtGenericCoreTypes) {
+	for (auto& bTy : broughtGenericStructTypes) {
 		moduleHandler(bTy.get()->get_module());
 	}
 	for (auto& bTy : broughtChoiceTypes) {

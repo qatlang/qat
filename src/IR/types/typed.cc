@@ -1,6 +1,7 @@
 #include "./typed.hpp"
+#include "../../utils/qat_region.hpp"
 #include "../value.hpp"
-#include "type_kind.hpp"
+#include "./type_kind.hpp"
 
 namespace qat::ir {
 
@@ -18,7 +19,7 @@ TypedType* TypedType::get(Type* _subTy) {
 			return (TypedType*)typ;
 		}
 	}
-	return new TypedType(_subTy);
+	return std::construct_at(OwnNormal(TypedType), _subTy);
 }
 
 ir::Type* TypedType::get_subtype() const { return subTy->is_typed() ? subTy->as_typed()->get_subtype() : subTy; }

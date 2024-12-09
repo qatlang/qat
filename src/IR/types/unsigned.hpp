@@ -15,9 +15,8 @@ class UnsignedType : public Type {
 
 	ir::Ctx* irCtx;
 
-	UnsignedType(u64 _bitWidth, ir::Ctx* irCtx, bool _isBool);
-
   public:
+	UnsignedType(u64 _bitWidth, ir::Ctx* irCtx, bool _isBool);
 	useit static UnsignedType* create(u64 bits, ir::Ctx* llctx);
 	useit static UnsignedType* create_bool(ir::Ctx* llctx);
 

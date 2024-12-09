@@ -18,6 +18,12 @@ template <typename T> class GenericVariant {
   public:
 	GenericVariant(T* _entity, Vec<ir::GenericToFill*> _types) : entity(_entity), genericTypes(std::move(_types)) {}
 
+	~GenericVariant() {
+		for (auto* fill : genericTypes) {
+			std::destroy_at(fill);
+		}
+	}
+
 	useit bool check(ir::Ctx* irCtx, std::function<void(const String&, const FileRange&)> errorFn,
 					 Vec<GenericToFill*> dest) const {
 		if (genericTypes.size() != dest.size()) {

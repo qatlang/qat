@@ -309,6 +309,11 @@ struct EntityState {
 				EmitPhase _maxPhase)
 		: name(_name), type(_type), status(_status), astNode(_astEntity), maxPhase(_maxPhase) {}
 
+	useit static EntityState* create(Maybe<Identifier> name, EntityType type, EntityStatus status,
+									 ast::IsEntity* astEntity, EmitPhase maxPhase) {
+		return std::construct_at(OwnNormal(EntityState), std::move(name), type, status, astEntity, maxPhase);
+	}
+
 	void addDependency(EntityDependency dep) {
 		if (this == dep.entity) {
 			return;
@@ -465,8 +470,8 @@ class Mod final : public Uniq, public EntityOverview {
 	Vec<GenericFunction*>		  genericFunctions;
 	Vec<Brought<GenericFunction>> broughtGenericFunctions;
 
-	Vec<GenericStructType*>			genericCoreTypes;
-	Vec<Brought<GenericStructType>> broughtGenericCoreTypes;
+	Vec<GenericStructType*>			genericStructTypes;
+	Vec<Brought<GenericStructType>> broughtGenericStructTypes;
 
 	Vec<GenericDefinitionType*>			genericTypeDefinitions;
 	Vec<Brought<GenericDefinitionType>> broughtGenericTypeDefinitions;
@@ -565,7 +570,7 @@ class Mod final : public Uniq, public EntityOverview {
 	}
 
 	useit EntityState* add_entity(Maybe<Identifier> name, EntityType type, ast::IsEntity* node, EmitPhase maxPhase) {
-		entityEntries.push_back(new EntityState(name, type, EntityStatus::none, node, maxPhase));
+		entityEntries.push_back(EntityState::create(name, type, EntityStatus::none, node, maxPhase));
 		return entityEntries.back();
 	}
 

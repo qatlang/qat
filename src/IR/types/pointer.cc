@@ -108,7 +108,7 @@ MarkType* MarkType::get(bool _isSubtypeVariable, Type* _type, bool _nonNullable,
 			}
 		}
 	}
-	return new MarkType(_isSubtypeVariable, _type, _nonNullable, _owner, _hasMulti, irCtx);
+	return std::construct_at(OwnNormal(MarkType), _isSubtypeVariable, _type, _nonNullable, _owner, _hasMulti, irCtx);
 }
 
 bool MarkType::is_subtype_variable() const { return isSubtypeVar; }

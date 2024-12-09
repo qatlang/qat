@@ -22,9 +22,8 @@ class Region : public Type, public EntityOverview {
 	llvm::Function*		  ownFn;
 	llvm::Function*		  destructor;
 
-	Region(Identifier _name, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx, FileRange fileRange);
-
   public:
+	Region(Identifier _name, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx, FileRange fileRange);
 	static Region* get(Identifier name, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
 					   FileRange fileRange);
 

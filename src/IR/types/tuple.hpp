@@ -15,9 +15,8 @@ class TupleType : public Type {
 	Vec<Type*> subTypes;
 	bool	   isPacked;
 
-	TupleType(Vec<Type*> _types, bool _isPacked, llvm::LLVMContext& llctx);
-
   public:
+	TupleType(Vec<Type*> _types, bool _isPacked, llvm::LLVMContext& llctx);
 	useit static TupleType* get(Vec<Type*> types, bool isPacked, llvm::LLVMContext& llctx);
 
 	useit bool is_copy_constructible() const final;

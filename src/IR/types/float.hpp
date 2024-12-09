@@ -13,9 +13,8 @@ class FloatType : public Type {
   private:
 	FloatTypeKind kind;
 
-	FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx);
-
   public:
+	FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 	useit static FloatType* get(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 
 	useit bool is_trivially_copyable() const final { return true; }

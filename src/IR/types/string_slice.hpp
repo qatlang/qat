@@ -9,10 +9,10 @@ class StringSliceType : public Type {
   private:
 	bool isPack;
 
-	StringSliceType(ir::Ctx* irCtx, bool isPacked = false);
-
   public:
+	StringSliceType(ir::Ctx* irCtx, bool isPacked = false);
 	useit static StringSliceType* get(ir::Ctx* irCtx, bool isPacked = false);
+
 	useit static ir::PrerunValue* create_value(ir::Ctx* irCtx, String value);
 	useit static String			  value_to_string(ir::PrerunValue* value);
 	useit bool					  isPacked() const;

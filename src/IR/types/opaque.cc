@@ -66,7 +66,8 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 OpaqueType* OpaqueType::get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
 							Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
 							VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
-	return new OpaqueType(name, generics, genericID, subtypeKind, parent, size, visibility, llCtx, metaInfo);
+	return std::construct_at(OwnNormal(OpaqueType), name, generics, genericID, subtypeKind, parent, size, visibility,
+							 llCtx, metaInfo);
 }
 
 String OpaqueType::get_full_name() const {

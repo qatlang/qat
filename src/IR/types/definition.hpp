@@ -4,6 +4,7 @@
 #include "../../utils/file_range.hpp"
 #include "../../utils/helpers.hpp"
 #include "../../utils/identifier.hpp"
+#include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
 #include "../generic_variant.hpp"
@@ -27,6 +28,12 @@ class DefinitionType : public ExpandedType, public EntityOverview {
   public:
 	DefinitionType(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
 				   const VisibilityInfo& _visibInfo);
+
+	useit static DefinitionType* create(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
+										const VisibilityInfo& _visibInfo) {
+		return std::construct_at(OwnNormal(DefinitionType), std::move(_name), _actualType, std::move(_generics), mod,
+								 _visibInfo);
+	}
 
 	void setSubType(Type* _subType);
 
@@ -79,6 +86,14 @@ class GenericDefinitionType : public Uniq, public EntityOverview {
 	GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics,
 						  Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType, Mod* parent,
 						  const VisibilityInfo& visibInfo);
+
+	useit static GenericDefinitionType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
+											   Maybe<ast::PrerunExpression*> constraint,
+											   ast::TypeDefinition* defineCoreType, Mod* parent,
+											   const VisibilityInfo& visibInfo) {
+		return std::construct_at(OwnNormal(GenericDefinitionType), std::move(name), std::move(generics), constraint,
+								 defineCoreType, parent, visibInfo);
+	}
 
 	~GenericDefinitionType() = default;
 

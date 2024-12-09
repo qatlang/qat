@@ -37,11 +37,11 @@ class OpaqueType : public Type, public EntityOverview {
 	VisibilityInfo			 visibility;
 	Maybe<MetaInfo>			 metaInfo;
 
+  public:
 	OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
 			   Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
 			   llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
-  public:
 	useit static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
 								 Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
 								 VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);

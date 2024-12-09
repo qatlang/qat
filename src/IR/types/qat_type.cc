@@ -46,7 +46,7 @@ Vec<Region*> Type::allRegions() {
 
 void Type::clear_all() {
 	for (auto* typ : allTypes) {
-		delete typ;
+		std::destroy_at(typ);
 	}
 }
 

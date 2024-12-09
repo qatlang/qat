@@ -38,6 +38,15 @@ class MixType : public ExpandedType, public EntityOverview {
 			Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool isPacked,
 			const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
+	useit static MixType* create(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics,
+								 Mod* parent, Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal,
+								 ir::Ctx* irCtx, bool isPacked, const VisibilityInfo& visibility, FileRange fileRange,
+								 Maybe<MetaInfo> metaInfo) {
+		return std::construct_at(OwnNormal(MixType), std::move(name), opaquedTy, std::move(_generics), parent,
+								 std::move(subtypes), defaultVal, irCtx, isPacked, visibility, std::move(fileRange),
+								 std::move(metaInfo));
+	}
+
 	useit usize get_index_of(const String& name) const;
 
 	useit Pair<bool, bool> has_variant_with_name(const String& sname) const;

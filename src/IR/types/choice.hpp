@@ -3,6 +3,7 @@
 
 #include "../../utils/file_range.hpp"
 #include "../../utils/identifier.hpp"
+#include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
 #include "../entity_overview.hpp"
 #include "../meta_info.hpp"
@@ -36,6 +37,15 @@ class ChoiceType : public Type, public EntityOverview {
 	ChoiceType(Identifier name, Mod* parent, Vec<Identifier> fields, Maybe<Vec<llvm::ConstantInt*>> values,
 			   Maybe<ir::Type*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
 			   const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo);
+
+	useit static ChoiceType* create(Identifier name, Mod* parent, Vec<Identifier> fields,
+									Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType,
+									bool areValuesUnsigned, Maybe<usize> defaultVal, const VisibilityInfo& visibility,
+									ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo) {
+		return std::construct_at(OwnNormal(ChoiceType), std::move(name), parent, std::move(fields), std::move(values),
+								 providedType, areValuesUnsigned, defaultVal, visibility, irCtx, std::move(fileRange),
+								 std::move(metaInfo));
+	}
 
 	useit Identifier get_name() const;
 	useit String	 get_full_name() const;

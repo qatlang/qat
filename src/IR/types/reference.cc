@@ -26,7 +26,7 @@ ReferenceType* ReferenceType::get(bool _isSubtypeVariable, Type* _subtype, ir::C
 			}
 		}
 	}
-	return new ReferenceType(_isSubtypeVariable, _subtype, irCtx);
+	return std::construct_at(OwnNormal(ReferenceType), _isSubtypeVariable, _subtype, irCtx);
 }
 
 Type* ReferenceType::get_subtype() const { return subType; }

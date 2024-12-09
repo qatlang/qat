@@ -2,6 +2,7 @@
 #include "../ast/types/generic_abstract.hpp"
 #include "../ast/types/prerun_generic.hpp"
 #include "../ast/types/typed_generic.hpp"
+#include "../utils/qat_region.hpp"
 #include "../utils/utils.hpp"
 #include "./types/typed.hpp"
 #include "./value.hpp"
@@ -72,14 +73,14 @@ GenericToFill::GenericToFill(void* _data, GenericKind _kind, FileRange _range)
 	: data(_data), kind(_kind), range(std::move(_range)) {}
 
 GenericToFill* GenericToFill::GetPrerun(ir::PrerunValue* constVal, FileRange _range) {
-	return new GenericToFill(constVal, GenericKind::prerunGeneric, std::move(_range));
+	return std::construct_at(OwnNormal(GenericToFill), constVal, GenericKind::prerunGeneric, std::move(_range));
 }
 
 GenericToFill* GenericToFill::GetType(ir::Type* type, FileRange _range) {
 	SHOW("GenericToFill of type is created")
 	SHOW("Type is: " << type)
 	SHOW("TypeKind is: " << (int)type->type_kind());
-	return new GenericToFill(type, GenericKind::typedGeneric, std::move(_range));
+	return std::construct_at(OwnNormal(GenericToFill), type, GenericKind::typedGeneric, std::move(_range));
 }
 
 bool GenericToFill::is_type() const { return kind == GenericKind::typedGeneric; }
@@ -159,7 +160,7 @@ TypedGeneric::TypedGeneric(Identifier _name, ir::Type* _type, FileRange _range)
 	: GenericArgument(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
 
 TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRange range) {
-	return new TypedGeneric(std::move(name), type, std::move(range));
+	return std::construct_at(OwnNormal(TypedGeneric), std::move(name), type, std::move(range));
 }
 
 ir::Type* TypedGeneric::get_type() const { return type; }
@@ -177,7 +178,7 @@ PrerunGeneric::PrerunGeneric(Identifier _name, ir::PrerunValue* _val, FileRange 
 	: GenericArgument(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
 
 PrerunGeneric* PrerunGeneric::get(Identifier name, ir::PrerunValue* val, FileRange range) {
-	return new PrerunGeneric(std::move(name), val, std::move(range));
+	return std::construct_at(OwnNormal(PrerunGeneric), std::move(name), val, std::move(range));
 }
 
 ir::PrerunValue* PrerunGeneric::get_expression() const { return constant; }

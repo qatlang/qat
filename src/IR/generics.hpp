@@ -28,9 +28,8 @@ class GenericToFill {
 	GenericKind kind;
 	FileRange	range;
 
-	GenericToFill(void* _data, GenericKind _kind, FileRange _range);
-
   public:
+	GenericToFill(void* _data, GenericKind _kind, FileRange _range);
 	useit static GenericToFill* GetPrerun(ir::PrerunValue* constVal, FileRange range);
 	useit static GenericToFill* GetType(ir::Type* type, FileRange range);
 
@@ -74,9 +73,8 @@ class GenericArgument {
 class TypedGeneric : public GenericArgument {
 	ir::Type* type;
 
-	TypedGeneric(Identifier name, ir::Type* type, FileRange range);
-
   public:
+	TypedGeneric(Identifier name, ir::Type* type, FileRange range);
 	useit static TypedGeneric* get(Identifier name, ir::Type* type, FileRange range);
 
 	useit ir::Type* get_type() const;
@@ -87,9 +85,8 @@ class TypedGeneric : public GenericArgument {
 class PrerunGeneric : public GenericArgument {
 	ir::PrerunValue* constant;
 
-	PrerunGeneric(Identifier name, ir::PrerunValue* constant, FileRange range);
-
   public:
+	PrerunGeneric(Identifier name, ir::PrerunValue* constant, FileRange range);
 	useit static PrerunGeneric* get(Identifier name, ir::PrerunValue* type, FileRange range);
 
 	useit ir::PrerunValue* get_expression() const;

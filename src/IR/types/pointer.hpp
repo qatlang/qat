@@ -59,9 +59,9 @@ class MarkType : public Type {
 	bool	  hasMulti;
 	bool	  nonNullable;
 
+  public:
 	MarkType(bool _isSubVar, Type* _subtype, bool nonNullable, MarkOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
 
-  public:
 	useit static MarkType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner,
 							   bool _hasMulti, ir::Ctx* irCtx);
 

@@ -16,9 +16,8 @@ class ResultType : public Type {
 	ir::Type* errorType;
 	bool	  isPacked = false;
 
-	ResultType(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
-
   public:
+	ResultType(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
 	static ResultType* get(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
 
 	useit ir::Type* getValidType() const;

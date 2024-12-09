@@ -1,6 +1,7 @@
 #ifndef QAT_IR_TYPES_FUNCTION_TYPE_HPP
 #define QAT_IR_TYPES_FUNCTION_TYPE_HPP
 
+#include "../../utils/qat_region.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
 
@@ -18,20 +19,20 @@ class ArgumentType {
 	bool		  variability;
 	ArgumentKind  kind;
 
+  public:
 	ArgumentType(ArgumentKind _kind, Maybe<String> _name, Type* _type, bool _isVar)
 		: name(std::move(_name)), type(_type), variability(_isVar), kind(_kind) {}
 
-  public:
 	useit static ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
-		return new ArgumentType(ArgumentKind::NORMAL, std::move(name), type, isVar);
+		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::NORMAL, std::move(name), type, isVar);
 	}
 
 	useit static ArgumentType* create_member(String name, Type* type = nullptr) {
-		return new ArgumentType(ArgumentKind::MEMBER, name, type, false);
+		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::MEMBER, name, type, false);
 	}
 
 	useit static ArgumentType* create_variadic(Maybe<String> name) {
-		return new ArgumentType(ArgumentKind::VARIADIC, std::move(name), nullptr, false);
+		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::VARIADIC, std::move(name), nullptr, false);
 	}
 
 	useit bool is_same_as(ArgumentType* other) {
@@ -96,11 +97,12 @@ class ReturnType {
 	Type* retTy;
 	bool  isReturnSelfRef;
 
-	ReturnType(Type* _retTy, bool _isReturnSelfRef);
-
   public:
-	useit static ReturnType* get(Type* _retTy);
-	useit static ReturnType* get(Type* _retTy, bool _isRetSelf);
+	ReturnType(Type* _retTy, bool _isReturnSelfRef);
+	useit static ReturnType* get(Type* _retTy) { return std::construct_at(OwnNormal(ReturnType), _retTy, false); }
+	useit static ReturnType* get(Type* _retTy, bool _isRetSelf) {
+		return std::construct_at(OwnNormal(ReturnType), _retTy, _isRetSelf);
+	}
 
 	useit Type*	 get_type() const;
 	useit bool	 is_return_self() const;
@@ -116,7 +118,7 @@ class FunctionType final : public Type {
 	FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
 
 	useit static FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, llvm::LLVMContext& llCtx) {
-		return new FunctionType(retTy, std::move(argTys), llCtx);
+		return std::construct_at(OwnNormal(FunctionType), retTy, std::move(argTys), llCtx);
 	}
 
 	~FunctionType() final;

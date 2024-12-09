@@ -32,7 +32,7 @@ FutureType* FutureType::get(Type* subType, bool isPacked, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	return new FutureType(subType, isPacked, irCtx);
+	return std::construct_at(OwnNormal(FutureType), subType, isPacked, irCtx);
 }
 
 Type* FutureType::get_subtype() const { return subTy; }

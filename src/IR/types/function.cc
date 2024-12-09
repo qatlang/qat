@@ -9,10 +9,6 @@ namespace qat::ir {
 
 ReturnType::ReturnType(Type* _retTy, bool _isRetSelfRef) : retTy(_retTy), isReturnSelfRef(_isRetSelfRef) {}
 
-ReturnType* ReturnType::get(Type* _retTy) { return new ReturnType(_retTy, false); }
-
-ReturnType* ReturnType::get(Type* _retTy, bool _isRetSelf) { return new ReturnType(_retTy, _isRetSelf); }
-
 Type* ReturnType::get_type() const { return retTy; }
 
 bool ReturnType::is_return_self() const { return isReturnSelfRef; }
@@ -44,9 +40,9 @@ FunctionType::FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, l
 }
 
 FunctionType::~FunctionType() {
-	delete returnType;
+	std::destroy_at(returnType);
 	for (auto* argTy : argTypes) {
-		delete argTy;
+		std::destroy_at(argTy);
 	}
 }
 

@@ -46,7 +46,7 @@ StringSliceType* StringSliceType::get(ir::Ctx* irCtx, bool isPacked) {
 			return (StringSliceType*)typ;
 		}
 	}
-	return new StringSliceType(irCtx, isPacked);
+	return std::construct_at(OwnNormal(StringSliceType), irCtx, isPacked);
 }
 
 String StringSliceType::value_to_string(ir::PrerunValue* value) {

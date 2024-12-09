@@ -17,7 +17,7 @@ namespace qat::ir {
 
 Region* Region::get(Identifier name, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
 					FileRange fileRange) {
-	return new Region(std::move(name), parent, visibInfo, irCtx, std::move(fileRange));
+	return std::construct_at(OwnNormal(Region), std::move(name), parent, visibInfo, irCtx, std::move(fileRange));
 }
 
 Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo, ir::Ctx* irCtx, FileRange _fileRange)

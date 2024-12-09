@@ -12,9 +12,8 @@ class FutureType final : public Type {
 	Type* subTy;
 	bool  isPacked;
 
-	FutureType(Type* subType, bool isPacked, ir::Ctx* irCtx);
-
   public:
+	FutureType(Type* subType, bool isPacked, ir::Ctx* irCtx);
 	useit static FutureType* get(Type* subType, bool isPacked, ir::Ctx* irCtx);
 
 	useit Type*	   get_subtype() const;

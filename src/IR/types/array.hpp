@@ -13,9 +13,8 @@ class ArrayType : public Type {
 	Type* elementType;
 	u64	  length;
 
-	ArrayType(Type* _element_type, u64 _length, llvm::LLVMContext& llctx);
-
   public:
+	ArrayType(Type* _element_type, u64 _length, llvm::LLVMContext& llctx);
 	useit static ArrayType* get(Type* elementType, u64 length, llvm::LLVMContext& llctx);
 
 	useit Type*	   get_element_type();

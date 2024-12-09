@@ -26,7 +26,7 @@ IntegerType* IntegerType::get(u64 bits, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	return new IntegerType(bits, irCtx);
+	return std::construct_at(OwnNormal(IntegerType), bits, irCtx);
 }
 
 String IntegerType::to_string() const { return "i" + std::to_string(bitWidth); }

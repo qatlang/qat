@@ -29,7 +29,7 @@ MaybeType* MaybeType::get(Type* subTy, bool isPacked, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	return new MaybeType(subTy, isPacked, irCtx);
+	return std::construct_at(OwnNormal(MaybeType), subTy, isPacked, irCtx);
 }
 
 bool MaybeType::is_type_sized() const { return true; }

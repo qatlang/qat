@@ -10,9 +10,8 @@ class ReferenceType : public Type {
 	Type* subType;
 	bool  isSubVariable;
 
-	ReferenceType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
-
   public:
+	ReferenceType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
 	useit static ReferenceType* get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx);
 
 	useit Type*	   get_subtype() const;

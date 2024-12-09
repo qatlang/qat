@@ -124,8 +124,8 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 					 "Please change this type to a choice type",
 					 fileRange);
 	}
-	new ir::MixType(name, opaquedType, {}, mod, subTypesIR, defaultVal, irCtx, isPacked,
-					EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), fileRange, None);
+	(void)ir::MixType::create(name, opaquedType, {}, mod, subTypesIR, defaultVal, irCtx, isPacked,
+							  EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), fileRange, None);
 }
 
 Json DefineMixType::to_json() const {

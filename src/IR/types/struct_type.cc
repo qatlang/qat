@@ -75,10 +75,10 @@ LinkNames StructType::get_link_names() const {
 
 StructType::~StructType() {
 	for (auto* mem : members) {
-		delete mem;
+		std::destroy_at(mem);
 	}
 	for (auto* gen : generics) {
-		delete gen;
+		std::destroy_at(gen);
 	}
 }
 
@@ -432,7 +432,7 @@ GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractT
 					 _name.range),
 	  name(std::move(_name)), generics(_generics), defineCoreType(_defineCoreType), parent(_parent),
 	  visibility(_visibInfo), constraint(_constraint) {
-	parent->genericCoreTypes.push_back(this);
+	parent->genericStructTypes.push_back(this);
 }
 
 void GenericStructType::update_overview() {

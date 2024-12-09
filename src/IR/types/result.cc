@@ -38,7 +38,7 @@ ResultType* ResultType::get(ir::Type* validType, ir::Type* errorType, bool isPac
 			return typ->as_result();
 		}
 	}
-	return new ResultType(validType, errorType, isPacked, irCtx);
+	return std::construct_at(OwnNormal(ResultType), validType, errorType, isPacked, irCtx);
 }
 
 ir::Type* ResultType::getValidType() const { return validType; }

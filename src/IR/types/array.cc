@@ -23,7 +23,7 @@ ArrayType* ArrayType::get(Type* elementType, u64 _length, llvm::LLVMContext& llc
 			return typ->as_array();
 		}
 	}
-	return new ArrayType(elementType, _length, llctx);
+	return std::construct_at(OwnNormal(ArrayType), elementType, _length, llctx);
 }
 
 Type* ArrayType::get_element_type() { return elementType; }

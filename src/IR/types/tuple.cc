@@ -193,7 +193,7 @@ TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMConte
 			}
 		}
 	}
-	return new TupleType(newSubTypes, isPacked, llctx);
+	return std::construct_at(OwnNormal(TupleType), newSubTypes, isPacked, llctx);
 }
 
 Vec<Type*> TupleType::getSubTypes() const { return subTypes; }

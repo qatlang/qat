@@ -46,9 +46,9 @@ class NativeType : public Type {
 	ir::Type*	   subType;
 	NativeTypeKind nativeKind;
 
+  public:
 	NativeType(ir::Type* actual, NativeTypeKind c_kind);
 
-  public:
 	useit NativeTypeKind get_c_type_kind() const;
 	useit ir::Type* get_subtype() const;
 

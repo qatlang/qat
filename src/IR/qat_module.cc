@@ -1977,7 +1977,7 @@ void Mod::node_create_entities(Ctx* ctx) {
 }
 
 void Mod::node_update_dependencies(Ctx* ctx) {
-	if (!hasUpdatedEntityDependencies) {
+	if (not hasUpdatedEntityDependencies) {
 		hasUpdatedEntityDependencies = true;
 		for (auto* node : nodes) {
 			if (node->is_entity()) {

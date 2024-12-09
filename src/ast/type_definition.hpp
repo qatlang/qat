@@ -12,9 +12,9 @@ class TypeDefinition : public IsEntity {
 	Identifier name;
 	Type*      subType;
 
-	Maybe<PrerunExpression*> checker;
-	Maybe<PrerunExpression*> constraint;
-	Maybe<VisibilitySpec>    visibSpec;
+	PrerunExpression*     checker;
+	PrerunExpression*     constraint;
+	Maybe<VisibilitySpec> visibSpec;
 
 	Vec<ast::GenericAbstractType*>     generics;
 	mutable Maybe<String>              variantName;
@@ -23,14 +23,14 @@ class TypeDefinition : public IsEntity {
 	mutable Maybe<bool>                checkResult;
 
   public:
-	TypeDefinition(Identifier _name, Maybe<PrerunExpression*> _checker, Vec<ast::GenericAbstractType*> _generics,
-	               Maybe<PrerunExpression*> _constraint, Type* _subType, FileRange _fileRange,
+	TypeDefinition(Identifier _name, PrerunExpression* _checker, Vec<ast::GenericAbstractType*> _generics,
+	               PrerunExpression* _constraint, Type* _subType, FileRange _fileRange,
 	               Maybe<VisibilitySpec> _visibSpec)
 	    : IsEntity(_fileRange), name(_name), subType(_subType), checker(_checker), constraint(_constraint),
 	      visibSpec(_visibSpec), generics(_generics) {}
 
-	useit static TypeDefinition* create(Identifier _name, Maybe<PrerunExpression*> _checker,
-	                                    Vec<ast::GenericAbstractType*> _generics, Maybe<PrerunExpression*> _constraint,
+	useit static TypeDefinition* create(Identifier _name, PrerunExpression* _checker,
+	                                    Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _constraint,
 	                                    Type* _subType, FileRange _fileRange, Maybe<VisibilitySpec> _visibSpec) {
 		return std::construct_at(OwnNormal(TypeDefinition), _name, _checker, _generics, _constraint, _subType,
 		                         _fileRange, _visibSpec);
@@ -46,7 +46,7 @@ class TypeDefinition : public IsEntity {
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit bool isGeneric() const;
+	useit bool is_generic() const;
 	useit ir::DefinitionType* getDefinition() const;
 
 	useit NodeType nodeType() const final { return NodeType::TYPE_DEFINITION; }

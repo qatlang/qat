@@ -9,17 +9,20 @@ namespace qat::ast {
 void TypeDefinition::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("CreateEntity: " << name.value)
 	typeSize = subType->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
-	mod->entity_name_check(irCtx, name, isGeneric() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition);
-	entityState = mod->add_entity(name, isGeneric() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition,
+	mod->entity_name_check(irCtx, name, is_generic() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition);
+	entityState = mod->add_entity(name, is_generic() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition,
 	                              this, ir::EmitPhase::phase_1);
 }
 
 void TypeDefinition::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
+	SHOW("Creating emitctx")
 	auto ctx = EmitCtx::get(irCtx, mod);
-	if (checker.has_value()) {
-		checker.value()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	if (checker) {
+		checker->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 	}
-	if (isGeneric()) {
+	SHOW("Checking generic")
+	if (is_generic()) {
+		SHOW("Type def is generic. Updating deps")
 		for (auto gen : generics) {
 			if (gen->is_prerun() && gen->as_prerun()->hasDefault()) {
 				gen->as_prerun()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete,
@@ -30,34 +33,36 @@ void TypeDefinition::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 	}
+	SHOW("Updating dependencies of subtype")
 	subType->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 }
 
 void TypeDefinition::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
-	if (checker.has_value()) {
-		auto* checkRes = checker.value()->emit(emitCtx);
+	if (checker) {
+		auto* checkRes = checker->emit(emitCtx);
 		if (checkRes->get_ir_type()->is_bool()) {
 			checkResult = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
-			if (!checkResult.value()) {
+			if (not checkResult.value()) {
 				// TODO - ADD THIS AS DEAD CODE IN CODE INFO
 				return;
 			}
 		} else {
 			irCtx->Error("The condition for this type definition should be of " + irCtx->color("bool") +
 			                 " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
-			             checker.value()->fileRange);
+			             checker->fileRange);
 		}
 	}
-	if (isGeneric()) {
-		genericTypeDefinition = ir::GenericDefinitionType::create(name, generics, constraint, this, mod,
-		                                                          emitCtx->get_visibility_info(visibSpec));
+	if (is_generic()) {
+		genericTypeDefinition = ir::GenericDefinitionType::create(
+		    name, generics, constraint ? Maybe<ast::PrerunExpression*>(constraint) : None, this, mod,
+		    emitCtx->get_visibility_info(visibSpec));
 	} else {
 		create_type(mod, irCtx);
 	}
 }
 
-bool TypeDefinition::isGeneric() const { return !generics.empty(); }
+bool TypeDefinition::is_generic() const { return not generics.empty(); }
 
 void TypeDefinition::set_variant_name(const String& name) const { variantName = name; }
 
@@ -65,10 +70,10 @@ void TypeDefinition::unset_variant_name() const { variantName = None; }
 
 void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
-	emitCtx->name_check_in_module(name, isGeneric() ? "generic type definition" : "type definition",
-	                              isGeneric() ? Maybe<String>(genericTypeDefinition->get_id()) : None);
+	emitCtx->name_check_in_module(name, is_generic() ? "generic type definition" : "type definition",
+	                              is_generic() ? Maybe<String>(genericTypeDefinition->get_id()) : None);
 	auto dTyName = name;
-	if (isGeneric()) {
+	if (is_generic()) {
 		dTyName = Identifier(variantName.value(), name.range);
 	}
 	Vec<ir::GenericArgument*> genericsIR;
@@ -88,7 +93,7 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 		}
 		genericsIR.push_back(gen->toIRGenericType());
 	}
-	if (isGeneric()) {
+	if (is_generic()) {
 		irCtx->get_active_generic().generics = genericsIR;
 	}
 	SHOW("Type definition " << dTyName.value)

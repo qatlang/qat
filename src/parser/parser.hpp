@@ -142,6 +142,8 @@ class Parser {
 
 	useit Vec<ast::Sentence*> do_sentences(ParserContext& prevCtx, usize from, usize upto);
 
+	useit Pair<Vec<ast::PrerunSentence*>, usize> do_prerun_sentences(ParserContext& preCtx, usize from);
+
 	useit Maybe<usize> get_pair_end(lexer::TokenType startType, lexer::TokenType endType, usize current);
 
 	useit Maybe<usize> first_primary_position(lexer::TokenType candidate, usize from);

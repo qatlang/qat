@@ -3956,8 +3956,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					//         auto symbol = consumeCachedSymbol();
 					//         return {ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange), i - 1};
 					//       } else {
-					//         Error("[ ...... ] found that is not part of an expression and no expression found before
-					//         that",
+					//         Error("[ ...... ] found that is not part of an expression and no expression found
+					//         before that",
 					//               RangeSpan(i, bCloseRes.value()));
 					//       }
 					//     }
@@ -4671,6 +4671,75 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext& preCtx, const usize st
 	return {CacheSymbol(relative, std::move(name), start, RangeSpan(start, i - 1)), i - 1};
 }
 
+Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext& preCtx, usize from) {
+	using lexer::TokenType;
+
+	Vec<ast::PrerunSentence*> sentences;
+	for (usize i = from + 1; i < tokens->size(); i++) {
+		switch (tokens->at(i).type) {
+			case TokenType::bracketClose: {
+				return {sentences, i};
+			}
+			case TokenType::Break: {
+				auto              start = i;
+				Maybe<Identifier> tag;
+				if (is_next(TokenType::identifier, i)) {
+					tag = IdentifierAt(i + 1);
+					i++;
+				}
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected " + color_error(".") + " after this to end the " + color_error("break") +
+					              " sentence",
+					          RangeSpan(start, i));
+				}
+				i++;
+				sentences.push_back(ast::PrerunBreak::create(tag, RangeSpan(start, i)));
+				break;
+			}
+			case TokenType::Continue: {
+				auto              start = i;
+				Maybe<Identifier> tag;
+				if (is_next(TokenType::identifier, i)) {
+					tag = IdentifierAt(i + 1);
+					i++;
+				}
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected " + color_error(".") + " after this to end the " + color_error("continue") +
+					              " sentence",
+					          RangeSpan(start, i));
+				}
+				i++;
+				sentences.push_back(ast::PrerunContinue::create(tag, RangeSpan(start, i)));
+				break;
+			}
+			case TokenType::give: {
+				auto                          start = i;
+				Maybe<ast::PrerunExpression*> value;
+				i++;
+				if (not is_next(TokenType::stop, i)) {
+					auto expRes = do_prerun_expression(preCtx, i, None);
+					value       = expRes.first;
+					i           = expRes.second;
+				}
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected " + color_error(".") + " after this to end the " + color_error("give") +
+					              " sentence",
+					          RangeSpan(start, i));
+				}
+				i++;
+				sentences.push_back(ast::PrerunGive::create(value, RangeSpan(start, i)));
+				break;
+			}
+			case TokenType::loop: {
+				break;
+			}
+			default: {
+				break;
+			}
+		}
+	}
+}
+
 Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usize upto) {
 	using ast::FloatType;
 	using ast::IntegerType;
@@ -4678,9 +4747,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 	using lexer::Token;
 	using lexer::TokenType;
 
-	auto ctx = preCtx;
-
-	usize i = from + 1; // NOLINT(readability-identifier-length)
+	auto  ctx = preCtx;
+	usize i   = from + 1; // NOLINT(readability-identifier-length)
 
 	Maybe<std::tuple<usize, String, FileRange>> totalComment;
 

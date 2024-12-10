@@ -171,6 +171,13 @@ class PrerunFunction : public PrerunValue, public EntityOverview {
 	      EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
 	      parent(_parent), visibility(visib), sentences(_sentences) {}
 
+	useit static PrerunFunction* create(Mod* parent, Identifier name, Type* returnTy, Vec<ArgumentType*> argTypes,
+	                                    Pair<Vec<ast::PrerunSentence*>, FileRange> sentences, VisibilityInfo visibility,
+	                                    llvm::LLVMContext& ctx) {
+		return std::construct_at(OwnNormal(PrerunFunction), parent, std::move(name), returnTy, std::move(argTypes),
+		                         std::move(sentences), visibility, ctx);
+	}
+
 	void update_overview() final;
 
 	useit Identifier    get_name() const { return name; }

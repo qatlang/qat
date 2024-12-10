@@ -217,6 +217,7 @@ enum class EntityType {
 	choiceType,
 	mixType,
 	function,
+	prerunFunction,
 	genericFunction,
 	genericStructType,
 	genericTypeDef,
@@ -239,6 +240,8 @@ inline String entity_type_to_string(EntityType ty) {
 			return "mix type";
 		case EntityType::function:
 			return "function";
+		case EntityType::prerunFunction:
+			return "prerun function";
 		case EntityType::genericFunction:
 			return "generic function";
 		case EntityType::genericStructType:
@@ -325,14 +328,14 @@ struct EntityState {
 				break;
 			}
 		}
-		if (!alreadyPresent) {
+		if (not alreadyPresent) {
 			dependencies.push_back(dep);
 		}
 	}
 
 	void updateStatus(EntityStatus _status) { status = _status; }
 
-	useit bool has_child(String const& child) {
+	useit bool has_child(String const& child) const {
 		for (auto& ch : children) {
 			if (ch.second == child) {
 				return true;
@@ -351,9 +354,16 @@ struct EntityState {
 
 	void add_child(Pair<EntityChildType, String> child) { children.insert(child); }
 
-	useit bool are_all_phases_complete() { return currentPhase.has_value() && (currentPhase.value() == maxPhase); }
+	useit bool are_all_phases_complete() const {
+		return currentPhase.has_value() && (currentPhase.value() == maxPhase);
+	}
 
-	useit bool is_ready_for_next_phase() {
+	void complete_manually() {
+		status       = EntityStatus::complete;
+		currentPhase = maxPhase;
+	}
+
+	useit bool is_ready_for_next_phase() const {
 		auto nextPhase = get_next_phase(currentPhase);
 		if (nextPhase.has_value()) {
 			bool isAllDepsComplete = true;

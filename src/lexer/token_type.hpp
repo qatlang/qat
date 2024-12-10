@@ -115,6 +115,7 @@ enum class TokenType {
 	Inline,
 	error,
 	in,
+	ellipsis,
 };
 
 } // namespace qat::lexer

@@ -23,17 +23,12 @@ namespace qat::lexer {
 Lexer* Lexer::get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
 
 Lexer::~Lexer() {
-	SHOW("About to delete remaining tokens")
 	delete tokens;
 	tokens = nullptr;
-	SHOW("Tokens deleted")
 	if (file.is_open()) {
 		file.close();
-		SHOW("Closed file that was open in the lexer")
 	}
-	SHOW("Cleared file content")
 	buffer.clear();
-	SHOW("Cleared token buffer")
 }
 
 u64 Lexer::timeInMicroSeconds = 0;
@@ -150,7 +145,17 @@ Token Lexer::tokeniser() {
 		}
 		case '.': {
 			read();
-			return Token::normal(TokenType::stop, this->get_position(1));
+			if (current == '.') {
+				read();
+				if (current == '.') {
+					read();
+					return Token::normal(TokenType::ellipsis, this->get_position(3));
+				} else {
+					throw_error("Expected either . or ... here, but found an invalid token instead", 2);
+				}
+			} else {
+				return Token::normal(TokenType::stop, this->get_position(1));
+			}
 		}
 		case ',': {
 			read();
@@ -490,9 +495,8 @@ Token Lexer::tokeniser() {
 					read();
 					if (CURRENT_IS_DIGIT) {
 						if (foundRadix) {
-							throw_error(
-							    "This literal is in custom radix format and hence cannot contain decimal point ",
-							    numVal.length() + 1);
+							throw_error("This literal is in custom radix format and hence cannot contain decimal point",
+							            numVal.length() + 1);
 						}
 						is_float = true;
 						numVal += '.';

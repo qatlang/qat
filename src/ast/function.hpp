@@ -30,7 +30,6 @@ class FunctionPrototype final : public IsEntity {
 	mutable Maybe<String> variantName;
 	mutable ir::Function* function = nullptr;
 	mutable bool          isMainFn = false;
-	mutable Maybe<bool>   checkResult;
 
   public:
 	FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,

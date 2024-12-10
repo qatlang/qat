@@ -30,34 +30,37 @@ void FunctionPrototype::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	mod->entity_name_check(irCtx, name, is_generic() ? ir::EntityType::genericFunction : ir::EntityType::function);
 	entityState =
 	    mod->add_entity(name, is_generic() ? ir::EntityType::genericFunction : ir::EntityType::function, this,
-	                    is_generic() ? ir::EmitPhase::phase_1
-	                                 : (definition.has_value() ? ir::EmitPhase::phase_2 : ir::EmitPhase::phase_1));
+	                    is_generic() ? ir::EmitPhase::phase_2
+	                                 : (definition.has_value() ? ir::EmitPhase::phase_3 : ir::EmitPhase::phase_2));
 }
 
 void FunctionPrototype::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, mod);
+	if (defineChecker != nullptr) {
+		defineChecker->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	}
 	if (returnType.has_value()) {
-		returnType.value()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+		returnType.value()->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
 	}
 	if (is_generic()) {
 		for (auto gen : generics) {
 			if (gen->is_prerun() && gen->as_prerun()->hasDefault()) {
-				gen->as_prerun()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete,
+				gen->as_prerun()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
 				                                                       entityState, ctx);
 			} else if (gen->is_typed() && gen->as_typed()->hasDefault()) {
-				gen->as_typed()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete,
+				gen->as_typed()->getDefaultAST()->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
 				                                                      entityState, ctx);
 			}
 		}
 	}
 	for (auto arg : arguments) {
 		if (arg->get_type()) {
-			arg->get_type()->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+			arg->get_type()->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
 		}
 	}
 	if (definition.has_value()) {
 		for (auto snt : definition.value().first) {
-			snt->update_dependencies(is_generic() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_2,
+			snt->update_dependencies(is_generic() ? ir::EmitPhase::phase_2 : ir::EmitPhase::phase_3,
 			                         ir::DependType::complete, entityState, ctx);
 		}
 	}
@@ -65,30 +68,29 @@ void FunctionPrototype::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx)
 
 void FunctionPrototype::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
-	if (checkResult.has_value() && !checkResult.value()) {
-		return;
-	} else if (defineChecker) {
+	if ((phase == ir::EmitPhase::phase_1) && (defineChecker != nullptr)) {
 		auto cond = defineChecker->emit(emitCtx);
-		if (cond->get_ir_type()->is_bool()) {
-			checkResult = llvm::cast<llvm::ConstantInt>(cond->get_llvm_constant())->getValue().getBoolValue();
-			if (!checkResult.value()) {
-				return;
-			}
-		} else {
+		if (not cond->get_ir_type()->is_bool()) {
 			irCtx->Error("The condition for defining a function should be of " + irCtx->color("bool") + " type",
 			             defineChecker->fileRange);
 		}
+		if (not llvm::cast<llvm::ConstantInt>(cond->get_llvm_constant())->getValue().getBoolValue()) {
+			entityState->complete_manually();
+			return;
+		}
 	}
 	if (is_generic()) {
-		for (auto* gen : generics) {
-			gen->emit(EmitCtx::get(irCtx, mod));
+		if (phase == ir::EmitPhase::phase_2) {
+			for (auto* gen : generics) {
+				gen->emit(EmitCtx::get(irCtx, mod));
+			}
+			genericFn = new ir::GenericFunction(name, generics, genericConstraint, this, mod,
+			                                    emitCtx->get_visibility_info(visibSpec));
 		}
-		genericFn = new ir::GenericFunction(name, generics, genericConstraint, this, mod,
-		                                    emitCtx->get_visibility_info(visibSpec));
 	} else {
-		if (phase == ir::EmitPhase::phase_1) {
+		if (phase == ir::EmitPhase::phase_2) {
 			function = create_function(mod, irCtx);
-		} else if (phase == ir::EmitPhase::phase_2) {
+		} else if (phase == ir::EmitPhase::phase_3) {
 			emit_definition(mod, irCtx);
 		}
 	}

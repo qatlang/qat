@@ -789,79 +789,76 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				setCachedPreExp(ast::PrerunDefault::create(None, RangeAt(i)), i);
 				break;
 			}
+			case TokenType::from:
 			case TokenType::colon: {
-				if (is_next(TokenType::from, i)) {
+				const auto isIsolatedFrom = tokens->at(i).type == TokenType::from;
+				if (isIsolatedFrom || is_next(TokenType::from, i)) {
 					auto start = i;
-					i++;
+					if (not isIsolatedFrom) {
+						i++;
+					}
 					if (is_next(TokenType::curlybraceOpen, i)) {
 						auto cEndRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
-						if (cEndRes.has_value()) {
-							const auto cEnd = cEndRes.value();
-							if (hasCachedExp()) {
-								Vec<Identifier>             fields;
-								Vec<ast::PrerunExpression*> fieldValues;
-								if (is_primary_within(TokenType::associatedAssignment, i + 1, cEnd)) {
-									for (usize j = i + 2; j < cEnd; j++) {
-										if (is_next(TokenType::identifier, j - 1)) {
-											fields.push_back({ValueAt(j), RangeAt(j)});
-											if (is_next(TokenType::associatedAssignment, j)) {
-												if (is_primary_within(TokenType::separator, j + 1, cEnd)) {
-													auto sepRes = first_primary_position(TokenType::separator, j + 1);
-													if (sepRes) {
-														auto sep = sepRes.value();
-														if (sep == j + 2) {
-															add_error("No expression for the member found",
-															          RangeSpan(j + 1, j + 2));
-														}
-														fieldValues.push_back(
-														    do_prerun_expression(preCtx, j + 1, sep).first);
-														j = sep;
-														continue;
-													} else {
-														add_error("Expected ,", RangeSpan(j + 1, cEnd));
-													}
-												} else {
-													if (cEnd == j + 2) {
-														add_error("No expression for the member found",
-														          RangeSpan(j + 1, j + 2));
-													}
-													fieldValues.push_back(
-													    do_prerun_expression(preCtx, j + 1, cEnd).first);
-													j = cEnd;
-												}
-											} else {
-												add_error("Expected := after the name of the member", RangeAt(j));
-											}
-										} else {
-											add_error(
-											    "Expected an identifier for the name of the member of the struct type",
-											    RangeAt(j));
-										}
-									}
-								} else {
-									fieldValues = do_separated_prerun_expressions(preCtx, i + 1, cEnd);
-								}
-								auto typExp = consumeCachedExp();
-								setCachedPreExp(
-								    ast::PrerunPlainInit::create(typExp, fields, fieldValues,
-								                                 {typExp->fileRange, RangeSpan(start, cEnd)}),
-								    cEnd);
-								i = cEnd;
-							} else {
-								add_error("Expected a type or expression before as the type for plain initialisation",
-								          RangeAt(i));
-							}
-						} else {
+						if (not cEndRes.has_value()) {
 							add_error("Expected end for {", RangeAt(i));
 						}
+						const auto cEnd = cEndRes.value();
+						if (not hasCachedExp()) {
+							add_error("Expected a type or expression before as the type for plain initialisation",
+							          RangeAt(i));
+						}
+						Vec<Identifier>             fields;
+						Vec<ast::PrerunExpression*> fieldValues;
+						if (is_primary_within(TokenType::associatedAssignment, i + 1, cEnd)) {
+							for (usize j = i + 2; j < cEnd; j++) {
+								if (not is_next(TokenType::identifier, j - 1)) {
+									add_error("Expected an identifier for the name of the member of the struct type",
+									          RangeAt(j));
+								}
+								fields.push_back({ValueAt(j), RangeAt(j)});
+								if (not is_next(TokenType::associatedAssignment, j)) {
+									add_error("Expected := after the name of the member", RangeAt(j));
+								}
+								if (is_primary_within(TokenType::separator, j + 1, cEnd)) {
+									auto sepRes = first_primary_position(TokenType::separator, j + 1);
+									if (not sepRes.has_value()) {
+										add_error("Expected ,", RangeSpan(j + 1, cEnd));
+									}
+									auto sep = sepRes.value();
+									if (sep == j + 2) {
+										add_error("No expression for the member found", RangeSpan(j + 1, j + 2));
+									}
+									fieldValues.push_back(do_prerun_expression(preCtx, j + 1, sep).first);
+									j = sep;
+									continue;
+								} else {
+									if (cEnd == j + 2) {
+										add_error("No expression for the member found", RangeSpan(j + 1, j + 2));
+									}
+									fieldValues.push_back(do_prerun_expression(preCtx, j + 1, cEnd).first);
+									j = cEnd;
+								}
+							}
+						} else {
+							fieldValues = do_separated_prerun_expressions(preCtx, i + 1, cEnd);
+						}
+						auto typExp = consumeCachedExp();
+						setCachedPreExp(ast::PrerunPlainInit::create(typExp, fields, fieldValues,
+						                                             {typExp->fileRange, RangeSpan(start, cEnd)}),
+						                cEnd);
+						i = cEnd;
 					} else {
 						// FIXME - Constructor call
 						add_error("Not supported yet", RangeSpan(i, i + 1));
 					}
-				} else {
-					add_error("Found : here without an identifier or " + color_error("from") +
-					              " following it. This is invalid syntax",
-					          RangeAt(i));
+				} else if (not isIsolatedFrom) {
+					if (is_next(TokenType::identifier, i)) {
+						add_error("This syntax is not supported", RangeSpan(i, i + 1));
+					} else {
+						add_error("Found : here without an identifier or " + color_error("from") +
+						              " following it. This is invalid syntax",
+						          RangeAt(i));
+					}
 				}
 				break;
 			}
@@ -882,12 +879,10 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							i = expRes.second;
 						}
 						if (is_next(TokenType::parenthesisClose, i)) {
-							i++;
-							setCachedPreExp(ast::PrerunTupleValue::create(members, RangeSpan(start, expRes.second + 2)),
-							                i);
-						} else {
 							add_error("Expected ) to end the tuple value", RangeSpan(start, i));
 						}
+						i++;
+						setCachedPreExp(ast::PrerunTupleValue::create(members, RangeSpan(start, expRes.second + 2)), i);
 					} else if (is_next(TokenType::parenthesisClose, expRes.second)) {
 						i = expRes.second + 1;
 						setCachedPreExp(expRes.first, expRes.second + 1);
@@ -899,24 +894,14 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 			}
 			case TokenType::bracketOpen: {
 				auto cEndRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
-				if (cEndRes.has_value()) {
-					//   if (isNotPartOfExpression(i, cEndRes.value())) {
-					//     if (hasCachedExp()) {
-					//       return {consumeCachedExp(), i - 1};
-					//     } else {
-					//       Error("[ found here but no expression has been parsed yet for the instance to be indexed",
-					//       RangeAt(i));
-					//     }
-					//   } else {
-					//   }
-					auto cEnd = cEndRes.value();
-					setCachedPreExp(ast::PrerunArrayLiteral::create(do_separated_prerun_expressions(preCtx, i, cEnd),
-					                                                RangeSpan(i, cEnd)),
-					                cEnd);
-					i = cEnd;
-				} else {
+				if (not cEndRes.has_value()) {
 					add_error("Expected end for [", RangeAt(i));
 				}
+				auto cEnd = cEndRes.value();
+				setCachedPreExp(ast::PrerunArrayLiteral::create(do_separated_prerun_expressions(preCtx, i, cEnd),
+				                                                RangeSpan(i, cEnd)),
+				                cEnd);
+				i = cEnd;
 				break;
 			}
 			case TokenType::child: {
@@ -3676,7 +3661,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					auto symbol = consumeCachedSymbol();
 					setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange),
 					              symbol.tokenIndex);
-				} else if (!hasCachedExpr()) {
+				} else if (not hasCachedExpr()) {
 					add_error("Could not find an expression for casting before this", RangeAt(i));
 				}
 				auto typRes = do_type(preCtx, i, None);
@@ -3686,13 +3671,23 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				i = typRes.second;
 				break;
 			}
+			case TokenType::from:
 			case TokenType::colon: {
-				if (is_next(TokenType::from, i)) {
+				const auto isIsolatedFrom = (tokens->at(i).type == TokenType::from);
+				if (isIsolatedFrom || is_next(TokenType::from, i)) {
 					auto start = i;
-					i++;
-					if (hasCachedSymbol()) {
-						auto symbol = consumeCachedSymbol();
-						setCachedType(ast::NamedType::create(symbol.relative, symbol.name, symbol.fileRange));
+					if (not isIsolatedFrom) {
+						i++;
+						if (hasCachedSymbol()) {
+							auto symbol = consumeCachedSymbol();
+							setCachedType(ast::NamedType::create(symbol.relative, symbol.name, symbol.fileRange));
+						}
+					} else if (hasCachedSymbol()) {
+						add_error("Invalid syntax for constructor calls. The valid syntax is " +
+						              color_error("MyType:from(arg1, arg2)") + " or " +
+						              color_error("from(arg1, arg2)") +
+						              " if you want the type to be inferred from scope",
+						          {consumeCachedSymbol().fileRange, RangeAt(start)});
 					}
 					if (is_next(TokenType::parenthesisOpen, i)) {
 						auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
@@ -3725,10 +3720,15 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error("Expected end for {", token.fileRange);
 						}
 					}
-				} else {
-					add_error("Found : here without an identifier or " + color_error("from") +
-					              " following it. This is invalid syntax",
-					          RangeAt(i));
+				} else if (not isIsolatedFrom) {
+					if (is_next(TokenType::identifier, i)) {
+						// FIXME - Support static members and functions for generic types
+						add_error("This syntax is not yet supported", RangeSpan(i, i + 1));
+					} else {
+						add_error("Found : here without an identifier or " + color_error("from") +
+						              " following it. This is invalid syntax",
+						          RangeAt(i));
+					}
 				}
 				break;
 			}
@@ -3740,7 +3740,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						auto end = endRes.value();
 						SHOW("Generic type end: " << end)
 						auto types = do_generic_fill(preCtx, i, end);
-						if (is_next(TokenType::from, end)) {
+						if (is_next(TokenType::colon, end) && is_next(TokenType::from, end + 1)) {
 							auto symbol = consumeCachedSymbol();
 							setCachedType(
 							    ast::GenericNamedType::create(symbol.relative, symbol.name, types, symbol.fileRange));

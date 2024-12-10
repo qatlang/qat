@@ -1,6 +1,7 @@
 add_library(QAT_AST_PRERUN_SENTENCES
   break.cc
   continue.cc
+  expression_sentence.cc
   give_sentence.cc
   loop_to.cc
   prerun_sentence.cc)

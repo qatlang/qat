@@ -8,6 +8,7 @@ add_library(QAT_AST_PRERUN
 	default.cc
 	entity.cc
 	float_literal.cc
+	function_call.cc
 	integer_literal.cc
 	member_access.cc
 	method_call.cc

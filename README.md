@@ -2,7 +2,7 @@
 
 <div><center>
 <a href="https://qat.dev" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/qat.dev-444444?style=for-the-badge&logoColor=white"/></a>
-<a href="https://youtube.com/c/aldrinmathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white"/></a>
+<a href="https://youtube.com/@aldrinmathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white"/></a>
 <a href="https://discord.gg/CNW3Uvptvd" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white"/></a>
 <a href="https://reddit.com/r/qatlang" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white"/></a>
 <a href="https://github.com/AldrinMathew" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Profile-000000?style=for-the-badge&logo=github&logoColor=white"/></a>
@@ -19,6 +19,3 @@ You can support the project via the following links:
 </center></div>
 
 This project is published under a **Shared Source** [license](https://github.com/qatlang/qat/blob/main/LICENSE) and is solely maintained by <a href="https://github.com/AldrinMathew" target="_blank" rel="noopener noreferrer">Aldrin Mathew</a>. The project is not open to public contributions when it comes to development. But if you are facing issues with the language, you are always welcome to [open an issue](https://github.com/qatlang/qat/issues/new/choose).
-
-## Warning!!
-The project is under heavy development and is not suitable for production use (that is if you can even compile the whole language). Updates will be provided appropriately via the social channels and via Github.

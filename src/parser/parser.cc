@@ -56,6 +56,7 @@
 #include "../ast/prerun/default.hpp"
 #include "../ast/prerun/entity.hpp"
 #include "../ast/prerun/float_literal.hpp"
+#include "../ast/prerun/function_call.hpp"
 #include "../ast/prerun/integer_literal.hpp"
 #include "../ast/prerun/member_access.hpp"
 #include "../ast/prerun/method_call.hpp"
@@ -865,7 +866,35 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 			case TokenType::parenthesisOpen: {
 				if (hasCachedExp()) {
 					// Function call
-					add_error("Prerun function calls are not supported yet", RangeAt(i));
+					auto                        funcExp = consumeCachedExp();
+					Vec<ast::PrerunExpression*> arguments;
+					if (is_next(TokenType::parenthesisClose, i)) {
+						i++;
+					} else {
+						auto firstRes = do_prerun_expression(preCtx, i, None);
+						arguments.push_back(firstRes.first);
+						i = firstRes.second;
+						while (is_next(TokenType::separator, i)) {
+							if (is_next(TokenType::parenthesisClose, i + 1)) {
+								i++;
+								break;
+							} else if (is_next(TokenType::separator, i + 1)) {
+								add_error("Repeating separator " + color_error(",") + " found here", RangeAt(i + 2));
+							} else {
+								auto expRes = do_prerun_expression(preCtx, i + 1, None);
+								arguments.push_back(expRes.first);
+								i = expRes.second;
+							}
+						}
+						if (not is_next(TokenType::parenthesisClose, i)) {
+							add_error("Expected ) after this to end the list of arguments for the function call",
+							          FileRange{funcExp->fileRange, RangeAt(i)});
+						}
+						i++;
+					}
+					setCachedPreExp(ast::PrerunFunctionCall::create(funcExp, std::move(arguments),
+					                                                {funcExp->fileRange, RangeAt(i)}),
+					                i);
 				} else {
 					const auto start  = i;
 					auto       expRes = do_prerun_expression(preCtx, i, None);
@@ -879,10 +908,10 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							i = expRes.second;
 						}
 						if (is_next(TokenType::parenthesisClose, i)) {
-							add_error("Expected ) to end the tuple value", RangeSpan(start, i));
+							add_error("Expected ) after this to end the tuple value", RangeSpan(start, i));
 						}
 						i++;
-						setCachedPreExp(ast::PrerunTupleValue::create(members, RangeSpan(start, expRes.second + 2)), i);
+						setCachedPreExp(ast::PrerunTupleValue::create(members, RangeSpan(start, i)), i);
 					} else if (is_next(TokenType::parenthesisClose, expRes.second)) {
 						i = expRes.second + 1;
 						setCachedPreExp(expRes.first, expRes.second + 1);

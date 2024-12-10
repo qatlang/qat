@@ -30,7 +30,7 @@ class PrerunMemberFnCall final : public PrerunExpression {
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 	useit Json             to_json() const final;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_MEMBER_FUNCTION_CALL; }
+	useit NodeType         nodeType() const final { return NodeType::PRERUN_METHOD_CALL; }
 };
 
 useit ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression*> const& arguments,

@@ -70,6 +70,9 @@
 #include "../ast/prerun/tuple_value.hpp"
 #include "../ast/prerun/type_wrap.hpp"
 #include "../ast/prerun/unsigned_literal.hpp"
+#include "../ast/prerun_sentences/break.hpp"
+#include "../ast/prerun_sentences/continue.hpp"
+#include "../ast/prerun_sentences/give_sentence.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
 #include "../ast/sentences/continue.hpp"
@@ -1876,37 +1879,71 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 			}
 			case TokenType::let: {
 				auto start = i;
-				bool isVar = false;
-				if (is_next(TokenType::var, i)) {
-					isVar = true;
+				if (is_next(TokenType::pre, i)) {
+					if (not is_next(TokenType::identifier, i + 1)) {
+						add_error("Expected an identifier after this for the name of the prerun global value",
+						          RangeSpan(i, i + 1));
+					}
+					auto              name = IdentifierAt(i + 2);
+					Maybe<ast::Type*> providedTy;
+					if (is_next(TokenType::typeSeparator, i)) {
+						auto typRes = do_type(preCtx, i + 1, None);
+						providedTy  = typRes.first;
+						i           = typRes.second;
+					}
+					auto entityMeta = do_entity_metadata(preCtx, i, "prerun global value", 0u);
+					if (not is_next(TokenType::assignment, i)) {
+						add_error(
+						    "Expected = after this to provide a value for this prerun global. Prerun global entities always require a value",
+						    RangeSpan(start, i));
+					}
 					i++;
-				}
-				if (is_next(TokenType::identifier, i)) {
-					Maybe<ast::Expression*> exp;
-					ast::Type*              typ    = nullptr;
-					auto                    endRes = first_primary_position(TokenType::stop, i + 1);
-					if (!endRes.has_value()) {
-						add_error("Expected end for the global declaration", RangeSpan(start, i + 1));
+					auto expRes = do_prerun_expression(preCtx, i, None);
+					i           = expRes.second;
+					if (not is_next(TokenType::stop, i)) {
+						add_error("Expected " + color_error(".") +
+						              " after this to end the declaration of the prerun global value",
+						          RangeSpan(start, i));
 					}
-					if (is_next(TokenType::typeSeparator, i + 1)) {
-						if (is_primary_within(TokenType::assignment, i + 2, endRes.value())) {
-							auto assignPos = first_primary_position(TokenType::assignment, i + 2).value();
-							typ            = do_type(preCtx, i + 2, assignPos).first;
-							exp            = do_expression(preCtx, None, assignPos, endRes.value()).first;
-						} else {
-							typ = do_type(preCtx, i + 2, endRes.value()).first;
-						}
-					} else {
-						add_error("Expected :: and the type of the global declaration here", RangeSpan(start, i + 1));
-					}
-					// FIXME - Support meta info for globals as well
-					addNode(ast::GlobalDeclaration::create(IdentifierAt(i + 1), typ, exp, isVar, get_visibility(), None,
-					                                       RangeSpan(start, endRes.value())));
-					i = endRes.value();
+					i++;
+					auto visibSpec = get_visibility();
+					resultNodes.push_back(
+					    ast::PrerunGlobal::create(name, providedTy, expRes.first, visibSpec, RangeSpan(start, i)));
+					break;
 				} else {
-					add_error("Expected name for the global declaration",
-					          isVar ? FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange)
-					                : RangeAt(start));
+					bool isVar = false;
+					if (is_next(TokenType::var, i)) {
+						isVar = true;
+						i++;
+					}
+					if (is_next(TokenType::identifier, i)) {
+						Maybe<ast::Expression*> exp;
+						ast::Type*              typ    = nullptr;
+						auto                    endRes = first_primary_position(TokenType::stop, i + 1);
+						if (!endRes.has_value()) {
+							add_error("Expected end for the global declaration", RangeSpan(start, i + 1));
+						}
+						if (is_next(TokenType::typeSeparator, i + 1)) {
+							if (is_primary_within(TokenType::assignment, i + 2, endRes.value())) {
+								auto assignPos = first_primary_position(TokenType::assignment, i + 2).value();
+								typ            = do_type(preCtx, i + 2, assignPos).first;
+								exp            = do_expression(preCtx, None, assignPos, endRes.value()).first;
+							} else {
+								typ = do_type(preCtx, i + 2, endRes.value()).first;
+							}
+						} else {
+							add_error("Expected :: and the type of the global declaration here",
+							          RangeSpan(start, i + 1));
+						}
+						// FIXME - Support meta info for globals as well
+						addNode(ast::GlobalDeclaration::create(IdentifierAt(i + 1), typ, exp, isVar, get_visibility(),
+						                                       None, RangeSpan(start, endRes.value())));
+						i = endRes.value();
+					} else {
+						add_error("Expected name for the global declaration",
+						          isVar ? FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange)
+						                : RangeAt(start));
+					}
 				}
 				break;
 			}
@@ -1979,32 +2016,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 			case TokenType::pre: {
 				auto start = i;
 				if (is_next(TokenType::identifier, i)) {
-					auto              name       = IdentifierAt(i + 1);
-					auto              visibility = get_visibility();
-					Maybe<ast::Type*> provType;
-					if (is_next(TokenType::typeSeparator, i + 1)) {
-						auto typeRes = do_type(thisCtx, i + 2, None);
-						provType     = typeRes.first;
-						i            = typeRes.second;
-					} else {
 						i++;
 					}
-					if (is_next(TokenType::assignment, i)) {
-						auto preVal = do_prerun_expression(thisCtx, i + 1, None);
-						if (is_next(TokenType::stop, preVal.second)) {
-							addNode(ast::PrerunGlobal::create(name, provType, preVal.first, visibility,
-							                                  RangeSpan(start, preVal.second + 1)));
-							i = preVal.second + 1;
-						} else {
-							add_error("Expected a . after the expression to end the value for the prerun global entity",
-							          preVal.first->fileRange);
 						}
-					} else {
-						// FIXME - Support prerun functions
-						add_error("Expected = to start the value of the prerun global entity", RangeSpan(start, i));
-					}
 				} else {
-					add_error("Invalid token found here", RangeAt(i));
 				}
 				break;
 			}

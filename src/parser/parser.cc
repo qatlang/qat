@@ -3725,21 +3725,6 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				}
 				break;
 			}
-			case TokenType::as: {
-				if (hasCachedSymbol()) {
-					auto symbol = consumeCachedSymbol();
-					setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange),
-					              symbol.tokenIndex);
-				} else if (not hasCachedExpr()) {
-					add_error("Could not find an expression for casting before this", RangeAt(i));
-				}
-				auto typRes = do_type(preCtx, i, None);
-				auto expRes = consumeCachedExpr();
-				setCachedExpr(ast::Cast::create(expRes, typRes.first, {expRes->fileRange, RangeAt(typRes.second)}),
-				              typRes.second);
-				i = typRes.second;
-				break;
-			}
 			case TokenType::from:
 			case TokenType::colon: {
 				const auto isIsolatedFrom = (tokens->at(i).type == TokenType::from);
@@ -4431,9 +4416,25 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							i = destTyRes.second + 1;
 						} else {
 							// TODO - Support type inference in this case ???
-							add_error("Expected a type to be provided after this like " + color_error("'to(MyType)"),
+							add_error("Expected a type to be provided after this like " +
+							              color_error("'to(TargetType)"),
 							          RangeAt(i + 1));
 						}
+					} else if (is_next(TokenType::as, i)) {
+						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
+							add_error(
+							    "Expected ( after this to start the target type for the cast. The type for the cast can be provided like " +
+							        color_error("'as(TargetType)"),
+							    {exp->fileRange, RangeAt(i + 1)});
+						}
+						auto targetTy = do_type(preCtx, i + 2, None);
+						i             = targetTy.second;
+						if (not is_next(TokenType::parenthesisClose, i)) {
+							add_error("Expected ) after this to end the target type for the cast",
+							          {exp->fileRange, RangeAt(i)});
+						}
+						i++;
+						setCachedExpr(ast::Cast::create(exp, targetTy.first, {exp->fileRange, RangeAt(i)}), i);
 					} else if ((is_next(TokenType::var, i) && is_next(TokenType::colon, i + 1) &&
 					            is_next(TokenType::identifier, i + 2)) ||
 					           is_next(TokenType::identifier, i)) {
@@ -4718,7 +4719,8 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 	using lexer::TokenType;
 
 	Vec<ast::PrerunSentence*> sentences;
-	for (usize i = from + 1; i < tokens->size(); i++) {
+	usize                     i = from + 1;
+	for (; i < tokens->size(); i++) {
 		switch (tokens->at(i).type) {
 			case TokenType::bracketClose: {
 				return {sentences, i};
@@ -4758,7 +4760,6 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 			case TokenType::give: {
 				auto                          start = i;
 				Maybe<ast::PrerunExpression*> value;
-				i++;
 				if (not is_next(TokenType::stop, i)) {
 					auto expRes = do_prerun_expression(preCtx, i, None);
 					value       = expRes.first;
@@ -4777,6 +4778,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				break;
 			}
 			default: {
+				add_error("Unexpected token found here", RangeAt(i));
 				break;
 			}
 		}

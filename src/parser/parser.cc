@@ -179,18 +179,38 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 	                                                                           usize from, usize upto) {
 		for (usize i = from + 1; i < upto; i++) {
 			auto token = tokens->at(i);
-			switch (token.type) { // NOLINT(clang-diagnostic-switch)
+			switch (token.type) {
 				case TokenType::super: {
 					if (parent.has_value()) {
 						add_error(color_error("up") + " is not allowed for children of brought entities", RangeAt(i));
 					}
 				}
 				case TokenType::identifier: {
-					auto sym_res = do_symbol(ctx, i);
-					i            = sym_res.second;
-					auto newGroup =
-					    ast::BroughtGroup::create(sym_res.first.relative, sym_res.first.name, sym_res.first.fileRange);
+					auto start                   = i;
+					auto sym_res                 = do_symbol(ctx, i);
+					i                            = sym_res.second;
+					ast::BroughtGroup* newGroup  = nullptr;
+					bool               isAliased = false;
+					if (is_next(TokenType::as, i)) {
+						isAliased = true;
+						i++;
+						if (not is_next(TokenType::identifier, i)) {
+							add_error("Expected an identifier after this for the name of the brought entity",
+							          RangeSpan(start, i));
+						}
+						newGroup = ast::BroughtGroup::create(sym_res.first.relative, sym_res.first.name,
+						                                     IdentifierAt(i + 1), sym_res.first.fileRange);
+						i++;
+					} else {
+						newGroup = ast::BroughtGroup::create(sym_res.first.relative, sym_res.first.name, None,
+						                                     sym_res.first.fileRange);
+					}
 					if (is_next(TokenType::curlybraceOpen, i)) {
+						if (isAliased) {
+							add_error(
+							    "The entity mentioned just before this has an alias, so bringing members from it is not allowed",
+							    RangeSpan(start, i + 1));
+						}
 						auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
 						if (bCloseRes.has_value()) {
 							auto        bClose = bCloseRes.value();
@@ -205,12 +225,13 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 							} else {
 								add_warning(
 								    "Expected multiple entities to be brought. Consider removing the curly braces "
-								    "since only one child entity is being brought.",
+								    "since only one child entity is brought",
 								    FileRange(RangeAt(i + 1), RangeAt(bClose)));
 								if (is_next(TokenType::identifier, i + 1)) {
 									handler(newGroup, i + 1, bCloseRes.value());
 								} else if (is_next(TokenType::super, i + 1)) {
-									add_error(".. is not allowed for children of brought entities", RangeAt(i + 2));
+									add_error(color_error("up") + " is not allowed for children of brought entities",
+									          RangeAt(i + 2));
 								} else {
 									add_error("Expected the name of an entity in the bring sentence", RangeAt(i + 2));
 								}
@@ -219,7 +240,6 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 							add_error("Expected } to close this curly brace", RangeAt(i + 1));
 						}
 					}
-					// FIXME - Support alias for brought entities
 					if (parent.has_value()) {
 						parent.value()->addMember(newGroup);
 					} else {
@@ -237,6 +257,11 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 					} else {
 						add_error("Invalid token found after the comma separator", RangeAt(i + 1));
 					}
+					break;
+				}
+				default: {
+					add_error("Invalid token found here", RangeAt(i));
+					break;
 				}
 			}
 		}

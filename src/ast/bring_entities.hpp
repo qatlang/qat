@@ -14,6 +14,7 @@ class BroughtGroup {
   private:
 	u32                relative;
 	Vec<Identifier>    entity;
+	Maybe<Identifier>  alias;
 	Vec<BroughtGroup*> members;
 	FileRange          fileRange;
 
@@ -21,19 +22,12 @@ class BroughtGroup {
 	mutable ir::EntityState* entityState      = nullptr;
 
   public:
-	BroughtGroup(u32 _relative, Vec<Identifier> _entity, Vec<BroughtGroup*> _members, FileRange _fileRange)
-	    : relative(_relative), entity(_entity), members(std::move(_members)), fileRange(std::move(_fileRange)) {}
+	BroughtGroup(u32 _relative, Vec<Identifier> _entity, Maybe<Identifier> _alias, FileRange _fileRange)
+	    : relative(_relative), entity(std::move(_entity)), alias(std::move(_alias)), fileRange(std::move(_fileRange)) {}
 
-	BroughtGroup(u32 _relative, Vec<Identifier> _entity, FileRange _fileRange)
-	    : relative(_relative), entity(_entity), fileRange(_fileRange) {}
-
-	useit static BroughtGroup* create(u32 _relative, Vec<Identifier> _parent, Vec<BroughtGroup*> _members,
-	                                  FileRange _fileRange) {
-		return std::construct_at(OwnNormal(BroughtGroup), _relative, _parent, _members, _fileRange);
-	}
-
-	useit static BroughtGroup* create(u32 _relative, Vec<Identifier> _parent, FileRange _range) {
-		return std::construct_at(OwnNormal(BroughtGroup), _relative, _parent, _range);
+	useit static BroughtGroup* create(u32 relative, Vec<Identifier> parent, Maybe<Identifier> alias, FileRange range) {
+		return std::construct_at(OwnNormal(BroughtGroup), relative, std::move(parent), std::move(alias),
+		                         std::move(range));
 	}
 
 	void addMember(BroughtGroup* mem);

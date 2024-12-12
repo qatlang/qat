@@ -229,28 +229,31 @@ class Function : public Value, public Uniq, public EntityOverview {
 };
 
 class GenericFunction : public Uniq, public EntityOverview {
-  private:
 	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;
 	ast::FunctionPrototype*        functionDefinition;
-	Maybe<ast::PrerunExpression*>  constraint;
+	ast::PrerunExpression*         constraint;
 	Mod*                           parent;
 	VisibilityInfo                 visibInfo;
 
 	mutable Vec<GenericVariant<Function>> variants;
 
   public:
-	GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, Maybe<ast::PrerunExpression*> constraint,
+	GenericFunction(Identifier name, Vec<ast::GenericAbstractType*> _generics, ast::PrerunExpression* constraint,
 	                ast::FunctionPrototype* functionDef, Mod* parent, const VisibilityInfo& _visibInfo);
 
 	useit static GenericFunction* create(Identifier name, Vec<ast::GenericAbstractType*> _generics,
-	                                     Maybe<ast::PrerunExpression*> constraint, ast::FunctionPrototype* functionDef,
+	                                     ast::PrerunExpression* constraint, ast::FunctionPrototype* functionDef,
 	                                     Mod* parent, const VisibilityInfo& _visibInfo) {
 		return std::construct_at(OwnNormal(GenericFunction), std::move(name), std::move(_generics), constraint,
 		                         functionDef, parent, _visibInfo);
 	}
 
-	~GenericFunction() = default;
+	~GenericFunction() {
+		for (auto& it : variants) {
+			it.clear_fill_types();
+		}
+	}
 
 	useit Identifier get_name() const;
 	useit usize      getTypeCount() const;
@@ -258,7 +261,7 @@ class GenericFunction : public Uniq, public EntityOverview {
 	useit Mod*       get_module() const;
 	useit ast::GenericAbstractType* getGenericAt(usize index) const;
 	useit VisibilityInfo            get_visibility() const;
-	useit Function* fill_generics(Vec<ir::GenericToFill*> _types, ir::Ctx* irCtx, const FileRange& fileRange);
+	useit Function* fill_generics(Vec<ir::GenericToFill*> _types, Ctx* irCtx, const FileRange& fileRange);
 	useit bool      all_generics_have_default() const;
 
 	void update_overview() final;

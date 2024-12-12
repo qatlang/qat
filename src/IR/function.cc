@@ -290,7 +290,7 @@ Function::~Function() {
 		delete blk;
 	}
 	for (auto* gen : generics) {
-		delete gen;
+		std::destroy_at(gen);
 	}
 }
 
@@ -371,8 +371,8 @@ ir::LocalValue* Function::get_str_comparison_index() {
 }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                 Maybe<ast::PrerunExpression*> _constraint, ast::FunctionPrototype* _functionDef,
-                                 Mod* _parent, const VisibilityInfo& _visibInfo)
+                                 ast::PrerunExpression* _constraint, ast::FunctionPrototype* _functionDef, Mod* _parent,
+                                 const VisibilityInfo& _visibInfo)
     : EntityOverview("genericFunction",
                      Json()
                          ._("name", _name.value)
@@ -415,26 +415,26 @@ useit bool GenericFunction::all_generics_have_default() const {
 	return true;
 }
 
-Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, ir::Ctx* irCtx, const FileRange& fileRange) {
+Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, Ctx* irCtx, const FileRange& fileRange) {
 	for (auto var : variants) {
 		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
 			return var.get();
 		}
 	}
 	ir::fill_generics(irCtx, generics, types, fileRange);
-	if (constraint.has_value()) {
-		auto checkVal = constraint.value()->emit(ast::EmitCtx::get(irCtx, parent));
+	if (constraint != nullptr) {
+		auto emitCtx  = ast::EmitCtx::get(irCtx, parent)->with_generics(generics);
+		auto checkVal = constraint->emit(emitCtx);
 		if (checkVal->get_ir_type()->is_bool()) {
 			if (!llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
-				irCtx->Error(
-				    "The provided generic parameters for the generic function do not satisfy the constraints",
-				    fileRange,
-				    Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+				irCtx->Error("The provided generic parameters for the generic function do not satisfy the constraints",
+				             fileRange,
+				             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
 			}
 		} else {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
 			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
-			             constraint.value()->fileRange);
+			             constraint->fileRange);
 		}
 	}
 	auto variantName = ir::Logic::get_generic_variant_name(name.value, types);

@@ -55,7 +55,7 @@ class ArgumentType {
 
 	useit bool has_name() const { return name.has_value(); }
 
-	useit String get_name() const { return name.value(); }
+	useit String get_name() const { return name.value_or(""); }
 
 	useit Type* get_type() const { return type; }
 

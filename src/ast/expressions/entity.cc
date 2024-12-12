@@ -1,6 +1,9 @@
 #include "./entity.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
+#include "../types/generic_abstract.hpp"
+#include "../types/prerun_generic.hpp"
+#include "../types/typed_generic.hpp"
 
 #include <llvm/IR/GlobalVariable.h>
 #include <utility>
@@ -60,7 +63,26 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 	auto* mod     = ctx->mod;
 	if ((names.size() == 1) && (relative == 0)) {
 		auto singleName = names.front();
-		if (fun->has_generic_parameter(singleName.value)) {
+		if (ctx->has_generic_with_name(singleName.value)) {
+			auto genAbs = ctx->get_generic_with_name(singleName.value);
+			if (genAbs->is_prerun()) {
+				auto preGen = genAbs->as_prerun();
+				if (not preGen->isSet()) {
+					ctx->Error("The prerun generic parameter referred to by this symbol does not have a value",
+					           fileRange);
+				}
+				return preGen->getPrerun();
+			} else if (genAbs->is_typed()) {
+				auto tyGen = genAbs->as_typed();
+				if (not tyGen->isSet()) {
+					ctx->Error("The typed generic parameter referred to by this symbol does not have a value",
+					           fileRange);
+				}
+				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(tyGen->get_type()));
+			} else {
+				ctx->Error("Unsupported generic parameter kind", fileRange);
+			}
+		} else if (fun->has_generic_parameter(singleName.value)) {
 			auto* genVal = fun->get_generic_parameter(singleName.value);
 			if (genVal->is_typed()) {
 				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));

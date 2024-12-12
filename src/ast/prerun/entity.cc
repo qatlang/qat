@@ -1,6 +1,9 @@
 #include "./entity.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/region.hpp"
+#include "../types/generic_abstract.hpp"
+#include "../types/prerun_generic.hpp"
+#include "../types/typed_generic.hpp"
 
 namespace qat::ast {
 
@@ -51,6 +54,27 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 			}
 			// TODO - Check blocks for locals
 		}
+		if (ctx->has_generic_with_name(identifiers[0].value)) {
+			auto genAbs = ctx->get_generic_with_name(identifiers[0].value);
+			if (genAbs->is_prerun()) {
+				auto preGen = genAbs->as_prerun();
+				if (not preGen->isSet()) {
+					ctx->Error("The prerun generic parameter referred to by this symbol does not have a value",
+					           fileRange);
+				}
+				return preGen->getPrerun();
+			} else if (genAbs->is_typed()) {
+				auto tyGen = genAbs->as_typed();
+				if (not tyGen->isSet()) {
+					ctx->Error("The typed generic parameter referred to by this symbol does not have a value",
+					           fileRange);
+				}
+				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(tyGen->get_type()));
+			} else {
+				ctx->Error("Unsupported generic parameter kind", fileRange);
+			}
+		}
+		SHOW("Has function " << (ctx->has_fn() ? "true" : "false"))
 		if (ctx->has_fn() && ctx->get_fn()->has_generic_parameter(identifiers[0].value)) {
 			SHOW("PrerunEntity: Has active function and generic parameter")
 			auto* genVal = ctx->get_fn()->get_generic_parameter(identifiers[0].value);
@@ -62,6 +86,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 				ctx->Error("Invalid generic kind", fileRange);
 			}
 		}
+		SHOW("Checked for generic function")
 		if (ctx->has_member_parent()) {
 			if (ctx->get_member_parent()->is_expanded() && ctx->get_member_parent()->as_expanded()->is_generic() &&
 			    ctx->get_member_parent()->as_expanded()->has_generic_parameter(identifiers[0].value)) {

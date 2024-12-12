@@ -95,7 +95,11 @@ class GenericDefinitionType : public Uniq, public EntityOverview {
 		                         defineCoreType, parent, visibInfo);
 	}
 
-	~GenericDefinitionType() = default;
+	~GenericDefinitionType() {
+		for (auto& it : variants) {
+			it.clear_fill_types();
+		}
+	}
 
 	useit Identifier      get_name() const;
 	useit usize           get_generic_count() const;

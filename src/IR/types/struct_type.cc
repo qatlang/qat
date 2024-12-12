@@ -420,7 +420,7 @@ TypeKind StructType::type_kind() const { return TypeKind::core; }
 String StructType::to_string() const { return get_full_name(); }
 
 GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                     Maybe<ast::PrerunExpression*> _constraint, ast::DefineCoreType* _defineCoreType,
+                                     ast::PrerunExpression* _constraint, ast::DefineCoreType* _defineCoreType,
                                      Mod* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",
                      Json()
@@ -430,7 +430,7 @@ GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractT
                          ._("moduleID", _parent->get_id())
                          ._("visibility", _visibInfo),
                      _name.range),
-      name(std::move(_name)), generics(_generics), defineCoreType(_defineCoreType), parent(_parent),
+      name(std::move(_name)), generics(_generics), defineStructType(_defineCoreType), parent(_parent),
       visibility(_visibInfo), constraint(_constraint) {
 	parent->genericStructTypes.push_back(this);
 }
@@ -445,8 +445,8 @@ void GenericStructType::update_overview() {
 		variantsJson.push_back(var.get()->overviewToJson());
 	}
 	ovInfo._("genericParameters", genericParamsJson)
-	    ._("hasConstraint", constraint.has_value())
-	    ._("constraint", constraint.has_value() ? constraint.value()->to_string() : JsonValue())
+	    ._("hasConstraint", constraint != nullptr)
+	    ._("constraint", constraint ? constraint->to_string() : JsonValue())
 	    ._("variants", variantsJson);
 }
 
@@ -485,18 +485,16 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 		}
 	}
 	ir::fill_generics(irCtx, generics, toFillTypes, range);
-	if (constraint.has_value()) {
-		auto checkVal = constraint.value()->emit(ast::EmitCtx::get(irCtx, parent));
-		if (checkVal->get_ir_type()->is_bool()) {
-			if (!llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
-				irCtx->Error(
-				    "The provided parameters for the generic struct type do not satisfy the constraints", range,
-				    Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
-			}
-		} else {
+	if (constraint != nullptr) {
+		auto checkVal = constraint->emit(ast::EmitCtx::get(irCtx, parent));
+		if (not checkVal->get_ir_type()->is_bool()) {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
 			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
-			             constraint.value()->fileRange);
+			             constraint->fileRange);
+		}
+		if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
+			irCtx->Error("The provided parameters for the generic struct type do not satisfy the constraints", range,
+			             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
 		}
 	}
 	Vec<ir::GenericArgument*> genParams;
@@ -519,14 +517,14 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 	        genParams,
 	    },
 	    true);
-	auto oldGenToFill              = defineCoreType->genericsToFill;
-	defineCoreType->genericsToFill = toFillTypes;
+	auto oldGenToFill                = defineStructType->genericsToFill;
+	defineStructType->genericsToFill = toFillTypes;
 	ir::StructType* resultTy;
-	defineCoreType->create_type(&resultTy, parent, irCtx);
-	defineCoreType->do_define(resultTy, parent, irCtx);
-	defineCoreType->genericsToFill = toFillTypes;
-	(void)defineCoreType->do_emit(resultTy, irCtx);
-	defineCoreType->genericsToFill = oldGenToFill;
+	defineStructType->create_type(&resultTy, parent, irCtx);
+	defineStructType->do_define(resultTy, parent, irCtx);
+	defineStructType->genericsToFill = toFillTypes;
+	(void)defineStructType->do_emit(resultTy, irCtx);
+	defineStructType->genericsToFill = oldGenToFill;
 	for (auto* temp : generics) {
 		temp->unset();
 	}
@@ -539,7 +537,7 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 	} else {
 		irCtx->remove_active_generic();
 	}
-	SHOW("Returning core type")
+	SHOW("Returning struct type")
 	return resultTy;
 }
 

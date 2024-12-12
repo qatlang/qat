@@ -154,10 +154,10 @@ class GenericStructType : public Uniq, public EntityOverview {
   private:
 	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;
-	ast::DefineCoreType*           defineCoreType;
+	ast::DefineCoreType*           defineStructType;
 	Mod*                           parent;
 	VisibilityInfo                 visibility;
-	Maybe<ast::PrerunExpression*>  constraint;
+	ast::PrerunExpression*         constraint;
 
 	Vec<String> variantNames;
 
@@ -165,19 +165,24 @@ class GenericStructType : public Uniq, public EntityOverview {
 	mutable Deque<GenericVariant<OpaqueType>> opaqueVariants;
 
   public:
-	GenericStructType(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                  Maybe<ast::PrerunExpression*> _constraint, ast::DefineCoreType* defineCoreType, Mod* parent,
-	                  const VisibilityInfo& visibInfo);
+	GenericStructType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::PrerunExpression* _constraint,
+	                  ast::DefineCoreType* defineCoreType, Mod* parent, const VisibilityInfo& visibInfo);
 
 	useit static GenericStructType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                                       Maybe<ast::PrerunExpression*> _constraint,
-	                                       ast::DefineCoreType* defineCoreType, Mod* parent,
-	                                       const VisibilityInfo& visibInfo) {
+	                                       ast::PrerunExpression* _constraint, ast::DefineCoreType* defineCoreType,
+	                                       Mod* parent, const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericStructType), std::move(name), std::move(generics), _constraint,
 		                         defineCoreType, parent, visibInfo);
 	}
 
-	~GenericStructType() = default;
+	~GenericStructType() {
+		for (auto& it : variants) {
+			it.clear_fill_types();
+		}
+		for (auto& it : opaqueVariants) {
+			it.clear_fill_types();
+		}
+	}
 
 	useit Identifier get_name() const;
 	useit usize      getTypeCount() const;

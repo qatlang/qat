@@ -1963,7 +1963,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				} else if (is_next(TokenType::identifier, i) || is_next(TokenType::super, i)) {
 					if (ValueAt(i + 1) == "std") {
 						SHOW("Stdlib request found in parser")
-						irCtx->stdLibRequired = true;
+						irCtx->stdLibPossiblyRequired = true;
 					}
 					auto endRes = first_primary_position(TokenType::stop, i);
 					if (endRes.has_value()) {
@@ -2018,7 +2018,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				if (is_next(TokenType::identifier, i)) {
 						i++;
 					}
-						}
 				} else {
 				}
 				break;
@@ -2822,12 +2821,13 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				if (is_next(TokenType::assignment, i)) {
 					if (memParent->has_move_assignment()) {
 						add_error("The move assignment operator is already defined for this struct type",
-						          RangeSpan(i, i + 1));
+						          RangeSpan(start, i + 1));
 					}
 					if (is_next(TokenType::identifier, i + 1)) {
 						auto argName = IdentifierAt(i + 2);
 						i            = i + 2;
 						auto entMeta = do_entity_metadata(preCtx, i, "move assignment operator", 0);
+						i            = entMeta.lastIndex;
 						if (is_next(TokenType::bracketOpen, i)) {
 							auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 							if (bCloseRes.has_value()) {
@@ -2863,16 +2863,16 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 					auto meta = do_entity_metadata(preCtx, i, "move constructor", 0);
 					i         = meta.lastIndex;
 					if (is_next(TokenType::bracketOpen, i)) {
-						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 2);
+						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 						if (bCloseRes.has_value()) {
 							auto bClose    = bCloseRes.value();
-							auto snts      = do_sentences(preCtx, i + 2, bClose);
+							auto snts      = do_sentences(preCtx, i + 1, bClose);
 							auto moveVisib = getVisibility();
 							memParent->set_move_constructor(ast::ConstructorDefinition::create(
 							    ast::ConstructorPrototype::Move(getVisibSpec(moveVisib), RangeAt(start),
 							                                    fromVisibRange(moveVisib, RangeAt(i)), argName,
 							                                    meta.defineChecker, std::move(meta.metaInfo)),
-							    std::move(snts), RangeSpan(i + 1, bClose)));
+							    std::move(snts), fromVisibRange(moveVisib, RangeAt(bClose))));
 							i = bClose;
 						} else {
 							add_error("Expected end for [", RangeAt(i + 2));
@@ -4677,6 +4677,9 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext& preCtx, const usize st
 	if (tokens->at(i).type != TokenType::identifier) {
 		add_error("This is an invalid symbol name. No identifier could be found", RangeSpan(start, i));
 	}
+	if (relative == 0 && IdentifierAt(i).value == "std") {
+		irCtx->stdLibPossiblyRequired = true;
+	}
 	name.push_back(IdentifierAt(i));
 	i++;
 	while ((tokens->at(i).type == TokenType::colon) && is_next(TokenType::identifier, i)) {
@@ -4929,6 +4932,11 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 							add_error("Expected . to end the expression for member initialisation",
 							          RangeSpan(i, i + 2));
 						}
+					} else {
+						auto expRes = do_expression(preCtx, None, i - 1, None);
+						setCachedExprForSentences(expRes.first);
+						i = expRes.second;
+						break;
 					}
 				} else if (is_next(TokenType::is, i)) {
 					if (is_next(TokenType::identifier, i + 1)) {
@@ -4945,10 +4953,11 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						              " to specify the variant of mix or choice type to initialise",
 						          RangeSpan(i, i + 1));
 					}
+				} else {
+					auto expRes = do_expression(preCtx, None, i - 1, None);
+					setCachedExprForSentences(expRes.first);
+					i = expRes.second;
 				}
-				auto expRes = do_expression(preCtx, None, i - 1, None);
-				setCachedExprForSentences(expRes.first);
-				i = expRes.second;
 				break;
 			}
 			case TokenType::assignment: {
@@ -5350,7 +5359,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				} else if (is_next(TokenType::to, i)) {
 					auto              start    = i;
 					Maybe<Identifier> loopTag  = None;
-					auto              countRes = do_expression(preCtx, None, i, None);
+					auto              countRes = do_expression(preCtx, None, i + 1, None);
 					i                          = countRes.second;
 					if (is_next(TokenType::altArrow, i)) {
 						i++;

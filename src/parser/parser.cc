@@ -73,6 +73,7 @@
 #include "../ast/prerun/unsigned_literal.hpp"
 #include "../ast/prerun_sentences/break.hpp"
 #include "../ast/prerun_sentences/continue.hpp"
+#include "../ast/prerun_sentences/expression_sentence.hpp"
 #include "../ast/prerun_sentences/give_sentence.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
@@ -4808,7 +4809,16 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				break;
 			}
 			default: {
-				add_error("Unexpected token found here", RangeAt(i));
+				auto start  = i;
+				auto expRes = do_prerun_expression(preCtx, i, None);
+				i           = expRes.second;
+				if (is_next(TokenType::stop, i)) {
+					sentences.push_back(
+					    ast::PrerunExpressionSentence::create(expRes.first, {expRes.first->fileRange, RangeAt(i + 1)}));
+					i++;
+				} else {
+					add_error("Found just an expression without . at the end", RangeSpan(start, i));
+				}
 				break;
 			}
 		}

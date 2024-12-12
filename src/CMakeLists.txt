@@ -189,6 +189,7 @@ endif()
 message(STATUS "Found LLVM version ${LLVM_VERSION}")
 message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 
+set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS filesystem PATHS "${BOOST_DIR}/lib/cmake" NO_DEFAULT_PATH)
 
 if (is_os_linux)

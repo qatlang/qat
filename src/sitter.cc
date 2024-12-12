@@ -95,7 +95,7 @@ void QatSitter::initialise() {
 		SHOW("Handling path for " << path)
 		handle_path(path, ctx);
 	}
-	if (config->has_std_lib_path() && ctx->stdLibRequired) {
+	if (config->has_std_lib_path() && ctx->stdLibPossiblyRequired) {
 		handle_path(config->get_std_lib_path(), ctx);
 		if (ir::Mod::has_file_module(config->get_std_lib_path())) {
 			ir::StdLib::stdLib = ir::Mod::get_file_module(config->get_std_lib_path());
@@ -141,12 +141,12 @@ void QatSitter::initialise() {
 					SHOW("      Is complete: " << (ent->are_all_phases_complete() ? "true" : "false"))
 					SHOW("      Is ready: " << (ent->is_ready_for_next_phase() ? "true" : "false"))
 					SHOW("      Iterations: " << ent->iterations)
-					if (!ent->are_all_phases_complete()) {
+					if (not ent->are_all_phases_complete()) {
 						if (ent->is_ready_for_next_phase()) {
 							ent->do_next_phase(itMod, ctx);
 							atleastOneEntityDone = true;
 						}
-						if (!ent->are_all_phases_complete()) {
+						if (not ent->are_all_phases_complete()) {
 							hasIncompleteEntities = true;
 						}
 					}
@@ -154,7 +154,7 @@ void QatSitter::initialise() {
 				}
 			}
 		}
-		if (!atleastOneEntityDone && hasIncompleteEntities) {
+		if ((not atleastOneEntityDone) && hasIncompleteEntities) {
 			Vec<ir::QatError> errors;
 			for (auto* iterMod : ir::Mod::allModules) {
 				for (auto ent : iterMod->entityEntries) {
@@ -322,7 +322,14 @@ void QatSitter::initialise() {
 				ctx->write_json_result(true);
 				clear_llvm_files();
 				SHOW("Executable paths count: " << ctx->executablePaths.size())
-				if (cfg->is_workflow_run() && !ctx->executablePaths.empty()) {
+				if (cfg->is_workflow_run() && not ctx->executablePaths.empty()) {
+					if (llvm::Triple(cfg->get_target_triple()) != llvm::Triple(LLVM_HOST_TRIPLE)) {
+						ctx->Error("The target provided for compilation is " + ctx->color(cfg->get_target_triple()) +
+						               " which does not match the host target triplet of this compiler, which is " +
+						               ctx->color(LLVM_HOST_TRIPLE) +
+						               ". Cannot run built executables due to this mismatch",
+						           None);
+					}
 					for (const auto& exePath : ctx->executablePaths) {
 						SHOW("Running built executable at: " << exePath.string())
 						auto cmdRes = run_command_get_output(fs::absolute(exePath).string(), {});

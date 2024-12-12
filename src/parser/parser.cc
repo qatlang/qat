@@ -8,6 +8,7 @@
 #include "../ast/define_core_type.hpp"
 #include "../ast/define_mix_type.hpp"
 #include "../ast/define_opaque_type.hpp"
+#include "../ast/define_prerun_function.hpp"
 #include "../ast/define_region.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/do_skill.hpp"
@@ -143,8 +144,6 @@
 	case TokenType::futureType:                                                                                        \
 	case TokenType::result:
 
-// NOTE - Check if file fileRange values are making use of the new merge
-// functionality
 namespace qat::parser {
 
 Parser::Parser(ir::Ctx* _irCtx) : irCtx(_irCtx){};
@@ -2041,9 +2040,40 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 			case TokenType::pre: {
 				auto start = i;
 				if (is_next(TokenType::identifier, i)) {
+					auto       name       = IdentifierAt(i + 1);
+					auto       visibility = get_visibility();
+					ast::Type* returnType = nullptr;
+					i++;
+					if (is_next(TokenType::givenTypeSeparator, i)) {
 						i++;
+						auto typRes = do_type(preCtx, i, None);
+						returnType  = typRes.first;
+						i           = typRes.second;
 					}
+					Vec<ast::Argument*> arguments;
+					if (is_next(TokenType::parenthesisOpen, i)) {
+						auto pClose = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+						if (not pClose.has_value()) {
+							add_error("Expected ) to end the list of function parameters", RangeAt(i + 1));
+						}
+						arguments = std::move(do_function_parameters(preCtx, i, pClose.value()).first);
+						i         = pClose.value();
+					}
+					auto entityMeta = do_entity_metadata(preCtx, i, "prerun function", 0u);
+					i               = entityMeta.lastIndex;
+					if (not is_next(TokenType::bracketOpen, i)) {
+						add_error("Expected [ after this to start the sentences of this prerun function",
+						          RangeSpan(start, i));
+					}
+					i++;
+					auto sntRes = do_prerun_sentences(preCtx, i);
+					i           = sntRes.second;
+					resultNodes.push_back(
+					    ast::DefinePrerunFunction::create(name, returnType, arguments, entityMeta.defineChecker,
+					                                      std::move(sntRes.first), visibility, RangeSpan(start, i)));
 				} else {
+					add_error("Expected an identifier after this for the name of the prerun function to be defined",
+					          RangeAt(i));
 				}
 				break;
 			}

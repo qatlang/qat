@@ -101,6 +101,7 @@ enum class NodeType {
 	ASSEMBLY_BLOCK,
 	ERROR_EXPRESSION,
 	PRERUN_FUNCTION_CALL,
+	DEFINE_PRERUN_FUNCTION,
 };
 
 } // namespace qat::ast

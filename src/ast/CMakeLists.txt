@@ -8,6 +8,7 @@ add_library(QAT_AST STATIC
 	define_core_type.cc
 	define_mix_type.cc
 	define_opaque_type.cc
+	define_prerun_function.cc
 	define_region.cc
 	destructor.cc
 	do_skill.cc

@@ -61,13 +61,14 @@ class Config {
   public:
 	Config(u64 count, const char** args);
 
-	static Config const* init(u64          count,
-	                          const char** args); // NOLINT(modernize-avoid-c-arrays)
+	static Config*       init(u64 count, const char** args);
 	static Config const* get();
 
 	static bool hasInstance();
 
 	static String filter_quotes(String value);
+
+	void find_stdlib_and_toolchain();
 
 	void setup_path_in_env(bool isSetupCmd);
 

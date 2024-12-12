@@ -1,10 +1,12 @@
 #include "./config.hpp"
 #include "../cli/logger.hpp"
+#include "../show.hpp"
 #include "../utils/find_executable.hpp"
-#include "create.hpp"
-#include "display.hpp"
-#include "error.hpp"
-#include "version.hpp"
+#include "./create.hpp"
+#include "./display.hpp"
+#include "./error.hpp"
+#include "./version.hpp"
+
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
@@ -30,18 +32,68 @@ namespace qat::cli {
 
 Config* Config::instance = nullptr;
 
-Config const* Config::init(u64          count,
-                           const char** args) { // NOLINT(modernize-avoid-c-arrays)
+Config* Config::init(u64 count, const char** args) {
 	if (not Config::instance) {
 		return new Config(count, args);
 	} else {
-		return get();
+		return instance;
 	}
 }
 
 bool Config::hasInstance() { return Config::instance != nullptr; }
 
 Config const* Config::get() { return Config::instance; }
+
+void Config::find_stdlib_and_toolchain() {
+	auto& log = Logger::get();
+
+	const auto qatPathEnv = find_executable("qat");
+	if (not qatPathEnv.has_value()) {
+		SHOW("Could not find qat path from env");
+		return;
+	}
+	qatDirPath       = fs::path(qatPathEnv.value()).parent_path();
+	auto stdPathCand = fs::absolute(qatDirPath / "../std");
+	if (not isNoStd && not isFreestanding) {
+		if (not fs::exists(stdPathCand)) {
+			log->fatalError(
+			    "Could not find the standard library. Path to the qat executable was found to be " +
+			        qatDirPath.string() + " but the standard library could not be found in " + stdPathCand.string() +
+			        ". If you wish to compile a project without the standard library, use the " +
+			        log->color("--no-std") +
+			        " flag. And if you wish to compile for a freestanding environment, use the " +
+			        log->color("--freestanding") + " flag, which automatically implies " + log->color("--no-std") + ".",
+			    None);
+		}
+		stdLibPath = stdPathCand / "std.lib.qat";
+		if (not fs::exists(stdLibPath.value()) || not fs::is_regular_file(stdLibPath.value())) {
+			log->fatalError("Found the standard library folder at path " + stdPathCand.string() +
+			                    " but could not find the library file in the folder. The file " +
+			                    log->color(stdLibPath.value().string()) + " is expected to be present",
+			                None);
+		}
+		stdLibPath = fs::absolute(stdLibPath.value());
+	} else {
+		stdLibPath = None;
+	}
+	auto toolchainCand = qatDirPath / "../toolchain";
+	if (not fs::exists(toolchainCand)) {
+		log->fatalError(
+		    "Could not find the " + log->color("toolchain") +
+		        " directory in the qat installation directory. This directory is required for linking platform specific dependencies required by the language",
+		    None);
+	}
+	if (not fs::is_directory(toolchainCand)) {
+		log->fatalError(
+		    "The path " + toolchainCand.string() + " is not a directory. The " + log->color("toolchain") +
+		        " directory provided by the qat installation is required for linking platform specific dependencies required by the language",
+		    None);
+	}
+	toolchainPath = fs::absolute(toolchainCand);
+	log->say("qat is present in   := " + qatPathEnv.value());
+	log->say("Standard Library    := " + (stdLibPath.has_value() ? stdLibPath.value().string() : "(Not Found)"));
+	log->say("Toolchain Directory := " + (toolchainPath.has_value() ? toolchainPath.value().string() : "(Not Found)"));
+}
 
 void Config::setup_path_in_env(bool isSetupCmd) {
 	auto&      log                = Logger::get();
@@ -146,8 +198,7 @@ void Config::setup_path_in_env(bool isSetupCmd) {
 			    "Please re-run this program in " + log->color("administrator mode") + ". The system " +
 			        log->color("Path") +
 			        " environment variable cannot be updated otherwise, to include path to the qat executable."
-			        " If you wish to not run this program in administrator mode, please add path to the qat executable"
-			        " to the system " +
+			        " If you wish to not run this program in administrator mode, please add path to the qat executable to the system " +
 			        log->color("Path") + " environment variable manually. The qat executable was found in " +
 			        log->color(qatDirPath.string()),
 			    None);
@@ -239,54 +290,8 @@ void Config::setup_path_in_env(bool isSetupCmd) {
 	} else {
 		qatDirPath = fs::path(qatPathEnv.value()).parent_path();
 	}
-	qatDirPath       = fs::absolute(qatDirPath);
-	auto stdPathCand = qatDirPath / "../std";
-	if (not isNoStd && not isFreestanding) {
-		if (fs::exists(stdPathCand)) {
-			stdLibPath = stdPathCand / "std.lib.qat";
-			if (not fs::exists(stdLibPath.value()) || not fs::is_regular_file(stdLibPath.value())) {
-				log->fatalError("Found the standard library folder at path " + stdPathCand.string() +
-				                    " but could not find the library file in the folder. File " +
-				                    stdLibPath.value().string() + " is expected to be present",
-				                None);
-			} else {
-				stdLibPath = fs::absolute(stdLibPath.value());
-			}
-		} else {
-			log->fatalError("Could not find the standard library. Path to the qat executable was found to be " +
-			                    qatDirPath.string() + " but the standard library could not be found in " +
-			                    stdPathCand.string() +
-			                    ". If you wish to compile a project without the standard library, use the " +
-			                    log->color("--no-std") +
-			                    " flag. And if you wish to compile for a freestanding environment, use the " +
-			                    log->color("--freestanding") + " flag.",
-			                None);
-		}
-	} else {
-		stdLibPath = None;
-	}
-	auto toolchainCand = qatDirPath / "../toolchain";
-	if (fs::exists(toolchainCand)) {
-		if (fs::is_directory(toolchainCand)) {
-			toolchainPath = fs::absolute(toolchainCand);
-		} else {
-			log->fatalError(
-			    "The path " + toolchainCand.string() + " is not a directory. The " + log->color("toolchain") +
-			        " directory provided by the QAT installation is required for linking platform specific libraries used by QAT",
-			    None);
-		}
-	} else {
-		log->fatalError(
-		    "Could not find the " + log->color("toolchain") +
-		        " directory in the QAT installation directory. This directory is required for linking platform specific dependencies required by QAT",
-		    None);
-	}
-	if (foundInPathAlready) {
-		log->say("qat is present in   := " + qatPathEnv.value());
-		log->say("Standard Library    := " + (stdLibPath.has_value() ? stdLibPath.value().string() : "(Not Found)"));
-		log->say("Toolchain Directory := " +
-		         (toolchainPath.has_value() ? toolchainPath.value().string() : "(Not Found)"));
-	}
+	qatDirPath = fs::absolute(qatDirPath);
+	find_stdlib_and_toolchain();
 }
 
 String Config::filter_quotes(String value) {
@@ -408,7 +413,7 @@ Config::Config(u64 count, const char** args)
 							                None);
 						}
 					} else if (fs::exists(next.value())) {
-						if (!fs::is_directory(next.value())) {
+						if (not fs::is_directory(next.value())) {
 							log->fatalError("The provided path " + next.value() +
 							                    " is not a directory and hence a project cannot be created in it",
 							                next.value());
@@ -453,6 +458,8 @@ Config::Config(u64 count, const char** args)
 			auto next = readNext();
 			if (not next.has_value()) {
 				setup_path_in_env(true);
+			} else {
+				// TODO - Add support for setting up the toolchain
 			}
 			exitAfter = true;
 		} else if (command == "help") {

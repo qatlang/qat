@@ -43,12 +43,15 @@ Vec<Token>* Lexer::get_tokens() {
 void Lexer::read() {
 	//   try {
 	if (file.eof()) {
+		return;
+	}
+	prev = current;
+	file.get(current);
+	characterNumber++;
+	if (file.eof()) {
 		prev    = current;
 		current = -1;
-	} else {
-		prev = current;
-		file.get(current);
-		characterNumber++;
+		return;
 	}
 	if (current == '\n') {
 		previousLineEnd = characterNumber - 1;

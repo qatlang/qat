@@ -151,16 +151,17 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 		auto eqStructTy =
 		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
 		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
-		                                       << genericCoreType << "; datalayout: " << irCtx->dataLayout.has_value())
+		                                       << genericStructType
+		                                       << "; datalayout: " << irCtx->dataLayout.has_value())
 		setOpaque(
-		    ir::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericCoreType->get_id()) : None,
+		    ir::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericStructType->get_id()) : None,
 		                        ir::OpaqueSubtypeKind::core, mod,
 		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
 		                        mainVisibility, irCtx->llctx, irMeta));
 	}
 	SHOW("Set opaque")
-	if (genericCoreType) {
-		genericCoreType->opaqueVariants.push_back(ir::GenericVariant<ir::OpaqueType>(get_opaque(), genericsToFill));
+	if (genericStructType) {
+		genericStructType->opaqueVariants.push_back(ir::GenericVariant<ir::OpaqueType>(get_opaque(), genericsToFill));
 	}
 	auto typeEmitCtx = EmitCtx::get(irCtx, mod)->with_opaque_parent(get_opaque());
 	SHOW("Created opaque for core type")
@@ -191,18 +192,18 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 	SHOW("Creating core type: " << cTyName.value)
 	*resultTy = ir::StructType::create(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
 	                                   isPackedStruct.value_or(false));
-	if (genericCoreType) {
-		genericCoreType->variants.push_back(ir::GenericVariant<ir::StructType>(*resultTy, genericsToFill));
+	if (genericStructType) {
+		genericStructType->variants.push_back(ir::GenericVariant<ir::StructType>(*resultTy, genericsToFill));
 	}
 	SHOW("StructType ID: " << (*resultTy)->get_id())
 	(*resultTy)->explicitTrivialCopy = trivialCopy.has_value();
 	(*resultTy)->explicitTrivialMove = trivialMove.has_value();
-	if (genericCoreType) {
-		for (auto item = genericCoreType->opaqueVariants.begin(); item != genericCoreType->opaqueVariants.end();
+	if (genericStructType) {
+		for (auto item = genericStructType->opaqueVariants.begin(); item != genericStructType->opaqueVariants.end();
 		     item++) {
 			SHOW("Opaque variant: " << item->get())
 			if (item->get()->get_id() == get_opaque()->get_id()) {
-				genericCoreType->opaqueVariants.erase(item);
+				genericStructType->opaqueVariants.erase(item);
 				break;
 			}
 		}
@@ -253,8 +254,8 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 		for (auto* gen : generics) {
 			gen->emit(emitCtx);
 		}
-		genericCoreType = new ir::GenericStructType(name, generics, genericConstraint, this, mod,
-		                                            emitCtx->get_visibility_info(visibSpec));
+		genericStructType = new ir::GenericStructType(name, generics, genericConstraint, this, mod,
+		                                              emitCtx->get_visibility_info(visibSpec));
 	}
 }
 

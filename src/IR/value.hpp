@@ -25,6 +25,7 @@ class PrerunValue;
 class Ctx;
 class Mod;
 class Function;
+class PrerunFunction;
 
 class Value {
   protected:
@@ -70,6 +71,9 @@ class Value {
 		              !is_prerun_value());
 	}
 
+	useit bool is_prerun_function() const;
+	useit ir::PrerunFunction* as_prerun_function() const { return (ir::PrerunFunction*)ll; }
+
 	useit ir::Value* with_range(FileRange rangeVal) {
 		associatedRange = rangeVal;
 		return this;
@@ -90,7 +94,7 @@ class Value {
 
 	static void replace_uses_for_all() {
 		for (auto itVal : allValues) {
-			if (itVal && itVal->get_llvm()) {
+			if (itVal && (not itVal->is_prerun_function()) && itVal->get_llvm()) {
 				itVal->get_llvm()->replaceAllUsesWith(llvm::UndefValue::get(itVal->get_llvm()->getType()));
 			}
 		}
@@ -100,9 +104,9 @@ class Value {
 
 class PrerunValue : public Value {
   public:
-	PrerunValue(llvm::Constant* _llconst, ir::Type* _type);
+	PrerunValue(llvm::Constant* _llConst, ir::Type* _type) : Value(_llConst, _type, false) {}
 
-	explicit PrerunValue(ir::TypedType* typed);
+	explicit PrerunValue(ir::TypedType* _typed) : Value(nullptr, _typed, false) {}
 
 	useit static PrerunValue* get(llvm::Constant* ll, ir::Type* type) {
 		return std::construct_at(OwnNormal(PrerunValue), ll, type);
@@ -114,11 +118,11 @@ class PrerunValue : public Value {
 
 	~PrerunValue() override = default;
 
-	useit llvm::Constant* get_llvm() const final;
+	useit llvm::Constant* get_llvm() const final { return (llvm::Constant*)(ll); }
 
 	bool is_equal_to(ir::Ctx* irCtx, PrerunValue* other);
 
-	useit bool is_prerun_value() const final;
+	useit bool is_prerun_value() const final { return true; }
 };
 
 } // namespace qat::ir

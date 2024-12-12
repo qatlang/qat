@@ -11,7 +11,7 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 	if (fnValType->is_native_type()) {
 		fnValType = fnValType->as_native_type()->get_subtype();
 	}
-	if (fnVal->is_prerun_value() && fnValType->is_function()) {
+	if (fnVal->is_prerun_function()) {
 		// Is prerun function
 		auto* fnTy = fnValType->as_function();
 		if (fnTy->is_variadic()) {
@@ -46,7 +46,7 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 			}
 			argsEmit.push_back(argRes->as_prerun());
 		}
-		auto* preFn = (ir::PrerunFunction*)(fnVal->get_llvm_constant());
+		auto* preFn = fnVal->as_prerun_function();
 		return preFn->call_prerun(argsEmit, ctx->irCtx, fileRange);
 	} else if (fnVal->get_ir_type()->is_function() ||
 	           (fnValType->is_mark() && fnValType->as_mark()->get_subtype()->is_function())) {

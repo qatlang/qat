@@ -10,7 +10,7 @@ ir::PrerunValue* PrerunFunctionCall::emit(EmitCtx* ctx) {
 		        ctx->color(candidate->get_ir_type()->to_string()),
 		    funcExp->fileRange);
 	}
-	auto       preFn    = reinterpret_cast<ir::PrerunFunction*>(candidate->get_llvm_constant());
+	auto       preFn    = candidate->as_prerun_function();
 	auto       fnTy     = preFn->get_ir_type()->as_function();
 	const auto argCount = fnTy->get_argument_count();
 	if (fnTy->is_variadic() && (argCount > arguments.size())) {

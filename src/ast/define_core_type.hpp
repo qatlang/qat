@@ -77,7 +77,7 @@ class DefineCoreType final : public IsEntity, public Commentable, public MemberP
 	void                           setOpaque(ir::OpaqueType* opq) const;
 	useit ir::OpaqueType*           get_opaque() const;
 	void                            unsetOpaque() const;
-	mutable ir::GenericStructType*  genericCoreType = nullptr;
+	mutable ir::GenericStructType*  genericStructType = nullptr;
 	mutable Vec<ir::GenericToFill*> genericsToFill;
 	mutable Maybe<bool>             checkResult;
 	mutable Maybe<bool>             isPackedStruct;

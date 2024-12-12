@@ -1,10 +1,10 @@
 #include "./value.hpp"
 #include "../ast/emit_ctx.hpp"
+#include "./context.hpp"
+#include "./logic.hpp"
+#include "./types/function.hpp"
+#include "./types/pointer.hpp"
 #include "./types/qat_type.hpp"
-#include "context.hpp"
-#include "logic.hpp"
-#include "types/function.hpp"
-#include "types/pointer.hpp"
 
 #include <llvm/IR/Instructions.h>
 
@@ -27,6 +27,8 @@ Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRa
 		return this;
 	}
 }
+
+bool Value::is_prerun_function() const { return is_prerun_value() && get_ir_type()->is_function(); }
 
 Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> _localID,
                    Mod* mod) { // NOLINT(misc-unused-parameters)
@@ -56,14 +58,6 @@ void Value::clear_all() {
 	}
 	allValues.clear();
 }
-
-PrerunValue::PrerunValue(llvm::Constant* _llConst, ir::Type* _type) : Value(_llConst, _type, false) {}
-
-PrerunValue::PrerunValue(ir::TypedType* _typed) : Value(nullptr, _typed, false) {}
-
-llvm::Constant* PrerunValue::get_llvm() const { return (llvm::Constant*)ll; }
-
-bool PrerunValue::is_prerun_value() const { return true; }
 
 bool PrerunValue::is_equal_to(ir::Ctx* irCtx, PrerunValue* other) {
 	if (get_ir_type()->is_typed()) {

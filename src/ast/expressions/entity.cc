@@ -30,10 +30,6 @@ void Entity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep,
 			if (relative == 0 && i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
-			} else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
-				ent->addDependency(
-				    ir::EntityDependency{mod->get_entity(split.value), dep.value_or(ir::DependType::complete), phase});
-				break;
 			}
 			if (mod->has_lib(split.value, reqInfo)) {
 				mod = mod->get_lib(split.value, reqInfo);

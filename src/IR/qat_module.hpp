@@ -405,6 +405,7 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class DefinitionType;
 	friend class GlobalEntity;
 	friend class PrerunGlobal;
+	friend class PrerunFunction;
 	friend class ast::Lib;
 	friend class ast::ModInfo;
 	friend class ast::BringPaths;

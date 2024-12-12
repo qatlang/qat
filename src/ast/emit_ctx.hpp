@@ -67,6 +67,8 @@ struct EmitCtx {
 	ir::OpaqueType*   parentOpaque;
 	ir::Function*     fn;
 
+	Vec<GenericAbstractType*> generics;
+
 	ir::PrerunCallState* prerunCallState;
 
 	Vec<LoopInfo>  loopsInfo;
@@ -100,6 +102,12 @@ struct EmitCtx {
 		return this;
 	}
 
+	EmitCtx* with_generics(Vec<ast::GenericAbstractType*> newList) {
+		generics.reserve(generics.size() + newList.size());
+		generics.insert(generics.end(), newList.begin(), newList.end());
+		return this;
+	}
+
 	useit AccessInfo get_access_info() const;
 
 	useit bool has_member_parent() const { return memberParent != nullptr; }
@@ -116,6 +124,10 @@ struct EmitCtx {
 
 	useit bool has_skill() const { return skill != nullptr; }
 	useit ir::Skill* get_skill() const { return skill; }
+
+	useit bool                 has_generics() const { return not generics.empty(); }
+	useit bool                 has_generic_with_name(String const& name) const;
+	useit GenericAbstractType* get_generic_with_name(String const& name) const;
 
 	useit String color(String const& message) const;
 

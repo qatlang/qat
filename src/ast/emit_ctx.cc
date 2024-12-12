@@ -2,6 +2,7 @@
 #include "../IR/context.hpp"
 #include "../cli/config.hpp"
 #include "./node.hpp"
+#include "./types/generic_abstract.hpp"
 
 namespace qat::ast {
 
@@ -338,6 +339,24 @@ VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
 
 void EmitCtx::Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo) {
 	irCtx->Error(mod, message, fileRange, pointTo);
+}
+
+bool EmitCtx::has_generic_with_name(String const& name) const {
+	for (auto it = generics.rbegin(); it != generics.rend(); it++) {
+		if ((*it)->get_name().value == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+GenericAbstractType* EmitCtx::get_generic_with_name(String const& name) const {
+	for (auto it = generics.rbegin(); it != generics.rend(); it++) {
+		if ((*it)->get_name().value == name) {
+			return *it;
+		}
+	}
+	return nullptr;
 }
 
 } // namespace qat::ast

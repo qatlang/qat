@@ -3,6 +3,7 @@
 
 #include "../IR/types/typed.hpp"
 #include "../utils/file_range.hpp"
+#include "../utils/qat_region.hpp"
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
@@ -39,7 +40,9 @@ class Value {
 
 	Value(llvm::Value* _llValue, ir::Type* _type, bool _isVariable);
 
-	useit static Value* get(llvm::Value* ll, ir::Type* type, bool isVar) { return new Value(ll, type, isVar); }
+	useit static Value* get(llvm::Value* ll, ir::Type* type, bool isVar) {
+		return std::construct_at(OwnNormal(Value), ll, type, isVar);
+	}
 
 	virtual ~Value() = default;
 
@@ -99,11 +102,15 @@ class PrerunValue : public Value {
   public:
 	PrerunValue(llvm::Constant* _llconst, ir::Type* _type);
 
-	useit static PrerunValue* get(llvm::Constant* ll, ir::Type* type) { return new PrerunValue(ll, type); }
-
 	explicit PrerunValue(ir::TypedType* typed);
 
-	useit static PrerunValue* get_typed_prerun(ir::TypedType* typed) { return new PrerunValue(typed); }
+	useit static PrerunValue* get(llvm::Constant* ll, ir::Type* type) {
+		return std::construct_at(OwnNormal(PrerunValue), ll, type);
+	}
+
+	useit static PrerunValue* get_typed_prerun(ir::TypedType* typed) {
+		return std::construct_at(OwnNormal(PrerunValue), typed);
+	}
 
 	~PrerunValue() override = default;
 

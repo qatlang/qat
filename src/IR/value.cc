@@ -52,7 +52,7 @@ Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> 
 
 void Value::clear_all() {
 	for (auto* val : allValues) {
-		delete val;
+		std::destroy_at(val);
 	}
 	allValues.clear();
 }

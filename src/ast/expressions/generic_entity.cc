@@ -39,7 +39,7 @@ void GenericEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependTyp
 				mod = mod->get_brought_mod(split.value, reqInfo);
 			} else {
 				ctx->irCtx->Error("No lib named " + ctx->irCtx->color(split.value) + " found inside " +
-				                      ctx->irCtx->color(mod->get_full_name()),
+				                      ctx->irCtx->color(mod->get_referrable_name()),
 				                  fileRange);
 			}
 		}
@@ -66,7 +66,7 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (relative == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (relative == 0 && i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}
@@ -80,7 +80,7 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 				mod->add_mention(split.range);
 			} else {
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
-				               ctx->color(mod->get_full_name()),
+				               ctx->color(mod->get_referrable_name()),
 				           fileRange);
 			}
 		}

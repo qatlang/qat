@@ -476,6 +476,11 @@ String Mod::get_full_name() const {
 	}
 }
 
+String Mod::get_referrable_name() const {
+	auto nameRes = get_full_name();
+	return nameRes.empty() ? get_file_path() : nameRes;
+}
+
 String Mod::get_writable_name() const {
 	String result;
 	if (parent) {

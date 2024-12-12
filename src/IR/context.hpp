@@ -133,7 +133,7 @@ class Ctx {
 
 	// META
 	bool                             hasMain;
-	bool                             stdLibRequired = false;
+	bool                             stdLibPossiblyRequired = false;
 	mutable u64                      stringCount;
 	Vec<fs::path>                    llvmOutputPaths;
 	Vec<String>                      nativeLibsToLink;

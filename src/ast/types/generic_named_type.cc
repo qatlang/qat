@@ -19,7 +19,7 @@ void GenericNamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depend
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (split.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			} else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
@@ -177,7 +177,7 @@ ir::Type* GenericNamedType::emit(EmitCtx* ctx) {
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (split.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}

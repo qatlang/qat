@@ -22,7 +22,7 @@ void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (split.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			} else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
@@ -43,7 +43,7 @@ void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 			} else {
 				SHOW("Update deps")
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
-				               ctx->color(mod->get_full_name()) + " or any of its submodules",
+				               ctx->color(mod->get_referrable_name()) + " or any of its submodules",
 				           split.range);
 			}
 		}
@@ -131,7 +131,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (split.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}
@@ -148,7 +148,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 			} else {
 				SHOW("Emit fn")
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
-				               ctx->color(mod->get_full_name()) + " or any of its submodules",
+				               ctx->color(mod->get_referrable_name()) + " or any of its submodules",
 				           split.range);
 			}
 		}
@@ -173,8 +173,8 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		if (!oTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error((oTy->is_subtype_struct() ? "Core type "
 			                                     : (oTy->is_subtype_mix() ? "Mix type " : "Incomplete opaque type ")) +
-			               ctx->color(oTy->get_full_name()) + " inside module " + ctx->color(mod->get_full_name()) +
-			               " is not accessible here",
+			               ctx->color(oTy->get_full_name()) + " inside module " +
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
 		}
 		oTy->add_mention(entityName.range);
@@ -186,8 +186,8 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Has struct")
 		auto* cTy = mod->get_struct_type(entityName.value, reqInfo);
 		if (!cTy->get_visibility().is_accessible(reqInfo)) {
-			ctx->Error("Core type " + ctx->color(cTy->get_full_name()) + " inside module " +
-			               ctx->color(mod->get_full_name()) + " is not accessible here",
+			ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) + " inside module " +
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
 		}
 		cTy->add_mention(entityName.range);
@@ -201,7 +201,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Checking accessibility")
 		if (!dTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Type definition " + ctx->color(dTy->get_full_name()) + " inside module " +
-			               ctx->color(mod->get_full_name()) + " is not accessible here",
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
 		}
 		SHOW("Adding mention")
@@ -215,7 +215,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		auto* mTy = mod->get_mix_type(entityName.value, reqInfo);
 		if (!mTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Mix type " + ctx->color(mTy->get_full_name()) + " inside module " +
-			               ctx->color(mod->get_full_name()) + " is not accessible here",
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
 		}
 		mTy->add_mention(entityName.range);
@@ -227,7 +227,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		auto* chTy = mod->get_choice_type(entityName.value, reqInfo);
 		if (!chTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Choice type " + ctx->color(chTy->get_full_name()) + " inside module " +
-			               ctx->color(mod->get_full_name()) + " is not accessible here",
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
 		}
 		chTy->add_mention(entityName.range);
@@ -239,7 +239,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		auto* reg = mod->get_region(entityName.value, reqInfo);
 		if (!reg->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Region " + ctx->color(reg->get_full_name()) + " inside module " +
-			               ctx->color(mod->get_full_name()) + " is not accessible here",
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
 		}
 		reg->add_mention(entityName.range);

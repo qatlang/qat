@@ -611,6 +611,7 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit ModuleType get_mod_type() const;
 	useit String     get_full_name() const;
+	useit String     get_referrable_name() const;
 	useit String     get_writable_name() const;
 	useit String     get_name() const;
 	useit Identifier get_identifier() const;

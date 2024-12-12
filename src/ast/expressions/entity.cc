@@ -41,7 +41,9 @@ void Entity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep,
 				mod->add_mention(split.range);
 			} else {
 				SHOW("Update deps")
-				ctx->Error("No lib named " + ctx->color(split.value) + " found inside scope ", split.range);
+				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
+				               ctx->color(mod->get_referrable_name()),
+				           split.range);
 			}
 		}
 	}

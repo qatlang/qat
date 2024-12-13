@@ -20,7 +20,7 @@ struct EmitCtx;
 namespace qat::ir {
 
 class Type;
-
+class PrerunLocal;
 class PrerunValue;
 class Ctx;
 class Mod;
@@ -119,6 +119,10 @@ class PrerunValue : public Value {
 	~PrerunValue() override = default;
 
 	useit llvm::Constant* get_llvm() const final { return (llvm::Constant*)(ll); }
+
+	virtual bool is_prerun_local() const { return false; };
+
+	useit PrerunLocal* as_prerun_local() { return reinterpret_cast<PrerunLocal*>(this); }
 
 	bool is_equal_to(ir::Ctx* irCtx, PrerunValue* other);
 

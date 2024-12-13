@@ -18,8 +18,6 @@ class PrerunSentence {
 	virtual void emit(EmitCtx* ctx) = 0;
 };
 
-void emit_prerun_sentences(Vec<PrerunSentence*>& sentences, EmitCtx* ctx) noexcept(false);
-
 } // namespace qat::ast
 
 #endif

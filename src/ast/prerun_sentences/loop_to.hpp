@@ -12,7 +12,8 @@ class PrerunLoopTo final : public PrerunSentence {
 	Vec<PrerunSentence*> sentences;
 
   public:
-	PrerunLoopTo(PrerunExpression* _count, Vec<PrerunSentence*> _sentences, FileRange _fileRange)
+	PrerunLoopTo(PrerunExpression* _count, Maybe<Identifier> _tag, Vec<PrerunSentence*> _sentences,
+	             FileRange _fileRange)
 	    : PrerunSentence(_fileRange), count(_count), sentences(std::move(_sentences)) {}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {
@@ -22,8 +23,9 @@ class PrerunLoopTo final : public PrerunSentence {
 		}
 	}
 
-	useit static PrerunLoopTo* create(PrerunExpression* count, Vec<PrerunSentence*> sentences, FileRange fileRange) {
-		return std::construct_at(OwnNormal(PrerunLoopTo), count, std::move(sentences), fileRange);
+	useit static PrerunLoopTo* create(PrerunExpression* count, Maybe<Identifier> tag, Vec<PrerunSentence*> sentences,
+	                                  FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunLoopTo), count, std::move(tag), std::move(sentences), fileRange);
 	}
 
 	void emit(EmitCtx* ctx) final;

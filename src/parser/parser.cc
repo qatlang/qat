@@ -4836,8 +4836,8 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 					i++;
 					auto sntRes = do_prerun_sentences(preCtx, i);
 					i           = sntRes.second;
-					sentences.push_back(
-					    ast::PrerunLoopTo::create(countExp.first, std::move(sntRes.first), RangeSpan(start, i)));
+					sentences.push_back(ast::PrerunLoopTo::create(countExp.first, std::move(tag),
+					                                              std::move(sntRes.first), RangeSpan(start, i)));
 				} else {
 					add_error("Invalid loop type", RangeAt(i));
 				}

@@ -75,6 +75,7 @@
 #include "../ast/prerun_sentences/continue.hpp"
 #include "../ast/prerun_sentences/expression_sentence.hpp"
 #include "../ast/prerun_sentences/give_sentence.hpp"
+#include "../ast/prerun_sentences/loop_to.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
 #include "../ast/sentences/continue.hpp"
@@ -4749,8 +4750,9 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext& preCtx, const usize st
 Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext& preCtx, usize from) {
 	using lexer::TokenType;
 
+	usize i = from + 1;
+
 	Vec<ast::PrerunSentence*> sentences;
-	usize                     i = from + 1;
 	for (; i < tokens->size(); i++) {
 		switch (tokens->at(i).type) {
 			case TokenType::bracketClose: {
@@ -4806,6 +4808,40 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				break;
 			}
 			case TokenType::loop: {
+				auto start = i;
+				if (is_next(TokenType::to, i)) {
+					// LOOP TO
+					auto countExp = do_prerun_expression(preCtx, i + 1, None);
+					i             = countExp.second;
+					if (not is_next(TokenType::altArrow, i)) {
+						add_error("Expected => after this to end the count expression of the " + color_error("loop to"),
+						          RangeSpan(start, i));
+					}
+					i++;
+					Maybe<Identifier> tag;
+					if (is_next(TokenType::let, i)) {
+						if (not is_next(TokenType::identifier, i + 1)) {
+							add_error("Expected an identifier after this for the name of the tag of the " +
+							              color_error("loop to"),
+							          RangeAt(i + 1));
+						}
+						tag = IdentifierAt(i + 2);
+						i += 2;
+					}
+					if (not is_next(TokenType::bracketOpen, i)) {
+						add_error("Expected [ after this to start the sentences of the " + color_error("loop to"),
+						          RangeSpan(start, i));
+					}
+					i++;
+					auto sntRes = do_prerun_sentences(preCtx, i);
+					i           = sntRes.second;
+					sentences.push_back(
+					    ast::PrerunLoopTo::create(countExp.first, std::move(sntRes.first), RangeSpan(start, i)));
+				} else {
+					add_error("Invalid loop type", RangeAt(i));
+				}
+				break;
+			}
 				break;
 			}
 			default: {
@@ -4823,6 +4859,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 			}
 		}
 	}
+	add_error("Could not find ] to end the current scope of sentences", RangeSpan(from, i));
 }
 
 Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usize upto) {

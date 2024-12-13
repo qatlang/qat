@@ -76,6 +76,7 @@
 #include "../ast/prerun_sentences/expression_sentence.hpp"
 #include "../ast/prerun_sentences/give_sentence.hpp"
 #include "../ast/prerun_sentences/loop_to.hpp"
+#include "../ast/prerun_sentences/say.hpp"
 #include "../ast/sentences/assignment.hpp"
 #include "../ast/sentences/break.hpp"
 #include "../ast/sentences/continue.hpp"
@@ -295,8 +296,8 @@ EntityMetadata Parser::do_entity_metadata(ParserContext& parserCtx, usize from, 
 				add_error("Expected ) to end the define condition after this", RangeSpan(start, i));
 			}
 			i++;
-			if (is_next(TokenType::separator, i) && !is_next(TokenType::where, i + 1) &&
-			    !is_next(TokenType::meta, i + 1)) {
+			if (is_next(TokenType::separator, i) && not is_next(TokenType::where, i + 1) &&
+			    not is_next(TokenType::meta, i + 1)) {
 				add_error("Expected " + color_error("where") + " or " + color_error("meta") + " after " +
 				              color_error(",") + " and if you did not mean to include these, remove the " +
 				              color_error(",") + " separator",
@@ -327,11 +328,11 @@ EntityMetadata Parser::do_entity_metadata(ParserContext& parserCtx, usize from, 
 		auto expRes       = do_prerun_expression(parserCtx, i + 1, None);
 		genericConstraint = expRes.first;
 		i                 = expRes.second;
-		if (!is_next(TokenType::parenthesisClose, i)) {
+		if (not is_next(TokenType::parenthesisClose, i)) {
 			add_error("Expected ) after this to end the generic constraint", RangeSpan(start, i));
 		}
 		i++;
-		if (is_next(TokenType::separator, i) && !is_next(TokenType::meta, i + 1)) {
+		if (is_next(TokenType::separator, i) && not is_next(TokenType::meta, i + 1)) {
 			add_error("Expected " + color_error("meta") + " after , for the metadata for the " + entityType +
 			              ". If you did not mean to include the metadata, remove the " + color_error(",") +
 			              " separator",
@@ -4842,6 +4843,27 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				}
 				break;
 			}
+			case TokenType::say: {
+				// TODO - Support say variants
+				auto                        start = i;
+				Vec<ast::PrerunExpression*> values;
+				while (not is_next(TokenType::stop, i) && (i < tokens->size())) {
+					auto expRes = do_prerun_expression(preCtx, i, None);
+					i           = expRes.second;
+					values.push_back(expRes.first);
+					if (is_next(TokenType::separator, i)) {
+						i++;
+					} else if (not is_next(TokenType::stop, i)) {
+						add_error("Invalid token found here. Expected either " + color_error(",") + " or " +
+						              color_error(".") + " after this",
+						          expRes.first->fileRange);
+					}
+				}
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected . after this to end the prerun say sentence", RangeSpan(start, i));
+				}
+				i++;
+				sentences.push_back(ast::PrerunSay::create(std::move(values), RangeSpan(start, i)));
 				break;
 			}
 			default: {

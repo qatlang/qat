@@ -12,10 +12,18 @@ class PrerunLoopTo final : public PrerunSentence {
 	Vec<PrerunSentence*> sentences;
 
   public:
-	PrerunLoopTo(PrerunExpression* _count, FileRange _fileRange) : PrerunSentence(_fileRange), count(_count) {}
+	PrerunLoopTo(PrerunExpression* _count, Vec<PrerunSentence*> _sentences, FileRange _fileRange)
+	    : PrerunSentence(_fileRange), count(_count), sentences(std::move(_sentences)) {}
 
-	useit static PrerunLoopTo* get(PrerunExpression* count, FileRange fileRange) {
-		return std::construct_at(OwnNormal(PrerunLoopTo), count, fileRange);
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {
+		UPDATE_DEPS(count);
+		for (auto* snt : sentences) {
+			UPDATE_DEPS(snt);
+		}
+	}
+
+	useit static PrerunLoopTo* create(PrerunExpression* count, Vec<PrerunSentence*> sentences, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunLoopTo), count, std::move(sentences), fileRange);
 	}
 
 	void emit(EmitCtx* ctx) final;

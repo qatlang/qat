@@ -8,21 +8,23 @@
 // I LOVE EXCEPTIONS from now on...
 #define PRERUN_LOOP_BASIC_CONTENTS                                                                                     \
 	try {                                                                                                              \
-		for (auto snt : sentences) {                                                                                   \
+		for (auto* snt : sentences) {                                                                                  \
 			snt->emit(ctx);                                                                                            \
 		}                                                                                                              \
 	} catch (InternalPrerunBreak & brk) {                                                                              \
 		if (tag.has_value() && ((not brk.tag.has_value()) || (brk.tag.value() == tag->value))) {                       \
 			break;                                                                                                     \
 		} else {                                                                                                       \
-			throw;                                                                                                     \
+			throw brk;                                                                                                 \
 		}                                                                                                              \
 	} catch (InternalPrerunContinue & cont) {                                                                          \
 		if (tag.has_value() && ((not cont.tag.has_value()) || (cont.tag.value() == tag->value))) {                     \
 			continue;                                                                                                  \
 		} else {                                                                                                       \
-			throw;                                                                                                     \
+			throw cont;                                                                                                \
 		}                                                                                                              \
+	} catch (...) {                                                                                                    \
+		throw;                                                                                                         \
 	}
 
 namespace qat::ast {

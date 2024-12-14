@@ -51,8 +51,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		if (ctx->has_pre_call_state()) {
 			if (ctx->get_pre_call_state()->has_arg_with_name(name.value)) {
 				return ctx->get_pre_call_state()->get_arg_value_for(name.value);
+			} else if (ctx->get_pre_call_state()->get_block()->has_local(name.value)) {
+				return ctx->get_pre_call_state()->get_block()->get_local(name.value);
 			}
-			// TODO - Check blocks for locals
 		}
 		if (ctx->has_generic_with_name(identifiers[0].value)) {
 			auto genAbs = ctx->get_generic_with_name(identifiers[0].value);

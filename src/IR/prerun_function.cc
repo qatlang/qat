@@ -6,6 +6,14 @@
 
 namespace qat::ir {
 
+PreBlock::PreBlock(PrerunCallState* _callState, PreBlock* _parent) : callState(_callState), parent(_parent) {
+	if (parent && parent->firstChild == nullptr) {
+		parent->firstChild = this;
+	}
+}
+
+void PreBlock::make_active() { callState->activeBlock = this; }
+
 bool PrerunCallState::has_arg_with_name(String const& name) {
 	for (auto arg : function->argTypes) {
 		if (arg->get_name() == name) {
@@ -39,14 +47,17 @@ PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx
 	auto callState = PrerunCallState::get(this, argValues);
 	auto emitCtx   = ast::EmitCtx::get(irCtx, parent)->with_prerun_call_state(callState);
 	try {
-		ast::emit_prerun_sentences(sentences.first, emitCtx);
+		for (auto* snt : sentences.first) {
+			snt->emit(emitCtx);
+		}
 	} catch (InternalPrerunGive& given) {
-		delete callState; // FIXME - Remove when IR part of the codebase uses region allocator
+		std::destroy_at(callState);
 		return given.value;
 	} catch (...) {
 		irCtx->Error("Failed to call the prerun function with an exception", fileRange);
 	}
 	if (returnType->is_void()) {
+		std::destroy_at(callState);
 		return nullptr;
 	} else {
 		irCtx->Error("This prerun function did not give any value", fileRange);

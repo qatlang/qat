@@ -42,29 +42,36 @@ class PrerunLocal {
 };
 
 class PreBlock {
-	PrerunFunction*   function = nullptr;
+	PrerunCallState*  callState;
 	Vec<PrerunLocal*> locals;
-	Vec<PreBlock*>    children;
-	PreBlock*         parent   = nullptr;
-	PreBlock*         previous = nullptr;
-	PreBlock*         next     = nullptr;
-
-	PreBlock(PrerunFunction* _function, PreBlock* _parent) : function(_function), parent(_parent) {
-		if (parent) {
-			parent->children.push_back(this);
-		}
-	}
+	PreBlock*         firstChild = nullptr;
+	PreBlock*         parent     = nullptr;
+	PreBlock*         previous   = nullptr;
+	PreBlock*         next       = nullptr;
 
   public:
+	PreBlock(PrerunCallState* _callState, PreBlock* _parent);
+
+	useit static PreBlock* create(PrerunCallState* callState, PreBlock* parent = nullptr) {
+		return std::construct_at(OwnNormal(PreBlock), callState, parent);
+	}
+
+	useit static PreBlock* create_next_to(PreBlock* previous) {
+		auto res = std::construct_at(OwnNormal(PreBlock), previous->callState, previous->parent);
+		res->set_previous(previous);
+		return res;
+	}
+
 	~PreBlock() {
 		for (auto loc : locals) {
-			delete loc;
+			std::destroy_at(loc);
+		}
+		if (next != nullptr) {
+			std::destroy_at(next);
 		}
 	}
 
-	useit static PreBlock* get(PrerunFunction* _function, PreBlock* _parent) {
-		return new PreBlock(_function, _parent);
-	}
+	void make_active();
 
 	useit bool has_previous() const { return previous != nullptr; }
 	useit bool has_next() const { return next != nullptr; }
@@ -75,10 +82,22 @@ class PreBlock {
 				return true;
 			}
 		}
+		if (previous != nullptr) {
+			auto pRes = previous->has_local(name);
+			if (pRes) {
+				return pRes;
+			}
+		}
+		if (parent != nullptr) {
+			auto pRes = parent->has_local(name);
+			if (pRes) {
+				return pRes;
+			}
+		}
 		return false;
 	}
 
-	useit PrerunFunction* get_fn() const { return function; }
+	useit PrerunCallState* get_call_state() const { return callState; }
 
 	useit PrerunLocal* get_local(String const& name) {
 		for (auto loc : locals) {
@@ -89,8 +108,10 @@ class PreBlock {
 		return nullptr;
 	}
 
-	void set_previous(PreBlock* _prev) { previous = _prev; }
-	void set_next(PreBlock* _next) { next = _next; }
+	void set_previous(PreBlock* _prev) {
+		previous       = _prev;
+		previous->next = this;
+	}
 };
 
 enum class PreLoopKind {
@@ -123,35 +144,29 @@ class PrerunCallState {
 	friend class ast::PrerunLoopTo;
 	friend class ast::PrerunBreak;
 	friend class ast::PrerunContinue;
+	friend class PreBlock;
 
 	PrerunFunction*   function = nullptr;
 	Vec<PrerunValue*> argumentValues;
-	Vec<PreBlock*>    blocks;
-	usize             activeBlock = 0;
+	PreBlock*         rootBlock;
+	PreBlock*         activeBlock;
 	Vec<PreLoopInfo>  loopsInfo;
-	usize             emitNesting = 0;
-
-	PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
-	    : function(_function), argumentValues(_argVals) {}
 
   public:
-	~PrerunCallState() {
-		for (auto blk : blocks) {
-			delete blk;
-		}
-	}
+	PrerunCallState(PrerunFunction* _function, Vec<PrerunValue*> _argVals)
+	    : function(_function), argumentValues(_argVals), rootBlock(PreBlock::create(this, nullptr)),
+	      activeBlock(rootBlock) {}
+
+	~PrerunCallState() { std::destroy_at(rootBlock); }
 
 	useit static PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
-		return new PrerunCallState(fun, argVals);
+		return std::construct_at(OwnNormal(PrerunCallState), fun, argVals);
 	}
 
+	useit PreBlock*       get_block() const { return activeBlock; }
 	useit PrerunFunction* get_function() const { return function; }
 	useit bool            has_arg_with_name(String const& name);
 	useit PrerunValue*    get_arg_value_for(String const& name);
-
-	void        increment_emit_nesting() { emitNesting++; }
-	void        decrement_emit_nesting() { emitNesting--; }
-	useit usize get_emit_nesting() const { return emitNesting; }
 };
 
 class PrerunFunction : public PrerunValue, public EntityOverview {

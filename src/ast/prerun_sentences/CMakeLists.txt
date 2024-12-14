@@ -4,7 +4,6 @@ add_library(QAT_AST_PRERUN_SENTENCES
   expression_sentence.cc
   give_sentence.cc
   loop_to.cc
-  prerun_sentence.cc
   say.cc
 )
 

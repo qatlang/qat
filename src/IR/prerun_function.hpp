@@ -18,27 +18,26 @@ class PrerunContinue;
 namespace qat::ir {
 
 class PrerunFunction;
+class PrerunCallState;
 
-class PrerunLocal {
-	Identifier   name;
-	Type*        type = nullptr;
-	bool         isVar;
-	PrerunValue* value = nullptr;
-
-	PrerunLocal(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal)
-	    : name(_name), type(_type), isVar(_isVar), value(_initialVal) {}
+class PrerunLocal final : public PrerunValue {
+	Identifier name;
+	bool       isVar;
 
   public:
-	useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, PrerunValue* _initialVal) {
-		return new PrerunLocal(_name, _type, _isVar, _initialVal);
+	PrerunLocal(Identifier _name, Type* _type, bool _isVar, llvm::Constant* _initialVal)
+	    : PrerunValue(_initialVal, _type), name(_name), isVar(_isVar) {}
+
+	useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, llvm::Constant* _initialVal) {
+		return std::construct_at(OwnNormal(PrerunLocal), _name, _type, _isVar, _initialVal);
 	}
 
-	useit Identifier   get_name() const { return name; }
-	useit Type*        get_type() const { return type; }
-	useit bool         is_variable() const { return isVar; }
-	useit PrerunValue* get_value() const { return value; }
+	bool is_prerun_local() const final { return true; }
 
-	void change_value(PrerunValue* other) { value = other; }
+	useit Identifier get_name() const { return name; }
+	useit bool       is_variable() const { return isVar; }
+
+	void change_value(llvm::Constant* other) { ll = other; }
 };
 
 class PreBlock {

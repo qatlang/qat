@@ -75,6 +75,7 @@
 #include "../ast/prerun_sentences/continue.hpp"
 #include "../ast/prerun_sentences/expression_sentence.hpp"
 #include "../ast/prerun_sentences/give_sentence.hpp"
+#include "../ast/prerun_sentences/if_else.hpp"
 #include "../ast/prerun_sentences/loop_to.hpp"
 #include "../ast/prerun_sentences/say.hpp"
 #include "../ast/sentences/assignment.hpp"
@@ -4864,6 +4865,62 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				}
 				i++;
 				sentences.push_back(ast::PrerunSay::create(std::move(values), RangeSpan(start, i)));
+				break;
+			}
+			case TokenType::If: {
+				auto start  = i;
+				auto ifCond = do_prerun_expression(preCtx, i, None);
+				i           = ifCond.second;
+				if (not is_next(TokenType::altArrow, i)) {
+					add_error("Expected => after this to end the condition of the " + color_error("if") + " block",
+					          RangeSpan(start, i));
+				}
+				i++;
+				if (not is_next(TokenType::bracketOpen, i)) {
+					add_error("Expected [ after this to start the sentences for the " + color_error("if") + " block",
+					          RangeSpan(start, i));
+				}
+				i++;
+				auto ifSnts = do_prerun_sentences(preCtx, i);
+				i           = ifSnts.second;
+				Vec<Pair<ast::PrerunExpression*, Vec<ast::PrerunSentence*>>> elseIfChain;
+				while (is_next(TokenType::Else, i) && is_next(TokenType::If, i + 1)) {
+					auto itStart = i + 1;
+					i += 2;
+					auto exp = do_prerun_expression(preCtx, i, None);
+					i        = exp.second;
+					if (not is_next(TokenType::altArrow, i)) {
+						add_error("Exptected => after this to end the condition of this " + color_error("else if") +
+						              " block",
+						          RangeSpan(itStart, i));
+					}
+					i++;
+					if (not is_next(TokenType::bracketOpen, i)) {
+						add_error("Expected [ after this to start the sentences for the " + color_error("else if") +
+						              " block",
+						          RangeSpan(itStart, i));
+					}
+					i++;
+					auto elseIfSnts = do_prerun_sentences(preCtx, i);
+					i               = elseIfSnts.second;
+					elseIfChain.push_back({exp.first, std::move(elseIfSnts.first)});
+				}
+				Maybe<Vec<ast::PrerunSentence*>> elseBlock;
+				if (is_next(TokenType::Else, i)) {
+					i++;
+					if (not is_next(TokenType::bracketOpen, i)) {
+						add_error("Expected [ after this to start the sentences for the " + color_error("else") +
+						              " block",
+						          RangeAt(i));
+					}
+					i++;
+					auto elseSnt = do_prerun_sentences(preCtx, i);
+					i            = elseSnt.second;
+					elseBlock    = std::move(elseSnt.first);
+				}
+				sentences.push_back(ast::PrerunIfElse::create({ifCond.first, std::move(ifSnts.first)},
+				                                              std::move(elseIfChain), std::move(elseBlock),
+				                                              RangeSpan(start, i)));
 				break;
 			}
 			default: {

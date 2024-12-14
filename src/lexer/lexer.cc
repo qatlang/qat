@@ -370,7 +370,7 @@ Token Lexer::tokeniser() {
 				return Token::valued(TokenType::binaryOperator, "==", this->get_position(2));
 			} else if (current == '>') {
 				read();
-				return Token::normal(TokenType::altArrow, this->get_position(2));
+				return Token::normal(TokenType::fatArrow, this->get_position(2));
 			} else {
 				return Token::normal(TokenType::assignment, this->get_position(1));
 			}

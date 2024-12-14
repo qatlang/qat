@@ -64,7 +64,7 @@ enum class TokenType {
 	loop,
 	unaryOperator,
 	comment,
-	altArrow,
+	fatArrow,
 	bitwiseOr,
 	bitwiseAnd,
 	bitwiseNot,

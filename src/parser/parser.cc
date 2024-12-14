@@ -3347,7 +3347,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 								}
 								matchVals.push_back(
 								    ast::MixOrChoiceMatchValue::create(IdentifierAt(j + 3), None, false));
-								if (is_next(TokenType::altArrow, j + 3)) {
+								if (is_next(TokenType::fatArrow, j + 3)) {
 									i = j + 3;
 									break;
 								} else {
@@ -3362,7 +3362,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 							          RangeAt(j + 1));
 						}
 					}
-					if (is_next(TokenType::altArrow, i)) {
+					if (is_next(TokenType::fatArrow, i)) {
 						if (!is_next(TokenType::bracketOpen, i + 1)) {
 							add_error(
 							    "Expected [ after => to start the case block that contains the sentences to be executed for this case",
@@ -3409,7 +3409,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 					} else {
 						add_error("Expected end for [", RangeAt(i + 1));
 					}
-				} else if (is_next(TokenType::altArrow, i)) {
+				} else if (is_next(TokenType::fatArrow, i)) {
 					add_error("Else case for match block doesn't need => before the block", RangeAt(i));
 				} else {
 					add_error("Expected sentences for the else case in match sentence", RangeAt(i));
@@ -3420,9 +3420,9 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 				break;
 			}
 			default: {
-				if (is_primary_within(TokenType::altArrow, i, upto)) {
+				if (is_primary_within(TokenType::fatArrow, i, upto)) {
 					auto                  start       = i;
-					auto                  matchValEnd = first_primary_position(TokenType::altArrow, i).value();
+					auto                  matchValEnd = first_primary_position(TokenType::fatArrow, i).value();
 					Vec<ast::MatchValue*> matchVals;
 					if (is_primary_within(TokenType::separator, i, matchValEnd)) {
 						auto sepPoss = primary_positions_within(TokenType::separator, i, matchValEnd);
@@ -3453,7 +3453,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 						}
 						if (is_next(TokenType::typeSeparator, sepPoss.back())) {
 							if (is_next(TokenType::identifier, sepPoss.back() + 1)) {
-								if (is_next(TokenType::altArrow, sepPoss.back() + 2)) {
+								if (is_next(TokenType::fatArrow, sepPoss.back() + 2)) {
 									matchVals.push_back(ast::MixOrChoiceMatchValue::create(
 									    IdentifierAt(sepPoss.back() + 2), None, false));
 								} else {
@@ -4815,7 +4815,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 					// LOOP TO
 					auto countExp = do_prerun_expression(preCtx, i + 1, None);
 					i             = countExp.second;
-					if (not is_next(TokenType::altArrow, i)) {
+					if (not is_next(TokenType::fatArrow, i)) {
 						add_error("Expected => after this to end the count expression of the " + color_error("loop to"),
 						          RangeSpan(start, i));
 					}
@@ -4871,7 +4871,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				auto start  = i;
 				auto ifCond = do_prerun_expression(preCtx, i, None);
 				i           = ifCond.second;
-				if (not is_next(TokenType::altArrow, i)) {
+				if (not is_next(TokenType::fatArrow, i)) {
 					add_error("Expected => after this to end the condition of the " + color_error("if") + " block",
 					          RangeSpan(start, i));
 				}
@@ -4889,7 +4889,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 					i += 2;
 					auto exp = do_prerun_expression(preCtx, i, None);
 					i        = exp.second;
-					if (not is_next(TokenType::altArrow, i)) {
+					if (not is_next(TokenType::fatArrow, i)) {
 						add_error("Exptected => after this to end the condition of this " + color_error("else if") +
 						              " block",
 						          RangeSpan(itStart, i));
@@ -5228,7 +5228,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					i++;
 				}
 				auto expRes = do_expression(preCtx, None, i, None);
-				if (is_next(TokenType::altArrow, expRes.second)) {
+				if (is_next(TokenType::fatArrow, expRes.second)) {
 					i = expRes.second + 1;
 					if (is_next(TokenType::bracketOpen, i)) {
 						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
@@ -5325,7 +5325,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				auto                                                              start     = i;
 				usize                                                             index     = 0;
 				while (true) {
-					auto altPos = first_primary_position(TokenType::altArrow, i);
+					auto altPos = first_primary_position(TokenType::fatArrow, i);
 					if (altPos.has_value()) {
 						auto expRes = do_expression(ctx, None, i, altPos.value());
 						if (expRes.second + 1 != altPos.value()) {
@@ -5389,7 +5389,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 			case TokenType::Do: {
 				auto              start = i;
 				Maybe<Identifier> tagVal;
-				if (is_next(TokenType::altArrow, i)) {
+				if (is_next(TokenType::fatArrow, i)) {
 					if (is_next(TokenType::identifier, i + 1)) {
 						tagVal = IdentifierAt(i + 2);
 						i += 2;
@@ -5439,7 +5439,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					setCachedExprForSentences(expRes.first);
 					i = expRes.second;
 					break;
-				} else if (is_next(TokenType::altArrow, i)) {
+				} else if (is_next(TokenType::fatArrow, i)) {
 					auto              start = i;
 					Maybe<Identifier> tagValue;
 					if (is_next(TokenType::identifier, i + 1)) {
@@ -5465,7 +5465,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					auto start = i;
 					auto exp   = do_expression(preCtx, None, i + 1, None);
 					i          = exp.second;
-					if (not is_next(TokenType::altArrow, i)) {
+					if (not is_next(TokenType::fatArrow, i)) {
 						add_error("Expected => to end the expression for the item to loop over", RangeSpan(start, i));
 					}
 					i++;
@@ -5504,8 +5504,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					break;
 				} else if (is_next(TokenType::If, i)) {
 					auto start = i;
-					if (first_primary_position(TokenType::altArrow, i + 1).has_value()) {
-						auto altPos = first_primary_position(TokenType::altArrow, i + 1).value();
+					if (first_primary_position(TokenType::fatArrow, i + 1).has_value()) {
+						auto altPos = first_primary_position(TokenType::fatArrow, i + 1).value();
 						auto cond   = do_expression(preCtx, None, i + 1, altPos);
 						if (cond.second + 1 != altPos) {
 							add_error("The condition for the " + color_error("loop if") + " did not span till the =>",
@@ -5544,7 +5544,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					Maybe<Identifier> loopTag  = None;
 					auto              countRes = do_expression(preCtx, None, i + 1, None);
 					i                          = countRes.second;
-					if (is_next(TokenType::altArrow, i)) {
+					if (is_next(TokenType::fatArrow, i)) {
 						i++;
 					} else {
 						add_error("Expected => after the count of the " + color_error("loop to"), RangeSpan(start, i));

@@ -33,7 +33,7 @@ ir::Value* LoopInfinite::emit(EmitCtx* ctx) {
 			               : None);
 		}
 	} else {
-		uniqueName = utils::unique_id();
+		uniqueName = utils::uid_string();
 	}
 	auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
 	SHOW("Infinite loop true block " << trueBlock->get_name())

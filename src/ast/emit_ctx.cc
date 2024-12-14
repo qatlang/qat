@@ -50,8 +50,8 @@ void EmitCtx::genericNameCheck(String const& name, FileRange const& range) {
 	}
 }
 
-void EmitCtx::name_check_in_module(const Identifier& name, const String& entityType, Maybe<String> genericID,
-                                   Maybe<String> opaqueID) {
+void EmitCtx::name_check_in_module(const Identifier& name, const String& entityType, Maybe<u64> genericID,
+                                   Maybe<u64> opaqueID) {
 	auto reqInfo = get_access_info();
 	if (mod->has_opaque_type(name.value, reqInfo)) {
 		auto* opq = mod->get_opaque_type(name.value, get_access_info());

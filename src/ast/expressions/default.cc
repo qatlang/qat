@@ -67,8 +67,8 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 					return nullptr;
 				} else {
 					SHOW("Creating value for default constructor call")
-					auto* loc =
-					    block->new_value(irName.has_value() ? irName->value : utils::unique_id(), eTy, true, fileRange);
+					auto* loc = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), eTy, true,
+					                             fileRange);
 					(void)defFn->call(ctx->irCtx, {loc->get_alloca()}, None, ctx->mod);
 					return loc->to_new_ir_value();
 				}
@@ -86,7 +86,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 				return nullptr;
 			} else {
 				// FIXME - Change after adding checks if type can be prerun
-				auto* loc = block->new_value(irName.has_value() ? irName->value : utils::unique_id(), mTy, true,
+				auto* loc = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), mTy, true,
 				                             irName.has_value() ? irName->range : fileRange);
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(mTy->get_llvm_type()), loc->get_llvm());
 				return loc->to_new_ir_value();

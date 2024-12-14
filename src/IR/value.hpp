@@ -32,7 +32,7 @@ class Value {
 	ir::Type*        type;
 	bool             variable;
 	llvm::Value*     ll;
-	Maybe<String>    localID;
+	Maybe<u64>       localID;
 	bool             isSelf = false;
 	Maybe<FileRange> associatedRange;
 
@@ -48,21 +48,33 @@ class Value {
 	virtual ~Value() = default;
 
 	useit virtual llvm::Value* get_llvm() const { return ll; }
-	useit virtual bool         is_prerun_value() const { return false; }
-	useit virtual Value*       call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod);
+
+	useit virtual bool is_prerun_value() const { return false; }
+
+	useit virtual Value* call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod);
 
 	useit Type* get_ir_type() const { return type; }
-	useit Maybe<String> get_local_id() const { return localID; }
+
+	useit Maybe<u64> get_local_id() const { return localID; }
+
 	useit llvm::Constant* get_llvm_constant() const { return llvm::cast<llvm::Constant>(ll); }
-	useit PrerunValue*    as_prerun() const { return (PrerunValue*)this; }
+
+	useit PrerunValue* as_prerun() const { return (PrerunValue*)this; }
 
 	useit bool is_self_value() const { return isSelf; }
+
 	useit bool is_variable() const { return variable; }
+
 	useit bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
+
 	useit bool is_value() const { return !is_reference() && !is_prerun_value() && !is_ghost_reference(); }
+
 	useit bool is_local_value() const { return localID.has_value(); }
+
 	useit bool is_reference() const { return type->is_reference(); }
+
 	useit bool is_mark() const { return type->is_mark(); }
+
 	useit bool is_ghost_reference() const {
 		return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
 		                llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == get_ir_type()->get_llvm_type()) ||
@@ -72,17 +84,21 @@ class Value {
 	}
 
 	useit bool is_prerun_function() const;
+
 	useit ir::PrerunFunction* as_prerun_function() const { return (ir::PrerunFunction*)ll; }
 
 	useit ir::Value* with_range(FileRange rangeVal) {
 		associatedRange = rangeVal;
 		return this;
 	}
-	useit bool      has_associated_range() const { return associatedRange.has_value(); }
+
+	useit bool has_associated_range() const { return associatedRange.has_value(); }
+
 	useit FileRange get_associated_range() const { return associatedRange.value(); }
 
 	void set_self() { isSelf = true; }
-	void set_local_id(const String& locID) { localID = locID; }
+
+	void set_local_id(const u64& locID) { localID = locID; }
 
 	void load_ghost_reference(llvm::IRBuilder<>& builder) {
 		if (is_ghost_reference()) {

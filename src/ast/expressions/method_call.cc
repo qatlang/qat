@@ -252,7 +252,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			}
 		} //
 		Vec<llvm::Value*> argVals;
-		Maybe<String>     localID = inst->get_local_id();
+		auto              localID = inst->get_local_id();
 		argVals.push_back(inst->get_llvm());
 		for (usize i = 1; i < fnTy->get_argument_count(); i++) {
 			auto* currArg = argsEmit[i - 1];

@@ -178,7 +178,7 @@ void Block::collect_locals_from(Vec<LocalValue*>& vals) const {
 	}
 }
 
-bool Block::is_moved(const String& locID) const {
+bool Block::is_moved(const u64& locID) const {
 	if (prevBlock) {
 		return prevBlock->is_moved(locID);
 	}
@@ -294,7 +294,7 @@ Function::~Function() {
 	}
 }
 
-ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Maybe<String> localID, Mod* destMod) {
+ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Maybe<u64> localID, Mod* destMod) {
 	SHOW("Linking function if it is external")
 	auto* llvmFunction = llvm::cast<llvm::Function>(ll);
 	if (destMod->get_id() != mod->get_id()) {
@@ -497,7 +497,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					restBlock->link_previous_block(currBlock);
 					// NOLINTNEXTLINE(readability-magic-numbers)
 					auto* count =
-					    currBlock->new_value(utils::unique_id(), ir::UnsignedType::create(64u, irCtx), true, {""});
+					    currBlock->new_value(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true, {""});
 					irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 					                           count->get_llvm());
 					irCtx->builder.CreateCondBr(
@@ -603,8 +603,8 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							auto* restBlock = new ir::Block(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							// NOLINTNEXTLINE(readability-magic-numbers)
-							auto* count = currBlock->new_value(utils::unique_id(), ir::UnsignedType::create(64u, irCtx),
-							                                   true, {""});
+							auto* count = currBlock->new_value(utils::uid_string(),
+							                                   ir::UnsignedType::create(64u, irCtx), true, {""});
 							irCtx->builder.CreateStore(
 							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 							    count->get_llvm());

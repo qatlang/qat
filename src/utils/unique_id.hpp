@@ -5,12 +5,8 @@
 
 namespace qat::utils {
 
-/**
- *  Generate a unique id. This is almost UUID
- *
- * @return String The Unique ID
- */
-String unique_id();
+u64    unique_id();
+String uid_string();
 
 } // namespace qat::utils
 

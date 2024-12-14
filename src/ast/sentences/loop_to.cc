@@ -50,7 +50,7 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 		if (limit->get_ir_type()->is_reference()) {
 			llCount = ctx->irCtx->builder.CreateLoad(countTy->get_llvm_type(), llCount);
 		}
-		auto  uniq      = hasTag() ? tag.value().value : utils::unique_id();
+		auto  uniq      = hasTag() ? tag.value().value : utils::uid_string();
 		auto* loopIndex = ctx->get_fn()->get_block()->new_value(uniq, originalLimitTy, false,
 		                                                        tag.has_value() ? tag->range : fileRange);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u), loopIndex->get_alloca());

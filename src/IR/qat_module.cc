@@ -543,7 +543,7 @@ bool Mod::should_be_named() const { return moduleType == ModuleType::lib; }
 Function* Mod::get_mod_initialiser(Ctx* ctx) {
 	if (!moduleInitialiser) {
 		moduleInitialiser = ir::Function::Create(
-		    this, Identifier("module'initialiser'" + utils::unique_id(), {filePath}), None, {/* Generics */}, false,
+		    this, Identifier("module'initialiser'" + get_referrable_name(), {filePath}), None, {/* Generics */}, false,
 		    ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, name.range, VisibilityInfo::pub(), ctx);
 		auto* entry = new ir::Block(moduleInitialiser, nullptr);
 		entry->set_active(ctx->builder);

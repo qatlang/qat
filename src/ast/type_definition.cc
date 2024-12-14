@@ -71,7 +71,7 @@ void TypeDefinition::unset_variant_name() const { variantName = None; }
 void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
 	emitCtx->name_check_in_module(name, is_generic() ? "generic type definition" : "type definition",
-	                              is_generic() ? Maybe<String>(genericTypeDefinition->get_id()) : None);
+	                              is_generic() ? Maybe<u64>(genericTypeDefinition->get_id()) : None);
 	auto dTyName = name;
 	if (is_generic()) {
 		dTyName = Identifier(variantName.value(), name.range);

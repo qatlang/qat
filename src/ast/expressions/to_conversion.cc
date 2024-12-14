@@ -99,7 +99,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						                      false);
 					} else {
 						auto newVal =
-						    ctx->get_fn()->get_block()->new_value(utils::unique_id(), destTy, false, fileRange);
+						    ctx->get_fn()->get_block()->new_value(utils::uid_string(), destTy, false, fileRange);
 						ctx->irCtx->builder.CreateStore(
 						    val->get_llvm(),
 						    ctx->irCtx->builder.CreateStructGEP(destTy->get_llvm_type(), newVal->get_llvm(), 0u));

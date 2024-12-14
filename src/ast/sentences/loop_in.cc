@@ -145,7 +145,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		mainBlock->set_active(ctx->irCtx->builder);
 		auto zeroU8    = llvm::ConstantInt::get(llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx), 0u, false);
 		auto zero64    = llvm::ConstantInt::get(llvm::IntegerType::getInt64Ty(ctx->irCtx->llctx), 0u);
-		auto indexVar  = mainBlock->new_value(indexName.has_value() ? indexName->value : utils::unique_id(), countTy,
+		auto indexVar  = mainBlock->new_value(indexName.has_value() ? indexName->value : utils::uid_string(), countTy,
 		                                     false, indexName.has_value() ? indexName->range : fileRange);
 		auto elemUseTy = elemTy;
 		if (not isTyVec) {

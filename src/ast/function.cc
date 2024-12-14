@@ -100,7 +100,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 	SHOW("Creating function " << name.value << " with generic count: " << generics.size())
 	auto emitCtx = EmitCtx::get(irCtx, mod);
 	emitCtx->name_check_in_module(name, is_generic() ? "generic function" : "function",
-	                              is_generic() ? Maybe<String>(genericFn->get_id()) : None);
+	                              is_generic() ? Maybe<u64>(genericFn->get_id()) : None);
 	Vec<ir::Type*> generatedTypes;
 	String         fnName = name.value;
 	SHOW("Creating function")

@@ -480,7 +480,7 @@ void Method::update_overview() {
 	    ._("name", selfName)
 	    ._("arguments", argsJSON)
 	    ._("isInSkill", is_in_skill())
-	    ._("skillID", is_in_skill() ? get_parent_skill()->get_id() : "")
+	    ._("skillID", is_in_skill() ? get_parent_skill()->get_id() : JsonValue())
 	    ._("parentTypeID", parent->get_parent_type()->get_id())
 	    ._("moduleID", parent->is_done_skill() ? parent->as_done_skill()->get_module()->get_id()
 	                                           : parent->as_expanded()->get_module()->get_id())

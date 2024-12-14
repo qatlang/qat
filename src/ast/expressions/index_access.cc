@@ -285,12 +285,12 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		    ctx->irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->irCtx->llctx), instVal, {ind->get_llvm()}),
 		    ir::ReferenceType::get(isVarExp, ir::NativeType::get_char(ctx->irCtx), ctx->irCtx), false);
 	} else if (instType->is_expanded()) {
-		auto*         eTy      = instType->as_expanded();
-		ir::Method*   opFn     = nullptr;
-		ir::Value*    operand  = nullptr;
-		Maybe<String> localID  = inst->get_local_id();
-		bool          isVarExp = inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable()
-		                                              : (inst->is_ghost_reference() ? inst->is_variable() : true);
+		auto*       eTy      = instType->as_expanded();
+		ir::Method* opFn     = nullptr;
+		ir::Value*  operand  = nullptr;
+		auto        localID  = inst->get_local_id();
+		bool        isVarExp = inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable()
+		                                            : (inst->is_ghost_reference() ? inst->is_variable() : true);
 		SHOW("Index access: isVarExp = " << isVarExp)
 		if (!indType->is_reference() &&
 		    ((isVarExp && eTy->has_variation_binary_operator(

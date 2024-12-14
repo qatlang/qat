@@ -95,7 +95,7 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					}
 				} else {
 					createIn = ctx->get_fn()->get_block()->new_value(
-					    irName.has_value() ? irName->value : utils::unique_id(), mixTy, isVar,
+					    irName.has_value() ? irName->value : utils::uid_string(), mixTy, isVar,
 					    irName.has_value() ? irName->range : fileRange);
 				}
 				SHOW("Creating mix store")

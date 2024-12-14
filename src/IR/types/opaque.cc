@@ -6,7 +6,7 @@
 
 namespace qat::ir {
 
-OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
+OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<u64> _genericID,
                        Maybe<OpaqueSubtypeKind> _subtypeKind, ir::Mod* _parent, Maybe<usize> _size,
                        VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
     : EntityOverview(
@@ -63,7 +63,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 	}
 }
 
-OpaqueType* OpaqueType::get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
+OpaqueType* OpaqueType::get(Identifier name, Vec<GenericArgument*> generics, Maybe<u64> genericID,
                             Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
                             VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo) {
 	return std::construct_at(OwnNormal(OpaqueType), name, generics, genericID, subtypeKind, parent, size, visibility,
@@ -91,7 +91,7 @@ ir::Mod* OpaqueType::get_module() const { return parent; }
 
 bool OpaqueType::is_generic() const { return !generics.empty(); }
 
-Maybe<String> OpaqueType::get_generic_id() const { return genericID; }
+Maybe<u64> OpaqueType::get_generic_id() const { return genericID; }
 
 bool OpaqueType::has_generic_parameter(const String& name) const {
 	for (auto* gen : generics) {

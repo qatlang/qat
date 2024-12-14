@@ -84,7 +84,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 				} else {
 					auto* maybeTy = ir::MaybeType::get(subType, false, ctx->irCtx);
 					auto* block   = ctx->get_fn()->get_block();
-					auto* loc     = block->new_value(irName.has_value() ? irName->value : utils::unique_id(), maybeTy,
+					auto* loc     = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), maybeTy,
 					                             isVar, irName.has_value() ? irName->range : fileRange);
 					maybeTagPtr = ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), loc->get_alloca(), 0u);
 					maybeValuePtr =
@@ -108,7 +108,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					return nullptr;
 				} else {
 					auto* block  = ctx->get_fn()->get_block();
-					auto* newLoc = block->new_value(irName.has_value() ? irName->value : utils::unique_id(), maybeTy,
+					auto* newLoc = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), maybeTy,
 					                                isVar, irName.has_value() ? irName->range : fileRange);
 					ctx->irCtx->builder.CreateStore(subValue, ctx->irCtx->builder.CreateStructGEP(
 					                                              maybeTy->get_llvm_type(), newLoc->get_alloca(), 1u));
@@ -146,7 +146,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 				} else {
 					auto maybeTy   = ir::MaybeType::get(expectSubTy, false, ctx->irCtx);
 					auto new_value = ctx->get_fn()->get_block()->new_value(
-					    irName.has_value() ? irName->value : utils::unique_id(), maybeTy, isVar,
+					    irName.has_value() ? irName->value : utils::uid_string(), maybeTy, isVar,
 					    irName.has_value() ? irName->range : fileRange);
 					if (expectSubTy->as_reference()->get_subtype()->is_type_sized()) {
 						ctx->irCtx->builder.CreateStore(
@@ -186,7 +186,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 			} else {
 				if (expectSubTy->is_type_sized()) {
 					auto* new_value =
-					    ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::unique_id(),
+					    ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::uid_string(),
 					                                          ir::MaybeType::get(expectSubTy, false, ctx->irCtx),
 					                                          irName.has_value() ? isVar : true, fileRange);
 					ctx->irCtx->builder.CreateStore(
@@ -199,7 +199,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					return new_value->to_new_ir_value();
 				} else {
 					auto* new_value =
-					    ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::unique_id(),
+					    ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::uid_string(),
 					                                          ir::MaybeType::get(expectSubTy, false, ctx->irCtx),
 					                                          irName.has_value() ? isVar : true, fileRange);
 					ctx->irCtx->builder.CreateStore(

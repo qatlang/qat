@@ -8,15 +8,14 @@
 namespace qat::ir {
 
 class Uniq {
-  private:
-	String id;
+	u64 id;
 
   public:
-	explicit Uniq(String idVal) : id(std::move(idVal)) {}
+	explicit Uniq(u64 idVal) : id(idVal) {}
 	Uniq() : id(utils::unique_id()) {}
 
-	useit String get_id() const { return id; }
-	useit bool   isID(const String& val) const { return (val == id); }
+	useit u64  get_id() const { return id; }
+	useit bool isID(const u64& val) const { return (val == id); }
 };
 
 } // namespace qat::ir

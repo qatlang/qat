@@ -66,7 +66,7 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
 	auto* newLocal =
 	    isLocalDecl()
 	        ? localValue
-	        : ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName.value().value : utils::unique_id(),
+	        : ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName.value().value : utils::uid_string(),
 	                                                tupleTy, irName.has_value() ? isVar : true,
 	                                                irName.has_value() ? irName.value().range : fileRange);
 	if (isAllMemsPre) {

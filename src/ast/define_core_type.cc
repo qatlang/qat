@@ -154,7 +154,7 @@ void DefineCoreType::create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ct
 		                                       << genericStructType
 		                                       << "; datalayout: " << irCtx->dataLayout.has_value())
 		setOpaque(
-		    ir::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<String>(genericStructType->get_id()) : None,
+		    ir::OpaqueType::get(cTyName, genericsIR, isGeneric() ? Maybe<u64>(genericStructType->get_id()) : None,
 		                        ir::OpaqueSubtypeKind::core, mod,
 		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
 		                        mainVisibility, irCtx->llctx, irMeta));

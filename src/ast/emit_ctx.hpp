@@ -133,8 +133,8 @@ struct EmitCtx {
 
 	void genericNameCheck(String const& name, FileRange const& range);
 
-	void name_check_in_module(const Identifier& name, const String& entityType, Maybe<String> genericID = None,
-	                          Maybe<String> opaqueID = None);
+	void name_check_in_module(const Identifier& name, const String& entityType, Maybe<u64> genericID = None,
+	                          Maybe<u64> opaqueID = None);
 
 	void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
 

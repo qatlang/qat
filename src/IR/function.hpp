@@ -68,18 +68,18 @@ class Block : public Uniq {
 	friend Method;
 
   private:
-	String              name;
-	llvm::BasicBlock*   bb;
-	Vec<LocalValue*>    values;
-	Block*              parent = nullptr;
-	Vec<Block*>         children;
-	Function*           fn;
-	usize               index;
-	Maybe<usize>        active;
-	mutable Vec<String> movedValues;
-	mutable bool        isGhost = false;
-	mutable bool        hasGive = false;
-	mutable bool        hasTodo = false;
+	String            name;
+	llvm::BasicBlock* bb;
+	Vec<LocalValue*>  values;
+	Block*            parent = nullptr;
+	Vec<Block*>       children;
+	Function*         fn;
+	usize             index;
+	Maybe<usize>      active;
+	mutable Vec<u64>  movedValues;
+	mutable bool      isGhost = false;
+	mutable bool      hasGive = false;
+	mutable bool      hasTodo = false;
 
 	Block* prevBlock = nullptr;
 	Block* nextBlock = nullptr;
@@ -108,7 +108,7 @@ class Block : public Uniq {
 		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
 		return values.back();
 	}
-	useit bool is_moved(const String& locID) const;
+	useit bool is_moved(const u64& locID) const;
 	useit bool has_give_in_all_control_paths() const;
 
 	useit bool   has_todo() const { return hasTodo; }
@@ -138,7 +138,7 @@ class Block : public Uniq {
 	void set_file_range(FileRange _fileRange) { fileRange = _fileRange; }
 	void set_has_give() const { hasGive = true; }
 	void set_has_todo() const { hasTodo = true; }
-	void add_moved_value(String locID) const { movedValues.push_back(std::move(locID)); }
+	void add_moved_value(u64 locID) const { movedValues.push_back(locID); }
 
 	void set_active(llvm::IRBuilder<>& builder);
 	void collect_all_local_values_so_far(Vec<LocalValue*>& vals) const;
@@ -181,7 +181,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 	                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
 	                        Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
-	useit Value*             call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> localID, Mod* mod) override;
+	useit Value*             call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod) override;
 	useit virtual bool       is_method() const { return false; }
 	useit bool               has_variadic_args() const { return hasVariadicArguments; }
 	useit Identifier         arg_name_at(u32 index) const { return arguments[index].get_name(); }

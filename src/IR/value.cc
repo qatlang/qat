@@ -30,7 +30,7 @@ Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRa
 
 bool Value::is_prerun_function() const { return is_prerun_value() && get_ir_type()->is_function(); }
 
-Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<String> _localID,
+Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> _localID,
                    Mod* mod) { // NOLINT(misc-unused-parameters)
 	llvm::FunctionType* fnTy  = nullptr;
 	ir::FunctionType*   funTy = nullptr;

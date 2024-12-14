@@ -97,9 +97,9 @@ VisibilityInfo::operator Json() const {
 	return Json()
 	    ._("nature", Visibility::getValue(kind))
 	    ._("hasModule", moduleVal != nullptr)
-	    ._("moduleID", moduleVal ? moduleVal->get_id() : "")
+	    ._("moduleID", moduleVal ? moduleVal->get_id() : JsonValue())
 	    ._("hasType", typePtr != nullptr)
-	    ._("typeID", typePtr ? typePtr->get_id() : "");
+	    ._("typeID", typePtr ? typePtr->get_id() : JsonValue());
 }
 
 VisibilityInfo::operator JsonValue() const { return (Json)(*this); }

@@ -33,7 +33,7 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 			               : None);
 		}
 	} else {
-		uniq = utils::unique_id();
+		uniq = utils::uid_string();
 	}
 	ir::Value* cond = isDoAndLoop ? nullptr : condition->emit(ctx);
 	if (cond == nullptr || cond->get_ir_type()->is_bool() ||

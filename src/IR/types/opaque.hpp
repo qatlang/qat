@@ -29,7 +29,7 @@ class OpaqueType : public Type, public EntityOverview {
 
 	Identifier               name;
 	Vec<GenericArgument*>    generics;
-	Maybe<String>            genericID;
+	Maybe<u64>               genericID;
 	Maybe<OpaqueSubtypeKind> subtypeKind;
 	ir::Mod*                 parent;
 	ir::ExpandedType*        subTy = nullptr;
@@ -38,11 +38,11 @@ class OpaqueType : public Type, public EntityOverview {
 	Maybe<MetaInfo>          metaInfo;
 
   public:
-	OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<String> _genericID,
+	OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<u64> _genericID,
 	           Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
 	           llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
-	useit static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<String> genericID,
+	useit static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<u64> genericID,
 	                             Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
 	                             VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
@@ -51,7 +51,7 @@ class OpaqueType : public Type, public EntityOverview {
 	useit ir::Mod*              get_module() const;
 	useit VisibilityInfo const& get_visibility() const;
 	useit bool                  is_generic() const;
-	useit Maybe<String>    get_generic_id() const;
+	useit Maybe<u64>       get_generic_id() const;
 	useit bool             has_generic_parameter(String const& name) const;
 	useit GenericArgument* get_generic_parameter(String const& name) const;
 

@@ -61,7 +61,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 					irVal->load_ghost_reference(ctx->irCtx->builder);
 				}
 			} else {
-				auto* loc = ctx->get_fn()->get_block()->new_value(utils::unique_id(), valTy, true, fileRange);
+				auto* loc = ctx->get_fn()->get_block()->new_value(utils::uid_string(), valTy, true, fileRange);
 				ctx->irCtx->builder.CreateStore(irVal->get_llvm(), loc->get_llvm());
 				irVal = loc;
 			}

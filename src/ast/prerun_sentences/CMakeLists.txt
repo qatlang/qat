@@ -3,6 +3,7 @@ add_library(QAT_AST_PRERUN_SENTENCES
   continue.cc
   expression_sentence.cc
   give_sentence.cc
+  if_else.cc
   loop_to.cc
   say.cc
 )

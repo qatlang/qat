@@ -52,9 +52,9 @@ void MaybeType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 			auto* tag =
 			    irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 			                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
-			auto* trueBlock  = new ir::Block(fun, fun->get_block());
-			auto* falseBlock = new ir::Block(fun, fun->get_block());
-			auto* restBlock  = new ir::Block(fun, fun->get_block()->get_parent());
+			auto* trueBlock  = ir::Block::create(fun, fun->get_block());
+			auto* falseBlock = ir::Block::create(fun, fun->get_block());
+			auto* restBlock  = ir::Block::create(fun, fun->get_block()->get_parent());
 			restBlock->link_previous_block(fun->get_block());
 			irCtx->builder.CreateCondBr(
 			    irCtx->builder.CreateICmpEQ(tag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
@@ -93,15 +93,15 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			auto* secondTag =
 			    irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 			                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
-			auto* tagMatchTrueBlock  = new ir::Block(fun, fun->get_block());
-			auto* tagMatchFalseBlock = new ir::Block(fun, fun->get_block());
-			auto* restBlock          = new ir::Block(fun, fun->get_block()->get_parent());
+			auto* tagMatchTrueBlock  = ir::Block::create(fun, fun->get_block());
+			auto* tagMatchFalseBlock = ir::Block::create(fun, fun->get_block());
+			auto* restBlock          = ir::Block::create(fun, fun->get_block()->get_parent());
 			restBlock->link_previous_block(fun->get_block());
 			irCtx->builder.CreateCondBr(irCtx->builder.CreateICmpEQ(firstTag, secondTag), tagMatchTrueBlock->get_bb(),
 			                            tagMatchFalseBlock->get_bb());
 			tagMatchTrueBlock->set_active(irCtx->builder);
-			auto* tagTrueBlock  = new ir::Block(fun, tagMatchTrueBlock);
-			auto* tagFalseBlock = new ir::Block(fun, tagMatchTrueBlock);
+			auto* tagTrueBlock  = ir::Block::create(fun, tagMatchTrueBlock);
+			auto* tagFalseBlock = ir::Block::create(fun, tagMatchTrueBlock);
 			irCtx->builder.CreateCondBr(
 			    irCtx->builder.CreateICmpEQ(firstTag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
 			    tagTrueBlock->get_bb(), tagFalseBlock->get_bb());
@@ -117,8 +117,8 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			tagFalseBlock->set_active(irCtx->builder);
 			(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 			tagMatchFalseBlock->set_active(irCtx->builder);
-			auto* firstValueBlock  = new ir::Block(fun, tagMatchFalseBlock);
-			auto* secondValueBlock = new ir::Block(fun, tagMatchFalseBlock);
+			auto* firstValueBlock  = ir::Block::create(fun, tagMatchFalseBlock);
+			auto* secondValueBlock = ir::Block::create(fun, tagMatchFalseBlock);
 			irCtx->builder.CreateCondBr(
 			    irCtx->builder.CreateICmpEQ(firstTag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
 			    firstValueBlock->get_bb(), secondValueBlock->get_bb());
@@ -159,9 +159,9 @@ void MaybeType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 			auto* tag =
 			    irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 			                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
-			auto* trueBlock  = new ir::Block(fun, fun->get_block());
-			auto* falseBlock = new ir::Block(fun, fun->get_block());
-			auto* restBlock  = new ir::Block(fun, fun->get_block()->get_parent());
+			auto* trueBlock  = ir::Block::create(fun, fun->get_block());
+			auto* falseBlock = ir::Block::create(fun, fun->get_block());
+			auto* restBlock  = ir::Block::create(fun, fun->get_block()->get_parent());
 			restBlock->link_previous_block(fun->get_block());
 			irCtx->builder.CreateCondBr(
 			    irCtx->builder.CreateICmpEQ(tag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
@@ -203,15 +203,15 @@ void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			auto* secondTag =
 			    irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 			                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
-			auto* tagMatchTrueBlock  = new ir::Block(fun, fun->get_block());
-			auto* tagMatchFalseBlock = new ir::Block(fun, fun->get_block());
-			auto* restBlock          = new ir::Block(fun, fun->get_block()->get_parent());
+			auto* tagMatchTrueBlock  = ir::Block::create(fun, fun->get_block());
+			auto* tagMatchFalseBlock = ir::Block::create(fun, fun->get_block());
+			auto* restBlock          = ir::Block::create(fun, fun->get_block()->get_parent());
 			restBlock->link_previous_block(fun->get_block());
 			irCtx->builder.CreateCondBr(irCtx->builder.CreateICmpEQ(firstTag, secondTag), tagMatchTrueBlock->get_bb(),
 			                            tagMatchFalseBlock->get_bb());
 			tagMatchTrueBlock->set_active(irCtx->builder);
-			auto* tagTrueBlock  = new ir::Block(fun, tagMatchTrueBlock);
-			auto* tagFalseBlock = new ir::Block(fun, tagMatchTrueBlock);
+			auto* tagTrueBlock  = ir::Block::create(fun, tagMatchTrueBlock);
+			auto* tagFalseBlock = ir::Block::create(fun, tagMatchTrueBlock);
 			irCtx->builder.CreateCondBr(
 			    irCtx->builder.CreateICmpEQ(firstTag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
 			    tagTrueBlock->get_bb(), tagFalseBlock->get_bb());
@@ -229,8 +229,8 @@ void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			tagFalseBlock->set_active(irCtx->builder);
 			(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 			tagMatchFalseBlock->set_active(irCtx->builder);
-			auto* firstValueBlock  = new ir::Block(fun, tagMatchFalseBlock);
-			auto* secondValueBlock = new ir::Block(fun, tagMatchFalseBlock);
+			auto* firstValueBlock  = ir::Block::create(fun, tagMatchFalseBlock);
+			auto* secondValueBlock = ir::Block::create(fun, tagMatchFalseBlock);
 			irCtx->builder.CreateCondBr(
 			    irCtx->builder.CreateICmpEQ(firstTag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
 			    firstValueBlock->get_bb(), secondValueBlock->get_bb());
@@ -269,8 +269,8 @@ void MaybeType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 		}
 		auto* inst      = instance->get_llvm();
 		auto* currBlock = fun->get_block();
-		auto* trueBlock = new ir::Block(fun, currBlock);
-		auto* restBlock = new ir::Block(fun, currBlock->get_parent());
+		auto* trueBlock = ir::Block::create(fun, currBlock);
+		auto* restBlock = ir::Block::create(fun, currBlock->get_parent());
 		restBlock->link_previous_block(currBlock);
 		irCtx->builder.CreateCondBr(irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 		                                                      irCtx->builder.CreateStructGEP(llvmType, inst, 0u)),

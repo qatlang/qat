@@ -35,7 +35,7 @@ PrerunValue* PrerunCallState::get_arg_value_for(String const& name) {
 PrerunFunction::PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
                                Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib,
                                llvm::LLVMContext& ctx)
-    : PrerunValue((llvm::Constant*)this, new ir::FunctionType(ReturnType::get(_retTy), _argTys, ctx)),
+    : PrerunValue((llvm::Constant*)this, ir::FunctionType::create(ReturnType::get(_retTy), _argTys, ctx)),
       EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
       parent(_parent), visibility(visib), sentences(_sentences) {
 	parent->prerunFunctions.push_back(this);

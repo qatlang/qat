@@ -42,10 +42,10 @@ Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> _lo
 		funTy = type->as_function();
 	}
 	auto result =
-	    new Value(irCtx->builder.CreateCall(fnTy, ll, args),
-	              type->is_mark() ? type->as_mark()->get_subtype()->as_function()->get_return_type()->get_type()
-	                              : type->as_function()->get_return_type()->get_type(),
-	              false);
+	    Value::get(irCtx->builder.CreateCall(fnTy, ll, args),
+	               type->is_mark() ? type->as_mark()->get_subtype()->as_function()->get_return_type()->get_type()
+	                               : type->as_function()->get_return_type()->get_type(),
+	               false);
 	if (_localID && funTy->get_return_type()->is_return_self()) {
 		result->set_local_id(_localID.value());
 	}

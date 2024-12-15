@@ -42,6 +42,7 @@ class BringBitwidths;
 class BringEntities;
 class MethodCall;
 class MemberAccess;
+class Entity;
 } // namespace qat::ast
 
 namespace qat::ir {
@@ -419,6 +420,7 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class qat::QatSitter;
 	friend class ast::MethodCall;
 	friend class ast::MemberAccess;
+	friend class ast::Entity;
 
   public:
 	Mod(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
@@ -514,7 +516,9 @@ class Mod final : public Uniq, public EntityOverview {
 	fs::path        llPath;
 	Maybe<fs::path> objectFilePath;
 
-	mutable llvm::Module* llvmModule;
+	mutable llvm::Module*              llvmModule;
+	mutable Vec<llvm::GlobalVariable*> otherGlobals;
+
 	mutable Maybe<String> moduleForeignID;
 
 	mutable bool linkPthread                  = false;

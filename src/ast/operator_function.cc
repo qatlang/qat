@@ -183,7 +183,7 @@ void OperatorDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype-
 ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	auto* fnEmit = state.result;
 	SHOW("Set active operator function: " << fnEmit->get_full_name())
-	auto* block = new ir::Block(fnEmit, nullptr);
+	auto* block = ir::Block::create(fnEmit, nullptr);
 	SHOW("Created entry block")
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")

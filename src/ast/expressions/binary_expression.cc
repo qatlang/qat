@@ -506,14 +506,14 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				    ->with_range(fileRange);
 			}
 			auto* curr              = ctx->get_fn()->get_block();
-			auto* lenCheckTrueBlock = new ir::Block(ctx->get_fn(), curr);
-			auto* strCmpTrueBlock   = new ir::Block(ctx->get_fn(), curr);
-			auto* strCmpFalseBlock  = new ir::Block(ctx->get_fn(), curr);
-			auto* iterCondBlock     = new ir::Block(ctx->get_fn(), lenCheckTrueBlock);
-			auto* iterTrueBlock     = new ir::Block(ctx->get_fn(), lenCheckTrueBlock);
-			auto* iterIncrBlock     = new ir::Block(ctx->get_fn(), iterTrueBlock);
-			auto* iterFalseBlock    = new ir::Block(ctx->get_fn(), lenCheckTrueBlock);
-			auto* restBlock         = new ir::Block(ctx->get_fn(), curr->get_parent());
+			auto* lenCheckTrueBlock = ir::Block::create(ctx->get_fn(), curr);
+			auto* strCmpTrueBlock   = ir::Block::create(ctx->get_fn(), curr);
+			auto* strCmpFalseBlock  = ir::Block::create(ctx->get_fn(), curr);
+			auto* iterCondBlock     = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
+			auto* iterTrueBlock     = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
+			auto* iterIncrBlock     = ir::Block::create(ctx->get_fn(), iterTrueBlock);
+			auto* iterFalseBlock    = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
+			auto* restBlock         = ir::Block::create(ctx->get_fn(), curr->get_parent());
 			restBlock->link_previous_block(curr);
 			auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->irCtx->llctx);
 			auto* qatStrCmpIndex = ctx->get_fn()->get_str_comparison_index();

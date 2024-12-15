@@ -40,8 +40,8 @@ ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
 			}
 			asmFnTy = irTy->as_function();
 		} else {
-			asmFnTy =
-			    new ir::FunctionType(ir::ReturnType::get(ir::VoidType::get(ctx->irCtx->llctx)), {}, ctx->irCtx->llctx);
+			asmFnTy = ir::FunctionType::create(ir::ReturnType::get(ir::VoidType::get(ctx->irCtx->llctx)), {},
+			                                   ctx->irCtx->llctx);
 		}
 		auto asmStrExp = asmValue->emit(ctx);
 		SHOW("ASM string emitted")

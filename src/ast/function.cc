@@ -84,8 +84,8 @@ void FunctionPrototype::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irC
 			for (auto* gen : generics) {
 				gen->emit(EmitCtx::get(irCtx, mod));
 			}
-			genericFn = new ir::GenericFunction(name, generics, genericConstraint, this, mod,
-			                                    emitCtx->get_visibility_info(visibSpec));
+			genericFn = ir::GenericFunction::create(name, generics, genericConstraint, this, mod,
+			                                        emitCtx->get_visibility_info(visibSpec));
 		}
 	} else {
 		if (phase == ir::EmitPhase::phase_2) {
@@ -342,7 +342,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("Getting IR function from prototype for " << name.value)
 	auto* fnEmit = function;
 	SHOW("Set active function: " << fnEmit->get_full_name())
-	auto* block = new ir::Block(fnEmit, nullptr);
+	auto* block = ir::Block::create(fnEmit, nullptr);
 	SHOW("Created entry block")
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")

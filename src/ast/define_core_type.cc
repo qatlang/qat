@@ -254,8 +254,8 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 		for (auto* gen : generics) {
 			gen->emit(emitCtx);
 		}
-		genericStructType = new ir::GenericStructType(name, generics, genericConstraint, this, mod,
-		                                              emitCtx->get_visibility_info(visibSpec));
+		genericStructType = ir::GenericStructType::create(name, generics, genericConstraint, this, mod,
+		                                                  emitCtx->get_visibility_info(visibSpec));
 	}
 }
 

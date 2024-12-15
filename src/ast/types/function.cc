@@ -20,7 +20,7 @@ ir::Type* FunctionType::emit(EmitCtx* ctx) {
 		irArgTys.push_back(ir::ArgumentType::create_variadic(None));
 	}
 	ir::Type* retTy = returnType->emit(ctx);
-	return new ir::FunctionType(ir::ReturnType::get(retTy), irArgTys, ctx->irCtx->llctx);
+	return ir::FunctionType::create(ir::ReturnType::get(retTy), irArgTys, ctx->irCtx->llctx);
 }
 
 String FunctionType::to_string() const {

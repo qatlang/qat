@@ -178,7 +178,7 @@ void Block::collect_locals_from(Vec<LocalValue*>& vals) const {
 	}
 }
 
-bool Block::is_moved(const u64& locID) const {
+bool Block::is_moved(u64 locID) const {
 	if (prevBlock) {
 		return prevBlock->is_moved(locID);
 	}
@@ -240,10 +240,10 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
 		foreignID = metaInfo->get_foreign_id();
 		linkAlias = metaInfo->get_value_as_string_for(ir::MetaInfo::linkAsKey);
 	}
-	if (!foreignID.has_value()) {
+	if (not foreignID.has_value()) {
 		foreignID = get_module()->get_relevant_foreign_id();
 	}
-	if (!_namingInfo.has_value()) {
+	if (not _namingInfo.has_value()) {
 		namingInfo = mod->get_link_names().newWith(LinkNameUnit(name.value, LinkUnitType::function), foreignID);
 		if (is_generic()) {
 			Vec<LinkNames> genericLinkNames;
@@ -270,7 +270,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
 	for (auto const& arg : arguments) {
 		argTypes.push_back(arg.to_arg_type());
 	}
-	type = new FunctionType(returnType, argTypes, ctx->llctx);
+	type = FunctionType::create(returnType, argTypes, ctx->llctx);
 	if (isMemberFn) {
 		ll = llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
 		                            llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName,
@@ -287,7 +287,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
 
 Function::~Function() {
 	for (auto* blk : blocks) {
-		delete blk;
+		std::destroy_at(blk);
 	}
 	for (auto* gen : generics) {
 		std::destroy_at(gen);
@@ -326,8 +326,9 @@ Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInf
                            bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRange> fileRange,
                            const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                            Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
-	return new Function(mod, std::move(name), namingInfo, std::move(_generics), isInline, returnTy, std::move(args),
-	                    std::move(fileRange), visibilityInfo, irCtx, false, linkage, metaInfo);
+	return std::construct_at(OwnNormal(Function), mod, std::move(name), namingInfo, std::move(_generics), isInline,
+	                         returnTy, std::move(args), std::move(fileRange), visibilityInfo, irCtx, false, linkage,
+	                         metaInfo);
 }
 
 void Function::update_overview() {
@@ -362,7 +363,7 @@ void Function::update_overview() {
 String Function::get_full_name() const { return mod->get_fullname_with_child(name.value); }
 
 ir::LocalValue* Function::get_str_comparison_index() {
-	if (!strComparisonIndex) {
+	if (not strComparisonIndex) {
 		strComparisonIndex = get_first_block()->new_value("qat'strCmpInd",
 		                                                  // NOLINTNEXTLINE(readability-magic-numbers)
 		                                                  ir::UnsignedType::create(64u, ctx), true, name.range);
@@ -491,9 +492,9 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 				auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
 				if (ptrTy->is_slice()) {
 					auto* currBlock = fun->get_block();
-					auto* condBlock = new ir::Block(fun, currBlock);
-					auto* trueBlock = new ir::Block(fun, currBlock);
-					auto* restBlock = new ir::Block(fun, nullptr);
+					auto* condBlock = ir::Block::create(fun, currBlock);
+					auto* trueBlock = ir::Block::create(fun, currBlock);
+					auto* restBlock = ir::Block::create(fun, nullptr);
 					restBlock->link_previous_block(currBlock);
 					// NOLINTNEXTLINE(readability-magic-numbers)
 					auto* count =
@@ -535,8 +536,8 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					restBlock->set_active(irCtx->builder);
 				} else {
 					auto* currBlock = fun->get_block();
-					auto* trueBlock = new ir::Block(fun, currBlock);
-					auto* restBlock = new ir::Block(fun, nullptr);
+					auto* trueBlock = ir::Block::create(fun, currBlock);
+					auto* restBlock = ir::Block::create(fun, nullptr);
 					restBlock->link_previous_block(currBlock);
 					irCtx->builder.CreateCondBr(
 					    irCtx->builder.CreateICmpNE(
@@ -598,9 +599,9 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 						auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
 						if (ptrTy->is_slice()) {
 							auto* currBlock = fun->get_block();
-							auto* condBlock = new ir::Block(fun, currBlock);
-							auto* trueBlock = new ir::Block(fun, currBlock);
-							auto* restBlock = new ir::Block(fun, nullptr);
+							auto* condBlock = ir::Block::create(fun, currBlock);
+							auto* trueBlock = ir::Block::create(fun, currBlock);
+							auto* restBlock = ir::Block::create(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							// NOLINTNEXTLINE(readability-magic-numbers)
 							auto* count = currBlock->new_value(utils::uid_string(),
@@ -645,8 +646,8 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							restBlock->set_active(irCtx->builder);
 						} else {
 							auto* currBlock = fun->get_block();
-							auto* trueBlock = new ir::Block(fun, currBlock);
-							auto* restBlock = new ir::Block(fun, nullptr);
+							auto* trueBlock = ir::Block::create(fun, currBlock);
+							auto* restBlock = ir::Block::create(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							irCtx->builder.CreateCondBr(
 							    irCtx->builder.CreateICmpNE(

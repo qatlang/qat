@@ -234,13 +234,13 @@ void MixType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 		auto*      resDataPtr  = irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u);
 		ir::Block* trueBlock   = nullptr;
 		ir::Block* falseBlock  = nullptr;
-		ir::Block* restBlock   = new ir::Block(fun, fun->get_block()->get_parent());
+		ir::Block* restBlock   = ir::Block::create(fun, fun->get_block()->get_parent());
 		restBlock->link_previous_block(fun->get_block());
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_copy_constructible()) {
 				auto* subTy = subtypes.at(i).second.value();
-				trueBlock   = new ir::Block(fun, falseBlock ? falseBlock : fun->get_block());
-				falseBlock  = new ir::Block(fun, falseBlock ? falseBlock : fun->get_block());
+				trueBlock   = ir::Block::create(fun, falseBlock ? falseBlock : fun->get_block());
+				falseBlock  = ir::Block::create(fun, falseBlock ? falseBlock : fun->get_block());
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        prevTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -282,13 +282,13 @@ void MixType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 		auto*      resDataPtr  = irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u);
 		ir::Block* trueBlock   = nullptr;
 		ir::Block* falseBlock  = nullptr;
-		ir::Block* restBlock   = new ir::Block(fun, fun->get_block()->get_parent());
+		ir::Block* restBlock   = ir::Block::create(fun, fun->get_block()->get_parent());
 		restBlock->link_previous_block(fun->get_block());
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_move_constructible()) {
 				auto* subTy = subtypes.at(i).second.value();
-				trueBlock   = new ir::Block(fun, falseBlock ? falseBlock : fun->get_block());
-				falseBlock  = new ir::Block(fun, falseBlock ? falseBlock : fun->get_block());
+				trueBlock   = ir::Block::create(fun, falseBlock ? falseBlock : fun->get_block());
+				falseBlock  = ir::Block::create(fun, falseBlock ? falseBlock : fun->get_block());
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        prevTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -331,9 +331,9 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		    irCtx->builder.CreateLoad(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth),
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), secondInst->get_llvm(), 0u));
 		auto* secondData        = irCtx->builder.CreateStructGEP(get_llvm_type(), firstInst->get_llvm(), 1u);
-		auto* sameTagTrueBlock  = new ir::Block(fun, fun->get_block());
-		auto* sameTagFalseBlock = new ir::Block(fun, fun->get_block());
-		auto* restBlock         = new ir::Block(fun, fun->get_block()->get_parent());
+		auto* sameTagTrueBlock  = ir::Block::create(fun, fun->get_block());
+		auto* sameTagFalseBlock = ir::Block::create(fun, fun->get_block());
+		auto* restBlock         = ir::Block::create(fun, fun->get_block()->get_parent());
 		restBlock->link_previous_block(fun->get_block());
 		irCtx->builder.CreateCondBr(irCtx->builder.CreateICmpEQ(firstTag, secondTag), sameTagTrueBlock->get_bb(),
 		                            sameTagFalseBlock->get_bb());
@@ -343,8 +343,8 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_copy_assignable()) {
 				auto* subTy   = subtypes.at(i).second.value();
-				cmpTrueBlock  = new ir::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
-				cmpFalseBlock = new ir::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+				cmpTrueBlock  = ir::Block::create(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+				cmpFalseBlock = ir::Block::create(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -371,12 +371,13 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		sameTagFalseBlock->set_active(irCtx->builder);
 		ir::Block* firstCmpTrueBlock  = nullptr;
 		ir::Block* firstCmpFalseBlock = nullptr;
-		ir::Block* firstCmpRestBlock  = new ir::Block(fun, sameTagFalseBlock);
+		ir::Block* firstCmpRestBlock  = ir::Block::create(fun, sameTagFalseBlock);
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_destructible()) {
-				auto* subTy        = subtypes.at(i).second.value();
-				firstCmpTrueBlock  = new ir::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
-				firstCmpFalseBlock = new ir::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+				auto* subTy       = subtypes.at(i).second.value();
+				firstCmpTrueBlock = ir::Block::create(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+				firstCmpFalseBlock =
+				    ir::Block::create(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -400,9 +401,11 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		ir::Block* secondCmpFalseBlock = nullptr;
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_copy_constructible()) {
-				auto* subTy         = subtypes.at(i).second.value();
-				secondCmpTrueBlock  = new ir::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
-				secondCmpFalseBlock = new ir::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+				auto* subTy = subtypes.at(i).second.value();
+				secondCmpTrueBlock =
+				    ir::Block::create(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+				secondCmpFalseBlock =
+				    ir::Block::create(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        secondTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -443,9 +446,9 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		    irCtx->builder.CreateLoad(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth),
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), secondInst->get_llvm(), 0u));
 		auto* secondData        = irCtx->builder.CreateStructGEP(get_llvm_type(), firstInst->get_llvm(), 1u);
-		auto* sameTagTrueBlock  = new ir::Block(fun, fun->get_block());
-		auto* sameTagFalseBlock = new ir::Block(fun, fun->get_block());
-		auto* restBlock         = new ir::Block(fun, fun->get_block()->get_parent());
+		auto* sameTagTrueBlock  = ir::Block::create(fun, fun->get_block());
+		auto* sameTagFalseBlock = ir::Block::create(fun, fun->get_block());
+		auto* restBlock         = ir::Block::create(fun, fun->get_block()->get_parent());
 		restBlock->link_previous_block(fun->get_block());
 		irCtx->builder.CreateCondBr(irCtx->builder.CreateICmpEQ(firstTag, secondTag), sameTagTrueBlock->get_bb(),
 		                            sameTagFalseBlock->get_bb());
@@ -455,8 +458,8 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_copy_assignable()) {
 				auto* subTy   = subtypes.at(i).second.value();
-				cmpTrueBlock  = new ir::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
-				cmpFalseBlock = new ir::Block(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+				cmpTrueBlock  = ir::Block::create(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
+				cmpFalseBlock = ir::Block::create(fun, cmpFalseBlock ? cmpFalseBlock : sameTagTrueBlock);
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -483,12 +486,13 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		sameTagFalseBlock->set_active(irCtx->builder);
 		ir::Block* firstCmpTrueBlock  = nullptr;
 		ir::Block* firstCmpFalseBlock = nullptr;
-		ir::Block* firstCmpRestBlock  = new ir::Block(fun, sameTagFalseBlock);
+		ir::Block* firstCmpRestBlock  = ir::Block::create(fun, sameTagFalseBlock);
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_destructible()) {
-				auto* subTy        = subtypes.at(i).second.value();
-				firstCmpTrueBlock  = new ir::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
-				firstCmpFalseBlock = new ir::Block(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+				auto* subTy       = subtypes.at(i).second.value();
+				firstCmpTrueBlock = ir::Block::create(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
+				firstCmpFalseBlock =
+				    ir::Block::create(fun, firstCmpFalseBlock ? firstCmpFalseBlock : sameTagFalseBlock);
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -512,9 +516,11 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		ir::Block* secondCmpFalseBlock = nullptr;
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_copy_constructible()) {
-				auto* subTy         = subtypes.at(i).second.value();
-				secondCmpTrueBlock  = new ir::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
-				secondCmpFalseBlock = new ir::Block(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+				auto* subTy = subtypes.at(i).second.value();
+				secondCmpTrueBlock =
+				    ir::Block::create(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
+				secondCmpFalseBlock =
+				    ir::Block::create(fun, secondCmpFalseBlock ? secondCmpFalseBlock : firstCmpRestBlock);
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        secondTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
@@ -562,13 +568,13 @@ void MixType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* f
 		auto*      dataPtr    = irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), 1u);
 		ir::Block* trueBlock  = nullptr;
 		ir::Block* falseBlock = nullptr;
-		ir::Block* restBlock  = new ir::Block(fun, fun->get_block()->get_parent());
+		ir::Block* restBlock  = ir::Block::create(fun, fun->get_block()->get_parent());
 		restBlock->link_previous_block(fun->get_block());
 		for (usize i = 0; i < subtypes.size(); i++) {
 			if (subtypes.at(i).second.has_value() && subtypes.at(i).second.value()->is_destructible()) {
 				auto* subTy = subtypes.at(i).second.value();
-				trueBlock   = new ir::Block(fun, falseBlock ? falseBlock : fun->get_block());
-				falseBlock  = new ir::Block(fun, falseBlock ? falseBlock : fun->get_block());
+				trueBlock   = ir::Block::create(fun, falseBlock ? falseBlock : fun->get_block());
+				falseBlock  = ir::Block::create(fun, falseBlock ? falseBlock : fun->get_block());
 				irCtx->builder.CreateCondBr(
 				    irCtx->builder.CreateICmpEQ(
 				        tag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),

@@ -54,8 +54,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 					if (valType->as_mark()->is_nullable()) {
 						auto  fun           = ctx->get_fn();
 						auto* currBlock     = fun->get_block();
-						auto* nullTrueBlock = new ir::Block(fun, currBlock);
-						auto* restBlock     = new ir::Block(fun, currBlock->get_parent());
+						auto* nullTrueBlock = ir::Block::create(fun, currBlock);
+						auto* restBlock     = ir::Block::create(fun, currBlock->get_parent());
 						restBlock->link_previous_block(currBlock);
 						ctx->irCtx->builder.CreateCondBr(
 						    ctx->irCtx->builder.CreateICmpEQ(

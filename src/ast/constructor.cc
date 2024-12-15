@@ -227,7 +227,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	auto* fnEmit = state.result;
 	SHOW("FNemit is " << fnEmit)
 	SHOW("Set active contructor: " << fnEmit->get_full_name())
-	auto* block = new ir::Block(fnEmit, nullptr);
+	auto* block = ir::Block::create(fnEmit, nullptr);
 	block->set_file_range(fileRange);
 	SHOW("Created entry block")
 	block->set_active(irCtx->builder);

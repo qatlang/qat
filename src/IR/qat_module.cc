@@ -84,7 +84,7 @@ void EntityState::do_next_phase(Mod* mod, Ctx* ctx) {
 
 void Mod::clear_all() {
 	for (auto* mod : allModules) {
-		delete mod;
+		std::destroy_at(mod);
 	}
 }
 
@@ -136,7 +136,7 @@ Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _t
          Ctx* ctx)
     : EntityOverview("module", Json(), _name.range), name(std::move(_name)), moduleType(_type),
       filePath(std::move(_filepath)), basePath(std::move(_basePath)), visibility(_visibility) {
-	llvmModule = new llvm::Module(get_full_name(), ctx->llctx);
+	llvmModule = std::construct_at(OwnNormal(llvm::Module), get_full_name(), ctx->llctx);
 	llvmModule->setModuleIdentifier(get_full_name());
 	llvmModule->setSourceFileName(filePath.string());
 	llvmModule->setCodeModel(llvm::CodeModel::Small);
@@ -150,17 +150,20 @@ Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _t
 
 Mod::~Mod() {
 	SHOW("Deleting module " << name.value << " in file " << filePath.string())
-	delete llvmModule;
-	for (auto* fn : genericFunctions) {
-		std::destroy_at(fn);
+	std::destroy_at(llvmModule);
+	for (auto* global : otherGlobals) {
+		std::destroy_at(global);
 	}
-	for (auto* ty : genericStructTypes) {
-		std::destroy_at(ty);
+	for (auto* function : genericFunctions) {
+		std::destroy_at(function);
 	}
-	for (auto* ty : genericTypeDefinitions) {
-		std::destroy_at(ty);
+	for (auto* type : genericStructTypes) {
+		std::destroy_at(type);
 	}
-	SHOW("Deleted generic functions, generic struct types, generic type definitions")
+	for (auto* type : genericTypeDefinitions) {
+		std::destroy_at(type);
+	}
+	SHOW("Destroyed generic functions, generic struct types, generic type definitions")
 }
 
 void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
@@ -181,7 +184,7 @@ void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
 
 Mod* Mod::create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
                  const VisibilityInfo& visib_info, Ctx* ctx) {
-	return new Mod(name, filepath, basePath, type, visib_info, ctx);
+	return std::construct_at(OwnNormal(Mod), name, filepath, basePath, type, visib_info, ctx);
 }
 
 Vec<Function*> Mod::collect_mod_initialisers() {
@@ -325,7 +328,8 @@ bool Mod::triple_is_equivalent(const llvm::Triple& first, const llvm::Triple& se
 Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Identifier sname, ModuleType type,
                            const VisibilityInfo& visibilityInfo, Ctx* ctx) {
 	SHOW("Creating submodule: " << sname.value)
-	auto* sub = new Mod(std::move(sname), std::move(filepath), std::move(basePath), type, visibilityInfo, ctx);
+	auto* sub = std::construct_at(OwnNormal(Mod), std::move(sname), std::move(filepath), std::move(basePath), type,
+	                              visibilityInfo, ctx);
 	if (parent) {
 		sub->parent = parent;
 		parent->submodules.push_back(sub);
@@ -336,8 +340,8 @@ Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Id
 
 Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
                           VisibilityInfo visibilityInfo, Ctx* ctx) {
-	auto* sub =
-	    new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::file, visibilityInfo, ctx);
+	auto* sub = std::construct_at(OwnNormal(Mod), std::move(fname), std::move(filepath), std::move(basePath),
+	                              ModuleType::file, visibilityInfo, ctx);
 	if (parent) {
 		sub->parent = parent;
 		parent->submodules.push_back(sub);
@@ -348,8 +352,8 @@ Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Ide
 
 Mod* Mod::create_root_lib(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
                           const VisibilityInfo& visibilityInfo, Ctx* ctx) {
-	auto* sub =
-	    new Mod(std::move(fname), std::move(filepath), std::move(basePath), ModuleType::lib, visibilityInfo, ctx);
+	auto* sub    = std::construct_at(OwnNormal(Mod), std::move(fname), std::move(filepath), std::move(basePath),
+	                                 ModuleType::lib, visibilityInfo, ctx);
 	sub->rootLib = true;
 	if (parent) {
 		sub->parent = parent;
@@ -545,7 +549,7 @@ Function* Mod::get_mod_initialiser(Ctx* ctx) {
 		moduleInitialiser = ir::Function::Create(
 		    this, Identifier("module'initialiser'" + get_referrable_name(), {filePath}), None, {/* Generics */}, false,
 		    ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, name.range, VisibilityInfo::pub(), ctx);
-		auto* entry = new ir::Block(moduleInitialiser, nullptr);
+		auto* entry = ir::Block::create(moduleInitialiser, nullptr);
 		entry->set_active(ctx->builder);
 	}
 	return moduleInitialiser;
@@ -3533,7 +3537,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 	llvm::LLVMContext& llCtx = llvmModule->getContext();
 	switch (nval) {
 		case InternalDependency::printf: {
-			if (!llvmModule->getFunction("printf")) {
+			if (not llvmModule->getFunction("printf")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
 				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
 				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
@@ -3541,7 +3545,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "printf";
 		}
 		case InternalDependency::malloc: {
-			if (!llvmModule->getFunction("malloc")) {
+			if (not llvmModule->getFunction("malloc")) {
 				SHOW("Creating malloc function")
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
 				                                               {llvm::Type::getInt64Ty(llCtx)}, false),
@@ -3550,7 +3554,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "malloc";
 		}
 		case InternalDependency::free: {
-			if (!llvmModule->getFunction("free")) {
+			if (not llvmModule->getFunction("free")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
 				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
 				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
@@ -3558,7 +3562,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "free";
 		}
 		case InternalDependency::realloc: {
-			if (!llvmModule->getFunction("realloc")) {
+			if (not llvmModule->getFunction("realloc")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
 				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
 				                                                llvm::Type::getInt64Ty(llCtx)},
@@ -3568,7 +3572,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "realloc";
 		}
 		case InternalDependency::pthreadCreate: {
-			if (!llvmModule->getFunction("pthread_create")) {
+			if (not llvmModule->getFunction("pthread_create")) {
 				llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(llCtx)->getPointerTo();
 				llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
 				auto*       pthreadFnTy  = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
@@ -3589,7 +3593,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "pthread_create";
 		}
 		case InternalDependency::pthreadJoin: {
-			if (!llvmModule->getFunction("pthread_join")) {
+			if (not llvmModule->getFunction("pthread_join")) {
 				llvm::Type* pthreadTy = llvm::Type::getInt64Ty(llCtx);
 				llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
@@ -3600,7 +3604,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "pthread_join";
 		}
 		case InternalDependency::pthreadExit: {
-			if (!llvmModule->getFunction("pthread_exit")) {
+			if (not llvmModule->getFunction("pthread_exit")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
 				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
 				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
@@ -3609,20 +3613,20 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "pthread_exit";
 		}
 		case InternalDependency::windowsExitThread: {
-			if (!llvmModule->getGlobalVariable("__imp_ExitThread")) {
-				new llvm::GlobalVariable(
-				    *llvmModule,
+			if (not llvmModule->getGlobalVariable("__imp_ExitThread")) {
+				otherGlobals.push_back(std::construct_at(
+				    OwnNormal(llvm::GlobalVariable), *llvmModule,
 				    llvm::PointerType::get(
 				        llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx), {llvm::Type::getInt32Ty(llCtx)}, false),
 				        0u),
 				    true, llvm::GlobalValue::LinkageTypes::ExternalLinkage, nullptr, "__imp_ExitThread", nullptr,
-				    llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
+				    llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true));
 			}
 			return "__imp_ExitThread";
 		}
 		case InternalDependency::pthreadAttrInit: {
-			if (!llvmModule->getFunction("pthread_attr_init")) {
-				if (!llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
+			if (not llvmModule->getFunction("pthread_attr_init")) {
+				if (not llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
 					llvm::StructType::create(
 					    llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
 					    "pthread_attr_t");

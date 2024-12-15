@@ -107,9 +107,9 @@ class DoneSkill : public Uniq {
 	Vec<Method*>   fromConvertors;
 	Vec<Method*>   toConvertors;
 
+  public:
 	DoneSkill(Mod* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType, FileRange _typeRange);
 
-  public:
 	useit static DoneSkill* create_extension(Mod* parent, FileRange fileRange, Type* candidateType,
 	                                         FileRange typeRange);
 	useit static DoneSkill* create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,

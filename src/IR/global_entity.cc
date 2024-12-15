@@ -26,9 +26,9 @@ Identifier GlobalEntity::get_name() const { return name; }
 
 String GlobalEntity::get_full_name() const { return parent->get_fullname_with_child(name.value); }
 
-bool GlobalEntity::hasInitialValue() const { return initialValue.has_value(); }
+bool GlobalEntity::has_initial_value() const { return initialValue.has_value(); }
 
-llvm::Constant* GlobalEntity::getInitialValue() const { return initialValue.value(); }
+llvm::Constant* GlobalEntity::get_initial_value() const { return initialValue.value(); }
 
 const VisibilityInfo& GlobalEntity::get_visibility() const { return visibility; }
 

@@ -37,7 +37,7 @@ bool IfElse::isFalseTill(usize ind) const {
 }
 
 ir::Value* IfElse::emit(EmitCtx* ctx) {
-	auto* restBlock = new ir::Block(ctx->get_fn(), nullptr);
+	auto* restBlock = ir::Block::create(ctx->get_fn(), nullptr);
 	restBlock->link_previous_block(ctx->get_fn()->get_block());
 	for (usize i = 0; i < chain.size(); i++) {
 		const auto& section = chain.at(i);
@@ -61,7 +61,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 		if (!trueKnownValueBefore(i).first) {
 			if (hasValueAt(i) && isFalseTill(i)) {
 				if (getKnownValue(i)) {
-					auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
+					auto* trueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 					trueBlock->set_file_range(std::get<2>(section));
 					(void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());
 					trueBlock->set_active(ctx->irCtx->builder);
@@ -71,7 +71,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 					break;
 				}
 			} else {
-				auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
+				auto* trueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 				trueBlock->set_file_range(std::get<2>(section));
 				ir::Block* falseBlock = nullptr;
 				if (exp->is_ghost_reference() || exp->is_reference()) {
@@ -79,7 +79,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 					                     false);
 				}
 				if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
-					falseBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
+					falseBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 					if (i == (chain.size() - 1)) {
 						falseBlock->set_file_range(elseCase.value().second);
 					} else {
@@ -102,7 +102,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 	}
 	if (elseCase.has_value()) {
 		if (hasAnyKnownValue() && isFalseTill(knownVals.size())) {
-			auto* elseBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
+			auto* elseBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 			(void)ir::add_branch(ctx->irCtx->builder, elseBlock->get_bb());
 			elseBlock->set_active(ctx->irCtx->builder);
 			emit_sentences(elseCase.value().first, ctx);

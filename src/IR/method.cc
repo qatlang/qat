@@ -318,8 +318,8 @@ Method* Method::Create(MethodParent* parent, bool is_variation, const Identifier
 	for (const auto& arg : args) {
 		args_info.push_back(arg);
 	}
-	return new Method(MethodType::normal, is_variation, parent, name, isInline, returnTy, std::move(args_info), false,
-	                  fileRange, visibilityInfo, irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::normal, is_variation, parent, name, isInline, returnTy,
+	                         std::move(args_info), false, fileRange, visibilityInfo, irCtx);
 }
 
 Method* Method::CreateValued(MethodParent* parent, const Identifier& name, bool isInline, Type* returnTy,
@@ -330,8 +330,8 @@ Method* Method::CreateValued(MethodParent* parent, const Identifier& name, bool 
 	for (const auto& arg : args) {
 		args_info.push_back(arg);
 	}
-	return new Method(MethodType::valueMethod, false, parent, name, isInline, ReturnType::get(returnTy),
-	                  std::move(args_info), false, fileRange, visibilityInfo, irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::valueMethod, false, parent, name, isInline,
+	                         ReturnType::get(returnTy), std::move(args_info), false, fileRange, visibilityInfo, irCtx);
 }
 
 Method* Method::DefaultConstructor(MethodParent* parent, FileRange nameRange, bool isInline,
@@ -339,10 +339,11 @@ Method* Method::DefaultConstructor(MethodParent* parent, FileRange nameRange, bo
 	Vec<Argument> argsInfo;
 	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
 	                                    ReferenceType::get(true, parent->get_parent_type(), irCtx), 0));
-	return new Method(MethodType::defaultConstructor, true, parent, Identifier("default", nameRange),
-	                  // FIXME - Make file range optional instead of creating it using empty values
-	                  isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                  visibInfo, irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::defaultConstructor, true, parent,
+	                         Identifier("default", nameRange),
+	                         // FIXME - Make file range optional instead of creating it using empty values
+	                         isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false,
+	                         fileRange, visibInfo, irCtx);
 }
 
 Method* Method::CopyConstructor(MethodParent* parent, FileRange nameRange, bool isInline, const Identifier& otherName,
@@ -351,9 +352,10 @@ Method* Method::CopyConstructor(MethodParent* parent, FileRange nameRange, bool 
 	argsInfo.push_back(Argument::Create({"''", parent->get_type_range()},
 	                                    ReferenceType::get(true, parent->get_parent_type(), irCtx), 0));
 	argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(false, parent->get_parent_type(), irCtx), 0));
-	return new Method(MethodType::copyConstructor, true, parent, {"copy", std::move(nameRange)}, isInline,
-	                  ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                  VisibilityInfo::pub(), irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::copyConstructor, true, parent,
+	                         Identifier{"copy", std::move(nameRange)}, isInline,
+	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
+	                         VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::MoveConstructor(MethodParent* parent, FileRange nameRange, bool isInline, const Identifier& otherName,
@@ -362,9 +364,10 @@ Method* Method::MoveConstructor(MethodParent* parent, FileRange nameRange, bool 
 	argsInfo.push_back(Argument::Create({"''", parent->get_type_range()},
 	                                    ReferenceType::get(true, parent->get_parent_type(), irCtx), 0u));
 	argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(true, parent->get_parent_type(), irCtx), 0u));
-	return new Method(MethodType::moveConstructor, true, parent, {"move", std::move(nameRange)}, isInline,
-	                  ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                  VisibilityInfo::pub(), irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::moveConstructor, true, parent,
+	                         Identifier{"move", std::move(nameRange)}, isInline,
+	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
+	                         VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CopyAssignment(MethodParent* parent, FileRange nameRange, bool isInline, const Identifier& otherName,
@@ -373,9 +376,9 @@ Method* Method::CopyAssignment(MethodParent* parent, FileRange nameRange, bool i
 	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
 	                                    ReferenceType::get(true, parent->get_parent_type(), irCtx), 0u));
 	argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(true, parent->get_parent_type(), irCtx), 0u));
-	return new Method(MethodType::copyAssignment, true, parent, {"copy=", nameRange}, isInline,
-	                  ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                  VisibilityInfo::pub(), irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::copyAssignment, true, parent,
+	                         Identifier{"copy=", nameRange}, isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)),
+	                         std::move(argsInfo), false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::MoveAssignment(MethodParent* parent, FileRange nameRange, bool isInline, const Identifier& otherName,
@@ -384,9 +387,9 @@ Method* Method::MoveAssignment(MethodParent* parent, FileRange nameRange, bool i
 	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
 	                                    ReferenceType::get(true, parent->get_parent_type(), irCtx), 0u));
 	argsInfo.push_back(Argument::Create(otherName, ReferenceType::get(true, parent->get_parent_type(), irCtx), 0u));
-	return new Method(MethodType::moveAssignment, true, parent, {"move=", nameRange}, isInline,
-	                  ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                  VisibilityInfo::pub(), irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::moveAssignment, true, parent,
+	                         Identifier{"move=", nameRange}, isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)),
+	                         std::move(argsInfo), false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CreateConstructor(MethodParent* parent, FileRange nameRange, bool isInline, const Vec<Argument>& args,
@@ -397,8 +400,9 @@ Method* Method::CreateConstructor(MethodParent* parent, FileRange nameRange, boo
 	for (const auto& arg : args) {
 		argsInfo.push_back(arg);
 	}
-	return new Method(MethodType::constructor, true, parent, Identifier("from", std::move(nameRange)), isInline,
-	                  ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, fileRange, visibInfo, irCtx);
+	return std::construct_at(
+	    OwnNormal(Method), MethodType::constructor, true, parent, Identifier("from", std::move(nameRange)), isInline,
+	    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, fileRange, visibInfo, irCtx);
 }
 
 Method* Method::CreateFromConvertor(MethodParent* parent, FileRange nameRange, bool isInline, Type* sourceType,
@@ -410,9 +414,9 @@ Method* Method::CreateFromConvertor(MethodParent* parent, FileRange nameRange, b
 	SHOW("Created parent pointer argument")
 	argsInfo.push_back(Argument::Create(name, sourceType, 1));
 	SHOW("Created candidate type")
-	auto result =
-	    new Method(MethodType::fromConvertor, true, parent, Identifier("from", nameRange), isInline,
-	               ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, fileRange, visibInfo, irCtx);
+	auto result = std::construct_at(
+	    OwnNormal(Method), MethodType::fromConvertor, true, parent, Identifier("from", nameRange), isInline,
+	    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, fileRange, visibInfo, irCtx);
 	return result;
 }
 
@@ -421,26 +425,28 @@ Method* Method::CreateToConvertor(MethodParent* parent, FileRange nameRange, boo
 	Vec<Argument> argsInfo;
 	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
 	                                    ReferenceType::get(false, parent->get_parent_type(), irCtx), 0));
-	return new Method(MethodType::toConvertor, false, parent, Identifier("to'" + destType->to_string(), nameRange),
-	                  isInline, ReturnType::get(destType), argsInfo, false, fileRange, visibInfo, irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::toConvertor, false, parent,
+	                         Identifier("to'" + destType->to_string(), nameRange), isInline, ReturnType::get(destType),
+	                         argsInfo, false, fileRange, visibInfo, irCtx);
 }
 
 Method* Method::CreateStatic(MethodParent* parent, const Identifier& name, bool isInline, Type* returnTy,
                              const Vec<Argument>& args, Maybe<FileRange> fileRange, const VisibilityInfo& visib_info,
                              ir::Ctx* irCtx //
 ) {
-	return new Method(MethodType::staticFn, false, parent, name, isInline, ir::ReturnType::get(returnTy), args, true,
-	                  fileRange, visib_info, irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::staticFn, false, parent, name, isInline,
+	                         ir::ReturnType::get(returnTy), args, true, fileRange, visib_info, irCtx);
 }
 
 Method* Method::CreateDestructor(MethodParent* parent, FileRange nameRange, bool isInline, Maybe<FileRange> fileRange,
                                  ir::Ctx* irCtx) {
 	SHOW("Creating destructor")
-	return new Method(MethodType::destructor, true, parent, Identifier("end", nameRange), isInline,
-	                  ReturnType::get(VoidType::get(irCtx->llctx)),
-	                  Vec<Argument>({Argument::Create(Identifier("''", parent->get_type_range()),
-	                                                  ReferenceType::get(true, parent->get_parent_type(), irCtx), 0)}),
-	                  false, fileRange, VisibilityInfo::pub(), irCtx);
+	return std::construct_at(
+	    OwnNormal(Method), MethodType::destructor, true, parent, Identifier("end", nameRange), isInline,
+	    ReturnType::get(VoidType::get(irCtx->llctx)),
+	    Vec<Argument>({Argument::Create(Identifier("''", parent->get_type_range()),
+	                                    ReferenceType::get(true, parent->get_parent_type(), irCtx), 0)}),
+	    false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CreateOperator(MethodParent* parent, FileRange nameRange, bool isBinary, bool isVariationFn,
@@ -452,8 +458,9 @@ Method* Method::CreateOperator(MethodParent* parent, FileRange nameRange, bool i
 	for (const auto& arg : args) {
 		args_info.push_back(arg);
 	}
-	return new Method(isBinary ? MethodType::binaryOperator : MethodType::unaryOperator, isVariationFn, parent,
-	                  Identifier(opr, nameRange), isInline, returnType, args_info, false, fileRange, visibInfo, irCtx);
+	return std::construct_at(OwnNormal(Method), isBinary ? MethodType::binaryOperator : MethodType::unaryOperator,
+	                         isVariationFn, parent, Identifier(opr, nameRange), isInline, returnType, args_info, false,
+	                         fileRange, visibInfo, irCtx);
 }
 
 String Method::get_full_name() const {

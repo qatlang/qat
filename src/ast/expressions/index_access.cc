@@ -99,8 +99,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				if (!instType->as_mark()->is_slice()) {
 					ctx->Error("Only slices can be indexed into", fileRange);
 				}
-				auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
-				auto* restBlock          = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block()->get_parent());
+				auto* lenExceedTrueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
+				auto* restBlock          = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block()->get_parent());
 				restBlock->link_previous_block(ctx->get_fn()->get_block());
 				auto ptrLen = ctx->irCtx->builder.CreateLoad(
 				    ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(),
@@ -194,8 +194,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
                 usizeTy->get_llvm_type(),
                 ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), inst->get_llvm(), 1u));
 			auto* currBlock          = ctx->get_fn()->get_block();
-			auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), currBlock);
-			auto* restBlock          = new ir::Block(ctx->get_fn(), currBlock->get_parent());
+			auto* lenExceedTrueBlock = ir::Block::create(ctx->get_fn(), currBlock);
+			auto* restBlock          = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 			restBlock->link_previous_block(currBlock);
 			ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), strLen),
 			                                 lenExceedTrueBlock->get_bb(), restBlock->get_bb());
@@ -251,8 +251,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			auto* strTy              = ir::StringSliceType::get(ctx->irCtx);
 			auto* strLen             = ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {1u});
 			auto* currBlock          = ctx->get_fn()->get_block();
-			auto* lenExceedTrueBlock = new ir::Block(ctx->get_fn(), currBlock);
-			auto* restBlock          = new ir::Block(ctx->get_fn(), currBlock->get_parent());
+			auto* lenExceedTrueBlock = ir::Block::create(ctx->get_fn(), currBlock);
+			auto* restBlock          = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 			restBlock->link_previous_block(currBlock);
 			ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpUGE(ind->get_llvm(), strLen),
 			                                 lenExceedTrueBlock->get_bb(), restBlock->get_bb());

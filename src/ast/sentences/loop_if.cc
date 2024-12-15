@@ -39,9 +39,9 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 	if (cond == nullptr || cond->get_ir_type()->is_bool() ||
 	    (cond->get_ir_type()->is_reference() && cond->get_ir_type()->as_reference()->get_subtype()->is_bool())) {
 		auto*        fun       = ctx->get_fn();
-		auto*        trueBlock = new ir::Block(fun, fun->get_block());
-		auto*        condBlock = new ir::Block(fun, fun->get_block());
-		auto*        restBlock = new ir::Block(fun, fun->get_block());
+		auto*        trueBlock = ir::Block::create(fun, fun->get_block());
+		auto*        condBlock = ir::Block::create(fun, fun->get_block());
+		auto*        restBlock = ir::Block::create(fun, fun->get_block());
 		llvm::Value* llCond    = nullptr;
 		if (isDoAndLoop) {
 			(void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());

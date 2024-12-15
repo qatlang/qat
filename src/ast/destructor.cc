@@ -33,7 +33,7 @@ ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	}
 	auto memberFn = state.result;
 	SHOW("Set active destructor: " << memberFn->get_full_name())
-	auto* block = new ir::Block(memberFn, nullptr);
+	auto* block = ir::Block::create(memberFn, nullptr);
 	SHOW("Created entry block")
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")

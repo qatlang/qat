@@ -27,7 +27,7 @@ class StaticMember final : public Value, public EntityOverview {
 
 	useit static StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable,
 	                               Value* _initial, const VisibilityInfo& _visibility) {
-		return new StaticMember(_parent, name, _type, _is_variable, _initial, _visibility);
+		return std::construct_at(OwnNormal(StaticMember), _parent, name, _type, _is_variable, _initial, _visibility);
 	}
 
 	useit StructType*           get_parent_type();

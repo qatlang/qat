@@ -53,7 +53,7 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
 	LocalValue(String name, ir::Type* type, bool is_variable, Function* fun, FileRange fileRange);
 
 	useit static LocalValue* get(String name, ir::Type* type, bool isVar, Function* fn, FileRange fileRange) {
-		return new LocalValue(name, type, isVar, fn, fileRange);
+		return std::construct_at(OwnNormal(LocalValue), name, type, isVar, fn, fileRange);
 	}
 
 	~LocalValue() final = default;
@@ -89,6 +89,8 @@ class Block : public Uniq {
 
 	Block(Function* _fn, Block* _parent);
 
+	useit static Block* create(Function* fn, Block* parent) { return std::construct_at(OwnNormal(Block), fn, parent); }
+
 	~Block() = default;
 
 	useit String get_name() const { return name; }
@@ -108,7 +110,7 @@ class Block : public Uniq {
 		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
 		return values.back();
 	}
-	useit bool is_moved(const u64& locID) const;
+	useit bool is_moved(u64 locID) const;
 	useit bool has_give_in_all_control_paths() const;
 
 	useit bool   has_todo() const { return hasTodo; }

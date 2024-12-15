@@ -28,7 +28,7 @@ Type::Type() { allTypes.push_back(this); }
 
 Type::~Type() {
 	for (auto* skill : doneSkills) {
-		delete skill;
+		std::destroy_at(skill);
 	}
 }
 

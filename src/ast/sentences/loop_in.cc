@@ -130,14 +130,14 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 			}
 		}
 		auto currBlock = ctx->get_fn()->get_block();
-		auto mainBlock = new ir::Block(ctx->get_fn(), currBlock->get_parent());
+		auto mainBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 		mainBlock->link_previous_block(currBlock);
-		auto loopBlock = new ir::Block(ctx->get_fn(), mainBlock);
-		auto condBlock = new ir::Block(ctx->get_fn(), mainBlock);
+		auto loopBlock = ir::Block::create(ctx->get_fn(), mainBlock);
+		auto condBlock = ir::Block::create(ctx->get_fn(), mainBlock);
 		condBlock->link_previous_block(loopBlock);
-		auto trueBlock = new ir::Block(ctx->get_fn(), mainBlock);
+		auto trueBlock = ir::Block::create(ctx->get_fn(), mainBlock);
 		trueBlock->link_previous_block(condBlock);
-		auto restBlock = new ir::Block(ctx->get_fn(), currBlock->get_parent());
+		auto restBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 		restBlock->link_previous_block(mainBlock);
 		// Adding loop info
 		ctx->loopsInfo.push_back(LoopInfo(itemName, mainBlock, condBlock, restBlock, nullptr, LoopType::OVER));

@@ -20,9 +20,9 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 			expEmit->load_ghost_reference(ctx->irCtx->builder);
 		}
 		auto* fun        = ctx->get_fn();
-		auto* trueBlock  = new ir::Block(fun, fun->get_block());
-		auto* falseBlock = new ir::Block(fun, fun->get_block());
-		auto* restBlock  = new ir::Block(fun, nullptr);
+		auto* trueBlock  = ir::Block::create(fun, fun->get_block());
+		auto* falseBlock = ir::Block::create(fun, fun->get_block());
+		auto* restBlock  = ir::Block::create(fun, nullptr);
 		restBlock->link_previous_block(fun->get_block());
 		ctx->irCtx->builder.CreateCondBr(
 		    ctx->irCtx->builder.CreateLoad(

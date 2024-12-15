@@ -80,9 +80,9 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 			SHOW("Emitted value")
 			if (val->is_prerun_value()) {
 				SHOW("Value is prerun")
-				gvar         = new llvm::GlobalVariable(*mod->get_llvm_module(), typ->get_llvm_type(), !is_variable,
-				                                        irCtx->getGlobalLinkageForVisibility(visibInfo),
-				                                        llvm::dyn_cast<llvm::Constant>(val->get_llvm()), linkingName);
+				gvar = std::construct_at(OwnNormal(llvm::GlobalVariable), *mod->get_llvm_module(), typ->get_llvm_type(),
+				                         !is_variable, irCtx->getGlobalLinkageForVisibility(visibInfo),
+				                         llvm::dyn_cast<llvm::Constant>(val->get_llvm()), linkingName);
 				initialValue = val->get_llvm_constant();
 			} else {
 				SHOW("Value is not prerun")
@@ -90,8 +90,8 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 					typ = typ->as_reference()->get_subtype();
 				}
 				mod->add_non_const_global_counter();
-				gvar = new llvm::GlobalVariable(
-				    *mod->get_llvm_module(), typ->get_llvm_type(), false,
+				gvar = std::construct_at(
+				    OwnNormal(llvm::GlobalVariable), *mod->get_llvm_module(), typ->get_llvm_type(), false,
 				    llvm::GlobalValue::LinkageTypes::WeakAnyLinkage,
 				    typ->get_llvm_type()->isPointerTy()
 				        ? llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(typ->get_llvm_type()))
@@ -133,12 +133,12 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 			    fileRange);
 		}
 		SHOW("Creating global variable")
-		gvar = new llvm::GlobalVariable(*mod->get_llvm_module(), typ->get_llvm_type(), !is_variable,
-		                                llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, linkingName,
-		                                nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
+		gvar = std::construct_at(OwnNormal(llvm::GlobalVariable), *mod->get_llvm_module(), typ->get_llvm_type(),
+		                         !is_variable, llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr,
+		                         linkingName, nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
 		SHOW("Created global")
 	}
-	(void)ir::GlobalEntity::get(mod, name, typ, is_variable, initialValue, gvar, visibInfo);
+	(void)ir::GlobalEntity::create(mod, name, typ, is_variable, initialValue, gvar, visibInfo);
 	SHOW("Created global entity")
 }
 

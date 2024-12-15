@@ -54,12 +54,12 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 		auto* loopIndex = ctx->get_fn()->get_block()->new_value(uniq, originalLimitTy, false,
 		                                                        tag.has_value() ? tag->range : fileRange);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u), loopIndex->get_alloca());
-		auto* loopBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
-		auto* trueBlock = new ir::Block(ctx->get_fn(), loopBlock);
+		auto* loopBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
+		auto* trueBlock = ir::Block::create(ctx->get_fn(), loopBlock);
 		SHOW("loop times true block " << ctx->get_fn()->get_full_name() << "." << trueBlock->get_name())
-		auto* condBlock = new ir::Block(ctx->get_fn(), loopBlock);
+		auto* condBlock = ir::Block::create(ctx->get_fn(), loopBlock);
 		SHOW("loop times cond block " << ctx->get_fn()->get_full_name() << "." << condBlock->get_name())
-		auto* restBlock = new ir::Block(ctx->get_fn(), loopBlock->get_parent()->get_parent());
+		auto* restBlock = ir::Block::create(ctx->get_fn(), loopBlock->get_parent()->get_parent());
 		restBlock->link_previous_block(loopBlock->get_parent());
 		SHOW("loop times rest block " << ctx->get_fn()->get_full_name() << "." << restBlock->get_name())
 		(void)ir::add_branch(ctx->irCtx->builder, loopBlock->get_bb());

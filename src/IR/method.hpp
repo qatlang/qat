@@ -73,11 +73,11 @@ class Method : public Function {
 	static LinkNames get_link_names_from(MethodParent* parent, bool isStatic, Identifier name, bool isVar,
 	                                     MethodType fnType, Vec<Argument> args, Type* retTy);
 
+  public:
 	Method(MethodType fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name, bool isInline,
 	       ReturnType* returnType, Vec<Argument> _args, bool _is_static, Maybe<FileRange> _fileRange,
 	       const VisibilityInfo& _visibility_info, ir::Ctx* irCtx);
 
-  public:
 	static std::map<MethodType, String> methodTypes;
 
 	useit static Method* Create(MethodParent* parent, bool is_variation, const Identifier& name, bool isInline,

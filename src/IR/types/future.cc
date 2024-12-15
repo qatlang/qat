@@ -94,8 +94,8 @@ void FutureType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
 	            llvm::Type::getInt64Ty(irCtx->llctx)->getPointerTo(irCtx->dataLayout.value().getProgramAddressSpace()),
 	            irCtx->builder.CreateStructGEP(llvmType, selfVal, 1u))),
 	    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u));
-	auto* trueBlock = new ir::Block(fun, currBlock);
-	auto* restBlock = new ir::Block(fun, currBlock->get_parent());
+	auto* trueBlock = ir::Block::create(fun, currBlock);
+	auto* restBlock = ir::Block::create(fun, currBlock->get_parent());
 	restBlock->link_previous_block(currBlock);
 	irCtx->builder.CreateCondBr(zeroCmp, trueBlock->get_bb(), restBlock->get_bb());
 	trueBlock->set_active(irCtx->builder);

@@ -151,11 +151,12 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 			           mod->has_global_in_imports(singleName.value, reqInfo).first) {
 				auto* gEnt  = mod->get_global(singleName.value, reqInfo);
 				auto  gName = llvm::cast<llvm::GlobalVariable>(gEnt->get_llvm())->getName();
-				if (!ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
-					new llvm::GlobalVariable(*ctx->mod->get_llvm_module(), gEnt->get_ir_type()->get_llvm_type(),
-					                         !gEnt->is_variable(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage,
-					                         nullptr, gName, nullptr,
-					                         llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true);
+				if (not ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
+					ctx->mod->otherGlobals.push_back(
+					    std::construct_at(OwnNormal(llvm::GlobalVariable), *ctx->mod->get_llvm_module(),
+					                      gEnt->get_ir_type()->get_llvm_type(), !gEnt->is_variable(),
+					                      llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, gName, nullptr,
+					                      llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true));
 				}
 				return ir::Value::get(gEnt->get_llvm(), gEnt->get_ir_type(), gEnt->is_variable());
 			}
@@ -206,13 +207,13 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 	           mod->has_global_in_imports(entityName.value, reqInfo).first) {
 		auto* gEnt  = mod->get_global(entityName.value, reqInfo);
 		auto  gName = llvm::cast<llvm::GlobalVariable>(gEnt->get_llvm())->getName();
-		if (!ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
-			new llvm::GlobalVariable(*ctx->mod->get_llvm_module(), gEnt->get_ir_type()->get_llvm_type(),
-			                         !gEnt->is_variable(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage,
-			                         nullptr, gName, nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal,
-			                         std::nullopt, true);
+		if (not ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
+			ctx->mod->otherGlobals.push_back(std::construct_at(
+			    OwnNormal(llvm::GlobalVariable), *ctx->mod->get_llvm_module(), gEnt->get_ir_type()->get_llvm_type(),
+			    not gEnt->is_variable(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, gName, nullptr,
+			    llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true));
 		}
-		if (!gEnt->get_visibility().is_accessible(reqInfo)) {
+		if (not gEnt->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Global entity " + ctx->color(gEnt->get_full_name()) + " is not accessible here", fileRange);
 		}
 		gEnt->add_mention(entityName.range);

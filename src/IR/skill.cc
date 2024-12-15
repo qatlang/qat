@@ -15,18 +15,21 @@ SkillPrototype::SkillPrototype(SkillFnType _fnTy, Skill* _skill, Identifier _nam
 
 SkillPrototype* SkillPrototype::create_static_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
                                                      Vec<SkillArg*> _arguments) {
-	return new SkillPrototype(SkillFnType::static_method, _parent, _name, _returnType, _arguments);
+	return std::construct_at(OwnNormal(SkillPrototype), SkillFnType::static_method, _parent, _name, _returnType,
+	                         _arguments);
 }
 
 SkillPrototype* SkillPrototype::create_method(Skill* _parent, Identifier _name, bool _isVar, ast::Type* _returnType,
                                               Vec<SkillArg*> _arguments) {
-	return new SkillPrototype(_isVar ? SkillFnType::variation_method : SkillFnType::normal_method, _parent, _name,
-	                          _returnType, _arguments);
+	return std::construct_at(OwnNormal(SkillPrototype),
+	                         _isVar ? SkillFnType::variation_method : SkillFnType::normal_method, _parent, _name,
+	                         _returnType, _arguments);
 }
 
 SkillPrototype* SkillPrototype::create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
                                                      Vec<SkillArg*> _arguments) {
-	return new SkillPrototype(SkillFnType::value_method, _parent, _name, _returnType, _arguments);
+	return std::construct_at(OwnNormal(SkillPrototype), SkillFnType::value_method, _parent, _name, _returnType,
+	                         _arguments);
 }
 
 String Skill::get_full_name() const { return parent->get_fullname_with_child(name.value); }
@@ -66,12 +69,12 @@ DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, T
 }
 
 DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* candidateType, FileRange typeRange) {
-	return new DoneSkill(parent, None, fileRange, candidateType, typeRange);
+	return std::construct_at(OwnNormal(DoneSkill), parent, None, fileRange, candidateType, typeRange);
 }
 
 DoneSkill* DoneSkill::create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
                                     FileRange typeRange) {
-	return new DoneSkill(parent, skill, fileRange, candidateType, typeRange);
+	return std::construct_at(OwnNormal(DoneSkill), parent, skill, fileRange, candidateType, typeRange);
 }
 
 bool DoneSkill::is_type_extension() const { return !skill.has_value(); }

@@ -35,9 +35,9 @@ ir::Value* LoopInfinite::emit(EmitCtx* ctx) {
 	} else {
 		uniqueName = utils::uid_string();
 	}
-	auto* trueBlock = new ir::Block(ctx->get_fn(), ctx->get_fn()->get_block());
+	auto* trueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 	SHOW("Infinite loop true block " << trueBlock->get_name())
-	auto* restBlock = new ir::Block(ctx->get_fn(), nullptr);
+	auto* restBlock = ir::Block::create(ctx->get_fn(), nullptr);
 	restBlock->link_previous_block(ctx->get_fn()->get_block());
 	SHOW("Infinite loop rest block " << restBlock->get_name())
 	(void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());

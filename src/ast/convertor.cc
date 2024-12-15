@@ -158,7 +158,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	auto* fnEmit = state.result;
 	SHOW("MemberFn name is " << fnEmit->get_full_name())
 	SHOW("Set active convertor function: " << fnEmit->get_full_name())
-	auto* block = new ir::Block((ir::Function*)fnEmit, nullptr);
+	auto* block = ir::Block::create((ir::Function*)fnEmit, nullptr);
 	SHOW("Created entry block")
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")

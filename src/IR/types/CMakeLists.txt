@@ -11,6 +11,7 @@ add_library(QAT_IR_TYPES STATIC
 	native_type.cc
 	opaque.cc
 	pointer.cc
+	polymorph.cc
 	qat_type.cc
 	reference.cc
 	region.cc

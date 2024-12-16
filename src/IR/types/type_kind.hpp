@@ -28,6 +28,7 @@ enum class TypeKind {
 	result,          // Result Type that also wraps an error
 	vector,
 	toggle,
+	polymorph,
 };
 
 } // namespace qat::ir

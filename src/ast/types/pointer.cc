@@ -24,49 +24,6 @@ Maybe<usize> MarkType::getTypeSizeInBits(EmitCtx* ctx) const {
 	                                                            ctx->irCtx->dataLayout->getProgramAddressSpace()))));
 }
 
-String MarkType::pointerOwnerToString() const {
-	switch (ownTyp) {
-		case MarkOwnType::type:
-			return "type";
-		case MarkOwnType::typeParent:
-			return "typeParent";
-		case MarkOwnType::function:
-			return "function";
-		case MarkOwnType::anonymous:
-			return "anonymous";
-		case MarkOwnType::heap:
-			return "heap";
-		case MarkOwnType::region:
-			return "region";
-		case MarkOwnType::anyRegion:
-			return "anyRegion";
-	}
-}
-
-ir::MarkOwner MarkType::getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const {
-	switch (ownTyp) {
-		case MarkOwnType::type:
-			return ir::MarkOwner::of_type(ownerVal.value());
-		case MarkOwnType::typeParent: {
-			if (ctx->has_member_parent()) {
-				return ir::MarkOwner::of_parent_instance(ctx->get_member_parent()->get_parent_type());
-			} else {
-				ctx->Error("No parent type or skill found", fileRange);
-			}
-		}
-		case MarkOwnType::anonymous:
-			return ir::MarkOwner::of_anonymous();
-		case MarkOwnType::heap:
-			return ir::MarkOwner::of_heap();
-		case MarkOwnType::function:
-			return ir::MarkOwner::of_parent_function(ctx->get_fn());
-		case MarkOwnType::region:
-			return ir::MarkOwner::of_region(ownerVal.value()->as_region());
-		case MarkOwnType::anyRegion:
-			return ir::MarkOwner::of_any_region();
-	}
-}
-
 ir::Type* MarkType::emit(EmitCtx* ctx) {
 	if (ownTyp == MarkOwnType::function) {
 		if (!ctx->get_fn()) {
@@ -111,7 +68,8 @@ ir::Type* MarkType::emit(EmitCtx* ctx) {
 		        ctx->color("var"),
 		    fileRange);
 	}
-	return ir::MarkType::get(isSubtypeVar, subTy, isNonNullable, getPointerOwner(ctx, ownerVal), isSlice, ctx->irCtx);
+	return ir::MarkType::get(isSubtypeVar, subTy, isNonNullable, get_mark_owner(ctx, ownTyp, ownerVal, fileRange),
+	                         isSlice, ctx->irCtx);
 }
 
 AstTypeKind MarkType::type_kind() const { return AstTypeKind::POINTER; }
@@ -122,7 +80,7 @@ Json MarkType::to_json() const {
 	    ._("isSlice", isSlice)
 	    ._("isSubtypeVariable", isSubtypeVar)
 	    ._("subType", type->to_json())
-	    ._("ownerKind", pointerOwnerToString())
+	    ._("ownerKind", mark_owner_to_string(ownTyp))
 	    ._("hasOwnerType", ownerTyTy.has_value())
 	    ._("ownerType", ownerTyTy.has_value() ? ownerTyTy.value()->to_json() : Json())
 	    ._("fileRange", fileRange);

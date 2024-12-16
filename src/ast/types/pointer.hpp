@@ -1,20 +1,10 @@
 #ifndef QAT_TYPES_POINTER_HPP
 #define QAT_TYPES_POINTER_HPP
 
-#include "../../IR/types/pointer.hpp"
+#include "./mark_owner.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {
-
-enum class MarkOwnType {
-	heap,
-	type,
-	typeParent,
-	function,
-	anonymous,
-	region,
-	anyRegion,
-};
 
 class MarkType final : public Type {
 	Type*             type;
@@ -23,9 +13,6 @@ class MarkType final : public Type {
 	bool              isSlice;
 	bool              isSubtypeVar;
 	bool              isNonNullable;
-
-	useit ir::MarkOwner getPointerOwner(EmitCtx* ctx, Maybe<ir::Type*> ownerVal) const;
-	useit String        pointerOwnerToString() const;
 
   public:
 	MarkType(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable, Maybe<Type*> _ownerTyTy,

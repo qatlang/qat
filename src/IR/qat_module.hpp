@@ -48,8 +48,6 @@ class Entity;
 namespace qat::ir {
 
 class Ctx;
-class PrerunFunction;
-class GenericStructType;
 
 enum class ModuleType { lib, file, folder };
 
@@ -397,6 +395,10 @@ struct EntityState {
 	void do_next_phase(ir::Mod* mod, ir::Ctx* irCtx);
 };
 
+class PrerunFunction;
+class GenericStructType;
+class Skill;
+
 class Mod final : public Uniq, public EntityOverview {
 	friend class Region;
 	friend class OpaqueType;
@@ -494,6 +496,9 @@ class Mod final : public Uniq, public EntityOverview {
 
 	Vec<PrerunGlobal*>         prerunGlobals;
 	Vec<Brought<PrerunGlobal>> broughtPrerunGlobals;
+
+	Vec<Skill*>         skills;
+	Vec<Brought<Skill>> broughtSkills;
 
 	Vec<Region*>         regions;
 	Vec<Brought<Region>> broughtRegions;
@@ -795,6 +800,13 @@ class Mod final : public Uniq, public EntityOverview {
 	useit bool has_brought_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_prerun_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit PrerunGlobal*      get_prerun_global(const String& name, const AccessInfo& reqInfo) const;
+
+	// SKILLS
+
+	useit bool has_skill(String const& name, AccessInfo reqInfo) const;
+	useit bool has_brought_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
+	useit Pair<bool, String> has_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
+	useit Skill*             get_skill(String const& name, AccessInfo const& reqInfo) const;
 
 	// IMPORT
 

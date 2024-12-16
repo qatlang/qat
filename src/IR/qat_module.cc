@@ -1011,6 +1011,86 @@ PrerunFunction* Mod::get_prerun_function(const String& name, const AccessInfo& r
 	return nullptr;
 }
 
+// SKILLS
+
+bool Mod::has_skill(String const& name, AccessInfo reqInfo) const {
+	for (auto* fn : skills) {
+		if ((fn->get_name().value == name) && fn->get_visibility().is_accessible(reqInfo)) {
+			return true;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_skill(name, reqInfo) || sub->has_brought_skill(name, reqInfo) ||
+			    sub->has_skill_in_imports(name, reqInfo).first) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mod::has_brought_skill(String const& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : broughtSkills) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Pair<bool, String> Mod::has_skill_in_imports(const String& name, const AccessInfo& reqInfo) const {
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_skill(name, reqInfo) || bMod->has_brought_skill(name, reqInfo) ||
+				    bMod->has_skill_in_imports(name, reqInfo).first) {
+					if (bMod->get_skill(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return {true, bMod->filePath.string()};
+					}
+				}
+			}
+		}
+	}
+	return {false, ""};
+}
+
+Skill* Mod::get_skill(String const& name, AccessInfo const& reqInfo) const {
+	for (auto* skill : skills) {
+		if ((skill->get_name().value == name) && skill->get_visibility().is_accessible(reqInfo)) {
+			return skill;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_skill(name, reqInfo) || sub->has_brought_skill(name, reqInfo) ||
+			    sub->has_skill_in_imports(name, reqInfo).first) {
+				return sub->get_skill(name, reqInfo);
+			}
+		}
+	}
+	for (const auto& brought : broughtSkills) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return brought.get();
+		}
+	}
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_skill(name, reqInfo) || bMod->has_brought_skill(name, reqInfo) ||
+				    bMod->has_skill_in_imports(name, reqInfo).first) {
+					if (bMod->get_skill(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return bMod->get_skill(name, reqInfo);
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
 // GENERIC FUNCTION
 
 bool Mod::has_generic_function(const String& name, AccessInfo reqInfo) const {

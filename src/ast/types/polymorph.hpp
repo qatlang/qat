@@ -1,6 +1,7 @@
 #ifndef QAT_AST_TYPES_POLYMORPH_HPP
 #define QAT_AST_TYPES_POLYMORPH_HPP
 
+#include "../node.hpp"
 #include "./mark_owner.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
@@ -23,6 +24,8 @@ struct SkillEntity {
 	useit static SkillEntity* create(u32 relative, Vec<Identifier> names, FileRange range) {
 		return std::construct_at(OwnNormal(SkillEntity), relative, std::move(names), std::move(range));
 	}
+
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx);
 
 	useit ir::Skill* find(EmitCtx* ctx) const;
 
@@ -49,7 +52,7 @@ struct SkillEntity {
 	}
 };
 
-class PolymorphType : public Type {
+class PolymorphType final : public Type {
 	bool              isTyped;
 	Vec<SkillEntity*> skills;
 	MarkOwnType       ownType;
@@ -65,6 +68,12 @@ class PolymorphType : public Type {
 	                                   Maybe<FileRange> ownRange, FileRange range) {
 		return std::construct_at(OwnNormal(PolymorphType), isTyped, std::move(skills), ownType, std::move(ownRange),
 		                         std::move(range));
+	}
+
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {
+		for (auto* sk : skills) {
+			UPDATE_DEPS(sk);
+		}
 	}
 
 	useit ir::Type* emit(EmitCtx* ctx);

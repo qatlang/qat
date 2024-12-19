@@ -21,6 +21,24 @@ bool ExpandedType::has_generic_parameter(const String& name) const {
 	return false;
 }
 
+bool ExpandedType::has_definition(String const& name) const {
+	for (auto* def : definitions) {
+		if (def->get_name().value == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+DefinitionType* ExpandedType::get_definition(String const& name) const {
+	for (auto* def : definitions) {
+		if (def->get_name().value == name) {
+			return def;
+		}
+	}
+	return nullptr;
+}
+
 GenericArgument* ExpandedType::get_generic_parameter(const String& name) const {
 	for (auto* gen : generics) {
 		if (gen->is_same(name)) {

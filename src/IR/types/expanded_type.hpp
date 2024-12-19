@@ -15,6 +15,7 @@ namespace qat::ir {
 
 class ExpandedType : public Type {
 	friend class Method;
+	friend class DefinitionType;
 	friend class ast::DefineCoreType;
 	friend class ast::DefineMixType;
 	friend class ast::ConvertorPrototype;
@@ -22,12 +23,15 @@ class ExpandedType : public Type {
   protected:
 	Identifier            name;
 	Vec<GenericArgument*> generics;
-	Mod*                  parent             = nullptr;
-	Method*               defaultConstructor = nullptr;
-	Vec<Method*>          memberFunctions;          // Normal
-	Vec<Method*>          valuedMemberFunctions;    // Valued parent
-	Vec<Method*>          normalBinaryOperators;    // Normal
-	Vec<Method*>          variationBinaryOperators; // Variation
+	Mod*                  parent = nullptr;
+
+	Vec<DefinitionType*> definitions;
+
+	Method*      defaultConstructor = nullptr;
+	Vec<Method*> memberFunctions;          // Normal
+	Vec<Method*> valuedMemberFunctions;    // Valued parent
+	Vec<Method*> normalBinaryOperators;    // Normal
+	Vec<Method*> variationBinaryOperators; // Variation
 
 	Vec<Method*>   unaryOperators;  //
 	Vec<Method*>   constructors;    // Constructors
@@ -56,6 +60,9 @@ class ExpandedType : public Type {
 	useit bool             is_generic() const;
 	useit bool             has_generic_parameter(const String& name) const;
 	useit GenericArgument* get_generic_parameter(const String& name) const;
+
+	useit bool            has_definition(String const& name) const;
+	useit DefinitionType* get_definition(String const& name) const;
 
 	useit String     get_full_name() const;
 	useit Identifier get_name() const;

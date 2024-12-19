@@ -44,6 +44,7 @@ class TypedType;
 class PrerunValue;
 class ResultType;
 class VectorType;
+class Polymorph;
 
 // Type is the base class for all types in the IR
 class Type : public Uniq {
@@ -122,6 +123,9 @@ class Type : public Uniq {
 
 	useit bool           is_reference() const;
 	useit ReferenceType* as_reference() const;
+
+	useit bool       is_poly() const;
+	useit Polymorph* as_poly() const;
 
 	useit bool      is_mark() const;
 	useit MarkType* as_mark() const;

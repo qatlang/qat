@@ -455,6 +455,18 @@ ReferenceType* Type::as_reference() const {
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_reference() : (ReferenceType*)this);
 }
 
+bool Type::is_poly() const {
+	return (type_kind() == TypeKind::polymorph) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_poly()) ||
+	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_poly());
+}
+
+Polymorph* Type::as_poly() const {
+	return (type_kind() == TypeKind::definition)
+	           ? ((DefinitionType*)this)->get_subtype()->as_poly()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_poly() : (Polymorph*)this);
+}
+
 bool Type::is_mark() const {
 	return (type_kind() == TypeKind::pointer) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_mark()) ||

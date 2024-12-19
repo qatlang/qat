@@ -549,7 +549,6 @@ llvm::AllocaInst* Logic::newAlloca(ir::Function* fun, Maybe<String> name, llvm::
 			    new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
 		}
 	}
-	isolatedAllocas.push_back(result);
 	return result;
 }
 

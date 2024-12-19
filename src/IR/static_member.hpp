@@ -3,11 +3,8 @@
 
 #include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
+#include "./entity_overview.hpp"
 #include "./value.hpp"
-#include "entity_overview.hpp"
-
-#include <optional>
-#include <string>
 
 namespace qat::ir {
 
@@ -15,7 +12,6 @@ class StructType;
 class Mod;
 
 class StaticMember final : public Value, public EntityOverview {
-  private:
 	Identifier     name;
 	StructType*    parent;
 	Value*         initial;
@@ -30,13 +26,21 @@ class StaticMember final : public Value, public EntityOverview {
 		return std::construct_at(OwnNormal(StaticMember), _parent, name, _type, _is_variable, _initial, _visibility);
 	}
 
-	useit StructType*           get_parent_type();
-	useit Identifier            get_name() const;
-	useit String                get_full_name() const;
+	useit StructType* get_parent_type();
+
+	useit Identifier get_name() const;
+
+	useit String get_full_name() const;
+
 	useit const VisibilityInfo& get_visibility() const;
-	useit bool                  has_initial() const;
-	useit Json                  to_json() const;
-	void                        update_overview() final;
+
+	useit bool has_initial() const;
+
+	useit Value* get_initial() const { return initial; }
+
+	useit Json to_json() const;
+
+	void update_overview() final;
 
 	~StaticMember() final = default;
 };

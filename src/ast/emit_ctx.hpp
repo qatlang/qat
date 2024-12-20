@@ -82,6 +82,11 @@ struct EmitCtx {
 		return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod);
 	}
 
+	EmitCtx* with_skill(ir::Skill* _skill) {
+		skill = _skill;
+		return this;
+	}
+
 	EmitCtx* with_member_parent(ir::MethodParent* _memberParent) {
 		memberParent = _memberParent;
 		return this;

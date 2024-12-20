@@ -84,8 +84,11 @@ class StructType final : public ExpandedType, public EntityOverview {
 	useit String       get_field_name_at(u64 index) const;
 	useit Type*        get_type_of_field(const String& member) const;
 	useit Vec<StructField*>& get_members();
-	useit bool               has_static(const String& name) const;
-	useit bool               is_type_sized() const final;
+
+	useit bool          has_static_field(String const& name) const;
+	useit StaticMember* get_static_field(String const& name) const;
+
+	useit bool is_type_sized() const final;
 
 	useit bool is_trivially_copyable() const final;
 	useit bool is_trivially_movable() const final;

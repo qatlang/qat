@@ -180,14 +180,22 @@ Type* StructType::get_type_of_field(const String& member) const {
 	}
 }
 
-bool StructType::has_static(const String& _name) const {
-	bool result = false;
+bool StructType::has_static_field(const String& _name) const {
 	for (auto* stm : staticMembers) {
 		if (stm->get_name().value == _name) {
 			return true;
 		}
 	}
-	return result;
+	return false;
+}
+
+StaticMember* StructType::get_static_field(String const& name) const {
+	for (auto* stm : staticMembers) {
+		if (stm->get_name().value == name) {
+			return stm;
+		}
+	}
+	return nullptr;
 }
 
 bool StructType::is_type_sized() const { return !members.empty(); }
@@ -521,6 +529,7 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 	defineStructType->genericsToFill = toFillTypes;
 	ir::StructType* resultTy;
 	defineStructType->create_type(&resultTy, parent, irCtx);
+	defineStructType->create_type_definitions(resultTy, parent, irCtx);
 	defineStructType->do_define(resultTy, parent, irCtx);
 	defineStructType->genericsToFill = toFillTypes;
 	(void)defineStructType->do_emit(resultTy, irCtx);

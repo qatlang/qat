@@ -2,64 +2,100 @@
 #define QAT_IR_SKILL_HPP
 
 #include "../utils/identifier.hpp"
+#include "../utils/qat_region.hpp"
 #include "../utils/visibility.hpp"
+#include "./generic_variant.hpp"
+#include "./generics.hpp"
 #include "./link_names.hpp"
 #include "./types/qat_type.hpp"
-#include "generics.hpp"
+
+#include <set>
 
 namespace qat::ast {
 class Type;
 class ConvertorPrototype;
+class PrerunExpression;
+class DefineSkill;
+class DoSkill;
 } // namespace qat::ast
 
 namespace qat::ir {
 
 class Mod;
 class Method;
-
 class Skill;
 
+struct TypeInSkill {
+	ast::Type* astType;
+	Type*      irType;
+
+	useit static TypeInSkill get(ast::Type* astType, Type* irType) {
+		return TypeInSkill{.astType = astType, .irType = irType};
+	}
+};
+
+enum class SkillArgKind { NORMAL, VARIADIC };
+
 struct SkillArg {
-	ast::Type* type;
-	Identifier name;
-	bool       isVar;
+	TypeInSkill  type;
+	SkillArgKind kind;
+	Identifier   name;
+	bool         isVar;
 
-	SkillArg(ast::Type* _type, Identifier _name, bool _isVar);
+	SkillArg(SkillArgKind _kind, TypeInSkill _type, Identifier _name, bool _isVar);
+
+	useit static SkillArg* create(TypeInSkill type, Identifier name, bool isVar) {
+		return std::construct_at(OwnNormal(SkillArg), SkillArgKind::NORMAL, type, std::move(name), isVar);
+	}
+
+	useit static SkillArg* create_variadic(Identifier name) {
+		return std::construct_at(OwnNormal(SkillArg), SkillArgKind::VARIADIC, TypeInSkill{nullptr, nullptr},
+		                         std::move(name), false);
+	}
 };
 
-enum class SkillFnType {
-	static_method,
-	normal_method,
-	variation_method,
-	value_method,
+enum class SkillMethodKind {
+	STATIC,
+	NORMAL,
+	VARIATION,
+	VALUED,
 };
 
-class SkillPrototype {
+class SkillMethod {
 	friend class Skill;
-	Skill*         parent;
-	Identifier     name;
-	SkillFnType    fnTy;
-	ast::Type*     returnType;
-	Vec<SkillArg*> arguments;
+
+	Skill*          parent;
+	Identifier      name;
+	SkillMethodKind methodKind;
+	TypeInSkill     returnType;
+	Vec<SkillArg*>  arguments;
 
   public:
-	SkillPrototype(SkillFnType _fnTy, Skill* _parent, Identifier _name, ast::Type* _returnType,
-	               Vec<SkillArg*> _arguments);
+	SkillMethod(SkillMethodKind _fnTy, Skill* _parent, Identifier _name, TypeInSkill _returnType,
+	            Vec<SkillArg*> _arguments);
 
-	useit static SkillPrototype* create_static_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-	                                                  Vec<SkillArg*> _arguments);
-	useit static SkillPrototype* create_method(Skill* _parent, Identifier _name, bool _isVar, ast::Type* _returnType,
-	                                           Vec<SkillArg*> _arguments);
-	useit static SkillPrototype* create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-	                                                  Vec<SkillArg*> _arguments);
+	useit static SkillMethod* create_static_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
+	                                               Vec<SkillArg*> _arguments);
+	useit static SkillMethod* create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
+	                                        Vec<SkillArg*> _arguments);
+	useit static SkillMethod* create_valued_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
+	                                               Vec<SkillArg*> _arguments);
 
-	useit Skill*      get_parent_skill() const { return parent; }
-	useit SkillFnType get_method_type() const { return fnTy; }
-	useit Identifier  get_name() const { return name; }
-	useit ast::Type* get_return_type() const { return returnType; }
+	useit Skill* get_parent_skill() const { return parent; }
+
+	useit SkillMethodKind get_method_kind() const { return methodKind; }
+
+	useit Identifier get_name() const { return name; }
+
+	useit TypeInSkill const& get_given_type() const { return returnType; }
+
 	useit Vec<SkillArg*>& get_args() { return arguments; }
-	useit usize           get_arg_count() const { return arguments.size(); }
-	useit SkillArg*       get_arg_at(usize index) { return arguments.at(index); }
+
+	useit usize get_arg_count() const { return arguments.size(); }
+
+	useit SkillArg* get_arg_at(usize index) { return arguments.at(index); }
+
+	useit String to_string() const;
 };
 
 class Skill : public Uniq {

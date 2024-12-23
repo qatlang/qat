@@ -32,10 +32,11 @@ namespace qat::ir {
 
 enum class GenericEntityType {
 	function,
-	memberFunction,
+	method,
 	coreType,
 	mixType,
 	typeDefinition,
+	skill,
 };
 
 struct GenericEntityMarker {

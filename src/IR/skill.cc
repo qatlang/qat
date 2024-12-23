@@ -1,35 +1,87 @@
 #include "./skill.hpp"
+#include "../ast/define_skill.hpp"
+#include "../ast/expression.hpp"
+#include "../ast/types/generic_abstract.hpp"
+#include "./link_names.hpp"
+#include "./logic.hpp"
+#include "./method.hpp"
 #include "./qat_module.hpp"
+#include "./types/qat_type.hpp"
 #include "./types/reference.hpp"
-#include "link_names.hpp"
-#include "method.hpp"
-#include "types/qat_type.hpp"
 
 namespace qat::ir {
 
-SkillArg::SkillArg(ast::Type* _type, Identifier _name, bool _isVar) : type(_type), name(_name), isVar(_isVar) {}
+SkillArg::SkillArg(SkillArgKind _kind, TypeInSkill _type, Identifier _name, bool _isVar)
+    : type(_type), kind(_kind), name(_name), isVar(_isVar) {}
 
-SkillPrototype::SkillPrototype(SkillFnType _fnTy, Skill* _skill, Identifier _name, ast::Type* _returnType,
-                               Vec<SkillArg*> _arguments)
-    : parent(_skill), name(_name), fnTy(_fnTy), returnType(_returnType), arguments(_arguments) {}
-
-SkillPrototype* SkillPrototype::create_static_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-                                                     Vec<SkillArg*> _arguments) {
-	return std::construct_at(OwnNormal(SkillPrototype), SkillFnType::static_method, _parent, _name, _returnType,
-	                         _arguments);
+SkillMethod::SkillMethod(SkillMethodKind _fnTy, Skill* _skill, Identifier _name, TypeInSkill _returnType,
+                         Vec<SkillArg*> _arguments)
+    : parent(_skill), name(_name), methodKind(_fnTy), returnType(_returnType), arguments(_arguments) {
+	parent->prototypes.push_back(this);
 }
 
-SkillPrototype* SkillPrototype::create_method(Skill* _parent, Identifier _name, bool _isVar, ast::Type* _returnType,
-                                              Vec<SkillArg*> _arguments) {
-	return std::construct_at(OwnNormal(SkillPrototype),
-	                         _isVar ? SkillFnType::variation_method : SkillFnType::normal_method, _parent, _name,
-	                         _returnType, _arguments);
+SkillMethod* SkillMethod::create_static_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
+                                               Vec<SkillArg*> _arguments) {
+	return std::construct_at(OwnNormal(SkillMethod), SkillMethodKind::STATIC, _parent, _name, _returnType, _arguments);
 }
 
-SkillPrototype* SkillPrototype::create_valued_method(Skill* _parent, Identifier _name, ast::Type* _returnType,
-                                                     Vec<SkillArg*> _arguments) {
-	return std::construct_at(OwnNormal(SkillPrototype), SkillFnType::value_method, _parent, _name, _returnType,
-	                         _arguments);
+SkillMethod* SkillMethod::create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
+                                        Vec<SkillArg*> _arguments) {
+	return std::construct_at(OwnNormal(SkillMethod), _isVar ? SkillMethodKind::VARIATION : SkillMethodKind::NORMAL,
+	                         _parent, _name, _returnType, _arguments);
+}
+
+SkillMethod* SkillMethod::create_valued_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
+                                               Vec<SkillArg*> _arguments) {
+	return std::construct_at(OwnNormal(SkillMethod), SkillMethodKind::VALUED, _parent, _name, _returnType, _arguments);
+}
+
+String SkillMethod::to_string() const {
+	String result;
+	switch (methodKind) {
+		case SkillMethodKind::NORMAL:
+			break;
+		case SkillMethodKind::STATIC: {
+			result += "static ";
+			break;
+		}
+		case SkillMethodKind::VARIATION: {
+			result += "var:";
+			break;
+		}
+		case SkillMethodKind::VALUED: {
+			result += "self:";
+			break;
+		}
+	}
+	result += name.value;
+	if (returnType.astType) {
+		result += " -> " + returnType.astType->to_string() + "\n";
+	}
+	result += "(";
+	for (usize i = 0; i < arguments.size(); i++) {
+		auto* arg = arguments[i];
+		if (arg->kind != SkillArgKind::VARIADIC) {
+			if (arg->isVar) {
+				result += "var ";
+			}
+			result += arg->name.value;
+			result += " :: ";
+			result += arg->type.astType->to_string();
+		}
+		if (i != (arguments.size() - 1)) {
+			result += ", ";
+		}
+	}
+	result += ")";
+	return result;
+}
+
+Skill::Skill(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo)
+    : name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)) {
+	if (generics.empty()) {
+		parent->skills.push_back(this);
+	}
 }
 
 String Skill::get_full_name() const { return parent->get_fullname_with_child(name.value); }
@@ -38,9 +90,27 @@ Identifier Skill::get_name() const { return name; }
 
 Mod* Skill::get_module() const { return parent; }
 
-VisibilityInfo& Skill::get_visibility() { return visibInfo; }
+VisibilityInfo const& Skill::get_visibility() const { return visibInfo; }
 
-bool Skill::has_proto_with_name(String const& name) const {
+bool Skill::has_definition(String const& name) const {
+	for (auto* def : definitions) {
+		if (def->get_name().value == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+DefinitionType* Skill::get_definition(String const& name) const {
+	for (auto* def : definitions) {
+		if (def->get_name().value == name) {
+			return def;
+		}
+	}
+	return nullptr;
+}
+
+bool Skill::has_any_prototype(String const& name) const {
 	for (auto* proto : prototypes) {
 		if (proto->name.value == name) {
 			return true;
@@ -49,9 +119,18 @@ bool Skill::has_proto_with_name(String const& name) const {
 	return false;
 }
 
-SkillPrototype* Skill::get_proto_with_name(String const& name) const {
+bool Skill::has_prototype(String const& name, SkillMethodKind kind) const {
 	for (auto* proto : prototypes) {
-		if (proto->name.value == name) {
+		if ((proto->name.value == name) && (proto->get_method_kind() == kind)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+SkillMethod* Skill::get_prototype(String const& name, SkillMethodKind kind) const {
+	for (auto* proto : prototypes) {
+		if ((proto->name.value == name) && (proto->get_method_kind() == kind)) {
 			return proto;
 		}
 	}
@@ -75,6 +154,29 @@ DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* c
 DoneSkill* DoneSkill::create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
                                     FileRange typeRange) {
 	return std::construct_at(OwnNormal(DoneSkill), parent, skill, fileRange, candidateType, typeRange);
+}
+
+bool DoneSkill::has_definition(String const& name) const {
+	for (auto* def : definitions) {
+		if (def->get_name().value == name) {
+			return true;
+		}
+	}
+	return false;
+}
+
+DefinitionType* DoneSkill::get_definition(String const& name) const {
+	for (auto* def : definitions) {
+		if (def->get_name().value == name) {
+			return def;
+		}
+	}
+	return nullptr;
+}
+
+String DoneSkill::get_full_name() const {
+	return (skill.has_value() ? (skill.value()->get_full_name() + ":") : "") + "do:[" + candidateType->to_string() +
+	       "]";
 }
 
 bool DoneSkill::is_type_extension() const { return !skill.has_value(); }

@@ -99,25 +99,48 @@ class SkillMethod {
 };
 
 class Skill : public Uniq {
-	Identifier           name;
-	Mod*                 parent;
-	Vec<SkillPrototype*> prototypes;
-	VisibilityInfo       visibInfo;
+	friend class DefinitionType;
+	friend class SkillMethod;
+	friend class ast::DoSkill;
+
+	Identifier            name;
+	Vec<GenericArgument*> generics;
+	Mod*                  parent;
+	Vec<DefinitionType*>  definitions;
+	Vec<SkillMethod*>     prototypes;
+	VisibilityInfo        visibInfo;
 
   public:
-	useit String          get_full_name() const;
-	useit Identifier      get_name() const;
-	useit Mod*            get_module() const;
-	useit VisibilityInfo& get_visibility();
+	Skill(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo);
 
-	useit bool            has_proto_with_name(String const& name) const;
-	useit SkillPrototype* get_proto_with_name(String const& name) const;
+	useit static Skill* create(Identifier name, Vec<GenericArgument*> generics, Mod* parent, VisibilityInfo visibInfo) {
+		return std::construct_at(OwnNormal(Skill), std::move(name), std::move(generics), parent, std::move(visibInfo));
+	}
+
+	useit String get_full_name() const;
+
+	useit Identifier get_name() const;
+
+	useit Mod* get_module() const;
+
+	useit VisibilityInfo const& get_visibility() const;
+
+	useit bool has_definition(String const& name) const;
+
+	useit DefinitionType* get_definition(String const& name) const;
+
+	useit bool has_any_prototype(String const& name) const;
+
+	useit bool has_prototype(String const& name, SkillMethodKind kind) const;
+
+	useit SkillMethod* get_prototype(String const& name, SkillMethodKind kind) const;
 
 	LinkNames get_link_names() const;
 };
 
 class DoneSkill : public Uniq {
 	friend class Method;
+	friend class DefinitionType;
 	friend class ast::ConvertorPrototype;
 
 	Mod*                      parent;
@@ -126,6 +149,8 @@ class DoneSkill : public Uniq {
 	FileRange                 fileRange;
 	Type*                     candidateType;
 	FileRange                 typeRange;
+
+	Vec<DefinitionType*> definitions;
 
 	Maybe<Method*> defaultConstructor;
 	Vec<Method*>   staticFunctions;
@@ -150,6 +175,10 @@ class DoneSkill : public Uniq {
 	                                         FileRange typeRange);
 	useit static DoneSkill* create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
 	                                      FileRange typeRange);
+
+	useit bool has_definition(String const& name) const;
+
+	useit DefinitionType* get_definition(String const& name) const;
 
 	useit bool is_generic() const { return !generics.empty(); }
 	useit bool has_generic_parameter(String const& name) {
@@ -202,6 +231,8 @@ class DoneSkill : public Uniq {
 	useit ir::Method* get_unary_operator(String const& name) const;
 	useit ir::Method* get_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
 	useit ir::Method* get_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+
+	useit String get_full_name() const;
 
 	useit bool           is_type_extension() const;
 	useit bool           is_normal_skill() const;

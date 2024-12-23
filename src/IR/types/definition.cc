@@ -11,17 +11,40 @@
 
 namespace qat::ir {
 
-DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericArgument*> _generics, Mod* _mod,
-                               const VisibilityInfo& _visibInfo)
+DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericArgument*> _generics,
+                               Maybe<TypeDefParent> _methodParent, Mod* _mod, const VisibilityInfo& _visibInfo)
     : ExpandedType(_name, _generics, _mod, _visibInfo), EntityOverview("typeDefinition", Json(), _name.range),
-      subType(_subType) {
+      parentEntity(_methodParent), subType(_subType) {
 	setSubType(subType);
 	linkingName = subType->get_name_for_linking();
-	parent->typeDefs.push_back(this);
+	if (parentEntity.has_value()) {
+		if (parentEntity.value().is_skill()) {
+			parentEntity->as_skill()->definitions.push_back(this);
+		} else if (parentEntity.value().as_method_parent()->is_done_skill()) {
+			parentEntity->as_method_parent()->as_done_skill()->definitions.push_back(this);
+		} else {
+			parentEntity->as_method_parent()->as_expanded()->definitions.push_back(this);
+		}
+	} else {
+		parent->typeDefs.push_back(this);
+	}
 }
 
 LinkNames DefinitionType::get_link_names() const {
-	return LinkNames({LinkNameUnit(linkingName, LinkUnitType::typeName)}, None, nullptr);
+	if (parentEntity.has_value()) {
+		if (parentEntity->is_skill()) {
+			return parentEntity->as_skill()->get_link_names().newWith(LinkNameUnit(linkingName, LinkUnitType::typeName),
+			                                                          None);
+		} else if (parentEntity->as_method_parent()->is_done_skill()) {
+			return parentEntity->as_method_parent()->as_done_skill()->get_link_names().newWith(
+			    LinkNameUnit(linkingName, LinkUnitType::typeName), None);
+		} else {
+			return parentEntity->as_method_parent()->as_expanded()->get_link_names().newWith(
+			    LinkNameUnit(linkingName, LinkUnitType::typeName), None);
+		}
+	} else {
+		return LinkNames({LinkNameUnit(linkingName, LinkUnitType::typeName)}, None, nullptr);
+	}
 }
 
 void DefinitionType::setSubType(Type* _subType) {
@@ -68,6 +91,9 @@ void DefinitionType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Func
 Identifier DefinitionType::get_name() const { return name; }
 
 String DefinitionType::get_full_name() const {
+	if (parentEntity.has_value()) {
+		return parentEntity->get_full_name() + ":" + name.value;
+	}
 	return parent ? parent->get_fullname_with_child(name.value) : name.value;
 }
 

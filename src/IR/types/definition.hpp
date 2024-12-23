@@ -20,22 +20,64 @@ class TypeDefinition;
 namespace qat::ir {
 
 class Mod;
+class DoneSkill;
+
+enum class TypeDefParentKind { SKILL, METHOD_PARENT };
+
+struct TypeDefParent {
+	TypeDefParentKind kind;
+	void*             data;
+
+	useit static TypeDefParent from_skill(Skill* skill) {
+		return TypeDefParent{.kind = TypeDefParentKind::SKILL, .data = skill};
+	}
+
+	useit static TypeDefParent from_method_parent(MethodParent* parent) {
+		return TypeDefParent{.kind = TypeDefParentKind::METHOD_PARENT, .data = parent};
+	}
+
+	useit String get_full_name() const {
+		if (kind == TypeDefParentKind::SKILL) {
+			return ((ir::Skill*)data)->get_full_name();
+		} else {
+			auto mem = (ir::MethodParent*)data;
+			if (mem->is_done_skill()) {
+				return mem->as_done_skill()->get_full_name();
+			} else {
+				return mem->as_expanded()->get_full_name();
+			}
+		}
+	}
+
+	useit bool is_skill() const { return kind == TypeDefParentKind::SKILL; }
+
+	useit bool is_method_parent() const { return kind == TypeDefParentKind::METHOD_PARENT; }
+
+	useit Skill* as_skill() const { return (Skill*)data; }
+
+	useit MethodParent* as_method_parent() const { return (MethodParent*)data; }
+};
 
 class DefinitionType : public ExpandedType, public EntityOverview {
   private:
-	Type* subType;
+	Maybe<TypeDefParent> parentEntity;
+	Type*                subType;
 
   public:
-	DefinitionType(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
-	               const VisibilityInfo& _visibInfo);
+	DefinitionType(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics,
+	               Maybe<TypeDefParent> _methodParent, Mod* mod, const VisibilityInfo& _visibInfo);
 
-	useit static DefinitionType* create(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics, Mod* mod,
-	                                    const VisibilityInfo& _visibInfo) {
-		return std::construct_at(OwnNormal(DefinitionType), std::move(_name), _actualType, std::move(_generics), mod,
-		                         _visibInfo);
+	useit static DefinitionType* create(Identifier name, Type* actualType, Vec<GenericArgument*> generics,
+	                                    Maybe<TypeDefParent> methodParent, Mod* mod, const VisibilityInfo& visibInfo) {
+		return std::construct_at(OwnNormal(DefinitionType), std::move(name), actualType, std::move(generics),
+		                         methodParent, mod, visibInfo);
 	}
 
 	void setSubType(Type* _subType);
+
+	useit bool has_custom_parent() const { return parentEntity.has_value(); }
+
+	useit TypeDefParent const& get_custom_parent() const { return parentEntity.value(); }
 
 	useit Identifier get_name() const;
 	useit String     get_full_name() const;

@@ -138,6 +138,41 @@ class Skill : public Uniq {
 	LinkNames get_link_names() const;
 };
 
+class GenericSkill : public Uniq {
+	friend class ast::DefineSkill;
+
+	Identifier                     name;
+	Mod*                           parent;
+	Vec<ast::GenericAbstractType*> generics;
+	ast::DefineSkill*              defineSkill;
+	ast::PrerunExpression*         constraint;
+	VisibilityInfo                 visibInfo;
+
+	mutable Vec<GenericVariant<Skill>> variants;
+	mutable std::set<String>           variantNames;
+
+  public:
+	GenericSkill(Identifier _name, Mod* _parent, Vec<ast::GenericAbstractType*> _generics,
+	             ast::DefineSkill* _defineSkill, ast::PrerunExpression* _constraint, VisibilityInfo _visibInfo);
+
+	useit static GenericSkill* create(Identifier name, Mod* parent, Vec<ast::GenericAbstractType*> generics,
+	                                  ast::DefineSkill* defineSkill, ast::PrerunExpression* constraint,
+	                                  VisibilityInfo visibInfo) {
+		return std::construct_at(OwnNormal(GenericSkill), std::move(name), parent, std::move(generics), defineSkill,
+		                         constraint, std::move(visibInfo));
+	}
+
+	useit Identifier get_name() const;
+	useit usize      get_type_count() const { return generics.size(); }
+	useit bool       all_types_have_defaults() const;
+	useit usize      get_variant_count() const { return variants.size(); }
+	useit Mod*       get_module() const { return parent; }
+	useit Skill*     fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+
+	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
+	useit VisibilityInfo const&     get_visibility() const { return visibInfo; }
+};
+
 class DoneSkill : public Uniq {
 	friend class Method;
 	friend class DefinitionType;

@@ -141,6 +141,79 @@ LinkNames Skill::get_link_names() const {
 	return parent->get_link_names().newWith(LinkNameUnit(name.value, LinkUnitType::skill), None);
 }
 
+GenericSkill::GenericSkill(Identifier _name, Mod* _parent, Vec<ast::GenericAbstractType*> _generics,
+                           ast::DefineSkill* _defineSkill, ast::PrerunExpression* _constraint,
+                           VisibilityInfo _visibInfo)
+    : name(std::move(_name)), parent(_parent), generics(std::move(_generics)), defineSkill(_defineSkill),
+      constraint(_constraint), visibInfo(std::move(_visibInfo)) {
+	parent->genericSkills.push_back(this);
+}
+
+bool GenericSkill::all_types_have_defaults() const {
+	for (auto gen : generics) {
+		if (not gen->hasDefault()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+	for (auto& var : variants) {
+		SHOW("Core type variant: " << var.get()->get_full_name())
+		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+			return var.get();
+		}
+	}
+	ir::fill_generics(irCtx, generics, toFillTypes, range);
+	if (constraint != nullptr) {
+		auto checkVal = constraint->emit(ast::EmitCtx::get(irCtx, parent));
+		if (not checkVal->get_ir_type()->is_bool()) {
+			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
+			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
+			             constraint->fileRange);
+		}
+		if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
+			irCtx->Error("The provided parameters for the generic skill do not satisfy the constraints", range,
+			             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
+		}
+	}
+	Vec<ir::GenericArgument*> genParams;
+	for (auto genAb : generics) {
+		genParams.push_back(genAb->toIRGenericType());
+	}
+	auto variantName = ir::Logic::get_generic_variant_name(name.value, toFillTypes);
+	if (variantNames.contains(variantName)) {
+		irCtx->Error("Repeating variant name: " + variantName, range);
+	}
+	variantNames.insert(variantName);
+	irCtx->add_active_generic(
+	    ir::GenericEntityMarker{
+	        variantName,
+	        ir::GenericEntityType::skill,
+	        range,
+	        0u,
+	        genParams,
+	    },
+	    true);
+	ir::Skill* skill = defineSkill->create_skill(toFillTypes, parent, irCtx);
+	defineSkill->create_type_definitions(skill, parent, irCtx);
+	defineSkill->create_methods(skill, parent, irCtx);
+	for (auto* gen : generics) {
+		gen->unset();
+	}
+	if (irCtx->get_active_generic().warningCount > 0) {
+		auto count = irCtx->get_active_generic().warningCount;
+		irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
+		                   " generated while creating generic variant " + irCtx->highlightWarning(variantName),
+		               range);
+		irCtx->remove_active_generic();
+	} else {
+		irCtx->remove_active_generic();
+	}
+	return skill;
+}
+
 DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType,
                      FileRange _typeRange)
     : parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType), typeRange(_typeRange) {

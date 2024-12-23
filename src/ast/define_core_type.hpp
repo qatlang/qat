@@ -71,17 +71,15 @@ class DefineCoreType final : public IsEntity, public Commentable, public MemberP
 
 	Vec<ast::GenericAbstractType*> generics;
 	PrerunExpression*              genericConstraint;
-	mutable ir::StructType*        resultCoreType = nullptr;
 	mutable Vec<ir::OpaqueType*>   opaquedTypes;
 	useit bool                     hasOpaque() const;
 	void                           setOpaque(ir::OpaqueType* opq) const;
-	useit ir::OpaqueType*           get_opaque() const;
-	void                            unsetOpaque() const;
-	mutable ir::GenericStructType*  genericStructType = nullptr;
-	mutable Vec<ir::GenericToFill*> genericsToFill;
-	mutable Maybe<bool>             checkResult;
-	mutable Maybe<bool>             isPackedStruct;
-	mutable ir::EntityState*        entityState = nullptr;
+	useit ir::OpaqueType*          get_opaque() const;
+	void                           unsetOpaque() const;
+	mutable ir::GenericStructType* genericStructType = nullptr;
+	mutable ir::StructType*        resultType        = nullptr;
+	mutable Maybe<bool>            checkResult;
+	mutable Maybe<bool>            isPackedStruct;
 
   public:
 	DefineCoreType(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
@@ -103,16 +101,24 @@ class DefineCoreType final : public IsEntity, public Commentable, public MemberP
 	void addStaticMember(StaticMember* stm);
 
 	void create_opaque(ir::Mod* mod, ir::Ctx* irCtx);
-	void create_type(ir::StructType** resultTy, ir::Mod* mod, ir::Ctx* irCtx) const;
+
+	useit ir::StructType* create_type(Vec<ir::GenericToFill*> const& genericsToFill, ir::Mod* mod,
+	                                  ir::Ctx* irCtx) const;
+
+	void create_type_definitions(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx);
+
 	void setup_type(ir::Mod* mod, ir::Ctx* irCtx);
+
 	void do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx);
+
+	void do_emit(ir::StructType* resultTy, ir::Ctx* irCtx);
 
 	useit bool hasTrivialCopy() { return trivialCopy.has_value(); }
 	void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
 	useit bool hasTrivialMove() { return trivialMove.has_value(); }
 	void       setTrivialMove(FileRange range) { trivialMove = std::move(range); }
 
-	useit bool            isGeneric() const;
+	useit bool            is_generic() const;
 	useit bool            has_default_constructor() const;
 	useit bool            has_destructor() const;
 	useit bool            has_copy_constructor() const;
@@ -125,9 +131,6 @@ class DefineCoreType final : public IsEntity, public Commentable, public MemberP
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
-
-	void emit(ir::Ctx* irCtx);
-	void do_emit(ir::StructType* resultTy, ir::Ctx* irCtx);
 
 	useit Json     to_json() const final;
 	useit NodeType nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }

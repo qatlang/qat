@@ -4,9 +4,15 @@
 #include "../expression.hpp"
 #include "../types/qat_type.hpp"
 
+namespace qat::parser {
+class Parser;
+}
+
 namespace qat::ast {
 
 class TypeWrap final : public PrerunExpression {
+	friend class parser::Parser;
+
 	ast::Type* theType;
 	bool       isExplicit;
 

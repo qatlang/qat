@@ -15,6 +15,7 @@ class ConvertorDefinition;
 class MethodDefinition;
 class ConstructorDefinition;
 class DefineCoreType;
+class TypeDefinition;
 
 struct MethodState {
 	ir::MethodParent*   parent;
@@ -31,8 +32,18 @@ struct MethodState {
 	    : parent(_parent), result(_result), defineCondition(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 };
 
-class MethodParentState {
-  public:
+struct TypeInParentState {
+	bool  isParentSkill;
+	void* parent;
+
+	ir::DefinitionType* result;
+	Maybe<bool>         defineCondition;
+	Maybe<ir::MetaInfo> metaInfo;
+};
+
+struct MethodParentState {
+	Vec<TypeInParentState> definitions;
+
 	Vec<MethodState> allMethods;
 	Vec<MethodState> convertors;
 	Vec<MethodState> operators;
@@ -67,7 +78,8 @@ class MemberParentLike {
 		return parentStates.back().second;
 	}
 
-	Vec<MethodDefinition*>      memberDefinitions;
+	Vec<TypeDefinition*>        typeDefinitions;
+	Vec<MethodDefinition*>      methodDefinitions;
 	Vec<ConvertorDefinition*>   convertorDefinitions;
 	Vec<OperatorDefinition*>    operatorDefinitions;
 	Vec<ConstructorDefinition*> constructorDefinitions;
@@ -79,7 +91,7 @@ class MemberParentLike {
 	DestructorDefinition*       destructorDefinition = nullptr;
 
 	MemberParentLike()
-	    : parentStates(), memberDefinitions(), convertorDefinitions(), operatorDefinitions(), constructorDefinitions(),
+	    : parentStates(), methodDefinitions(), convertorDefinitions(), operatorDefinitions(), constructorDefinitions(),
 	      defaultConstructor(nullptr), copyConstructor(nullptr), moveConstructor(nullptr), copyAssignment(nullptr),
 	      moveAssignment(nullptr), destructorDefinition(nullptr) {}
 
@@ -89,7 +101,8 @@ class MemberParentLike {
 		}
 	}
 
-	void add_method_definition(MethodDefinition* mdef) { memberDefinitions.push_back(mdef); }
+	void add_type_definition(TypeDefinition* tyDef) { typeDefinitions.push_back(tyDef); }
+	void add_method_definition(MethodDefinition* mdef) { methodDefinitions.push_back(mdef); }
 	void add_convertor_definition(ConvertorDefinition* cdef) { convertorDefinitions.push_back(cdef); }
 	void add_constructor_definition(ConstructorDefinition* cdef) { constructorDefinitions.push_back(cdef); }
 	void add_operator_definition(OperatorDefinition* odef) { operatorDefinitions.push_back(odef); }

@@ -26,8 +26,10 @@ class VectorType final : public Type {
 	useit ir::Type* emit(EmitCtx* ctx);
 
 	AstTypeKind type_kind() const final { return AstTypeKind::VECTOR; }
-	Json        to_json() const final;
-	String      to_string() const final;
+
+	Json to_json() const final;
+
+	String to_string() const final;
 };
 
 } // namespace qat::ast

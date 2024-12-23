@@ -21,10 +21,13 @@ class ResultType final : public Type {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit ir::Type*   emit(EmitCtx* ctx) final;
-	useit Json        to_json() const final;
+	useit ir::Type* emit(EmitCtx* ctx) final;
+
+	useit Json to_json() const final;
+
 	useit AstTypeKind type_kind() const final;
-	useit String      to_string() const final;
+
+	useit String to_string() const final;
 };
 
 } // namespace qat::ast

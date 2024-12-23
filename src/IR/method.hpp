@@ -12,6 +12,10 @@
 #include <set>
 #include <string>
 
+namespace qat::ast {
+class MethodPrototype;
+}
+
 namespace qat::ir {
 
 enum class MethodType {
@@ -59,12 +63,15 @@ class MethodParent {
 };
 
 class Method : public Function {
-  private:
+	friend class ast::MethodPrototype;
+
 	MethodParent* parent;
 	bool          isStatic;
 	bool          isVariation;
 	MethodType    fnType;
 	Identifier    selfName;
+
+	SkillMethod* skillMethod = nullptr;
 
 	std::set<String>            usedMembers;
 	std::set<ir::Method*>       memberFunctionCalls;
@@ -170,6 +177,8 @@ class Method : public Function {
 	useit DoneSkill* get_parent_skill() const { return parent->as_done_skill(); }
 
 	useit Type* get_parent_type() { return parent->get_parent_type(); }
+
+	useit SkillMethod* get_skill_method() const { return skillMethod; }
 
 	useit Json to_json() const { return Json()._("parentType", parent->get_parent_type()->get_id()); }
 

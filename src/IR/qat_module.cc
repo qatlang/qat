@@ -772,6 +772,22 @@ void Mod::bring_generic_type_definition(GenericDefinitionType* gTyDef, const Vis
 	}
 }
 
+void Mod::bring_skill(Skill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName) {
+	if (bName.has_value()) {
+		broughtSkills.push_back(Brought<Skill>(bName.value(), skill, visib));
+	} else {
+		broughtSkills.push_back(Brought<Skill>(skill, visib));
+	}
+}
+
+void Mod::bring_generic_skill(GenericSkill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName) {
+	if (bName.has_value()) {
+		broughtGenericSkills.push_back(Brought<GenericSkill>(bName.value(), skill, visib));
+	} else {
+		broughtGenericSkills.push_back(Brought<GenericSkill>(skill, visib));
+	}
+}
+
 void Mod::bring_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtMixTypes.push_back(Brought<MixType>(bName.value(), mTy, visib));
@@ -1083,6 +1099,86 @@ Skill* Mod::get_skill(String const& name, AccessInfo const& reqInfo) const {
 				    bMod->has_skill_in_imports(name, reqInfo).first) {
 					if (bMod->get_skill(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_skill(name, reqInfo);
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+// SKILLS
+
+bool Mod::has_generic_skill(String const& name, AccessInfo reqInfo) const {
+	for (auto* fn : genericSkills) {
+		if ((fn->get_name().value == name) && fn->get_visibility().is_accessible(reqInfo)) {
+			return true;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_generic_skill(name, reqInfo) || sub->has_brought_generic_skill(name, reqInfo) ||
+			    sub->has_generic_skill_in_imports(name, reqInfo).first) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mod::has_brought_generic_skill(String const& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : broughtGenericSkills) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Pair<bool, String> Mod::has_generic_skill_in_imports(const String& name, const AccessInfo& reqInfo) const {
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_generic_skill(name, reqInfo) || bMod->has_brought_generic_skill(name, reqInfo) ||
+				    bMod->has_generic_skill_in_imports(name, reqInfo).first) {
+					if (bMod->get_generic_skill(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return {true, bMod->filePath.string()};
+					}
+				}
+			}
+		}
+	}
+	return {false, ""};
+}
+
+GenericSkill* Mod::get_generic_skill(String const& name, AccessInfo const& reqInfo) const {
+	for (auto* skill : genericSkills) {
+		if ((skill->get_name().value == name) && skill->get_visibility().is_accessible(reqInfo)) {
+			return skill;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_generic_skill(name, reqInfo) || sub->has_brought_generic_skill(name, reqInfo) ||
+			    sub->has_generic_skill_in_imports(name, reqInfo).first) {
+				return sub->get_generic_skill(name, reqInfo);
+			}
+		}
+	}
+	for (const auto& brought : broughtGenericSkills) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return brought.get();
+		}
+	}
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_generic_skill(name, reqInfo) || bMod->has_brought_generic_skill(name, reqInfo) ||
+				    bMod->has_generic_skill_in_imports(name, reqInfo).first) {
+					if (bMod->get_generic_skill(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return bMod->get_generic_skill(name, reqInfo);
 					}
 				}
 			}

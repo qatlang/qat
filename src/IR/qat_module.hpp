@@ -227,6 +227,9 @@ enum class EntityType {
 	opaque,
 	bringEntity,
 	defaultDoneSkill,
+	doneSkill,
+	skill,
+	genericSkill,
 };
 
 inline String entity_type_to_string(EntityType ty) {
@@ -261,6 +264,12 @@ inline String entity_type_to_string(EntityType ty) {
 			return "brought entity";
 		case EntityType::defaultDoneSkill:
 			return "type extension";
+		case EntityType::doneSkill:
+			return "skill implementation";
+		case EntityType::skill:
+			return "skill";
+		case EntityType::genericSkill:
+			return "generic skill";
 	}
 }
 
@@ -415,6 +424,8 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class GenericFunction;
 	friend class GenericStructType;
 	friend class GenericDefinitionType;
+	friend class Skill;
+	friend class GenericSkill;
 	friend class Function;
 	friend class ast::BinaryExpression;
 	friend class ast::BringBitwidths;
@@ -499,6 +510,9 @@ class Mod final : public Uniq, public EntityOverview {
 
 	Vec<Skill*>         skills;
 	Vec<Brought<Skill>> broughtSkills;
+
+	Vec<GenericSkill*>         genericSkills;
+	Vec<Brought<GenericSkill>> broughtGenericSkills;
 
 	Vec<Region*>         regions;
 	Vec<Brought<Region>> broughtRegions;
@@ -808,6 +822,13 @@ class Mod final : public Uniq, public EntityOverview {
 	useit Pair<bool, String> has_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
 	useit Skill*             get_skill(String const& name, AccessInfo const& reqInfo) const;
 
+	// GENERIC SKILLS
+
+	useit bool has_generic_skill(String const& name, AccessInfo reqInfo) const;
+	useit bool has_brought_generic_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
+	useit Pair<bool, String> has_generic_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
+	useit GenericSkill*      get_generic_skill(String const& name, AccessInfo const& reqInfo) const;
+
 	// IMPORT
 
 	useit bool has_brought_mod(const String& name, Maybe<AccessInfo> reqInfo) const;
@@ -832,6 +853,8 @@ class Mod final : public Uniq, public EntityOverview {
 	void bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_generic_type_definition(GenericDefinitionType* gTDef, VisibilityInfo const& visib,
 	                                   Maybe<Identifier> bName = None);
+	void bring_skill(Skill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
+	void bring_generic_skill(GenericSkill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
 
 	useit fs::path get_resolved_output_path(const String& extension, Ctx* irCtx);
 	useit llvm::Module* get_llvm_module() const;

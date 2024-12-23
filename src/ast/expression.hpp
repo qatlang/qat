@@ -94,7 +94,7 @@ class Expression : public Node {
 
 class PrerunExpression : public Expression {
   public:
-	PrerunExpression(FileRange _fileRange) : Expression(_fileRange) {}
+	PrerunExpression(FileRange _fileRange) : Expression(std::move(_fileRange)) {}
 	~PrerunExpression() override = default;
 
 	useit ir::PrerunValue* emit(EmitCtx* emitCtx) override = 0;

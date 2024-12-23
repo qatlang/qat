@@ -162,7 +162,7 @@ class GenericStructType : public Uniq, public EntityOverview {
 	VisibilityInfo                 visibility;
 	ast::PrerunExpression*         constraint;
 
-	Vec<String> variantNames;
+	std::set<String> variantNames;
 
 	mutable Vec<GenericVariant<StructType>>   variants;
 	mutable Deque<GenericVariant<OpaqueType>> opaqueVariants;

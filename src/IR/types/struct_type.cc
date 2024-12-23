@@ -510,12 +510,10 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 		genParams.push_back(genAb->toIRGenericType());
 	}
 	auto variantName = ir::Logic::get_generic_variant_name(name.value, toFillTypes);
-	for (auto varName : variantNames) {
-		if (varName == variantName) {
-			irCtx->Error("Repeating variant name: " + variantName, range);
-		}
+	if (variantNames.contains(variantName)) {
+		irCtx->Error("Repeating variant name: " + variantName, range);
 	}
-	variantNames.push_back(variantName);
+	variantNames.insert(variantName);
 	irCtx->add_active_generic(
 	    ir::GenericEntityMarker{
 	        variantName,
@@ -525,15 +523,10 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 	        genParams,
 	    },
 	    true);
-	auto oldGenToFill                = defineStructType->genericsToFill;
-	defineStructType->genericsToFill = toFillTypes;
-	ir::StructType* resultTy;
-	defineStructType->create_type(&resultTy, parent, irCtx);
+	auto* resultTy = defineStructType->create_type(toFillTypes, parent, irCtx);
 	defineStructType->create_type_definitions(resultTy, parent, irCtx);
 	defineStructType->do_define(resultTy, parent, irCtx);
-	defineStructType->genericsToFill = toFillTypes;
-	(void)defineStructType->do_emit(resultTy, irCtx);
-	defineStructType->genericsToFill = oldGenToFill;
+	defineStructType->do_emit(resultTy, irCtx);
 	for (auto* temp : generics) {
 		temp->unset();
 	}

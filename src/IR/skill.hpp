@@ -58,7 +58,6 @@ enum class SkillMethodKind {
 	STATIC,
 	NORMAL,
 	VARIATION,
-	VALUED,
 };
 
 class SkillMethod {
@@ -78,8 +77,6 @@ class SkillMethod {
 	                                               Vec<SkillArg*> _arguments);
 	useit static SkillMethod* create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
 	                                        Vec<SkillArg*> _arguments);
-	useit static SkillMethod* create_valued_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
-	                                               Vec<SkillArg*> _arguments);
 
 	useit Skill* get_parent_skill() const { return parent; }
 

@@ -31,11 +31,6 @@ SkillMethod* SkillMethod::create_method(Skill* _parent, Identifier _name, bool _
 	                         _parent, _name, _returnType, _arguments);
 }
 
-SkillMethod* SkillMethod::create_valued_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
-                                               Vec<SkillArg*> _arguments) {
-	return std::construct_at(OwnNormal(SkillMethod), SkillMethodKind::VALUED, _parent, _name, _returnType, _arguments);
-}
-
 String SkillMethod::to_string() const {
 	String result;
 	switch (methodKind) {
@@ -47,10 +42,6 @@ String SkillMethod::to_string() const {
 		}
 		case SkillMethodKind::VARIATION: {
 			result += "var:";
-			break;
-		}
-		case SkillMethodKind::VALUED: {
-			result += "self:";
 			break;
 		}
 	}

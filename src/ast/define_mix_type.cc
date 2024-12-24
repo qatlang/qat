@@ -29,7 +29,7 @@ void DefineMixType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 	for (auto& subty : subtypes) {
 		if (subty.second.has_value()) {
-			auto subTySize = subty.second.value()->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
+			auto subTySize = subty.second.value()->get_type_bitsize(EmitCtx::get(irCtx, mod));
 			if (subTySize.has_value()) {
 				if (maxSubtypeSize < subTySize.value()) {
 					maxSubtypeSize = subTySize.value();

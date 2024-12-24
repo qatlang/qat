@@ -8,6 +8,8 @@ namespace qat::ast {
 class SelfType final : public Type {
 	friend class MethodPrototype;
 	friend class OperatorPrototype;
+	friend class DefineSkill;
+
 	bool isJustType;
 
 	bool canBeSelfInstance = false;

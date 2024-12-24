@@ -54,7 +54,7 @@ void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 		bool             hasAllMems = true;
 		Vec<llvm::Type*> allMemEqTys;
 		for (auto* mem : members) {
-			auto memSize = mem->type->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
+			auto memSize = mem->type->get_type_bitsize(EmitCtx::get(irCtx, mod));
 			if (!memSize.has_value()) {
 				hasAllMems = false;
 				break;
@@ -141,7 +141,7 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 		bool             hasAllMems = true;
 		Vec<llvm::Type*> allMemEqTys;
 		for (auto* mem : members) {
-			auto memSize = mem->type->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
+			auto memSize = mem->type->get_type_bitsize(EmitCtx::get(irCtx, mod));
 			if (not memSize.has_value()) {
 				hasAllMems = false;
 				break;

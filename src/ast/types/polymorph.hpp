@@ -76,6 +76,8 @@ class PolymorphType final : public Type {
 		}
 	}
 
+	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+
 	useit ir::Type* emit(EmitCtx* ctx);
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::POLYMORPH; }

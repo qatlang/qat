@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-Maybe<usize> IntegerType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> IntegerType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
 	    llvm::Type::getIntNTy(ctx->irCtx->llctx, bitWidth)));
 }

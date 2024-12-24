@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-Maybe<usize> FloatType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> FloatType::get_type_bitsize(EmitCtx* ctx) const {
 	switch (kind) {
 		case ir::FloatTypeKind::_32:
 			return ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(

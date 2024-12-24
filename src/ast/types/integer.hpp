@@ -22,7 +22,7 @@ class IntegerType final : public Type {
 		return std::construct_at(OwnNormal(IntegerType), _bitWidth, _fileRange);
 	}
 
-	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
 	ir::Type*   emit(EmitCtx* ctx);
 	AstTypeKind type_kind() const;

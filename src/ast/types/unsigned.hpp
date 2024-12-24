@@ -24,7 +24,7 @@ class UnsignedType final : public Type {
 		return std::construct_at(OwnNormal(UnsignedType), _bitWidth, _isBool, _fileRange);
 	}
 
-	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
 	useit ir::Type*   emit(EmitCtx* ctx);
 	useit AstTypeKind type_kind() const final;

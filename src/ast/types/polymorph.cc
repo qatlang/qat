@@ -67,6 +67,12 @@ ir::Skill* SkillEntity::find(EmitCtx* ctx) const {
 	}
 }
 
+Maybe<usize> PolymorphType::get_type_bitsize(EmitCtx* ctx) const {
+	auto ptrTy = llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.value().getProgramAddressSpace());
+	return (usize)ctx->irCtx->dataLayout.value().getTypeAllocSizeInBits(
+	    isTyped ? llvm::StructType::create({ptrTy, ptrTy, ptrTy}) : llvm::StructType::create({ptrTy, ptrTy}));
+}
+
 ir::Type* PolymorphType::emit(EmitCtx* ctx) {
 	Vec<ir::Skill*> irSkills;
 	for (auto* sk : skills) {

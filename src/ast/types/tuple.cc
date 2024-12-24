@@ -11,10 +11,10 @@ void TupleType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 	}
 }
 
-Maybe<usize> TupleType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> TupleType::get_type_bitsize(EmitCtx* ctx) const {
 	usize total = 0;
 	for (auto* typ : types) {
-		auto typSiz = typ->getTypeSizeInBits(ctx);
+		auto typSiz = typ->get_type_bitsize(ctx);
 		if (typSiz.has_value()) {
 			total += typSiz.value();
 		} else {

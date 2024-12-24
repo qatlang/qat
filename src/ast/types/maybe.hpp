@@ -20,7 +20,7 @@ class MaybeType final : public Type {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 	useit ir::Type*   emit(EmitCtx* ctx) final;
 	useit AstTypeKind type_kind() const final { return AstTypeKind::MAYBE; }
 	useit Json        to_json() const final;

@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-Maybe<usize> StringSliceType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> StringSliceType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
 	    llvm::StructType::create({llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
 	                                                     ctx->irCtx->dataLayout->getProgramAddressSpace()),

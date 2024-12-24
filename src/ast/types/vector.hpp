@@ -23,6 +23,8 @@ class VectorType final : public Type {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
+	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+
 	useit ir::Type* emit(EmitCtx* ctx);
 
 	AstTypeKind type_kind() const final { return AstTypeKind::VECTOR; }

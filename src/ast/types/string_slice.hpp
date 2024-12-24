@@ -14,7 +14,7 @@ class StringSliceType final : public Type {
 		return std::construct_at(OwnNormal(StringSliceType), _fileRange);
 	}
 
-	useit Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const final;
+	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 	useit ir::Type*   emit(EmitCtx* ctx) final;
 	useit AstTypeKind type_kind() const final;
 	useit Json        to_json() const final;

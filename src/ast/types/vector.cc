@@ -13,11 +13,29 @@ void VectorType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> 
 	count->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
 
+Maybe<usize> VectorType::get_type_bitsize(EmitCtx* ctx) const {
+	if (not scalable.has_value()) {
+		auto elemSize = subType->get_type_bitsize(ctx);
+		if (elemSize.has_value() &&
+		    (count->nodeType() == NodeType::UNSIGNED_LITERAL || count->nodeType() == NodeType::INTEGER_LITERAL ||
+		     count->nodeType() == NodeType::CUSTOM_INTEGER_LITERAL)) {
+			auto countExp = count->emit(ctx);
+			if (countExp->get_ir_type()->is_unsigned_integer() &&
+			    (countExp->get_ir_type()->as_unsigned_integer()->get_bitwidth() == 32u)) {
+				auto elemCount = llvm::ElementCount::getFixed(
+				    *llvm::cast<llvm::ConstantInt>(countExp->get_llvm_constant())->getValue().getRawData());
+				return (usize)ctx->irCtx->dataLayout.value().getTypeAllocSizeInBits(
+				    llvm::VectorType::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, elemSize.value()), elemCount));
+			}
+		}
+	}
+	return None;
+}
+
 ir::Type* VectorType::emit(EmitCtx* ctx) {
 	SHOW("Scalable has value " << scalable.has_value())
-	auto subTy       = subType->emit(ctx);
-	auto usableSubTy = subTy->is_native_type() ? subTy->as_native_type()->get_subtype() : subTy;
-	if (usableSubTy->is_integer() || usableSubTy->is_unsigned_integer() || usableSubTy->is_float()) {
+	auto subTy = subType->emit(ctx);
+	if (subTy->is_underlying_type_integer() || subTy->is_underlying_type_unsigned() || subTy->is_float()) {
 		if (count->has_type_inferrance()) {
 			count->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
 		}

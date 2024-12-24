@@ -11,7 +11,7 @@ void FutureType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> 
 	subType->update_dependencies(phase, expect.value_or(ir::DependType::partial), ent, ctx);
 }
 
-Maybe<usize> FutureType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> FutureType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
 	    {llvm::Type::getInt64Ty(ctx->irCtx->llctx), llvm::Type::getInt64Ty(ctx->irCtx->llctx)->getPointerTo(),
 	     llvm::Type::getInt1Ty(ctx->irCtx->llctx)->getPointerTo(),

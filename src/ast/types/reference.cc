@@ -10,7 +10,7 @@ void ReferenceType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependTyp
 	type->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
 
-Maybe<usize> ReferenceType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> ReferenceType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->irCtx->dataLayout->getTypeAllocSizeInBits(
 	    llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), 0u)));
 }

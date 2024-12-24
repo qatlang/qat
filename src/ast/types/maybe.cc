@@ -11,8 +11,8 @@ void MaybeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 	subTyp->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
 
-Maybe<usize> MaybeType::getTypeSizeInBits(EmitCtx* ctx) const {
-	auto subTySize = subTyp->getTypeSizeInBits(ctx);
+Maybe<usize> MaybeType::get_type_bitsize(EmitCtx* ctx) const {
+	auto subTySize = subTyp->get_type_bitsize(ctx);
 	if (subTySize.has_value()) {
 		return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
 		    {llvm::Type::getInt1Ty(ctx->irCtx->llctx), llvm::Type::getIntNTy(ctx->irCtx->llctx, subTySize.value())})));
@@ -25,7 +25,7 @@ ir::Type* MaybeType::emit(EmitCtx* ctx) {
 	SHOW("Emitting subtype")
 	auto* subType = subTyp->emit(ctx);
 	SHOW("Subtype emitted")
-	if (subType->is_opaque() && !subType->as_opaque()->has_subtype()) {
+	if (subType->is_opaque() && not subType->as_opaque()->has_subtype()) {
 		ctx->Error("The subtype of " + ctx->color("maybe") +
 		               " is an incomplete opaque type: " + ctx->color(subType->to_string()),
 		           fileRange);

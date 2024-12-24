@@ -13,11 +13,10 @@ class GenericAbstractType;
 class Type {
 	friend GenericAbstractType;
 
+	static Vec<Type*> allTypes;
+
   protected:
 	static Vec<GenericAbstractType*> generics;
-
-  private:
-	static Vec<Type*> allTypes;
 
   public:
 	explicit Type(FileRange _fileRange);
@@ -28,7 +27,7 @@ class Type {
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                                 EmitCtx* ctx) {}
 
-	useit virtual Maybe<usize> getTypeSizeInBits(EmitCtx* ctx) const;
+	useit virtual Maybe<usize> get_type_bitsize(EmitCtx* ctx) const { return None; }
 
 	useit virtual ir::Type* emit(EmitCtx* ctx) = 0;
 

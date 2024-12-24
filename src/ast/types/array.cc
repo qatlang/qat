@@ -20,8 +20,8 @@ void ArrayType::typeInferenceForLength(ir::Ctx* irCtx) const {
 	}
 }
 
-Maybe<usize> ArrayType::getTypeSizeInBits(EmitCtx* ctx) const {
-	auto elemSize = elementType->getTypeSizeInBits(ctx);
+Maybe<usize> ArrayType::get_type_bitsize(EmitCtx* ctx) const {
+	auto elemSize = elementType->get_type_bitsize(ctx);
 	typeInferenceForLength(ctx->irCtx);
 	auto* lengthIR = lengthExp->emit(ctx);
 	if (lengthIR->get_ir_type()->is_unsigned_integer() &&
@@ -30,12 +30,9 @@ Maybe<usize> ArrayType::getTypeSizeInBits(EmitCtx* ctx) const {
 		if (elemSize.has_value() && (length > 0u)) {
 			return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
 			    llvm::ArrayType::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, elemSize.value()), length)));
-		} else {
-			return None;
 		}
-	} else {
-		return None;
 	}
+	return None;
 }
 
 ir::Type* ArrayType::emit(EmitCtx* ctx) {

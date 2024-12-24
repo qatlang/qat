@@ -74,7 +74,7 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 	           fileRange);
 }
 
-Maybe<usize> NativeType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 	switch (nativeKind) {
 		case ir::NativeTypeKind::String:
 			return ctx->irCtx->clangTargetInfo->getPointerWidth(ctx->irCtx->get_language_address_space());

@@ -14,7 +14,7 @@ void MarkType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> ex
 	}
 }
 
-Maybe<usize> MarkType::getTypeSizeInBits(EmitCtx* ctx) const {
+Maybe<usize> MarkType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
 	    isSlice ? llvm::cast<llvm::Type>(llvm::StructType::create(
 	                  {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),

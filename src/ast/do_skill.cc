@@ -1,10 +1,13 @@
 #include "./do_skill.hpp"
 #include "../IR/skill.hpp"
+#include "./constructor.hpp"
+#include "./convertor.hpp"
 #include "./destructor.hpp"
 #include "./method.hpp"
 #include "./operator_function.hpp"
-#include "constructor.hpp"
-#include "convertor.hpp"
+#include "./type_definition.hpp"
+
+#include <unordered_set>
 
 namespace qat::ast {
 
@@ -12,7 +15,7 @@ void DoSkill::create_entity(ir::Mod* parent, ir::Ctx* irCtx) {
 	if (isDefaultSkill) {
 		entityState = parent->add_entity(None, ir::EntityType::defaultDoneSkill, this, ir::EmitPhase::phase_3);
 		entityState->phaseToPartial = ir::EmitPhase::phase_2;
-		for (auto memFn : memberDefinitions) {
+		for (auto memFn : methodDefinitions) {
 			memFn->prototype->add_to_parent(entityState, irCtx);
 		}
 	}
@@ -21,6 +24,9 @@ void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 	if (isDefaultSkill) {
 		auto ctx = EmitCtx::get(irCtx, parent);
 		targetType->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+		for (auto* def : typeDefinitions) {
+			def->update_dependencies_for_parent(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+		}
 		if (defaultConstructor) {
 			defaultConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
 			                                                   entityState, ctx);
@@ -58,7 +64,7 @@ void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 			conv->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
 			conv->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
 		}
-		for (auto memFn : memberDefinitions) {
+		for (auto memFn : methodDefinitions) {
 			memFn->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
 			memFn->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
 		}
@@ -71,6 +77,7 @@ void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 void DoSkill::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) {
 	if (phase == ir::EmitPhase::phase_1) {
 		define_done_skill(parent, irCtx);
+		define_types(doneSkill, parent, irCtx);
 	} else if (phase == ir::EmitPhase::phase_2) {
 		define_members(irCtx);
 	} else if (phase == ir::EmitPhase::phase_3) {
@@ -78,10 +85,21 @@ void DoSkill::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) {
 	}
 }
 
+void DoSkill::define_types(ir::DoneSkill* skillImp, ir::Mod* parent, ir::Ctx* irCtx) {
+	auto methodParent = ir::MethodParent::create_do_skill(skillImp);
+	auto parentState  = get_state_for(methodParent);
+	parentState->definitions.reserve(typeDefinitions.size());
+	for (auto* def : typeDefinitions) {
+		auto tyState = TypeInParentState{.parent = methodParent, .isParentSkill = false};
+		def->create_type_in_parent(tyState, parent, irCtx);
+		parentState->definitions.push_back(tyState);
+	}
+}
+
 void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto* target = targetType->emit(EmitCtx::get(irCtx, mod));
 	if (target->is_region() || target->is_reference() || target->is_typed() || target->is_function() ||
-	    target->is_void()) {
+	    target->is_void() || target->is_poly()) {
 		irCtx->Error("Creating a default implementation for " + irCtx->color(target->to_string()) + " is not allowed",
 		             fileRange);
 	}
@@ -94,7 +112,7 @@ void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 		}
 		if (has_copy_assignment()) {
 			irCtx->Error(
-			    "Copy assignment operator is not allowed in default implementations, but only in the original type, if the type is a struct type",
+			    "Copy assignment is not allowed in default implementations, but only in the original type, if the type is a struct type",
 			    copyAssignment->fileRange);
 		}
 		if (has_move_constructor()) {
@@ -104,7 +122,7 @@ void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 		}
 		if (has_move_assignment()) {
 			irCtx->Error(
-			    "Move assignment operator is not allowed in default implementations, but only in the original type, if the type is a struct type",
+			    "Move assignment is not allowed in default implementations, but only in the original type, if the type is a struct type",
 			    moveAssignment->fileRange);
 		}
 		if (has_destructor()) {
@@ -148,10 +166,25 @@ void DoSkill::define_members(ir::Ctx* irCtx) {
 		cons->define(state, irCtx);
 		parentState->constructors.push_back(state);
 	}
-	for (auto* memDef : memberDefinitions) {
+	std::unordered_set<ir::SkillMethod*> skillMethods;
+	if (doneSkill->is_normal_skill()) {
+		skillMethods = std::unordered_set<ir::SkillMethod*>(doneSkill->get_skill()->prototypes.begin(),
+		                                                    doneSkill->get_skill()->prototypes.end());
+	}
+	for (auto* memDef : methodDefinitions) {
 		MethodState state(parent);
 		memDef->define(state, irCtx);
 		parentState->allMethods.push_back(state);
+		skillMethods.erase(state.result->get_skill_method());
+	}
+	if (not skillMethods.empty()) {
+		String methodStr;
+		for (auto it : skillMethods) {
+			methodStr += it->to_string() + "\n";
+		}
+		irCtx->Error("The following methods from the skill " + irCtx->color(doneSkill->get_skill()->get_full_name()) +
+		                 " are missing from this implementation:\n" + methodStr,
+		             fileRange);
 	}
 	for (auto* oprDef : operatorDefinitions) {
 		MethodState state(parent);
@@ -184,8 +217,8 @@ void DoSkill::emit_members(ir::Ctx* irCtx) {
 	for (usize i = 0; i < convertorDefinitions.size(); i++) {
 		(void)convertorDefinitions[i]->emit(parentState->convertors[i], irCtx);
 	}
-	for (usize i = 0; i < memberDefinitions.size(); i++) {
-		(void)memberDefinitions[i]->emit(parentState->allMethods[i], irCtx);
+	for (usize i = 0; i < methodDefinitions.size(); i++) {
+		(void)methodDefinitions[i]->emit(parentState->allMethods[i], irCtx);
 	}
 	for (usize i = 0; i < operatorDefinitions.size(); i++) {
 		(void)operatorDefinitions[i]->emit(parentState->operators[i], irCtx);

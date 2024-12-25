@@ -33,6 +33,7 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
 	void define_done_skill(ir::Mod* mod, ir::Ctx* irCtx);
+	void define_types(ir::DoneSkill* skillImp, ir::Mod* mod, ir::Ctx* irCtx);
 	void define_members(ir::Ctx* irCtx);
 	void emit_members(ir::Ctx* irCtx);
 

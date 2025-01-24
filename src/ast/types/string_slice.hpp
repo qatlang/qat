@@ -6,13 +6,11 @@
 
 namespace qat::ast {
 
-class StringSliceType final : public Type {
+class TextType final : public Type {
   public:
-	explicit StringSliceType(FileRange _fileRange) : Type(_fileRange) {}
+	explicit TextType(FileRange _fileRange) : Type(_fileRange) {}
 
-	useit static StringSliceType* create(FileRange _fileRange) {
-		return std::construct_at(OwnNormal(StringSliceType), _fileRange);
-	}
+	useit static TextType* create(FileRange _fileRange) { return std::construct_at(OwnNormal(TextType), _fileRange); }
 
 	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 	useit ir::Type*   emit(EmitCtx* ctx) final;

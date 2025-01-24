@@ -610,7 +610,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("match", match);
 	else Check_Normal_Keyword("copy", copy);
 	else Check_Normal_Keyword("move", move);
-	else Check_Normal_Keyword("str", stringSliceType);
+	else Check_Normal_Keyword("text", stringSliceType);
 	else Check_Normal_Keyword("for", For);
 	else Check_Normal_Keyword("give", give);
 	else Check_Normal_Keyword("var", var);
@@ -672,7 +672,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_VALUED_Keyword("uptrdiff", nativeType);
 	else Check_VALUED_Keyword("cSigAtomic", nativeType);
 	else Check_VALUED_Keyword("cProcessID", nativeType);
-	else Check_VALUED_Keyword("cStr", nativeType);
+	else Check_VALUED_Keyword("cstring", nativeType);
 	else Check_VALUED_Keyword("cBool", nativeType);
 	else Check_VALUED_Keyword("cPtr", nativeType);
 	else if (wordValue.substr(0, 1) == "u" &&

@@ -1437,7 +1437,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				if (cacheTy.has_value()) {
 					return {cacheTy.value(), i - 1};
 				}
-				cacheTy = ast::StringSliceType::create(token.fileRange);
+				cacheTy = ast::TextType::create(token.fileRange);
 				break;
 			}
 			case TokenType::unsignedIntegerType: {

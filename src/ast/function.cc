@@ -167,7 +167,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 					irCtx->hasMain = true;
 				} else {
 					irCtx->Error("Type of the argument of the " + irCtx->color("main") + " function should be " +
-					                 irCtx->color("slice![cStr]"),
+					                 irCtx->color("slice![cstring]"),
 					             arguments[0]->get_type()->fileRange);
 				}
 			} else if (generatedTypes.empty()) {

@@ -17,7 +17,7 @@ enum class AstTypeKind {
 	FLOAT,
 	INTEGER,
 	UNSIGNED_INTEGER,
-	STRING_SLICE,
+	TEXT,
 	C_TYPE,
 	TUPLE,
 	POINTER,

@@ -3,7 +3,6 @@
 #include "../../show.hpp"
 #include "../context.hpp"
 
-#include <errno.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/LLVMContext.h>
@@ -11,7 +10,7 @@
 namespace qat::ir {
 
 StringSliceType::StringSliceType(ir::Ctx* irCtx, bool _isPacked) : isPack(_isPacked) {
-	linkingName = "qat'str" + String(isPack ? ":[pack]" : "");
+	linkingName = "qat'text" + String(isPack ? ":[pack]" : "");
 	if (llvm::StructType::getTypeByName(irCtx->llctx, linkingName)) {
 		llvmType = llvm::StructType::getTypeByName(irCtx->llctx, linkingName);
 	} else {
@@ -86,6 +85,6 @@ Maybe<bool> StringSliceType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first,
 
 TypeKind StringSliceType::type_kind() const { return TypeKind::stringSlice; }
 
-String StringSliceType::to_string() const { return "str" + String(isPack ? ":[pack]" : ""); }
+String StringSliceType::to_string() const { return "text" + String(isPack ? ":[pack]" : ""); }
 
 } // namespace qat::ir

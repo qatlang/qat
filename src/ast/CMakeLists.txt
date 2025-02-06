@@ -10,6 +10,7 @@ add_library(QAT_AST STATIC
 	define_opaque_type.cc
 	define_prerun_function.cc
 	define_region.cc
+	define_skill.cc
 	destructor.cc
 	do_skill.cc
 	emit_ctx.cc
@@ -22,6 +23,7 @@ add_library(QAT_AST STATIC
 	node.cc
 	operator_function.cc
 	sentence.cc
+	sub_entity_solver.cc
 	type_definition.cc)
 
 target_include_directories(QAT_AST PUBLIC "${LLVM_ROOT_DIR}/include")

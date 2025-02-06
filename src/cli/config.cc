@@ -474,12 +474,16 @@ Config::Config(u64 count, const char** args)
 					display::build_info(buildCommit);
 				} else if (candidate == "web") {
 					display::websites();
+				} else if (candidate == "targets") {
+					display::target_triplets();
 				}
 				exitAfter = true;
 			} else {
 				cli::Error(
 				    "Nothing to show here. Please provide name of the information to display. The available names are\n"
-				    "build\nweb",
+				    "build\n"
+				    "web\n"
+				    "targets",
 				    None);
 			}
 		}

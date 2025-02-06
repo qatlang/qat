@@ -44,18 +44,19 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
 		std::ofstream out(libPath);
 		out << AUTO_GENERATED_STUB << "pub my_function() [\n"
 		    << "\t// The following syntax allows you to have a function to be implemented later\n"
-		    << "\tmeta:todo.\n"
+		    << "\tmeta:todo().\n"
 		    << "]\n";
 		out.close();
-		std::cout << "✓ Created a qat library project in " + log->color(projDir.string()) + "\n";
+		std::cout << "+ Created a qat library project in " + log->color(projDir.string()) + "\n";
 	} else {
 		auto          mainPath = projDir / (name + ".qat");
 		std::ofstream out(mainPath);
-		out << AUTO_GENERATED_STUB << "pub main -> i32 [\n"
+		out << AUTO_GENERATED_STUB << "pub main -> int [\n"
 		    << "\tsay \"Hello, World!\".\n"
+		    << "\tgive 0.\n"
 		    << "]\n";
 		out.close();
-		std::cout << "✓ Created a qat executable project in " + log->color(projDir.string()) + "\n";
+		std::cout << "+ Created a qat executable project in " + log->color(projDir.string()) + "\n";
 	}
 	if (vcs.has_value() && (vcs.value() == "git")) {
 		auto gitPath = find_executable("git");

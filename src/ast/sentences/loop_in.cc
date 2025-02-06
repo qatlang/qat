@@ -142,6 +142,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		// Adding loop info
 		ctx->loopsInfo.push_back(LoopInfo(itemName, mainBlock, condBlock, restBlock, nullptr, LoopType::OVER));
 		//
+		(void)ir::add_branch(ctx->irCtx->builder, mainBlock->get_bb());
 		mainBlock->set_active(ctx->irCtx->builder);
 		auto zeroU8    = llvm::ConstantInt::get(llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx), 0u, false);
 		auto zero64    = llvm::ConstantInt::get(llvm::IntegerType::getInt64Ty(ctx->irCtx->llctx), 0u);

@@ -25,6 +25,8 @@ void help();
 // Displays websites related to the project
 void websites();
 
+void target_triplets();
+
 } // namespace qat::cli::display
 
 #endif

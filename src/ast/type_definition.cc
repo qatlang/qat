@@ -1,14 +1,15 @@
 #include "./type_definition.hpp"
+#include "./expression.hpp"
+#include "./member_parent_like.hpp"
 #include "./types/generic_abstract.hpp"
 #include "./types/prerun_generic.hpp"
 #include "./types/typed_generic.hpp"
-#include "expression.hpp"
 
 namespace qat::ast {
 
 void TypeDefinition::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("CreateEntity: " << name.value)
-	typeSize = subType->getTypeSizeInBits(EmitCtx::get(irCtx, mod));
+	typeSize = subType->get_type_bitsize(EmitCtx::get(irCtx, mod));
 	mod->entity_name_check(irCtx, name, is_generic() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition);
 	entityState = mod->add_entity(name, is_generic() ? ir::EntityType::genericTypeDef : ir::EntityType::typeDefinition,
 	                              this, ir::EmitPhase::phase_1);
@@ -78,7 +79,7 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 	}
 	Vec<ir::GenericArgument*> genericsIR;
 	for (auto* gen : generics) {
-		if (!gen->isSet()) {
+		if (not gen->isSet()) {
 			if (gen->is_typed()) {
 				irCtx->Error("No type is set for the generic type " + irCtx->color(gen->get_name().value) +
 				                 " and there is no default type provided",
@@ -97,8 +98,66 @@ void TypeDefinition::create_type(ir::Mod* mod, ir::Ctx* irCtx) const {
 		irCtx->get_active_generic().generics = genericsIR;
 	}
 	SHOW("Type definition " << dTyName.value)
-	typeDefinition = ir::DefinitionType::create(dTyName, subType->emit(emitCtx), genericsIR, mod,
+	typeDefinition = ir::DefinitionType::create(dTyName, subType->emit(emitCtx), genericsIR, None, mod,
 	                                            emitCtx->get_visibility_info(visibSpec));
+}
+
+void TypeDefinition::create_type_in_parent(TypeInParentState& state, ir::Mod* mod, ir::Ctx* irCtx) const {
+	if (state.isParentSkill) {
+		auto sk = (ir::Skill*)state.parent;
+		if (sk->has_definition(name.value)) {
+			irCtx->Error("Found another type definition in " + irCtx->color(sk->get_full_name()) +
+			                 " with the same name",
+			             name.range);
+		} else if (sk->has_any_prototype(name.value)) {
+			irCtx->Error("Found a method in " + irCtx->color(sk->get_full_name()) + " with the same name", name.range);
+		}
+	} else if (((ir::MethodParent*)state.parent)->is_done_skill()) {
+		auto sk = ((ir::MethodParent*)state.parent)->as_done_skill();
+		if (sk->has_normal_method(name.value)) {
+			irCtx->Error("Found a method in " + irCtx->color(sk->get_full_name()) + " with the same name", name.range);
+		} else if (sk->has_variation_method(name.value)) {
+			irCtx->Error("Found a variation method in " + irCtx->color(sk->get_full_name()) + " with the same name",
+			             name.range);
+		} else if (sk->has_valued_method(name.value)) {
+			irCtx->Error("Found a value method in " + irCtx->color(sk->get_full_name()) + " with the same name",
+			             name.range);
+		} else if (sk->has_static_method(name.value)) {
+			irCtx->Error("Found a static function in " + irCtx->color(sk->get_full_name()) + " with the same name",
+			             name.range);
+		} else if (sk->has_definition(name.value)) {
+			irCtx->Error("Found a type definition in " + irCtx->color(sk->get_full_name()) + " with the same name",
+			             name.range);
+		}
+	} else {
+		auto ex = ((ir::MethodParent*)state.parent)->as_expanded();
+		if (ex->has_normal_method(name.value)) {
+			irCtx->Error("Found a method in " + irCtx->color(ex->get_full_name()) + " with the same name", name.range);
+		} else if (ex->has_variation(name.value)) {
+			irCtx->Error("Found a variation method in " + irCtx->color(ex->get_full_name()) + " with the same name",
+			             name.range);
+		} else if (ex->has_valued_method(name.value)) {
+			irCtx->Error("Found a value method in " + irCtx->color(ex->get_full_name()) + " with the same name",
+			             name.range);
+		} else if (ex->has_static_method(name.value)) {
+			irCtx->Error("Found a static function in " + irCtx->color(ex->get_full_name()) + " with the same name",
+			             name.range);
+		} else if (ex->has_definition(name.value)) {
+			irCtx->Error("Found a type definition in " + irCtx->color(ex->get_full_name()) + " with the same name",
+			             name.range);
+		}
+	}
+	if (state.isParentSkill) {
+		auto emitCtx = EmitCtx::get(irCtx, mod)->with_skill((ir::Skill*)state.parent);
+		ir::DefinitionType::create(name, subType->emit(emitCtx), {},
+		                           ir::TypeDefParent::from_skill((ir::Skill*)state.parent), mod,
+		                           emitCtx->get_visibility_info(visibSpec));
+	} else {
+		auto emitCtx = EmitCtx::get(irCtx, mod)->with_member_parent((ir::MethodParent*)state.parent);
+		ir::DefinitionType::create(name, subType->emit(emitCtx), {},
+		                           ir::TypeDefParent::from_method_parent((ir::MethodParent*)state.parent), mod,
+		                           emitCtx->get_visibility_info(visibSpec));
+	}
 }
 
 ir::DefinitionType* TypeDefinition::getDefinition() const { return typeDefinition; }

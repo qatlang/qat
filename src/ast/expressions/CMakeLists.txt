@@ -12,12 +12,14 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	entity.cc
 	error.cc
 	function_call.cc
+	generic_entity.cc
 	get_intrinsic.cc
 	heap.cc
 	is.cc
 	method_call.cc
 	index_access.cc
 	member_access.cc
+	mix_choice_initialiser.cc
 	move.cc
 	negative.cc
 	not.cc
@@ -25,10 +27,9 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	operator.cc
 	plain_initialiser.cc
 	self_instance.cc
-	generic_entity.cc
+	sub_entity.cc
 	to_conversion.cc
-	tuple_value.cc
-	mix_choice_initialiser.cc)
+	tuple_value.cc)
 
 target_link_directories(QAT_AST_EXPRESSIONS PUBLIC ../../utils)
 

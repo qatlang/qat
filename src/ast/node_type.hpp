@@ -102,6 +102,8 @@ enum class NodeType {
 	ERROR_EXPRESSION,
 	PRERUN_FUNCTION_CALL,
 	DEFINE_PRERUN_FUNCTION,
+	PRERUN_SUB_ENTITY,
+	SUB_ENTITY,
 };
 
 } // namespace qat::ast

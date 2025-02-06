@@ -19,6 +19,7 @@ add_library(QAT_AST_TYPES
 	result.cc
 	self_type.cc
 	string_slice.cc
+	subtype.cc
 	tuple.cc
 	typed_generic.cc
 	unsigned.cc

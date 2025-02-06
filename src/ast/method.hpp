@@ -35,6 +35,17 @@ inline String method_type_to_string(MethodType ty) {
 	}
 }
 
+useit inline ir::SkillMethodKind get_skill_method_kind_for(MethodType type) {
+	switch (type) {
+		case MethodType::Static:
+			return ir::SkillMethodKind::STATIC;
+		case MethodType::normal:
+			return ir::SkillMethodKind::NORMAL;
+		case MethodType::variation:
+			return ir::SkillMethodKind::VARIATION;
+	}
+}
+
 class MethodPrototype {
 	friend class MethodDefinition;
 

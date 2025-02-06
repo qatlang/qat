@@ -19,6 +19,7 @@ add_library(QAT_AST_PRERUN
 	plain_initialiser.cc
 	prerun_global.cc
 	string_literal.cc
+	sub_entity.cc
 	to_conversion.cc
 	tuple_value.cc
 	type_wrap.cc

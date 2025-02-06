@@ -32,6 +32,7 @@ enum class AstTypeKind {
 	VECTOR,
 	GENERIC_INTEGER,
 	POLYMORPH,
+	SUBTYPE,
 };
 
 } // namespace qat::ast

@@ -2,8 +2,10 @@
 #include "../IR/types/struct_type.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"
-#include "emit_ctx.hpp"
-#include "types/self_type.hpp"
+#include "./emit_ctx.hpp"
+#include "./types/self_type.hpp"
+#include "./types/subtype.hpp"
+
 #include <vector>
 
 namespace qat::ast {
@@ -62,26 +64,40 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		state.metaInfo = metaInfo.value().toIR(emitCtx);
 	}
 	SHOW("Defining member proto " << name.value << " " << state.parent->get_parent_type()->to_string())
+	ir::SkillMethod* skillMethod = nullptr;
 	if (state.parent->is_done_skill()) {
 		auto doneSkill = state.parent->as_done_skill();
-		if ((fnTy != MethodType::normal) && doneSkill->has_variation_method(name.value)) {
-			irCtx->Error(
-			    "A variation function named " + irCtx->color(name.value) +
-			        " already exists in the same implementation at " +
-			        irCtx->color(doneSkill->get_variation_method(name.value)->get_name().range.start_to_string()),
-			    name.range);
+		if (doneSkill->is_normal_skill() && (fnTy != MethodType::valued)) {
+			if (doneSkill->get_skill()->has_prototype(name.value, get_skill_method_kind_for(fnTy))) {
+				skillMethod = doneSkill->get_skill()->get_prototype(name.value, get_skill_method_kind_for(fnTy));
+			} else if (doneSkill->get_skill()->has_any_prototype(name.value)) {
+				irCtx->Error("Could not find a " + irCtx->color(method_type_to_string(fnTy)) + " method in the skill " +
+				                 irCtx->color(doneSkill->get_skill()->get_full_name()) + " with the name " +
+				                 irCtx->color(name.value) +
+				                 ". Found another method in the skill with the same name. Please check your logic",
+				             name.range);
+			}
 		}
-		if ((fnTy != MethodType::variation) && doneSkill->has_normal_method(name.value)) {
-			irCtx->Error("A member function named " + irCtx->color(name.value) +
-			                 " already exists in the same implementation at " +
-			                 irCtx->color(doneSkill->get_normal_method(name.value)->get_name().range.start_to_string()),
-			             name.range);
+		if ((fnTy == MethodType::variation) && doneSkill->has_variation_method(name.value)) {
+			irCtx->Error(
+			    "A variation method named " + irCtx->color(name.value) + " already exists in the same implementation",
+			    name.range,
+			    std::make_optional(std::make_pair("The implementation can be found here",
+			                                      doneSkill->get_variation_method(name.value)->get_name().range)));
+		}
+		if ((fnTy == MethodType::normal) && doneSkill->has_normal_method(name.value)) {
+			irCtx->Error(
+			    "A method named " + irCtx->color(name.value) + " already exists in the same implementation", name.range,
+			    std::make_optional(std::make_pair("The implementation can be found here",
+			                                      doneSkill->get_variation_method(name.value)->get_name().range)));
 		}
 		if (doneSkill->has_static_method(name.value)) {
-			irCtx->Error("A static function named " + irCtx->color(name.value) +
-			                 " already exists in the same implementation at " +
-			                 irCtx->color(doneSkill->get_static_method(name.value)->get_name().range.start_to_string()),
-			             name.range);
+			irCtx->Error(
+			    "A static function named " + irCtx->color(name.value) +
+			        " already exists in the same implementation. Static functions and other methods cannot share names",
+			    name.range,
+			    std::make_optional(std::make_pair("The implementation can be found here",
+			                                      doneSkill->get_variation_method(name.value)->get_name().range)));
 		}
 	}
 	SHOW("Getting parent type")
@@ -89,26 +105,27 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	    state.parent->is_done_skill() ? state.parent->as_done_skill()->get_ir_type() : state.parent->as_expanded();
 	if (parentType->is_expanded()) {
 		auto expTy = parentType->as_expanded();
-		if ((fnTy != MethodType::normal) && expTy->has_variation(name.value)) {
+		if ((fnTy == MethodType::variation) && expTy->has_variation(name.value)) {
 			irCtx->Error("A variation function named " + irCtx->color(name.value) + " exists in the parent type " +
 			                 irCtx->color(expTy->get_full_name()) + " at " +
 			                 irCtx->color(expTy->get_variation(name.value)->get_name().range.start_to_string()),
 			             name.range);
 		}
-		if ((fnTy != MethodType::variation) && expTy->has_normal_method(name.value)) {
+		if ((fnTy == MethodType::normal) && expTy->has_normal_method(name.value)) {
 			irCtx->Error("A member function named " + irCtx->color(name.value) + " exists in the parent type " +
 			                 irCtx->color(expTy->get_full_name()) + " at " +
 			                 irCtx->color(expTy->get_normal_method(name.value)->get_name().range.start_to_string()),
 			             name.range);
 		}
 		if (expTy->has_static_method(name.value)) {
-			irCtx->Error("A static function named " + irCtx->color(name.value) + " already exists in the parent type " +
+			irCtx->Error("A static function named " + irCtx->color(name.value) + " exists in the parent type " +
 			                 irCtx->color(expTy->get_full_name()) + " at " +
 			                 irCtx->color(expTy->get_static_method(name.value)->get_name().range.start_to_string()),
 			             name.range);
 		}
 		if (expTy->is_struct()) {
-			if (expTy->as_struct()->has_field_with_name(name.value) || expTy->as_struct()->has_static(name.value)) {
+			if (expTy->as_struct()->has_field_with_name(name.value) ||
+			    expTy->as_struct()->has_static_field(name.value)) {
 				irCtx->Error(
 				    String(expTy->as_struct()->has_field_with_name(name.value) ? "Member" : "Static") +
 				        " field named " + irCtx->color(name.value) + " exists in the parent type " +
@@ -128,30 +145,53 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	if (returnType.has_value() && returnType.value()->type_kind() == AstTypeKind::SELF_TYPE) {
 		SHOW("Return is self")
 		auto* selfRet = (SelfType*)returnType.value();
-		if (!selfRet->isJustType) {
+		if (not selfRet->isJustType) {
 			selfRet->isVarRef          = fnTy == MethodType::variation;
-			selfRet->canBeSelfInstance = true;
+			selfRet->canBeSelfInstance = (fnTy == MethodType::normal) || (fnTy == MethodType::variation);
 			isSelfReturn               = true;
 		}
 	}
 	SHOW("Emitting return type")
 	auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
+	if (skillMethod) {
+		if (not skillMethod->get_given_type().irType->is_same(retTy)) {
+			irCtx->Error(
+			    "Expected the type " + irCtx->color(skillMethod->get_given_type().irType->to_string()) +
+			        " to be the given type of this method according to the corresponding method in the skill " +
+			        irCtx->color(skillMethod->get_parent_skill()->get_full_name()) + ", but got " +
+			        irCtx->color(retTy->to_string()) + " instead as the given type here. The expected signature is " +
+			        irCtx->color(skillMethod->to_string()),
+			    returnType.has_value() ? returnType.value()->fileRange : fileRange,
+			    skillMethod->get_given_type().astType
+			        ? std::make_optional(
+			              std::make_pair("The given type of the corresponding method in the skill can be found here",
+			                             skillMethod->get_given_type().astType->fileRange))
+			        : None);
+		}
+		if (skillMethod->get_arg_count() != arguments.size()) {
+			irCtx->Error(
+			    "The signature of this method does not match the signature of the corresponding method found in the skill " +
+			        irCtx->color(skillMethod->get_parent_skill()->get_full_name()) + ". The expected signature is " +
+			        irCtx->color(skillMethod->to_string()),
+			    fileRange);
+		}
+	}
 	SHOW("Generating types")
 	Vec<ir::Type*> generatedTypes;
-	// TODO - Check existing member functions
-	for (auto* arg : arguments) {
+	for (usize i = 0; i < arguments.size(); i++) {
+		auto arg = arguments[i];
 		if (arg->is_member_arg()) {
-			if (!state.parent->get_parent_type()->is_struct()) {
+			if (not state.parent->get_parent_type()->is_struct()) {
 				irCtx->Error(
-				    "The parent type of this function is not a core type and hence the member argument syntax cannot be used",
+				    "The parent type of this function is not a struct type and hence the member argument syntax cannot be used",
 				    arg->get_name().range);
 			}
 			if (fnTy != MethodType::Static && fnTy != MethodType::valued) {
 				auto structType = state.parent->get_parent_type()->as_struct();
 				if (structType->has_field_with_name(arg->get_name().value)) {
 					if (state.parent->is_done_skill()) {
-						if (!structType->get_field_with_name(arg->get_name().value)
-						         ->visibility.is_accessible(emitCtx->get_access_info())) {
+						if (not structType->get_field_with_name(arg->get_name().value)
+						            ->visibility.is_accessible(emitCtx->get_access_info())) {
 							irCtx->Error("The member field " + irCtx->color(arg->get_name().value) +
 							                 " of parent type " + irCtx->color(structType->to_string()) +
 							                 " is not accessible here",
@@ -164,7 +204,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 							if (memTy->as_reference()->isSubtypeVariable()) {
 								memTy = memTy->as_reference()->get_subtype();
 							} else {
-								irCtx->Error("Member " + irCtx->color(arg->get_name().value) + " of core type " +
+								irCtx->Error("Member " + irCtx->color(arg->get_name().value) + " of struct type " +
 								                 irCtx->color(structType->get_full_name()) +
 								                 " is not a variable reference and hence cannot "
 								                 "be reassigned",
@@ -178,7 +218,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 						             fileRange);
 					}
 				} else {
-					irCtx->Error("No non-static member named " + arg->get_name().value + " in the core type " +
+					irCtx->Error("No non-static member named " + arg->get_name().value + " in the struct type " +
 					                 structType->get_full_name(),
 					             arg->get_name().range);
 				}
@@ -188,21 +228,48 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 				                 ". So it cannot use the member argument syntax",
 				             arg->get_name().range);
 			}
+		} else if (arg->is_variadic_arg()) {
+			if (i != (arguments.size() - 1)) {
+				irCtx->Error("Variadic argument should always be the last argument", arg->get_name().range);
+			}
+			if (skillMethod && (skillMethod->get_args().back()->kind != ir::SkillArgKind::VARIADIC)) {
+				irCtx->Error("The method found in the skill " +
+				                 irCtx->color(skillMethod->get_parent_skill()->get_full_name()) + " with the name " +
+				                 irCtx->color(name.value) +
+				                 " does not have a variadic argument, but a variadic argument has been provided here",
+				             arg->get_name().range);
+			}
 		} else {
-			generatedTypes.push_back(arg->get_type()->emit(emitCtx));
+			auto argIRTy = arg->get_type()->emit(emitCtx);
+			if (skillMethod) {
+				auto skArg = skillMethod->get_arg_at(i);
+				if (skArg->isVar != arg->is_variable()) {
+					irCtx->Error("In the method named " + irCtx->color(name.value) + " in the skill " +
+					                 irCtx->color(skillMethod->get_parent_skill()->get_full_name()) +
+					                 ", the corresponding argument " + skArg->name.value +
+					                 (skArg->isVar ? " has variability" : " does not have variability") +
+					                 ", but the argument provided here " +
+					                 (arg->is_variable() ? " has variability" : " does not have variability"),
+					             arg->get_name().range);
+				}
+				if (not skArg->type.irType->is_same(argIRTy)) {
+					irCtx->Error(
+					    "Expected the argument to be of type " + irCtx->color(skArg->type.irType->to_string()) +
+					        ", but instead got an argument of type " + irCtx->color(argIRTy->to_string()) + " here",
+					    arg->get_name().range);
+				}
+			}
+			generatedTypes.push_back(argIRTy);
 		}
 	}
 	SHOW("Argument types generated")
 	Vec<ir::Argument> args;
 	SHOW("Setting variability of arguments")
-	for (usize i = 0; i < generatedTypes.size(); i++) {
+	for (usize i = 0; i < arguments.size(); i++) {
 		if (arguments[i]->is_member_arg()) {
 			SHOW("Argument at " << i << " named " << arguments[i]->get_name().value << " is a type member")
 			args.push_back(ir::Argument::CreateMember(arguments[i]->get_name(), generatedTypes[i], i));
 		} else if (arguments[i]->is_variadic_arg()) {
-			if (i != (generatedTypes.size() - 1)) {
-				irCtx->Error("Variadic argument should always be the last argument", arguments[i]->get_name().range);
-			}
 			args.push_back(
 			    ir::Argument::CreateVariadic(arguments[i]->get_name().value, arguments[i]->get_name().range, i));
 		} else {
@@ -222,7 +289,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		                             retTy, args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
 	} else if (fnTy == MethodType::valued) {
 		SHOW("MemberFn :: " << name.value << " Valued Method")
-		if (!parentType->is_trivially_copyable()) {
+		if (not parentType->is_trivially_copyable()) {
 			irCtx->Error("The parent type is not trivially copyable and hence cannot have value methods", fileRange);
 		}
 		state.result =
@@ -235,6 +302,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		                                  ir::ReturnType::get(retTy, isSelfReturn), args, fileRange,
 		                                  emitCtx->get_visibility_info(visibSpec), irCtx);
 	}
+	state.result->skillMethod = skillMethod;
 }
 
 Json MethodPrototype::to_json() const {

@@ -159,7 +159,7 @@ class GenericSkill : public Uniq {
 		                         constraint, std::move(visibInfo));
 	}
 
-	useit Identifier get_name() const;
+	useit Identifier get_name() const { return name; }
 	useit usize      get_type_count() const { return generics.size(); }
 	useit bool       all_types_have_defaults() const;
 	useit usize      get_variant_count() const { return variants.size(); }

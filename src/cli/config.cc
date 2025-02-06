@@ -396,8 +396,11 @@ Config::Config(u64 count, const char** args)
 				Maybe<String> candPath;
 				Maybe<String> vcs;
 				next = readNext();
-				if (next.has_value()) {
+				while (next.has_value()) {
 					if (next.value() == "--lib") {
+						if (isLib) {
+							log->warn("The '--lib' flag has already been provided", None);
+						}
 						isLib = true;
 					} else if (next.value() == "--vcs") {
 						if (vcs.has_value()) {
@@ -412,6 +415,17 @@ Config::Config(u64 count, const char** args)
 							                " Use '--vcs=none' to disable this feature for this project",
 							                None);
 						}
+					} else if (next.value().starts_with("--vcs=")) {
+						if (vcs.has_value()) {
+							log->fatalError("The '--vcs' argument has already been provided", None);
+						}
+						if (next.value().length() > String::traits_type::length("--vcs=")) {
+							vcs = next.value().substr(String::traits_type::length("--vcs="));
+						} else {
+							log->fatalError(
+							    "Expected valid value after '--vcs='. This argument determines which version control system should be used for the new project. Use '--vcs=none' to disable this feature for this project",
+							    None);
+						}
 					} else if (fs::exists(next.value())) {
 						if (not fs::is_directory(next.value())) {
 							log->fatalError("The provided path " + next.value() +
@@ -425,28 +439,6 @@ Config::Config(u64 count, const char** args)
 						                next.value());
 					}
 					next = readNext();
-					while (next.has_value()) {
-						if (next.value() == "--lib") {
-							if (isLib) {
-								log->warn("The '--lib' option has already been provided", None);
-							}
-							isLib = true;
-						} else if (next.value() == "--vcs") {
-							if (vcs.has_value()) {
-								log->fatalError("The '--vcs' argument has already been provided", None);
-							}
-							next = readNext();
-							if (next.has_value()) {
-								vcs = next;
-							} else {
-								log->fatalError("Expected a value for the '--vcs' argument. This argument determines"
-								                " which version control system should be used for the new project."
-								                " Use '--vcs=none' to disable this feature for this project",
-								                None);
-							}
-						}
-						next = readNext();
-					}
 				}
 				cli::create_project(projectName, candPath.value_or(fs::current_path().string()), isLib,
 				                    vcs.has_value() ? ((vcs.value() == "none") ? None : vcs) : "git");
@@ -505,7 +497,7 @@ Config::Config(u64 count, const char** args)
 				if (arg.length() > String::traits_type::length("--target=")) {
 					targetTriple = filter_quotes(arg.substr(String::traits_type::length("--target=")));
 				} else {
-					cli::Error("Expected a valid path after --target=", None);
+					cli::Error("Expected a valid target triple string after --target=", None);
 				}
 			} else if (arg == "--target") {
 				if (hasNext()) {
@@ -517,13 +509,13 @@ Config::Config(u64 count, const char** args)
 				if (arg.length() > String::traits_type::length("--sysroot=")) {
 					sysRoot = filter_quotes(arg.substr(String::traits_type::length("--sysroot=")));
 				} else {
-					log->fatalError("Expected valid path for " + log->color("--sysroot"), None);
+					log->fatalError("Expected valid path after " + log->color("--sysroot="), None);
 				}
 			} else if (arg == "--sysroot") {
 				if (hasNext()) {
 					sysRoot = filter_quotes(getNext());
 				} else {
-					cli::Error("Expected a path for the sysroot after the --sysroot parameter", None);
+					cli::Error("Expected a valid path for the sysroot after the --sysroot parameter", None);
 				}
 			} else if (arg.find("--clang=") == 0) {
 				if (arg.length() > String::traits_type::length("--clang=")) {

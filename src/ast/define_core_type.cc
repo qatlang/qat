@@ -107,7 +107,7 @@ void DefineCoreType::create_type_definitions(ir::StructType* resultTy, ir::Mod* 
 	auto parentState  = get_state_for(methodParent);
 	parentState->definitions.reserve(typeDefinitions.size());
 	for (auto* def : typeDefinitions) {
-		auto tyState = TypeInParentState{.parent = methodParent, .isParentSkill = false};
+		auto tyState = TypeInParentState{.isParentSkill = false, .parent = methodParent};
 		def->create_type_in_parent(tyState, mod, irCtx);
 		parentState->definitions.push_back(tyState);
 	}
@@ -209,7 +209,7 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 	if (genericStructType) {
 		genericStructType->variants.push_back(ir::GenericVariant<ir::StructType>(resultType, genericsToFill));
 	}
-	SHOW("StructType ID: " << (*resultTy)->get_id())
+	SHOW("StructType ID: " << resultType->get_id())
 	resultType->explicitTrivialCopy = trivialCopy.has_value();
 	resultType->explicitTrivialMove = trivialMove.has_value();
 	if (genericStructType) {

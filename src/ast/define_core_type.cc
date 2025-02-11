@@ -257,6 +257,7 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 		                 ", and hence move constructor is also required to be defined",
 		             fileRange);
 	}
+	return resultType;
 }
 
 void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {

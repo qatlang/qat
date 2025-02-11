@@ -506,7 +506,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				break;
 			}
 				TYPE_TRIGGER_TOKENS {
-					auto typeRes = do_type(preCtx, i - 1, None);
+					auto typeRes = do_type(preCtx, i - 1, None, true);
 					i            = typeRes.second;
 					setCachedPreExp(ast::TypeWrap::create(typeRes.first, false, typeRes.first->fileRange), i);
 					break;
@@ -1102,7 +1102,7 @@ Vec<ast::FillGeneric*> Parser::do_generic_fill(ParserContext& preCtx, usize from
 		auto& token = tokens->at(i);
 		switch (token.type) {
 			TYPE_TRIGGER_TOKENS {
-				auto subRes = do_type(preCtx, i - 1, upto);
+				auto subRes = do_type(preCtx, i - 1, upto, true);
 				result.push_back(ast::FillGeneric::create(subRes.first));
 				i = subRes.second;
 				break;
@@ -1179,7 +1179,7 @@ Vec<ast::FillGeneric*> Parser::do_generic_fill(ParserContext& preCtx, usize from
 	return result;
 }
 
-Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe<usize> upto) {
+Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe<usize> upto, bool isPartOfExpression) {
 	using lexer::Token;
 	using lexer::TokenType;
 
@@ -2209,7 +2209,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 			}
 			case TokenType::Do: {
 				if (visibility.has_value()) {
-					add_error("Implementations are always public. Please remove the visibility info before this",
+					add_error("Implementations are always public. Please remove the visibility specifier before this",
 					          get_visibility().value().range);
 				}
 				auto start = i;

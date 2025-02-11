@@ -120,7 +120,9 @@ class Parser {
 
 	useit Vec<ast::FillGeneric*> do_generic_fill(ParserContext& prevCtx, usize from, usize upto);
 
-	useit Pair<ast::Type*, usize> do_type(ParserContext& prevCtx, usize from, Maybe<usize> upto);
+	useit Pair<ast::Type*, usize> do_type(ParserContext& prevCtx, usize from, Maybe<usize> upto,
+	                                      bool isPartOfExpression = false);
+
 
 	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
 

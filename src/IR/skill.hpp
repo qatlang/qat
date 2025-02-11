@@ -4,6 +4,7 @@
 #include "../utils/identifier.hpp"
 #include "../utils/qat_region.hpp"
 #include "../utils/visibility.hpp"
+#include "./entity_overview.hpp"
 #include "./generic_variant.hpp"
 #include "./generics.hpp"
 #include "./link_names.hpp"
@@ -32,6 +33,8 @@ struct TypeInSkill {
 	useit static TypeInSkill get(ast::Type* astType, Type* irType) {
 		return TypeInSkill{.astType = astType, .irType = irType};
 	}
+
+	useit Json to_json() const;
 };
 
 enum class SkillArgKind { NORMAL, VARIADIC };
@@ -52,6 +55,8 @@ struct SkillArg {
 		return std::construct_at(OwnNormal(SkillArg), SkillArgKind::VARIADIC, TypeInSkill{nullptr, nullptr},
 		                         std::move(name), false);
 	}
+
+	useit Json to_json() const;
 };
 
 enum class SkillMethodKind {
@@ -93,9 +98,23 @@ class SkillMethod {
 	useit SkillArg* get_arg_at(usize index) { return arguments.at(index); }
 
 	useit String to_string() const;
+
+	useit Json to_json() const {
+		Vec<JsonValue> argsJSON;
+		for (auto* arg : arguments) {
+			argsJSON.push_back(arg->to_json());
+		}
+		return Json()
+		    ._("name", name)
+		    ._("kind", methodKind == SkillMethodKind::NORMAL
+		                   ? "normal"
+		                   : (methodKind == SkillMethodKind::STATIC ? "static" : "variation"))
+		    ._("givenType", returnType.to_json())
+		    ._("arguments", argsJSON);
+	}
 };
 
-class Skill : public Uniq {
+class Skill : public Uniq, public EntityOverview {
 	friend class DefinitionType;
 	friend class SkillMethod;
 	friend class ast::DoSkill;
@@ -133,9 +152,11 @@ class Skill : public Uniq {
 	useit SkillMethod* get_prototype(String const& name, SkillMethodKind kind) const;
 
 	LinkNames get_link_names() const;
+
+	void update_overview() final;
 };
 
-class GenericSkill : public Uniq {
+class GenericSkill : public Uniq, public EntityOverview {
 	friend class ast::DefineSkill;
 
 	Identifier                     name;
@@ -160,6 +181,7 @@ class GenericSkill : public Uniq {
 	}
 
 	useit Identifier get_name() const { return name; }
+	useit String     get_full_name() const;
 	useit usize      get_type_count() const { return generics.size(); }
 	useit bool       all_types_have_defaults() const;
 	useit usize      get_variant_count() const { return variants.size(); }
@@ -168,6 +190,8 @@ class GenericSkill : public Uniq {
 
 	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
 	useit VisibilityInfo const&     get_visibility() const { return visibInfo; }
+
+	void update_overview() final;
 };
 
 class DoneSkill : public Uniq {

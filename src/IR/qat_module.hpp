@@ -711,7 +711,8 @@ class Mod final : public Uniq, public EntityOverview {
 	                         Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
 	                         Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
 	                         Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
-	                         Vec<JsonValue>& defsJson);
+	                         Vec<JsonValue>& defsJson, Vec<JsonValue>& genericTypeDefsJSON, Vec<JsonValue>& skillsJSON,
+	                         Vec<JsonValue>& genericSkillsJSON);
 
 	// LIB
 

@@ -11,8 +11,24 @@
 
 namespace qat::ir {
 
+Json TypeInSkill::to_json() const {
+	return Json()
+	    ._("hasAST", astType != nullptr)
+	    ._("astType", astType ? astType->to_json() : JsonValue())
+	    ._("hasIR", irType != nullptr)
+	    ._("irType", irType ? irType->get_id() : JsonValue());
+}
+
 SkillArg::SkillArg(SkillArgKind _kind, TypeInSkill _type, Identifier _name, bool _isVar)
     : type(_type), kind(_kind), name(_name), isVar(_isVar) {}
+
+Json SkillArg::to_json() const {
+	return Json()
+	    ._("type", type.to_json())
+	    ._("name", name)
+	    ._("kind", kind == SkillArgKind::NORMAL ? "normal" : "variadic")
+	    ._("isVar", isVar);
+}
 
 SkillMethod::SkillMethod(SkillMethodKind _fnTy, Skill* _skill, Identifier _name, TypeInSkill _returnType,
                          Vec<SkillArg*> _arguments)
@@ -69,10 +85,33 @@ String SkillMethod::to_string() const {
 }
 
 Skill::Skill(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo)
-    : name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)) {
+    : EntityOverview("skill",
+                     Json()
+                         ._("name", _name)
+                         ._("fullName", _parent->get_fullname_with_child(_name.value))
+                         ._("parent", _parent->get_id())
+                         ._("visibility", _visibInfo),
+                     _name.range),
+      name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)) {
 	if (generics.empty()) {
 		parent->skills.push_back(this);
 	}
+}
+
+void Skill::update_overview() {
+	Vec<JsonValue> genJSON;
+	for (auto* gen : generics) {
+		genJSON.push_back(gen->to_json());
+	}
+	Vec<JsonValue> protoJSON;
+	for (auto* proto : prototypes) {
+		protoJSON.push_back(proto->to_json());
+	}
+	Vec<JsonValue> defJSON;
+	for (auto* def : definitions) {
+		defJSON.push_back(Json()._("name", def->get_name())._("id", def->get_id()));
+	}
+	ovInfo._("generics", genJSON)._("methods", protoJSON)._("definitions", defJSON);
 }
 
 String Skill::get_full_name() const { return parent->get_fullname_with_child(name.value); }
@@ -140,6 +179,8 @@ GenericSkill::GenericSkill(Identifier _name, Mod* _parent, Vec<ast::GenericAbstr
 	parent->genericSkills.push_back(this);
 }
 
+String GenericSkill::get_full_name() const { return parent->get_fullname_with_child(name.value); }
+
 bool GenericSkill::all_types_have_defaults() const {
 	for (auto gen : generics) {
 		if (not gen->hasDefault()) {
@@ -203,6 +244,23 @@ Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx
 		irCtx->remove_active_generic();
 	}
 	return skill;
+}
+
+void GenericSkill::update_overview() {
+	Vec<JsonValue> genericsJSON;
+	for (auto* gen : generics) {
+		genericsJSON.push_back(gen->to_json());
+	}
+	Vec<JsonValue> variantsJSON;
+	for (auto& sk : variants) {
+		variantsJSON.push_back(Json()._("id", sk.get()->get_id())._("fullName", sk.get()->get_full_name()));
+	}
+	ovInfo._("name", name)
+	    ._("parent", parent->get_id())
+	    ._("generics", genericsJSON)
+	    ._("visibility", visibInfo)
+	    ._("constraint", constraint ? constraint->to_json() : JsonValue())
+	    ._("variants", variantsJSON);
 }
 
 DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType,

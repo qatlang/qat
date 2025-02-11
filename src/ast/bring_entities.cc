@@ -58,13 +58,13 @@ void BringEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
 			    mod->has_lib_in_imports(idn.value, reqInfo).first) {
 				mod = mod->get_lib(idn.value, reqInfo);
 				mod->add_mention(idn.range);
-				if (!mod->get_visibility().is_accessible(reqInfo)) {
+				if (not mod->get_visibility().is_accessible(reqInfo)) {
 					ctx->Error("This lib is not accessible in the current scope", idn.range);
 				}
 			} else if (mod->has_brought_mod(idn.value, reqInfo)) {
 				mod = mod->get_brought_mod(idn.value, reqInfo);
 				mod->add_mention(idn.range);
-				if (!mod->get_visibility().is_accessible(reqInfo)) {
+				if (not mod->get_visibility().is_accessible(reqInfo)) {
 					ctx->Error("This brought module is not accessible in the current scope", idn.range);
 				}
 			} else {

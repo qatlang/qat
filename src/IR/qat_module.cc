@@ -410,9 +410,10 @@ void Mod::update_overview() {
 
 void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
                               Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
-                              Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
+                              Vec<JsonValue>& genericStructTypesJson, Vec<JsonValue>& structTypesJson,
                               Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
-                              Vec<JsonValue>& defsJson) {
+                              Vec<JsonValue>& defsJson, Vec<JsonValue>& genericTypeDefsJSON, Vec<JsonValue>& skillsJSON,
+                              Vec<JsonValue>& genericSkillsJSON) {
 	if (not isOverviewOutputted) {
 		isOverviewOutputted = true;
 		modulesJson.push_back(overviewToJson());
@@ -426,10 +427,10 @@ void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& funct
 			genericFunctionsJson.push_back(fun->overviewToJson());
 		}
 		for (auto* cTy : coreTypes) {
-			coreTypesJson.push_back(cTy->overviewToJson());
+			structTypesJson.push_back(cTy->overviewToJson());
 		}
 		for (auto* cTy : genericStructTypes) {
-			genericCoreTypesJson.push_back(cTy->overviewToJson());
+			genericStructTypesJson.push_back(cTy->overviewToJson());
 		}
 		for (auto* mTy : mixTypes) {
 			mixTypesJson.push_back(mTy->overviewToJson());
@@ -444,12 +445,18 @@ void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& funct
 			defsJson.push_back(tDef->overviewToJson());
 		}
 		for (auto* tDef : genericTypeDefinitions) {
-			defsJson.push_back(tDef->overviewToJson());
+			genericTypeDefsJSON.push_back(tDef->overviewToJson());
+		}
+		for (auto* sk : skills) {
+			skillsJSON.push_back(sk->overviewToJson());
+		}
+		for (auto* sk : genericSkills) {
+			genericSkillsJSON.push_back(sk->overviewToJson());
 		}
 		for (auto* sub : submodules) {
 			sub->output_all_overview(modulesJson, functionsJson, prerunFunctionJSON, genericFunctionsJson,
-			                         genericCoreTypesJson, coreTypesJson, mixTypesJson, regionJson, choiceJson,
-			                         defsJson);
+			                         genericStructTypesJson, structTypesJson, mixTypesJson, regionJson, choiceJson,
+			                         defsJson, genericTypeDefsJSON, skillsJSON, genericSkillsJSON);
 		}
 	}
 }

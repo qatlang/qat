@@ -39,6 +39,7 @@
 #include "../ast/expressions/ok.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self_instance.hpp"
+#include "../ast/expressions/sub_entity.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
 #include "../ast/function.hpp"
@@ -67,6 +68,7 @@
 #include "../ast/prerun/null_mark.hpp"
 #include "../ast/prerun/plain_initialiser.hpp"
 #include "../ast/prerun/prerun_global.hpp"
+#include "../ast/prerun/sub_entity.hpp"
 #include "../ast/prerun/to_conversion.hpp"
 #include "../ast/prerun/tuple_value.hpp"
 #include "../ast/prerun/type_wrap.hpp"
@@ -110,6 +112,7 @@
 #include "../ast/types/result.hpp"
 #include "../ast/types/self_type.hpp"
 #include "../ast/types/string_slice.hpp"
+#include "../ast/types/subtype.hpp"
 #include "../ast/types/tuple.hpp"
 #include "../ast/types/typed_generic.hpp"
 #include "../ast/types/unsigned.hpp"
@@ -532,6 +535,48 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				                symRes.second);
 				break;
 			}
+			case TokenType::Do: {
+				auto start = i;
+				if (not(is_next(TokenType::colon, i) && is_next(TokenType::skill, i + 1))) {
+					add_error("Expected " + color_error(":skill") + " after this", RangeAt(i));
+				}
+				FileRange doneSkill = RangeSpan(i, i + 2);
+				i += 2;
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeSpan(start, i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeSpan(start, i + 1));
+				}
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				setCachedPreExp(ast::PrerunSubEntity::create(None, std::move(doneSkill), std::move(names), nullptr,
+				                                             nullptr, RangeSpan(start, i)),
+				                i);
+				break;
+			}
+			case TokenType::skill: {
+				auto             start      = i;
+				Maybe<FileRange> skillRange = RangeAt(i);
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeAt(i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeAt(i + 1));
+				}
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				setCachedPreExp(ast::PrerunSubEntity::create(std::move(skillRange), None, std::move(names), nullptr,
+				                                             nullptr, RangeSpan(start, i)),
+				                i);
+				break;
+			}
 			case TokenType::typeSeparator: {
 				auto                          start = i;
 				Maybe<ast::PrerunExpression*> typeExp;
@@ -883,14 +928,31 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						// FIXME - Constructor call
 						add_error("Not supported yet", RangeSpan(i, i + 1));
 					}
-				} else if (not isIsolatedFrom) {
-					if (is_next(TokenType::identifier, i)) {
-						add_error("This syntax is not supported", RangeSpan(i, i + 1));
-					} else {
+				} else {
+					if (not is_next(TokenType::identifier, i)) {
 						add_error("Found : here without an identifier or " + color_error("from") +
 						              " following it. This is invalid syntax",
 						          RangeAt(i));
 					}
+					if (not hasCachedExp()) {
+						add_error("Could not find a type or prerun expression before this", RangeAt(i));
+					}
+					auto       typExp     = consumeCachedExp();
+					ast::Type* parentType = nullptr;
+					if ((typExp->nodeType() == ast::NodeType::TYPE_WRAP) && not(((ast::TypeWrap*)typExp)->isExplicit)) {
+						parentType = ((ast::TypeWrap*)typExp)->theType;
+						typExp     = nullptr;
+					}
+					auto start = i;
+					i--;
+					Vec<Identifier> names;
+					while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+						names.push_back(IdentifierAt(i + 2));
+						i += 2;
+					}
+					setCachedPreExp(ast::PrerunSubEntity::create(None, None, std::move(names), parentType, typExp,
+					                                             RangeSpan(start, i)),
+					                i);
 				}
 				break;
 			}
@@ -1131,6 +1193,70 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 			case TokenType::selfInstance:
 			case TokenType::selfWord: {
 				cacheTy = ast::SelfType::create(token.type == TokenType::selfWord, RangeAt(i));
+				break;
+			}
+			case TokenType::Do: {
+				auto start = i;
+				if (not(is_next(TokenType::colon, i) && is_next(TokenType::skill, i + 1))) {
+					add_error("Expected " + color_error(":skill") + " after this", RangeAt(i));
+				}
+				FileRange doneSkill = RangeSpan(i, i + 2);
+				i += 2;
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeAt(i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeAt(i + 1));
+				}
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				cacheTy =
+				    ast::SubType::create(None, std::move(doneSkill), std::move(names), nullptr, RangeSpan(start, i));
+
+				break;
+			}
+			case TokenType::skill: {
+				if (isPartOfExpression && cacheTy.has_value()) {
+					return {cacheTy.value(), i - 1};
+				}
+				auto             start      = i;
+				Maybe<FileRange> skillRange = RangeAt(i);
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeAt(i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeAt(i + 1));
+				}
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				cacheTy =
+				    ast::SubType::create(std::move(skillRange), None, std::move(names), nullptr, RangeSpan(start, i));
+				break;
+			}
+			case TokenType::colon: {
+				if (isPartOfExpression && cacheTy.has_value()) {
+					return {cacheTy.value(), i - 1};
+				}
+				if (not cacheTy.has_value()) {
+					add_error("Could not find a type before this", RangeAt(i));
+				}
+				auto start = i;
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this", RangeAt(i));
+				}
+				i--;
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				cacheTy = ast::SubType::create(None, None, std::move(names), cacheTy.value(), RangeSpan(start, i));
 				break;
 			}
 			case TokenType::nativeType: {
@@ -3715,6 +3841,48 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				i = symbolRes.second;
 				break;
 			}
+			case TokenType::Do: {
+				auto start = i;
+				if (not(is_next(TokenType::colon, i) && is_next(TokenType::skill, i + 1))) {
+					add_error("Expected " + color_error(":skill") + " after this", RangeAt(i));
+				}
+				FileRange doneSkill = RangeSpan(i, i + 2);
+				i += 2;
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeSpan(start, i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeSpan(start, i + 1));
+				}
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				setCachedExpr(
+				    ast::SubEntity::create(None, std::move(doneSkill), std::move(names), nullptr, RangeSpan(start, i)),
+				    i);
+				break;
+			}
+			case TokenType::skill: {
+				auto             start      = i;
+				Maybe<FileRange> skillRange = RangeAt(i);
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeSpan(start, i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeSpan(start, i + 1));
+				}
+				Vec<Identifier> names;
+				while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				setCachedExpr(
+				    ast::SubEntity::create(std::move(skillRange), None, std::move(names), nullptr, RangeSpan(start, i)),
+				    i);
+				break;
+			}
 			case TokenType::Default: {
 				if (is_next(TokenType::genericTypeStart, i)) {
 					auto gClose = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
@@ -3807,16 +3975,29 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						} else {
 							add_error("Expected end for {", token.fileRange);
 						}
-					}
-				} else if (not isIsolatedFrom) {
-					if (is_next(TokenType::identifier, i)) {
-						// FIXME - Support static members and functions for generic types
-						add_error("This syntax is not yet supported", RangeSpan(i, i + 1));
 					} else {
+						add_error("Expected either a constructor call or plain initialiser here, but couldn't find any",
+						          RangeSpan(start, i));
+					}
+				} else {
+					if (not is_next(TokenType::identifier, i)) {
 						add_error("Found : here without an identifier or " + color_error("from") +
 						              " following it. This is invalid syntax",
 						          RangeAt(i));
 					}
+					if (not hasCachedType()) {
+						add_error("Could not find a type before this", RangeAt(i));
+					}
+					auto start = i;
+					i--;
+					Vec<Identifier> names;
+					while (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+						names.push_back(IdentifierAt(i + 2));
+						i += 2;
+					}
+					setCachedExpr(
+					    ast::SubEntity::create(None, None, std::move(names), consumeCachedType(), RangeSpan(start, i)),
+					    i);
 				}
 				break;
 			}
@@ -5750,7 +5931,6 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
 			}
 		}
 	}
-	// FIXME - Support variadic function parameters
 	return {args, false};
 }
 

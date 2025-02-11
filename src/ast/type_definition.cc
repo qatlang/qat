@@ -115,9 +115,10 @@ void TypeDefinition::create_type_in_parent(TypeInParentState& state, ir::Mod* mo
 	} else if (((ir::MethodParent*)state.parent)->is_done_skill()) {
 		auto sk = ((ir::MethodParent*)state.parent)->as_done_skill();
 		if (visibSpec.has_value() && visibSpec.value().kind != VisibilityKind::pub) {
-			irCtx->Error(
-			    "Type definitions in implementations are always public, please remove the visibility specifier",
-			    visibSpec.value().range);
+			irCtx->Error("Type definitions in implementations are always public, please change this to " +
+			                 irCtx->color("pub") +
+			                 " if you want to explicitly specify, or remove the visibility specifier entirely",
+			             visibSpec.value().range);
 		}
 		if (sk->has_normal_method(name.value)) {
 			irCtx->Error("Found a method in " + irCtx->color(sk->get_full_name()) + " with the same name", name.range);

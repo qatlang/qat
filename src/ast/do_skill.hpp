@@ -3,28 +3,24 @@
 
 #include "./member_parent_like.hpp"
 #include "./node.hpp"
+#include "./skill_entity.hpp"
 #include "./types/qat_type.hpp"
 
 namespace qat::ast {
 
-struct SkillName {
-	u32             relative;
-	Vec<Identifier> names;
-};
-
 class DoSkill final : public IsEntity, public MemberParentLike {
-	bool             isDefaultSkill;
-	Maybe<SkillName> name;
-	ast::Type*       targetType;
+	bool               isDefaultSkill;
+	Maybe<SkillEntity> name;
+	ast::Type*         targetType;
 
 	mutable ir::DoneSkill*    doneSkill = nullptr;
 	mutable ir::MethodParent* parent    = nullptr;
 
   public:
-	DoSkill(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange)
+	DoSkill(bool _isDef, Maybe<SkillEntity> _name, ast::Type* _targetType, FileRange _fileRange)
 	    : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
 
-	useit static DoSkill* create(bool _isDef, Maybe<SkillName> _name, ast::Type* _targetType, FileRange _fileRange) {
+	useit static DoSkill* create(bool _isDef, Maybe<SkillEntity> _name, ast::Type* _targetType, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
 	}
 

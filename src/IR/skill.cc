@@ -174,8 +174,9 @@ LinkNames Skill::get_link_names() const {
 GenericSkill::GenericSkill(Identifier _name, Mod* _parent, Vec<ast::GenericAbstractType*> _generics,
                            ast::DefineSkill* _defineSkill, ast::PrerunExpression* _constraint,
                            VisibilityInfo _visibInfo)
-    : name(std::move(_name)), parent(_parent), generics(std::move(_generics)), defineSkill(_defineSkill),
-      constraint(_constraint), visibInfo(std::move(_visibInfo)) {
+    : EntityOverview("genericSkill", Json(), _name.range), name(std::move(_name)), parent(_parent),
+      generics(std::move(_generics)), defineSkill(_defineSkill), constraint(_constraint),
+      visibInfo(std::move(_visibInfo)) {
 	parent->genericSkills.push_back(this);
 }
 

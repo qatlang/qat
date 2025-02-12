@@ -6,72 +6,73 @@
 #include "./method.hpp"
 #include "./operator_function.hpp"
 #include "./type_definition.hpp"
+#include "context.hpp"
 
 #include <unordered_set>
 
 namespace qat::ast {
 
 void DoSkill::create_entity(ir::Mod* parent, ir::Ctx* irCtx) {
-	if (isDefaultSkill) {
-		entityState = parent->add_entity(None, ir::EntityType::defaultDoneSkill, this, ir::EmitPhase::phase_3);
-		entityState->phaseToPartial = ir::EmitPhase::phase_2;
-		for (auto memFn : methodDefinitions) {
-			memFn->prototype->add_to_parent(entityState, irCtx);
-		}
+	entityState =
+	    parent->add_entity(None, isDefaultSkill ? ir::EntityType::defaultDoneSkill : ir::EntityType::doneSkill, this,
+	                       ir::EmitPhase::phase_3);
+	entityState->phaseToPartial = ir::EmitPhase::phase_2;
+	for (auto memFn : methodDefinitions) {
+		memFn->prototype->add_to_parent(entityState, irCtx);
 	}
 }
 void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
-	if (isDefaultSkill) {
-		auto ctx = EmitCtx::get(irCtx, parent);
-		targetType->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
-		for (auto* def : typeDefinitions) {
-			def->update_dependencies_for_parent(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
-		}
-		if (defaultConstructor) {
-			defaultConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
-			                                                   entityState, ctx);
-			defaultConstructor->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		if (copyConstructor) {
-			copyConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
-			                                                entityState, ctx);
-			copyConstructor->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		if (moveConstructor) {
-			moveConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
-			                                                entityState, ctx);
-			moveConstructor->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		if (copyAssignment) {
-			copyAssignment->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
-			                                               entityState, ctx);
-			copyAssignment->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		if (moveAssignment) {
-			moveAssignment->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
-			                                               entityState, ctx);
-			moveAssignment->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		if (destructorDefinition) {
-			destructorDefinition->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState,
-			                                          ctx);
-		}
-		for (auto cons : constructorDefinitions) {
-			cons->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
-			cons->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		for (auto conv : convertorDefinitions) {
-			conv->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
-			conv->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		for (auto memFn : methodDefinitions) {
-			memFn->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
-			memFn->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
-		for (auto opr : operatorDefinitions) {
-			opr->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
-			opr->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
-		}
+	auto ctx = EmitCtx::get(irCtx, parent);
+	if (name.has_value()) {
+		name.value().update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	}
+	targetType->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	for (auto* def : typeDefinitions) {
+		def->update_dependencies_for_parent(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	}
+	if (defaultConstructor) {
+		defaultConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete,
+		                                                   entityState, ctx);
+		defaultConstructor->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	if (copyConstructor) {
+		copyConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState,
+		                                                ctx);
+		copyConstructor->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	if (moveConstructor) {
+		moveConstructor->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState,
+		                                                ctx);
+		moveConstructor->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	if (copyAssignment) {
+		copyAssignment->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState,
+		                                               ctx);
+		copyAssignment->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	if (moveAssignment) {
+		moveAssignment->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState,
+		                                               ctx);
+		moveAssignment->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	if (destructorDefinition) {
+		destructorDefinition->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	for (auto cons : constructorDefinitions) {
+		cons->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
+		cons->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	for (auto conv : convertorDefinitions) {
+		conv->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
+		conv->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	for (auto memFn : methodDefinitions) {
+		memFn->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
+		memFn->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
+	}
+	for (auto opr : operatorDefinitions) {
+		opr->prototype->update_dependencies(ir::EmitPhase::phase_2, ir::DependType::complete, entityState, ctx);
+		opr->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
 	}
 }
 void DoSkill::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) {
@@ -85,13 +86,13 @@ void DoSkill::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) {
 	}
 }
 
-void DoSkill::define_types(ir::DoneSkill* skillImp, ir::Mod* parent, ir::Ctx* irCtx) {
+void DoSkill::define_types(ir::DoneSkill* skillImp, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto methodParent = ir::MethodParent::create_do_skill(skillImp);
 	auto parentState  = get_state_for(methodParent);
 	parentState->definitions.reserve(typeDefinitions.size());
 	for (auto* def : typeDefinitions) {
 		auto tyState = TypeInParentState{.parent = methodParent, .isParentSkill = false};
-		def->create_type_in_parent(tyState, parent, irCtx);
+		def->create_type_in_parent(tyState, mod, irCtx);
 		parentState->definitions.push_back(tyState);
 	}
 }
@@ -106,32 +107,70 @@ void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 	if (isDefaultSkill) {
 		doneSkill = ir::DoneSkill::create_extension(mod, fileRange, target, targetType->fileRange);
 		if (has_copy_constructor()) {
-			irCtx->Error(
-			    "Copy constructor is not allowed in default implementations, but only in the original type, if the type is a struct type",
-			    copyConstructor->fileRange);
+			irCtx->Error("Copy constructor is not allowed in type extensions, but only in the original type",
+			             copyConstructor->fileRange);
 		}
 		if (has_copy_assignment()) {
-			irCtx->Error(
-			    "Copy assignment is not allowed in default implementations, but only in the original type, if the type is a struct type",
-			    copyAssignment->fileRange);
+			irCtx->Error("Copy assignment is not allowed in type extensions, but only in the original type",
+			             copyAssignment->fileRange);
 		}
 		if (has_move_constructor()) {
-			irCtx->Error(
-			    "Move constructor is not allowed in default implementations, but only in the original type, if the type is a struct type",
-			    moveConstructor->fileRange);
+			irCtx->Error("Move constructor is not allowed in type extensions, but only in the original type",
+			             moveConstructor->fileRange);
 		}
 		if (has_move_assignment()) {
-			irCtx->Error(
-			    "Move assignment is not allowed in default implementations, but only in the original type, if the type is a struct type",
-			    moveAssignment->fileRange);
+			irCtx->Error("Move assignment is not allowed in type extensions, but only in the original type",
+			             moveAssignment->fileRange);
 		}
 		if (has_destructor()) {
-			irCtx->Error(
-			    "Destructor is not allowed in default implementations, but only in the original type, if the type is a struct type",
-			    destructorDefinition->fileRange);
+			irCtx->Error("Destructor is not allowed in type extensions, but only in the original type",
+			             destructorDefinition->fileRange);
 		}
 	} else {
-		irCtx->Error("Implementing skills is not supported for now", fileRange);
+		doneSkill = ir::DoneSkill::create_normal(mod, name.value().find_skill(EmitCtx::get(irCtx, mod)), fileRange,
+		                                         target, targetType->fileRange);
+		if (not convertorDefinitions.empty()) {
+			Vec<ir::QatError> errors;
+			for (auto* conv : convertorDefinitions) {
+				errors.push_back(ir::QatError("Convertors are not allowed in skill implementations", conv->fileRange));
+			}
+			irCtx->Errors(errors);
+		}
+		if (not constructorDefinitions.empty()) {
+			Vec<ir::QatError> errors;
+			for (auto* cons : constructorDefinitions) {
+				errors.push_back(
+				    ir::QatError("Constructors are not allowed in skill implementations", cons->fileRange));
+			}
+			irCtx->Errors(errors);
+		}
+		if (not operatorDefinitions.empty()) {
+			Vec<ir::QatError> errors;
+			for (auto* op : operatorDefinitions) {
+				errors.push_back(ir::QatError("Operators are not allowed in skill implementations", op->fileRange));
+			}
+			irCtx->Errors(errors);
+		}
+		if (has_copy_constructor()) {
+			irCtx->Error("Copy constructor is not allowed in skill implementations, but only in the original type",
+			             copyConstructor->fileRange);
+		}
+		if (has_copy_assignment()) {
+			irCtx->Error("Copy assignment is not allowed in skill implementations, but only in the original type",
+			             copyAssignment->fileRange);
+		}
+		if (has_move_constructor()) {
+			irCtx->Error("Move constructor is not allowed in skill implementations, but only in the original type",
+			             moveConstructor->fileRange);
+		}
+		if (has_move_assignment()) {
+			irCtx->Error("Move assignment is not allowed in skill implementations, but only in the original type",
+			             moveAssignment->fileRange);
+		}
+		if (has_destructor()) {
+			irCtx->Error("Destructor is not allowed in skill implementations, but only in the original type",
+			             destructorDefinition->fileRange);
+		}
 	}
 }
 

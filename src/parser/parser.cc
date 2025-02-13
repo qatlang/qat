@@ -5899,10 +5899,9 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
 			case TokenType::variadic: {
 				if (is_next(TokenType::identifier, i)) {
 					// FIXME - Variadic argument can be var?
-					args.push_back(
-					    ast::Argument::create_normal({ValueAt(i + 1), FileRange RangeSpan(i, i + 1)}, false, nullptr));
+					args.push_back(ast::Argument::create_variadic(RangeSpan(i, i + 1)));
 					if (is_next(TokenType::parenthesisClose, i + 1) ||
-					    (is_next(TokenType::separator, i + 1) && ((i + 3) == upto))) {
+					    (is_next(TokenType::separator, i + 1) && is_next(TokenType::parenthesisClose, i + 2))) {
 						return {args, true};
 					} else {
 						add_error("Variadic argument should be the last argument of the function", token.fileRange);

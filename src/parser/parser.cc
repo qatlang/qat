@@ -10,6 +10,7 @@
 #include "../ast/define_opaque_type.hpp"
 #include "../ast/define_prerun_function.hpp"
 #include "../ast/define_region.hpp"
+#include "../ast/define_skill.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/do_skill.hpp"
 #include "../ast/expressions/address_of.hpp"
@@ -1941,6 +1942,173 @@ Vec<ast::GenericAbstractType*> Parser::do_generic_abstracts(ParserContext& preCt
 	return result;
 }
 
+Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visibSpec, usize from) {
+	using lexer::TokenType;
+	if (not is_next(TokenType::identifier, from)) {
+		add_error("Expected an identifier after this for the name of the skill", RangeAt(from));
+	}
+	auto const                     name   = IdentifierAt(from + 1);
+	auto                           preCtx = ParserContext();
+	Vec<ast::GenericAbstractType*> generics;
+	auto                           i = from + 1;
+	if (is_next(TokenType::genericTypeStart, i)) {
+		auto gEndRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+		if (not gEndRes.has_value()) {
+			add_error("Could not find ] after this to end the list of generic parameters", RangeAt(i + 1));
+		}
+		generics = std::move(do_generic_abstracts(preCtx, i + 1, gEndRes.value()));
+		i        = gEndRes.value();
+	}
+	auto entityMeta = do_entity_metadata(preCtx, i, "skill", generics.size());
+	i               = entityMeta.lastIndex;
+	if (not is_next(TokenType::curlybraceOpen, i)) {
+		add_error("Expected { after this to start the body of the " +
+		              String(generics.empty() ? "skill" : "generic skill"),
+		          RangeSpan(from, i));
+	}
+	i += 2;
+
+	Maybe<ast::VisibilitySpec> memberVisibSpec;
+	auto                       hasVisibSpec = [&]() -> bool { return memberVisibSpec.has_value(); };
+	auto                       getVisibSpec = [&]() {
+        auto res        = memberVisibSpec;
+        memberVisibSpec = None;
+        return res;
+	};
+
+	Vec<ast::SkillTypeDefinition> typeDefs;
+	Vec<ast::SkillMethod>         methods;
+	bool                          shouldExit = false;
+	for (; i < tokens->size(); i++) {
+		switch (tokens->at(i).type) {
+			case TokenType::Public: {
+				if (hasVisibSpec()) {
+					add_error("Visibility is already provided before this, found another visibility specifier here.",
+					          RangeAt(i));
+				}
+				auto visRes     = do_visibility_kind(i);
+				memberVisibSpec = visRes.first;
+				i               = visRes.second;
+				break;
+			}
+			case TokenType::define: {
+				auto start = i;
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this for the name of the type definition", RangeAt(i));
+				}
+				auto const tyDefName = IdentifierAt(i + 1);
+				i++; // TODO: Support generic type defs inside skills???
+				auto entMeta = do_entity_metadata(preCtx, i, "type definition", 0);
+				i            = entMeta.lastIndex;
+				if (not is_next(TokenType::assignment, i)) {
+					add_error("Expected = after this to start the underlying type of the type definiiton",
+					          RangeSpan(start, i));
+				}
+				i++;
+				auto typeRes = do_type(preCtx, i, None);
+				i            = typeRes.second;
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected . after this to end the type definition", RangeSpan(start, i));
+				}
+				i++;
+				typeDefs.push_back(ast::SkillTypeDefinition{.visibSpec     = getVisibSpec(),
+				                                            .name          = std::move(tyDefName),
+				                                            .range         = RangeSpan(start, i),
+				                                            .type          = typeRes.first,
+				                                            .defineChecker = entMeta.defineChecker});
+				break;
+			}
+			case TokenType::Static:
+			case TokenType::var:
+			case TokenType::identifier: {
+				auto const start      = i;
+				auto       methodKind = tokens->at(i).type == TokenType::var
+				                            ? ast::SkillMethodKind::VARIATION
+				                            : (tokens->at(i).type == TokenType::Static ? ast::SkillMethodKind::STATIC
+				                                                                       : ast::SkillMethodKind::NORMAL);
+
+				if (methodKind == ast::SkillMethodKind::VARIATION) {
+					if (not is_next(TokenType::colon, i)) {
+						add_error("Expected : after this, before the name of the variation method", RangeAt(i));
+					}
+					i++;
+					if (not is_next(TokenType::identifier, i)) {
+						add_error("Expected an identifier after this for the name of the variation method",
+						          RangeSpan(i - 1, i));
+					}
+					i++;
+				} else if (methodKind == ast::SkillMethodKind::STATIC) {
+					if (not is_next(TokenType::identifier, i)) {
+						add_error("Expected an identifier after this for the name of the static method", RangeAt(i));
+					}
+					i++;
+				}
+				auto       methodName = IdentifierAt(i);
+				ast::Type* givenType  = nullptr;
+				if (is_next(TokenType::givenTypeSeparator, i)) {
+					i++;
+					auto givenTypeRes = do_type(preCtx, i, None);
+					givenType         = givenTypeRes.first;
+					i                 = givenTypeRes.second;
+				} else {
+					if (not is_next(TokenType::parenthesisOpen, i)) {
+						add_error("Since the given type of this " + ast::method_kind_to_string(methodKind) +
+						              " method is void, expected to see ( after this",
+						          RangeSpan(start, i));
+					}
+				}
+				Vec<ast::Argument*> arguments;
+				if (is_next(TokenType::parenthesisOpen, i)) {
+					auto pEnd = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+					if (not pEnd.has_value()) {
+						add_error("Expected ) after this to end the list of arguments", RangeAt(i + 1));
+					}
+					if (pEnd.value() != i + 2) {
+						arguments = std::move(do_function_parameters(preCtx, i + 1, pEnd.value()).first);
+					}
+					i = pEnd.value();
+				}
+				auto entMeta = do_entity_metadata(preCtx, i, "skill method", 0);
+				i            = entMeta.lastIndex;
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected . after this to end the signature of the " +
+					              ast::method_kind_to_string(methodKind) + " method",
+					          RangeSpan(start, i));
+				}
+				i++;
+				methods.push_back(ast::SkillMethod{.name          = std::move(methodName),
+				                                   .arguments     = std::move(arguments),
+				                                   .givenType     = givenType,
+				                                   .kind          = methodKind,
+				                                   .visibSpec     = getVisibSpec(),
+				                                   .defineChecker = entMeta.defineChecker,
+				                                   .fileRange     = RangeSpan(start, i)});
+				break;
+			}
+			case TokenType::comment: {
+				break;
+			}
+			case TokenType::curlybraceClose: {
+				shouldExit = true;
+				break;
+			}
+			default: {
+				add_error("Invalid token found here inside this skill definition", RangeAt(i));
+			}
+		}
+		if (shouldExit) {
+			break;
+		}
+	}
+	if (i == tokens->size()) {
+		add_error("Could not find } to end the body of the skill after this", RangeSpan(from, i - 1));
+	}
+	return std::make_pair(ast::DefineSkill::create(std::move(name), std::move(generics), visibSpec, std::move(typeDefs),
+	                                               std::move(methods), entityMeta.defineChecker,
+	                                               entityMeta.genericConstraint, RangeSpan(from, i)),
+	                      i);
+}
+
 Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
                               usize from, usize upto) {
 	if (parseRecurseCount == 0) {
@@ -2216,18 +2384,60 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				if (is_next(TokenType::Type, i)) {
 					auto typeRes = do_type(preCtx, i + 1, None);
 					i            = typeRes.second;
-					if (is_next(TokenType::curlybraceOpen, i)) {
-						auto cClose = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
-						auto doneSk = ast::DoSkill::create(true, None, typeRes.first, RangeSpan(start, cClose.value()));
-						do_type_contents(preCtx, i + 1, cClose.value(), doneSk);
-						resultNodes.push_back(doneSk);
-						i = cClose.value();
-					} else {
+					if (not is_next(TokenType::curlybraceOpen, i)) {
 						add_error("Expected { after this to start the body of the implementation", RangeSpan(start, i));
 					}
+					auto cClose = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
+					auto doneSk = ast::DoSkill::create(true, None, typeRes.first, RangeSpan(start, cClose.value()));
+					do_type_contents(preCtx, i + 1, cClose.value(), doneSk);
+					resultNodes.push_back(doneSk);
+					i = cClose.value();
+				} else if (is_next(TokenType::skill, i)) {
+					i++;
+					auto symRes = do_symbol(preCtx, i + 1);
+					i           = symRes.second;
+					Vec<ast::FillGeneric*> generics;
+					if (is_next(TokenType::genericTypeStart, i)) {
+						auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+						if (not gEnd.has_value()) {
+							add_error("Expected ] to end the list of generic parameters", RangeAt(i + 1));
+						}
+						generics = std::move(do_generic_fill(preCtx, i + 1, gEnd.value()));
+						i        = gEnd.value();
+					}
+					if (not is_next(TokenType::For, i)) {
+						add_error("Expected the " + color_error("for") + " keyword after this", RangeSpan(start, i));
+					}
+					auto typeRes = do_type(preCtx, i + 1, None);
+					i            = typeRes.second;
+					if (not is_next(TokenType::curlybraceOpen, i)) {
+						add_error("Expected { after this to start the body of the skill implementation",
+						          RangeSpan(start, i));
+					}
+					auto cEnd = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
+					if (not cEnd.has_value()) {
+						add_error("Expected } to end the body of the skill implementation", RangeAt(i + 1));
+					}
+					auto doneSkill = ast::DoSkill::create(false,
+					                                      ast::SkillEntity{.relative = symRes.first.relative,
+					                                                       .names    = std::move(symRes.first.name),
+					                                                       .range = std::move(symRes.first.fileRange),
+					                                                       .generics = std::move(generics)},
+					                                      typeRes.first, RangeSpan(start, cEnd.value()));
+					do_type_contents(preCtx, i + 1, cEnd.value(), doneSkill);
+					resultNodes.push_back(doneSkill);
+					i = cEnd.value();
 				} else {
-					add_error("Expected " + color_error("type") + " after this", RangeAt(i));
+					add_error("Invalid syntax for an implementation. It is expected to either start like " +
+					              color_error("do type") + " or " + color_error("do skill"),
+					          RangeAt(i));
 				}
+				break;
+			}
+			case TokenType::skill: {
+				auto skillRes = do_skill(get_visibility(), i);
+				resultNodes.push_back(skillRes.first);
+				i = skillRes.second;
 				break;
 			}
 			case TokenType::mix: {
@@ -3002,7 +3212,13 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				break;
 			}
 			case TokenType::move: {
-				auto start = i;
+				if (foundFirstMember && !finishedMemberList) {
+					add_error("The list of member fields in this type has not been finalised. Please add " +
+					              color_error(".") + " after the last member field to terminate the list",
+					          RangeAt(i));
+				}
+				haveNonMemberEntities = true;
+				auto start            = i;
 				if (is_next(TokenType::assignment, i)) {
 					if (memParent->has_move_assignment()) {
 						add_error("The move assignment operator is already defined for this struct type",
@@ -4533,7 +4749,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 				TYPE_TRIGGER_TOKENS {
-					auto typeRes = do_type(preCtx, i - 1, None);
+					auto typeRes = do_type(preCtx, i - 1, None, true);
 					setCachedType(typeRes.first);
 					i = typeRes.second;
 					break;

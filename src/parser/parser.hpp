@@ -123,6 +123,7 @@ class Parser {
 	useit Pair<ast::Type*, usize> do_type(ParserContext& prevCtx, usize from, Maybe<usize> upto,
 	                                      bool isPartOfExpression = false);
 
+	Pair<ast::DefineSkill*, usize> do_skill(Maybe<ast::VisibilitySpec> visibSpec, usize from);
 
 	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
 

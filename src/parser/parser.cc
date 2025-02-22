@@ -3581,13 +3581,18 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Identifier, Maybe<a
 				}
 			}
 			case TokenType::identifier: {
-				auto start = i;
+				auto            start      = i;
+				Vec<Identifier> fieldNames = {IdentifierAt(i)};
+				while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "&")) {
+					if (not is_next(TokenType::identifier, i + 1)) {
+						add_error("Expected an identifier after this for the additional name of this choice variant",
+						          RangeAt(i + 1));
+					}
+					fieldNames.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
 				if (is_next(TokenType::separator, i) || (i + 1 == upto)) {
-					fields.push_back(Pair<Identifier, Maybe<ast::PrerunExpression*>>(
-					    {ValueAt(i), is_previous(TokenType::Default, i)
-					                     ? FileRange(tokens->at(i - 1).fileRange, tokens->at(i).fileRange)
-					                     : RangeAt(i)},
-					    None));
+					fields.push_back({fieldNames, None});
 					i++;
 				} else if (is_next(TokenType::assignment, i)) {
 					auto fieldName = ValueAt(i);
@@ -3600,18 +3605,15 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Identifier, Maybe<a
 					i           = valRes.second;
 					if (is_next(TokenType::separator, i) ||
 					    (is_next(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
-						fields.push_back(Pair<Identifier, Maybe<ast::PrerunExpression*>>(
-						    Identifier{ValueAt(start),
-						               is_previous(TokenType::Default, start)
-						                   ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
-						                   : RangeAt(start)},
-						    val));
+						fields.push_back({fieldNames, val});
 						i++;
 					} else {
 						add_error("Invalid token found after integer value for the choice "
 						          "variant",
 						          RangeAt(start));
 					}
+				} else {
+					add_error("Expected either , or = after this", RangeAt(i));
 				}
 				break;
 			}

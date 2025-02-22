@@ -26,7 +26,7 @@ void DefineChoiceType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) 
 }
 
 void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
-	Vec<Identifier>                fieldNames;
+	Vec<Vec<Identifier>>           fieldNames;
 	Maybe<Vec<llvm::ConstantInt*>> fieldValues;
 	ir::Type*                      variantValueType = nullptr;
 	Maybe<llvm::ConstantInt*>      lastVal;
@@ -46,8 +46,13 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 	}
 	for (usize i = 0; i < fields.size(); i++) {
 		for (usize j = i + 1; j < fields.size(); j++) {
-			if (fields.at(j).first.value == fields.at(i).first.value) {
-				irCtx->Error("Name of the choice variant is repeating here", fields.at(j).first.range);
+			for (usize k = 0; k < fields[j].first.size(); k++) {
+				for (usize l = 0; l < fields[i].first.size(); l++) {
+					if (fields[j].first[k].value == fields[i].first[l].value) {
+						irCtx->Error("Name of the choice variant is repeating here", fields[j].first[k].range,
+						             std::make_pair("The first occurence can be found here", fields[i].first[l].range));
+					}
+				}
 			}
 		}
 		fieldNames.push_back(fields.at(i).first);
@@ -95,15 +100,16 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 					if ((prevVals.empty() ? fieldResult : prevVals.back())->isMinValue(iValTy->is_integer()) &&
 					    j != 0) {
 						irCtx->Error(
-						    "Tried to calculate values for variants before " + irCtx->color(fields.at(i).first.value) +
+						    "Tried to calculate values for variants before " +
+						        irCtx->color(fields.at(i).first.front().value) +
 						        ". Could not calculate underlying value for the variant " +
-						        irCtx->color(fields.at(j).first.value) + " as the variant " +
-						        irCtx->color(fields.at(j + 1).first.value) +
+						        irCtx->color(fields.at(j).first.front().value) + " as the variant " +
+						        irCtx->color(fields.at(j + 1).first.front().value) +
 						        " right after this variant has the minimum value possible for the underlying type " +
 						        irCtx->color(providedType.has_value() ? providedType.value()->to_string()
 						                                              : iVal->get_ir_type()->to_string()) +
 						        " of this choice type.",
-						    fields.at(j).first.range);
+						    fields.at(j).first.front().range);
 					}
 					prevVals.push_back(llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
 					    llvm::ConstantExpr::getSub(
@@ -128,13 +134,14 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			fieldValues->push_back(lastVal.value());
 		} else if (lastVal.has_value()) {
 			if (lastVal.value()->isMaxValue(variantValueType->is_integer())) {
-				irCtx->Error("Could not calculate value for the variant " + irCtx->color(fields[i].first.value) +
-				                 " as the variant " + irCtx->color(fields[i - 1].first.value) +
+				irCtx->Error("Could not calculate value for the variant " +
+				                 irCtx->color(fields[i].first.front().value) + " as the variant " +
+				                 irCtx->color(fields[i - 1].first.front().value) +
 				                 " before this has the maximum value possible for the underlying type " +
 				                 irCtx->color(providedType.has_value() ? providedType.value()->to_string()
 				                                                       : variantValueType->to_string()) +
 				                 " of this choice type",
-				             fields[i].first.range);
+				             fields[i].first.front().range);
 			}
 			SHOW("Last value has value")
 			auto newVal = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
@@ -153,9 +160,9 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 		for (usize i = 0; i < fieldValues->size(); i++) {
 			for (usize j = i + 1; j < fieldValues->size(); j++) {
 				if (fieldValues->at(i) == fieldValues->at(j)) {
-					irCtx->Error("Indexing for the field " + irCtx->color(fields.at(j).first.value) +
+					irCtx->Error("Underlying value for the variant " + irCtx->color(fields.at(j).first.front().value) +
 					                 " is repeating. Please check logic and make necessary changes",
-					             fields.at(j).first.range);
+					             fields.at(j).first.front().range);
 				}
 			}
 		}
@@ -170,9 +177,13 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 Json DefineChoiceType::to_json() const {
 	Vec<JsonValue> fieldsJson;
 	for (const auto& field : fields) {
+		Vec<JsonValue> namesJSON;
+		for (auto& name : field.first) {
+			namesJSON.push_back(name);
+		}
 		fieldsJson.push_back(
 		    Json()
-		        ._("name", field.first)
+		        ._("name", namesJSON)
 		        ._("hasValue", field.second.has_value())
 		        ._("value", field.second.has_value() ? field.second.value()->to_json() : JsonValue())
 		        ._("valueRange", field.second.has_value() ? field.second.value()->fileRange : JsonValue()));

@@ -20,7 +20,7 @@ class ChoiceType : public Type, public EntityOverview {
   private:
 	Identifier                     name;
 	Mod*                           parent;
-	Vec<Identifier>                fields;
+	Vec<Vec<Identifier>>           fields;
 	Maybe<Vec<llvm::ConstantInt*>> values;
 	Maybe<ir::Type*>               providedType;
 	bool                           areValuesUnsigned;
@@ -34,11 +34,11 @@ class ChoiceType : public Type, public EntityOverview {
 	FileRange fileRange;
 
   public:
-	ChoiceType(Identifier name, Mod* parent, Vec<Identifier> fields, Maybe<Vec<llvm::ConstantInt*>> values,
+	ChoiceType(Identifier name, Mod* parent, Vec<Vec<Identifier>> fields, Maybe<Vec<llvm::ConstantInt*>> values,
 	           Maybe<ir::Type*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
 	           const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo);
 
-	useit static ChoiceType* create(Identifier name, Mod* parent, Vec<Identifier> fields,
+	useit static ChoiceType* create(Identifier name, Mod* parent, Vec<Vec<Identifier>> fields,
 	                                Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType,
 	                                bool areValuesUnsigned, Maybe<usize> defaultVal, const VisibilityInfo& visibility,
 	                                ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo) {

@@ -14,9 +14,9 @@ namespace qat::ir {
 
 #define MAX_PRERUN_GENERIC_BITWIDTH 64u
 
-ChoiceType::ChoiceType(Identifier _name, Mod* _parent, Vec<Identifier> _fields, Maybe<Vec<llvm::ConstantInt*>> _values,
-                       Maybe<ir::Type*> _providedType, bool areValuesUnsigned, Maybe<usize> _defaultVal,
-                       const VisibilityInfo& _visibility, ir::Ctx* _ctx, FileRange _fileRange,
+ChoiceType::ChoiceType(Identifier _name, Mod* _parent, Vec<Vec<Identifier>> _fields,
+                       Maybe<Vec<llvm::ConstantInt*>> _values, Maybe<ir::Type*> _providedType, bool areValuesUnsigned,
+                       Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, ir::Ctx* _ctx, FileRange _fileRange,
                        Maybe<MetaInfo> _metaInfo)
     : EntityOverview("choiceType",
                      Json()
@@ -89,8 +89,10 @@ llvm::ConstantInt* ChoiceType::get_default() const {
 
 bool ChoiceType::has_field(const String& name) const {
 	for (const auto& field : fields) {
-		if (field.value == name) {
-			return true;
+		for (auto& it : field) {
+			if (it.value == name) {
+				return true;
+			}
 		}
 	}
 	return false;
@@ -99,9 +101,11 @@ bool ChoiceType::has_field(const String& name) const {
 llvm::ConstantInt* ChoiceType::get_value_for(const String& name) const {
 	usize index = 0;
 	for (usize i = 0; i < fields.size(); i++) {
-		if (fields.at(i).value == name) {
-			index = i;
-			break;
+		for (usize j = 0; j < fields[i].size(); j++) {
+			if (fields[i][j].value == name) {
+				index = i;
+				break;
+			}
 		}
 	}
 	if (values.has_value()) {
@@ -162,13 +166,15 @@ void ChoiceType::get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missi
 	for (const auto& sub : fields) {
 		bool result = false;
 		for (const auto& val : vals) {
-			if (sub.value == val.value) {
-				result = true;
-				break;
+			for (const auto& name : sub) {
+				if (name.value == val.value) {
+					result = true;
+					break;
+				}
 			}
 		}
 		if (!result) {
-			missing.push_back(sub);
+			missing.push_back(sub.front());
 		}
 	}
 }
@@ -178,7 +184,11 @@ const VisibilityInfo& ChoiceType::get_visibility() const { return visibility; }
 void ChoiceType::update_overview() {
 	Vec<JsonValue> fieldsJson;
 	for (const auto& field : fields) {
-		fieldsJson.push_back(field);
+		Vec<JsonValue> namesJSON;
+		for (auto& it : field) {
+			namesJSON.push_back(it);
+		}
+		fieldsJson.push_back(namesJSON);
 	}
 	auto valuesJson = Json();
 	if (values) {
@@ -201,12 +211,12 @@ void ChoiceType::update_overview() {
 Maybe<String> ChoiceType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	if (can_be_prerun_generic()) {
 		for (auto const& field : fields) {
-			if (llvm::cast<llvm::ConstantInt>(
-			        llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, get_value_for(field.value),
-			                                             llvm::cast<llvm::ConstantInt>(val->get_llvm_constant())))
+			if (llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
+			                                      llvm::CmpInst::Predicate::ICMP_EQ, get_value_for(field.front().value),
+			                                      llvm::cast<llvm::ConstantInt>(val->get_llvm_constant())))
 			        ->getValue()
 			        .getBoolValue()) {
-				return get_full_name() + "::" + field.value;
+				return get_full_name() + "::" + field.front().value;
 			}
 		}
 		return None;

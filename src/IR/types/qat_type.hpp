@@ -1,14 +1,9 @@
 #ifndef QAT_IR_TYPES_TYPE_HPP
 #define QAT_IR_TYPES_TYPE_HPP
 
-#include "../../utils/json.hpp"
 #include "../../utils/macros.hpp"
-#include "../link_names.hpp"
 #include "../uniq.hpp"
 #include "./type_kind.hpp"
-
-#include <string>
-#include <vector>
 
 namespace llvm {
 class Type;
@@ -45,6 +40,7 @@ class PrerunValue;
 class ResultType;
 class VectorType;
 class Polymorph;
+class FlagType;
 
 // Type is the base class for all types in the IR
 class Type : public Uniq {
@@ -173,6 +169,9 @@ class Type : public Uniq {
 
 	useit bool        is_vector() const;
 	useit VectorType* as_vector() const;
+
+	useit bool      is_flag() const;
+	useit FlagType* as_flag() const;
 
 	useit virtual TypeKind type_kind() const = 0;
 	useit virtual String   to_string() const = 0;

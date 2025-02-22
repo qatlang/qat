@@ -29,6 +29,7 @@ enum class TypeKind {
 	vector,
 	toggle,
 	polymorph,
+	flag,
 };
 
 } // namespace qat::ir

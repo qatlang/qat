@@ -641,4 +641,16 @@ ResultType* Type::as_result() const {
 	            : (is_opaque() ? as_opaque()->get_subtype()->as_result() : (ResultType*)this));
 }
 
+bool Type::is_flag() const {
+	return ((type_kind() == TypeKind::flag) ||
+	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_flag()) ||
+	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_flag()));
+}
+
+FlagType* Type::as_flag() const {
+	return ((type_kind() == TypeKind::definition)
+	            ? ((DefinitionType*)this)->get_subtype()->as_flag()
+	            : (is_opaque() ? as_opaque()->get_subtype()->as_flag() : (FlagType*)this));
+}
+
 } // namespace qat::ir

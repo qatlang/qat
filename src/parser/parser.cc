@@ -2491,9 +2491,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					if (is_next(TokenType::curlybraceOpen, i)) {
 						auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
 						if (bCloseRes.has_value()) {
-							auto                                                 bClose = bCloseRes.value();
-							Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>> fields;
-							Maybe<usize>                                         defaultVal;
+							auto                                                      bClose = bCloseRes.value();
+							Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> fields;
+							Maybe<usize>                                              defaultVal;
 							do_choice_type(i + 1, bClose, fields, defaultVal);
 							addNode(ast::DefineChoiceType::create(typeName, std::move(fields), providedTy, defaultVal,
 							                                      get_visibility(), RangeSpan(start, bClose)));
@@ -3561,7 +3561,7 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 	}
 }
 
-void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::PrerunExpression*>>>& fields,
+void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,
                             Maybe<usize>& defaultVal) {
 	using lexer::TokenType;
 

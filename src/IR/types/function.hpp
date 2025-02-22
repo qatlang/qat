@@ -1,6 +1,7 @@
 #ifndef QAT_IR_TYPES_FUNCTION_TYPE_HPP
 #define QAT_IR_TYPES_FUNCTION_TYPE_HPP
 
+#include "../../utils/json.hpp"
 #include "../../utils/qat_region.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"

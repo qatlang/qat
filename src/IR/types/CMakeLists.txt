@@ -3,6 +3,7 @@ add_library(QAT_IR_TYPES STATIC
 	choice.cc
 	definition.cc
 	expanded_type.cc
+	flag.cc
 	float.cc
 	function.cc
 	future.cc

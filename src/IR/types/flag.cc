@@ -6,6 +6,22 @@
 
 namespace qat::ir {
 
+FlagType::FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, Maybe<Vec<PrerunValue*>> _values,
+                   UnsignedType* _underlyingType, FileRange _range, VisibilityInfo _visibility)
+    : name(std::move(_name)), parent(_parent), variants(std::move(_variants)), values(std::move(_values)),
+      underlyingType(_underlyingType), range(std::move(_range)), visibility(std::move(_visibility)) {
+	for (auto& it : variants) {
+		if (it.isDefault) {
+			hasDefaultVariants = true;
+		}
+	}
+	if (parent) {
+		parent->flagTypes.push_back(this);
+	}
+}
+
+String FlagType::get_full_name() const { return parent->get_fullname_with_child(name.value); }
+
 PrerunValue* FlagType::get_prerun_default_value(ir::Ctx* irCtx) {
 	if (hasDefaultVariants) {
 		String defValStr = "";

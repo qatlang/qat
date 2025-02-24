@@ -12,6 +12,7 @@
 #include "./link_names.hpp"
 #include "./prerun_function.hpp"
 #include "./types/definition.hpp"
+#include "./types/flag.hpp"
 #include "./types/opaque.hpp"
 #include "./types/qat_type.hpp"
 #include "./types/region.hpp"
@@ -1612,7 +1613,7 @@ bool Mod::has_choice_type(const String& name, AccessInfo reqInfo) const {
 		}
 	}
 	for (auto sub : submodules) {
-		if (!sub->should_be_named()) {
+		if (not sub->should_be_named()) {
 			if (sub->has_choice_type(name, reqInfo) || sub->has_brought_choice_type(name, reqInfo) ||
 			    sub->has_choice_type_in_imports(name, reqInfo).first) {
 				return true;
@@ -1633,9 +1634,9 @@ bool Mod::has_brought_choice_type(const String& name, Maybe<AccessInfo> reqInfo)
 
 Pair<bool, String> Mod::has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
 	for (const auto& brought : broughtModules) {
-		if (!brought.is_named()) {
+		if (not brought.is_named()) {
 			auto* bMod = brought.get();
-			if (!bMod->should_be_named() &&
+			if (not bMod->should_be_named() &&
 			    (bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
 			     bMod->has_choice_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_choice_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
@@ -1654,7 +1655,7 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 		}
 	}
 	for (auto sub : submodules) {
-		if (!sub->should_be_named()) {
+		if (not sub->should_be_named()) {
 			if (sub->has_choice_type(name, reqInfo) || sub->has_brought_choice_type(name, reqInfo) ||
 			    sub->has_choice_type_in_imports(name, reqInfo).first) {
 				return sub->get_choice_type(name, reqInfo);
@@ -1667,13 +1668,92 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 		}
 	}
 	for (const auto& brought : broughtModules) {
-		if (!brought.is_named()) {
+		if (not brought.is_named()) {
 			auto* bMod = brought.get();
-			if (!bMod->should_be_named()) {
+			if (not bMod->should_be_named()) {
 				if (bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
 				    bMod->has_choice_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_choice_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_choice_type(name, reqInfo);
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+// FLAG TYPE
+
+bool Mod::has_flag_type(const String& name, AccessInfo reqInfo) const {
+	for (auto* typ : flagTypes) {
+		if ((typ->get_name().value == name) && typ->get_visibility().is_accessible(reqInfo)) {
+			return true;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_flag_type(name, reqInfo) || sub->has_brought_flag_type(name, reqInfo) ||
+			    sub->has_flag_type_in_imports(name, reqInfo).first) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mod::has_brought_flag_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : broughtFlagTypes) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Pair<bool, String> Mod::has_flag_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named() &&
+			    (bMod->has_flag_type(name, reqInfo) || bMod->has_brought_flag_type(name, reqInfo) ||
+			     bMod->has_flag_type_in_imports(name, reqInfo).first)) {
+				if (bMod->get_flag_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+					return {true, bMod->filePath.string()};
+				}
+			}
+		}
+	}
+	return {false, ""};
+}
+
+FlagType* Mod::get_flag_type(const String& name, const AccessInfo& reqInfo) const {
+	for (auto* flTy : flagTypes) {
+		if ((flTy->get_name().value == name) && flTy->get_visibility().is_accessible(reqInfo)) {
+			return flTy;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_flag_type(name, reqInfo) || sub->has_brought_flag_type(name, reqInfo) ||
+			    sub->has_flag_type_in_imports(name, reqInfo).first) {
+				return sub->get_flag_type(name, reqInfo);
+			}
+		}
+	}
+	for (const auto& brought : broughtFlagTypes) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return brought.get();
+		}
+	}
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_flag_type(name, reqInfo) || bMod->has_brought_flag_type(name, reqInfo) ||
+				    bMod->has_flag_type_in_imports(name, reqInfo).first) {
+					if (bMod->get_flag_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return bMod->get_flag_type(name, reqInfo);
 					}
 				}
 			}

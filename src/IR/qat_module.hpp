@@ -214,6 +214,7 @@ class LibToLink {
 enum class EntityType {
 	structType,
 	choiceType,
+	flagType,
 	mixType,
 	function,
 	prerunFunction,
@@ -238,6 +239,8 @@ inline String entity_type_to_string(EntityType ty) {
 			return "struct type";
 		case EntityType::choiceType:
 			return "choice type";
+		case EntityType::flagType:
+			return "flag type";
 		case EntityType::mixType:
 			return "mix type";
 		case EntityType::function:
@@ -414,6 +417,7 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class StructType;
 	friend class MixType;
 	friend class ChoiceType;
+	friend class FlagType;
 	friend class DefinitionType;
 	friend class GlobalEntity;
 	friend class PrerunGlobal;
@@ -480,6 +484,9 @@ class Mod final : public Uniq, public EntityOverview {
 
 	Vec<ChoiceType*>         choiceTypes;
 	Vec<Brought<ChoiceType>> broughtChoiceTypes;
+
+	Vec<FlagType*>         flagTypes;
+	Vec<Brought<FlagType>> broughtFlagTypes;
 
 	Vec<MixType*>         mixTypes;
 	Vec<Brought<MixType>> broughtMixTypes;
@@ -780,6 +787,13 @@ class Mod final : public Uniq, public EntityOverview {
 	useit bool has_brought_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit ChoiceType*        get_choice_type(const String& name, const AccessInfo& reqInfo) const;
+
+	// FLAG TYPE
+
+	useit bool has_flag_type(const String& name, AccessInfo reqInfo) const;
+	useit bool has_brought_flag_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit Pair<bool, String> has_flag_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	useit FlagType*          get_flag_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// GENERIC STRUCT TYPES
 

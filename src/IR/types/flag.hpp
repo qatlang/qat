@@ -3,6 +3,7 @@
 
 #include "../../utils/identifier.hpp"
 #include "../../utils/qat_region.hpp"
+#include "../../utils/visibility.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ir {
@@ -22,24 +23,24 @@ class FlagType final : public Type {
 	UnsignedType*            underlyingType;
 	FileRange                range;
 	bool                     hasDefaultVariants;
+	VisibilityInfo           visibility;
 
   public:
 	FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, Maybe<Vec<PrerunValue*>> _values,
-	         UnsignedType* _underlyingType, FileRange _range)
-	    : name(std::move(_name)), parent(_parent), variants(std::move(_variants)), values(std::move(_values)),
-	      underlyingType(_underlyingType), range(std::move(_range)) {
-		for (auto& it : variants) {
-			if (it.isDefault) {
-				hasDefaultVariants = true;
-			}
-		}
-	}
+	         UnsignedType* _underlyingType, FileRange _range, VisibilityInfo _visibility);
 
 	useit static FlagType* create(Identifier name, Mod* parent, Vec<FlagVariant> variants,
-	                              Maybe<Vec<PrerunValue*>> values, UnsignedType* underlyingType, FileRange range) {
+	                              Maybe<Vec<PrerunValue*>> values, UnsignedType* underlyingType, FileRange range,
+	                              VisibilityInfo visibility) {
 		return std::construct_at(OwnNormal(FlagType), std::move(name), parent, std::move(variants), std::move(values),
-		                         underlyingType, std::move(range));
+		                         underlyingType, std::move(range), std::move(visibility));
 	}
+
+	useit Identifier const& get_name() const { return name; }
+
+	useit String get_full_name() const;
+
+	useit VisibilityInfo const& get_visibility() const { return visibility; }
 
 	useit bool can_be_prerun() const final { return true; }
 

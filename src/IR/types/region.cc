@@ -9,20 +9,22 @@
 #include <llvm/IR/Function.h>
 #include <llvm/IR/GlobalVariable.h>
 
-#define BLOCK_HEADER_SIZE  24u
-#define DATA_HEADER_SIZE   24u
-#define DEFAULT_BLOCK_SIZE 4096u
+#define BLOCK_HEADER_SIZE 24u
+#define DATA_HEADER_SIZE  24u
 
 namespace qat::ir {
 
-Region* Region::get(Identifier name, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
+Region* Region::get(Identifier name, usize blockSize, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
                     FileRange fileRange) {
-	return std::construct_at(OwnNormal(Region), std::move(name), parent, visibInfo, irCtx, std::move(fileRange));
+	return std::construct_at(OwnNormal(Region), std::move(name), blockSize, parent, visibInfo, irCtx,
+	                         std::move(fileRange));
 }
 
-Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo, ir::Ctx* irCtx, FileRange _fileRange)
+Region::Region(Identifier _name, usize _blockSize, Mod* _module, const VisibilityInfo& _visibInfo, ir::Ctx* irCtx,
+               FileRange _fileRange)
     : EntityOverview("region", Json()._("moduleID", _module->get_id())._("visibility", _visibInfo), _name.range),
-      name(std::move(_name)), parent(_module), visibInfo(_visibInfo), fileRange(std::move(_fileRange)) {
+      name(std::move(_name)), blockSize(_blockSize), parent(_module), visibInfo(_visibInfo),
+      fileRange(std::move(_fileRange)) {
 	parent->regions.push_back(this);
 	auto linkNames     = parent->get_link_names().newWith(LinkNameUnit(_name.value, LinkUnitType::region), None);
 	linkingName        = linkNames.toName();
@@ -83,7 +85,7 @@ Region::Region(Identifier _name, Mod* _module, const VisibilityInfo& _visibInfo,
 		    irCtx->builder.CreateICmpEQ(irCtx->builder.CreateLoad(Ty64Int, blockCount), zero64Bit), zeroCheckTrueBlock,
 		    zeroCheckRestBlock);
 		irCtx->builder.SetInsertPoint(zeroCheckTrueBlock);
-		auto* defaultBlockSize             = llvm::ConstantInt::get(Ty64Int, DEFAULT_BLOCK_SIZE);
+		auto* defaultBlockSize             = llvm::ConstantInt::get(Ty64Int, blockSize);
 		auto* zeroCheckSizeCheckTrueBlock  = llvm::BasicBlock::Create(llCtx, "zeroCheckSizeCheckTrue", ownFn);
 		auto* zeroCheckSizeCheckFalseBlock = llvm::BasicBlock::Create(llCtx, "zeroCheckSizeCheckFalse", ownFn);
 		auto* zeroCheckSizeCheckRestBlock  = llvm::BasicBlock::Create(llCtx, "zeroCheckSizeCheckRest", ownFn);

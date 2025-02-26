@@ -16,8 +16,7 @@ class DefineChoiceType : public IsEntity {
 	Maybe<usize>                                         defaultVal;
 	Maybe<ast::Type*>                                    providedIntegerTy;
 
-	mutable bool             areValuesUnsigned;
-	mutable ir::EntityState* entityState = nullptr;
+	mutable bool areValuesUnsigned;
 
   public:
 	DefineChoiceType(Identifier _name, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> _fields,

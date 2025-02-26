@@ -13,6 +13,7 @@ class Mod;
 class Region : public Type, public EntityOverview {
   private:
 	Identifier     name;
+	usize          blockSize;
 	Mod*           parent;
 	VisibilityInfo visibInfo;
 	FileRange      fileRange;
@@ -23,15 +24,23 @@ class Region : public Type, public EntityOverview {
 	llvm::Function*       destructor;
 
   public:
-	Region(Identifier _name, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx, FileRange fileRange);
-	static Region* get(Identifier name, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
+	Region(Identifier _name, usize _blockSize, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
+	       FileRange fileRange);
+
+	static Region* get(Identifier name, usize blockSize, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
 	                   FileRange fileRange);
 
 	useit Identifier get_name() const;
-	useit String     get_full_name() const;
+
+	useit String get_full_name() const;
+
+	useit usize get_block_size() const { return blockSize; }
+
 	useit ir::Mod* getParent() const;
+
 	useit ir::Value* ownData(ir::Type* _type, Maybe<llvm::Value*> count, ir::Ctx* irCtx);
-	void             destroyObjects(ir::Ctx* irCtx);
+
+	void destroyObjects(ir::Ctx* irCtx);
 
 	useit bool                  is_accessible(const AccessInfo& reqInfo) const;
 	useit const VisibilityInfo& get_visibility() const;

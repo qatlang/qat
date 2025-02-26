@@ -9,18 +9,20 @@ namespace qat::ast {
 class DefineRegion : public IsEntity {
   private:
 	Identifier            name;
+	PrerunExpression*     blockSize;
 	Maybe<VisibilitySpec> visibSpec;
 
   public:
-	DefineRegion(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
-	    : IsEntity(_fileRange), name(_name), visibSpec(_visibSpec) {}
+	DefineRegion(Identifier _name, PrerunExpression* _blockSize, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+	    : IsEntity(_fileRange), name(_name), blockSize(_blockSize), visibSpec(_visibSpec) {}
 
-	useit static DefineRegion* create(Identifier _name, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
-		return std::construct_at(OwnNormal(DefineRegion), _name, _visibSpec, _fileRange);
+	useit static DefineRegion* create(Identifier name, PrerunExpression* blockSize, Maybe<VisibilitySpec> visibSpec,
+	                                  FileRange fileRange) {
+		return std::construct_at(OwnNormal(DefineRegion), name, blockSize, visibSpec, fileRange);
 	}
 
 	void create_entity(ir::Mod* mod, ir::Ctx* irCtx) final;
-	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final {}
+	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
 	useit Json     to_json() const final;

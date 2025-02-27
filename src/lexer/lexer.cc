@@ -626,6 +626,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("disown", disown);
 	else Check_Normal_Keyword("end", end);
 	else Check_Normal_Keyword("choice", choice);
+	else Check_Normal_Keyword("flag", flag);
 	else Check_Normal_Keyword("future", futureType);
 	else Check_Normal_Keyword("maybe", maybeType);
 	else Check_Normal_Keyword("none", none);

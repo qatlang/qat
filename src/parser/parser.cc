@@ -2519,16 +2519,40 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				break;
 			}
 			case TokenType::region: {
-				if (is_next(TokenType::identifier, i)) {
-					if (is_next(TokenType::stop, i + 1)) {
-						addNode(ast::DefineRegion::create(IdentifierAt(i + 1), get_visibility(), RangeSpan(i, i + 2)));
-						i += 2;
-					} else {
-						add_error("Expected . to end the region declaration", RangeSpan(i, i + 1));
-					}
-				} else {
+				auto start = i;
+				if (not is_next(TokenType::identifier, i)) {
 					add_error("Expected an identifier for the name of the region", RangeAt(i));
 				}
+				auto                   name      = IdentifierAt(i + 1);
+				ast::PrerunExpression* blockSize = nullptr;
+				i++;
+				if (is_next(TokenType::curlybraceOpen, i)) {
+					i++;
+					if (is_next(TokenType::identifier, i)) {
+						auto preCtx = ParserContext();
+						if (tokens->at(i + 1).value != "blockSize") {
+							add_error("Only supported attribute for region is " + color_error("blockSize"),
+							          RangeAt(i + 1));
+						}
+						i++;
+						if (not is_next(TokenType::associatedAssignment, i)) {
+							add_error("Expected := after this", RangeAt(i));
+						}
+						i++;
+						auto expRes = do_prerun_expression(preCtx, i, None);
+						i           = expRes.second;
+						blockSize   = expRes.first;
+					}
+					if (not is_next(TokenType::curlybraceClose, i)) {
+						add_error("Expected } to end the body of this region declaration", RangeSpan(start, i));
+					}
+					i++;
+				} else if (not is_next(TokenType::stop, i + 1)) {
+					add_error("Expected either {} or . to end the region declaration after this", RangeSpan(i, i + 1));
+				} else {
+					i++;
+				}
+				addNode(ast::DefineRegion::create(std::move(name), blockSize, get_visibility(), RangeSpan(start, i)));
 				break;
 			}
 			case TokenType::define: {

@@ -6,6 +6,7 @@ add_library(QAT_AST STATIC
 	constructor.cc
 	define_choice_type.cc
 	define_core_type.cc
+	define_flag_type.cc
 	define_mix_type.cc
 	define_opaque_type.cc
 	define_prerun_function.cc

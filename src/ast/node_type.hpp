@@ -105,6 +105,7 @@ enum class NodeType {
 	DEFINE_PRERUN_FUNCTION,
 	PRERUN_SUB_ENTITY,
 	SUB_ENTITY,
+	FLAG_INITIALISER,
 };
 
 } // namespace qat::ast

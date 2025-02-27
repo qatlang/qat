@@ -7,6 +7,7 @@ add_library(QAT_AST_PRERUN
 	custom_integer_literal.cc
 	default.cc
 	entity.cc
+	flag_initialiser.cc
 	float_literal.cc
 	function_call.cc
 	integer_literal.cc

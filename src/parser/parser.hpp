@@ -21,6 +21,7 @@ class MatchValue;
 class Sentence;
 class MemberParentLike;
 class FillGeneric;
+class DefineFlagType;
 
 } // namespace qat::ast
 
@@ -74,6 +75,9 @@ class Parser {
 
 	void do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,
 	                    Maybe<usize>& defaultVal);
+
+	Pair<ast::DefineFlagType*, usize> do_flag_type(usize from, Identifier name, ast::Type* providedType,
+	                                               Maybe<ast::VisibilitySpec> visibSpec, FileRange startRange);
 
 	void parse_match_contents(ParserContext& prev_ctx, usize from, usize upto,
 	                          Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,

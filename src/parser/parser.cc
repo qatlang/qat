@@ -6,6 +6,7 @@
 #include "../ast/convertor.hpp"
 #include "../ast/define_choice_type.hpp"
 #include "../ast/define_core_type.hpp"
+#include "../ast/define_flag_type.hpp"
 #include "../ast/define_mix_type.hpp"
 #include "../ast/define_opaque_type.hpp"
 #include "../ast/define_prerun_function.hpp"
@@ -2238,34 +2239,32 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						isVar = true;
 						i++;
 					}
-					if (is_next(TokenType::identifier, i)) {
-						Maybe<ast::Expression*> exp;
-						ast::Type*              typ    = nullptr;
-						auto                    endRes = first_primary_position(TokenType::stop, i + 1);
-						if (!endRes.has_value()) {
-							add_error("Expected end for the global declaration", RangeSpan(start, i + 1));
-						}
-						if (is_next(TokenType::typeSeparator, i + 1)) {
-							if (is_primary_within(TokenType::assignment, i + 2, endRes.value())) {
-								auto assignPos = first_primary_position(TokenType::assignment, i + 2).value();
-								typ            = do_type(preCtx, i + 2, assignPos).first;
-								exp            = do_expression(preCtx, None, assignPos, endRes.value()).first;
-							} else {
-								typ = do_type(preCtx, i + 2, endRes.value()).first;
-							}
-						} else {
-							add_error("Expected :: and the type of the global declaration here",
-							          RangeSpan(start, i + 1));
-						}
-						// FIXME - Support meta info for globals as well
-						addNode(ast::GlobalDeclaration::create(IdentifierAt(i + 1), typ, exp, isVar, get_visibility(),
-						                                       None, RangeSpan(start, endRes.value())));
-						i = endRes.value();
-					} else {
+					if (not is_next(TokenType::identifier, i)) {
 						add_error("Expected name for the global declaration",
 						          isVar ? FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange)
 						                : RangeAt(start));
 					}
+					Maybe<ast::Expression*> exp;
+					ast::Type*              typ    = nullptr;
+					auto                    endRes = first_primary_position(TokenType::stop, i + 1);
+					if (not endRes.has_value()) {
+						add_error("Expected end for the global declaration", RangeSpan(start, i + 1));
+					}
+					if (not is_next(TokenType::typeSeparator, i + 1)) {
+						add_error("Expected :: and the type of the global declaration after this",
+						          RangeSpan(start, i + 1));
+					}
+					if (is_primary_within(TokenType::assignment, i + 2, endRes.value())) {
+						auto assignPos = first_primary_position(TokenType::assignment, i + 2).value();
+						typ            = do_type(preCtx, i + 2, assignPos).first;
+						exp            = do_expression(preCtx, None, assignPos, endRes.value()).first;
+					} else {
+						typ = do_type(preCtx, i + 2, endRes.value()).first;
+					}
+					// FIXME - Support meta info for globals as well
+					addNode(ast::GlobalDeclaration::create(IdentifierAt(i + 1), typ, exp, isVar, get_visibility(), None,
+					                                       RangeSpan(start, endRes.value())));
+					i = endRes.value();
 				}
 				break;
 			}
@@ -2441,72 +2440,82 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				break;
 			}
 			case TokenType::mix: {
-				if (is_next(TokenType::identifier, i)) {
-					auto mixCtx = ParserContext();
-					auto entityMeta =
-					    do_entity_metadata(mixCtx, i, "mix type", 0 /** Change this when generics is supported */);
-					i = entityMeta.lastIndex;
-					if (is_next(TokenType::curlybraceOpen, i + 1)) {
-						auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
-						if (bCloseRes.has_value()) {
-							auto                                     bClose = bCloseRes.value();
-							Vec<Pair<Identifier, Maybe<ast::Type*>>> subTypes;
-							Vec<FileRange>                           fileRanges;
-							Maybe<usize>                             defaultVal;
-							parse_mix_type(preCtx, i + 2, bClose, subTypes, fileRanges, defaultVal);
-							// FIXME - Support packing
-							addNode(ast::DefineMixType::create(IdentifierAt(i + 1), entityMeta.defineChecker,
-							                                   entityMeta.genericConstraint, std::move(subTypes),
-							                                   std::move(fileRanges), defaultVal, false,
-							                                   get_visibility(), RangeSpan(i, bClose)));
-							i = bClose;
-						} else {
-							add_error("Expected end for {", RangeAt(i + 2));
-						}
-					} else {
-						add_error("Expected { to start the definition of the mix type", RangeSpan(i, i + 1));
-					}
-				} else {
+				if (not is_next(TokenType::identifier, i)) {
 					add_error("Expected an identifier for the name of the mix type", RangeAt(i));
 				}
+				auto mixCtx = ParserContext();
+				auto entityMeta =
+				    do_entity_metadata(mixCtx, i, "mix type", 0 /** Change this when generics is supported */);
+				i = entityMeta.lastIndex;
+				if (not is_next(TokenType::curlybraceOpen, i + 1)) {
+					add_error("Expected { to start the definition of the mix type", RangeSpan(i, i + 1));
+				}
+				auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 2);
+				if (not bCloseRes.has_value()) {
+					add_error("Expected end for {", RangeAt(i + 2));
+				}
+				auto                                     bClose = bCloseRes.value();
+				Vec<Pair<Identifier, Maybe<ast::Type*>>> subTypes;
+				Vec<FileRange>                           fileRanges;
+				Maybe<usize>                             defaultVal;
+				parse_mix_type(preCtx, i + 2, bClose, subTypes, fileRanges, defaultVal);
+				// FIXME - Support packing
+				addNode(ast::DefineMixType::create(
+				    IdentifierAt(i + 1), entityMeta.defineChecker, entityMeta.genericConstraint, std::move(subTypes),
+				    std::move(fileRanges), defaultVal, false, get_visibility(), RangeSpan(i, bClose)));
+				i = bClose;
 				break;
 			}
 			case TokenType::choice: {
 				auto start = i;
-				if (is_next(TokenType::identifier, i)) {
-					auto              typeName = IdentifierAt(i + 1);
-					Maybe<ast::Type*> providedTy;
-					if (is_next(TokenType::typeSeparator, i + 1)) {
-						auto curPos = first_primary_position(TokenType::curlybraceOpen, i + 2);
-						if (curPos.has_value()) {
-							auto typRes = do_type(preCtx, i + 2, curPos);
-							providedTy  = typRes.first;
-							i           = curPos.value() - 1;
-						} else {
-							add_error("Expected { after this to start the definition of choice type", RangeAt(i + 2));
-						}
-					} else {
-						i++;
-					}
-					if (is_next(TokenType::curlybraceOpen, i)) {
-						auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
-						if (bCloseRes.has_value()) {
-							auto                                                      bClose = bCloseRes.value();
-							Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> fields;
-							Maybe<usize>                                              defaultVal;
-							do_choice_type(i + 1, bClose, fields, defaultVal);
-							addNode(ast::DefineChoiceType::create(typeName, std::move(fields), providedTy, defaultVal,
-							                                      get_visibility(), RangeSpan(start, bClose)));
-							i = bClose;
-						} else {
-							add_error("Expected end for {", RangeAt(i + 1));
-						}
-					} else {
-						add_error("Expected { to start the definition of the choice type", RangeSpan(start, i));
-					}
-				} else {
+				if (not is_next(TokenType::identifier, i)) {
 					add_error("Expected an identifier after this for the name of the choice type", RangeAt(i));
 				}
+				auto              typeName = IdentifierAt(i + 1);
+				Maybe<ast::Type*> providedTy;
+				if (is_next(TokenType::typeSeparator, i + 1)) {
+					auto curPos = first_primary_position(TokenType::curlybraceOpen, i + 2);
+					if (not curPos.has_value()) {
+						add_error("Expected { after this to start the definition of choice type", RangeAt(i + 2));
+					}
+					auto typRes = do_type(preCtx, i + 2, curPos);
+					providedTy  = typRes.first;
+					i           = curPos.value() - 1;
+				} else {
+					i++;
+				}
+				if (not is_next(TokenType::curlybraceOpen, i)) {
+					add_error("Expected { to start the definition of the choice type", RangeSpan(start, i));
+				}
+				auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
+				if (not bCloseRes.has_value()) {
+					add_error("Expected end for {", RangeAt(i + 1));
+				}
+				auto                                                      bClose = bCloseRes.value();
+				Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> fields;
+				Maybe<usize>                                              defaultVal;
+				do_choice_type(i + 1, bClose, fields, defaultVal);
+				addNode(ast::DefineChoiceType::create(typeName, std::move(fields), providedTy, defaultVal,
+				                                      get_visibility(), RangeSpan(start, bClose)));
+				i = bClose;
+				break;
+			}
+			case TokenType::flag: {
+				auto start = i;
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this for the name of the flag type", RangeAt(i));
+				}
+				auto name = IdentifierAt(i + 1);
+				i++;
+				ast::Type* providedType = nullptr;
+				if (is_next(TokenType::typeSeparator, i)) {
+					auto typeRes = do_type(preCtx, i + 1, None);
+					i            = typeRes.second;
+					providedType = typeRes.first;
+				}
+				auto flagRes = do_flag_type(i, name, providedType, get_visibility(), RangeAt(i));
+				addNode(flagRes.first);
+				i = flagRes.second;
 				break;
 			}
 			case TokenType::region: {
@@ -3559,6 +3568,87 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 			}
 		}
 	}
+}
+
+Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier name, ast::Type* providedType,
+                                                       Maybe<ast::VisibilitySpec> visibSpec, FileRange startRange) {
+	using lexer::TokenType;
+	auto                  i          = from + 1;
+	bool                  shouldExit = false;
+	Vec<ast::FlagVariant> variants;
+	bool                  hasDefault = false;
+	auto                  getDefault = [&]() {
+        auto res   = hasDefault;
+        hasDefault = false;
+        return res;
+	};
+	auto preCtx = ParserContext();
+	for (; i < tokens->size(); i++) {
+		switch (tokens->at(i).type) {
+			case TokenType::Default: {
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this for the name of this variant of the flag type",
+					          RangeAt(i));
+				}
+				hasDefault = true;
+				break;
+			}
+			case TokenType::identifier: {
+				auto            idStart = i;
+				Vec<Identifier> names;
+				names.push_back(IdentifierAt(i));
+				while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "&")) {
+					if (not is_next(TokenType::identifier, i + 1)) {
+						add_error(
+						    "Expected an identifier after this to provide an additional name for this variant of the flag type",
+						    RangeAt(i + 1));
+					}
+					names.push_back(IdentifierAt(i + 2));
+					i += 2;
+				}
+				ast::PrerunExpression* value = nullptr;
+				if (is_next(TokenType::assignment, i)) {
+					auto expRes = do_prerun_expression(preCtx, i + 1, None);
+					i           = expRes.second;
+					value       = expRes.first;
+				}
+				variants.push_back(ast::FlagVariant{.isDefault = getDefault(),
+				                                    .names     = std::move(names),
+				                                    .range     = RangeSpan(idStart, i),
+				                                    .value     = value});
+				if (is_next(TokenType::separator, i)) {
+					i++;
+				}
+				break;
+			}
+			case TokenType::separator: {
+				add_error("A , separator was not expected here", RangeAt(i));
+				break;
+			}
+			case TokenType::comment: {
+				break;
+			}
+			case TokenType::curlybraceClose: {
+				shouldExit = true;
+				break;
+			}
+			default: {
+				add_error(
+				    "Found an unsupported token here. Expected an identifier for the name of a variant of this flag type, or a comment, or for the body of the flag type to end here",
+				    RangeAt(i));
+				break;
+			}
+		}
+		if (shouldExit) {
+			break;
+		}
+	}
+	if (i == tokens->size()) {
+		add_error("Expected } to end the body of the flag type", RangeSpan(from, i - 1));
+	}
+	return {ast::DefineFlagType::create(std::move(name), std::move(variants), providedType, visibSpec,
+	                                    FileRange{std::move(startRange), RangeAt(i - 1)}),
+	        i};
 }
 
 void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,

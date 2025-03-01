@@ -473,7 +473,7 @@ void Region::destroyObjects(ir::Ctx* irCtx) {
 	irCtx->builder.CreateCall(destructor->getFunctionType(), destructor, {});
 }
 
-ir::Mod* Region::getParent() const { return parent; }
+ir::Mod* Region::get_module() const { return parent; }
 
 void Region::update_overview() { ovInfo._("typeID", get_id())._("fullName", get_full_name()); }
 

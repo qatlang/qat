@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <deque>
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <optional>
 #include <string>
@@ -30,6 +31,7 @@ template <typename T> using Maybe            = std::optional<T>;
 template <typename T> using Vec              = std::vector<T>;
 template <typename T> using Deque            = std::deque<T>;
 template <typename F, typename S> using Pair = std::pair<F, S>;
+template <typename A, typename B> using Map  = std::map<A, B>;
 namespace fs                                 = std::filesystem;
 const std::nullopt_t None                    = std::nullopt;
 template <typename T> using Shared           = std::shared_ptr<T>;

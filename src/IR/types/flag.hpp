@@ -40,6 +40,8 @@ class FlagType final : public Type {
 
 	useit String get_full_name() const;
 
+	useit Mod* get_module() const { return parent; }
+
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
 
 	useit bool can_be_prerun() const final { return true; }

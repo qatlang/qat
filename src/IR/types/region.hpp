@@ -36,7 +36,7 @@ class Region : public Type, public EntityOverview {
 
 	useit usize get_block_size() const { return blockSize; }
 
-	useit ir::Mod* getParent() const;
+	useit ir::Mod* get_module() const;
 
 	useit ir::Value* ownData(ir::Type* _type, Maybe<llvm::Value*> count, ir::Ctx* irCtx);
 

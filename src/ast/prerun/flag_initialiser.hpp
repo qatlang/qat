@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-class FlagInitialiser : public PrerunExpression, public TypeInferrable {
+class FlagInitialiser final : public PrerunExpression, public TypeInferrable {
 	Type*            type;
 	Maybe<FileRange> specialRange;
 	bool             isSpecialDefault;
@@ -17,13 +17,23 @@ class FlagInitialiser : public PrerunExpression, public TypeInferrable {
 	    : PrerunExpression(std::move(_range)), type(_type), specialRange(_specialRange),
 	      isSpecialDefault(_isSpecialDefault), variants(_variants) {}
 
+	useit static FlagInitialiser* create(Type* type, Maybe<FileRange> specialRange, bool isSpecialDefault,
+	                                     Vec<Identifier> variants, FileRange range) {
+		return std::construct_at(OwnNormal(FlagInitialiser), type, std::move(specialRange), isSpecialDefault,
+		                         std::move(variants), std::move(range));
+	}
+
 	TYPE_INFERRABLE_FUNCTIONS
+
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::FLAG_INITIALISER; }
 
-	useit String to_string() const final {}
+	useit Json to_json() const final;
+
+	useit String to_string() const final;
 };
 
 } // namespace qat::ast

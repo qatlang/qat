@@ -59,6 +59,7 @@
 #include "../ast/prerun/custom_integer_literal.hpp"
 #include "../ast/prerun/default.hpp"
 #include "../ast/prerun/entity.hpp"
+#include "../ast/prerun/flag_initialiser.hpp"
 #include "../ast/prerun/float_literal.hpp"
 #include "../ast/prerun/function_call.hpp"
 #include "../ast/prerun/integer_literal.hpp"
@@ -603,10 +604,39 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					}
 					setCachedPreExp(ast::PrerunMixOrChoiceInit::create(typeExp, name, valueExp, RangeSpan(start, i)),
 					                i);
+				} else if (is_next(TokenType::curlybraceOpen, i)) {
+					Maybe<FileRange> specialRange;
+					bool             isSpecialDefault = false;
+					Vec<Identifier>  variants;
+					i++;
+					if (is_next(TokenType::Default, i)) {
+						specialRange     = RangeAt(i + 1);
+						isSpecialDefault = true;
+						i++;
+					} else if (is_next(TokenType::none, i)) {
+						specialRange = RangeAt(i + 1);
+						i++;
+					} else {
+						if (not is_next(TokenType::identifier, i)) {
+							add_error(
+							    "Expected an identifier after this for the name of the variant of the flag type to initialise",
+							    RangeAt(i));
+						}
+						variants.push_back(IdentifierAt(i + 1));
+						i++;
+						while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "+")) {
+							if (not is_next(TokenType::identifier, i + 1)) {
+								add_error(
+								    "Expected an identifier after this for the name of the additional variant to be initialised for this flag type value",
+								    RangeAt(i + 1));
+							}
+						}
+					}
+					ast::FlagInitialiser::create(nullptr, std::move(specialRange), isSpecialDefault,
+					                             std::move(variants), RangeSpan(start, i));
 				} else {
-					add_error(
-					    "Expected an identifier after this to mention the variant of the mix or choice type to init",
-					    (typeExp.has_value() ? FileRange{typeExp.value()->fileRange, RangeAt(i)} : RangeAt(i)));
+					add_error("Unexpected token found after this",
+					          (typeExp.has_value() ? FileRange{typeExp.value()->fileRange, RangeAt(i)} : RangeAt(i)));
 				}
 				break;
 			}

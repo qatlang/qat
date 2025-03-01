@@ -5,6 +5,13 @@
 
 namespace qat::ast {
 
+void FlagInitialiser::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+                                          EmitCtx* ctx) {
+	if (type) {
+		UPDATE_DEPS(type);
+	}
+}
+
 ir::PrerunValue* FlagInitialiser::emit(EmitCtx* ctx) {
 	ir::Type* useType = type ? type->emit(ctx) : (inferredType ? inferredType : nullptr);
 	if (useType == nullptr) {
@@ -54,5 +61,9 @@ ir::PrerunValue* FlagInitialiser::emit(EmitCtx* ctx) {
 		    llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(underTy->get_llvm_type()), valStr, 2u), useType);
 	}
 }
+
+Json FlagInitialiser::to_json() const { return Json()._("nodeType", "flagInitialiser"); }
+
+String FlagInitialiser::to_string() const { return ""; }
 
 } // namespace qat::ast

@@ -5,14 +5,22 @@
 
 namespace qat::ast {
 
-struct TypeLike {
-	bool  isType;
-	void* data;
+class Expression;
 
-	useit static TypeLike from_type(Type* type) { return TypeLike{.isType = true, .data = (void*)type}; }
+enum class TypeLikeKind { TYPE, PRERUN, EXPRESSION };
+
+struct TypeLike {
+	TypeLikeKind kind;
+	void*        data;
+
+	useit static TypeLike from_type(Type* type) { return TypeLike{.kind = TypeLikeKind::TYPE, .data = (void*)type}; }
 
 	useit static TypeLike from_prerun(PrerunExpression* preExp) {
-		return TypeLike{.isType = false, .data = (void*)preExp};
+		return TypeLike{.kind = TypeLikeKind::PRERUN, .data = (void*)preExp};
+	}
+
+	useit static TypeLike from_expression(Expression* exp) {
+		return TypeLike{.kind = TypeLikeKind::EXPRESSION, .data = (void*)exp};
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
@@ -25,7 +33,7 @@ struct TypeLike {
 
 	useit String to_string() const;
 
-	useit JsonValue to_json_value() const;
+	useit operator JsonValue() const;
 };
 
 } // namespace qat::ast

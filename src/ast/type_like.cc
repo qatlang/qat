@@ -8,7 +8,32 @@
 
 namespace qat::ast {
 
+String TypeLike::to_string() const {
+	return data ? (isType ? ((Type*)data)->to_string() : ((PrerunExpression*)data)->to_string()) : "";
+}
+
+JsonValue TypeLike::to_json_value() const {
+	return data ? (isType ? ((Type*)data)->to_json() : ((PrerunExpression*)data)->to_json()) : JsonValue();
+}
+
+FileRange TypeLike::get_range() const {
+	return data ? (isType ? ((Type*)data)->fileRange : ((PrerunExpression*)data)->fileRange) : FileRange("");
+}
+
+void TypeLike::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	if (data) {
+		if (isType) {
+			((Type*)data)->update_dependencies(phase, dep, ent, ctx);
+		} else {
+			((PrerunExpression*)data)->update_dependencies(phase, dep, ent, ctx);
+		}
+	}
+}
+
 ir::Type* TypeLike::emit(EmitCtx* ctx) const {
+	if (data == nullptr) {
+		return nullptr;
+	}
 	if (isType) {
 		auto type = (Type*)data;
 		return type->emit(ctx);

@@ -15,7 +15,17 @@ struct TypeLike {
 		return TypeLike{.isType = false, .data = (void*)preExp};
 	}
 
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
+
 	useit ir::Type* emit(EmitCtx* ctx) const;
+
+	useit operator bool() const { return data != nullptr; }
+
+	useit FileRange get_range() const;
+
+	useit String to_string() const;
+
+	useit JsonValue to_json_value() const;
 };
 
 } // namespace qat::ast

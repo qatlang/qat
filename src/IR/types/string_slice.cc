@@ -1,6 +1,5 @@
 #include "./string_slice.hpp"
 #include "../../IR/logic.hpp"
-#include "../../show.hpp"
 #include "../context.hpp"
 
 #include <llvm/IR/Constants.h>

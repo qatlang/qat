@@ -46,30 +46,25 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
 		case VisibilityKind::file:
 		case VisibilityKind::folder:
 		case VisibilityKind::lib: {
-			SHOW("VisibilityInfo: Module")
 			return reqInfo.has_value() && ((visibility.moduleVal->get_id() == reqInfo->get_module()->get_id()) ||
 			                               visibility.moduleVal->is_parent_mod_of(reqInfo->get_module()));
 		}
 		case VisibilityKind::pub: {
-			SHOW("VisibilityInfo: PUB")
 			return true;
 		}
 		case VisibilityKind::type: {
-			SHOW("VisibilityInfo: TYPE")
 			if (reqInfo.has_value() && reqInfo->has_type()) {
 				return reqInfo->get_type()->is_same(visibility.typePtr);
 			}
 			return false;
 		}
 		case VisibilityKind::skill: {
-			SHOW("VisibilityInfo: SKILL")
 			if (reqInfo.has_value() && reqInfo->has_skill()) {
 				return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
 			}
 		}
 		case VisibilityKind::parent: {
-			SHOW("VisibilityInfo: PARENT")
-			if (!reqInfo.has_value()) {
+			if (not reqInfo.has_value()) {
 				return false;
 			}
 			if (visibility.typePtr && reqInfo->has_type()) {

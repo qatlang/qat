@@ -98,8 +98,8 @@ class Ctx {
 	Vec<ir::Mod*> modulesWithErrors;
 
 	useit bool module_has_errors(ir::Mod* cand) {
-		for (auto* module : modulesWithErrors) {
-			if (module->get_id() == cand->get_id()) {
+		for (auto* mod : modulesWithErrors) {
+			if (mod->get_id() == cand->get_id()) {
 				return true;
 			}
 		}

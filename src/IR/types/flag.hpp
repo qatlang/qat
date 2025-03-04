@@ -4,6 +4,7 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
+#include "../entity_overview.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ir {
@@ -15,7 +16,7 @@ struct FlagVariant {
 	bool            isDefault;
 };
 
-class FlagType final : public Type {
+class FlagType final : public EntityOverview, public Type {
 	Identifier               name;
 	Mod*                     parent;
 	Vec<FlagVariant>         variants;

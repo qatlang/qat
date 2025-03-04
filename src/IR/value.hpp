@@ -122,14 +122,8 @@ class PrerunValue : public Value {
   public:
 	PrerunValue(llvm::Constant* _llConst, ir::Type* _type) : Value(_llConst, _type, false) {}
 
-	explicit PrerunValue(ir::TypedType* _typed) : Value(nullptr, _typed, false) {}
-
 	useit static PrerunValue* get(llvm::Constant* ll, ir::Type* type) {
 		return std::construct_at(OwnNormal(PrerunValue), ll, type);
-	}
-
-	useit static PrerunValue* get_typed_prerun(ir::TypedType* typed) {
-		return std::construct_at(OwnNormal(PrerunValue), typed);
 	}
 
 	~PrerunValue() override = default;

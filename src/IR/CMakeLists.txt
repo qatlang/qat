@@ -14,6 +14,7 @@ add_library(QAT_IR STATIC
 	skill.cc
 	static_member.cc
 	stdlib.cc
+	type_id.cc
 	value.cc)
 
 target_include_directories(QAT_IR PUBLIC "${LLVM_ROOT_DIR}/include" "${BOOST_INCLUDE_DIR}")

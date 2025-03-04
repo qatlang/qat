@@ -410,6 +410,7 @@ struct EntityState {
 class PrerunFunction;
 class GenericStructType;
 class Skill;
+struct ModTypeInfo;
 
 class Mod final : public Uniq, public EntityOverview {
 	friend class Region;
@@ -438,6 +439,8 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class ast::MethodCall;
 	friend class ast::MemberAccess;
 	friend class ast::Entity;
+	friend struct ModTypeInfo;
+	friend struct TypeInfo;
 
   public:
 	Mod(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
@@ -474,6 +477,8 @@ class Mod final : public Uniq, public EntityOverview {
 	std::set<Mod*>    dependencies;
 	Vec<Mod*>         submodules;
 	Vec<Brought<Mod>> broughtModules;
+
+	ModTypeInfo* typeInfoDetail = nullptr;
 
 	Deque<OpaqueType*>       opaqueTypes;
 	Vec<Brought<OpaqueType>> broughtOpaqueTypes;

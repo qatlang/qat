@@ -1,44 +1,37 @@
 #include "./typed.hpp"
 #include "../../utils/qat_region.hpp"
+#include "../context.hpp"
+#include "../type_id.hpp"
 #include "../value.hpp"
-#include "./type_kind.hpp"
+
+#include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/ConstantFold.h>
+#include <llvm/IR/Type.h>
 
 namespace qat::ir {
 
-TypedType::TypedType(ir::Type* _subTy) : subTy(_subTy) {
-	while (subTy->is_typed()) {
-		subTy = subTy->as_typed()->get_subtype();
-	}
-	llvmType    = subTy->get_llvm_type();
-	linkingName = "type(" + subTy->get_name_for_linking() + ")";
+TypedType* TypedType::instance = nullptr;
+
+TypedType::TypedType(ir::Ctx* _ctx) {
+	ctx         = _ctx;
+	llvmType    = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.value().getDefaultGlobalsAddressSpace());
+	linkingName = "qat'type";
 }
 
-TypedType* TypedType::get(Type* _subTy) {
-	for (auto* typ : allTypes) {
-		if ((typ->type_kind() == TypeKind::typed) && ((TypedType*)typ)->get_subtype()->get_id() == _subTy->get_id()) {
-			return (TypedType*)typ;
-		}
+TypedType* TypedType::get(ir::Ctx* ctx) {
+	if (not instance) {
+		instance = std::construct_at(OwnNormal(TypedType), ctx);
 	}
-	return std::construct_at(OwnNormal(TypedType), _subTy);
+	return instance;
 }
-
-ir::Type* TypedType::get_subtype() const { return subTy->is_typed() ? subTy->as_typed()->get_subtype() : subTy; }
-
-TypeKind TypedType::type_kind() const { return TypeKind::typed; }
-
-String TypedType::to_string() const { return subTy->to_string(); }
 
 Maybe<bool> TypedType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
-	if (first->get_ir_type()->is_typed() && second->get_ir_type()->is_typed()) {
-		return first->get_ir_type()->as_typed()->get_subtype()->is_same(
-		    second->get_ir_type()->as_typed()->get_subtype());
-	}
-	return None;
+	return TypeInfo::get_for(first->get_llvm_constant())
+	    ->type->is_same(TypeInfo::get_for(second->get_llvm_constant())->type);
 }
 
 Maybe<String> TypedType::to_prerun_generic_string(ir::PrerunValue* val) const {
-	// FIXME - The following is stupid, if there is confirmation that the constant's type is already checked
-	return val->get_ir_type()->as_typed()->get_subtype()->to_string();
+	return TypeInfo::get_for(val->get_llvm_constant())->type->to_string();
 }
 
 } // namespace qat::ir

@@ -26,7 +26,9 @@ add_library(QAT_AST STATIC
 	sentence.cc
 	skill_entity.cc
 	sub_entity_solver.cc
-	type_definition.cc)
+	type_definition.cc
+	type_like.cc
+)
 
 target_include_directories(QAT_AST PUBLIC "${LLVM_ROOT_DIR}/include")
 

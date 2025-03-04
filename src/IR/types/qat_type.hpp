@@ -41,10 +41,12 @@ class ResultType;
 class VectorType;
 class Polymorph;
 class FlagType;
+struct TypeInfo;
 
 // Type is the base class for all types in the IR
 class Type : public Uniq {
 	friend DoneSkill;
+	friend TypeInfo;
 
   protected:
 	static Vec<Type*> allTypes;
@@ -52,6 +54,8 @@ class Type : public Uniq {
 	String          linkingName;
 	llvm::Type*     llvmType;
 	Vec<DoneSkill*> doneSkills;
+
+	TypeInfo* typeInfo = nullptr;
 
   public:
 	Type();

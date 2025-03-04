@@ -83,6 +83,7 @@ class DefinitionType : public ExpandedType, public EntityOverview {
 	useit String     get_full_name() const;
 	useit Mod*       get_module();
 	useit Type*      get_subtype();
+	useit Type*      get_non_definition_subtype();
 	useit TypeKind   type_kind() const final;
 	useit LinkNames  get_link_names() const final;
 	useit String     to_string() const final;

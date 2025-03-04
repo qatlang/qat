@@ -101,6 +101,10 @@ Mod* DefinitionType::get_module() { return parent; }
 
 Type* DefinitionType::get_subtype() { return subType; }
 
+Type* DefinitionType::get_non_definition_subtype() {
+	return subType->is_type_definition() ? subType->as_type_definition()->get_non_definition_subtype() : subType;
+}
+
 bool DefinitionType::is_type_sized() const { return subType->is_type_sized(); }
 
 bool DefinitionType::is_trivially_copyable() const { return subType->is_trivially_copyable(); }

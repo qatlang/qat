@@ -40,7 +40,7 @@ ir::Type* SubType::emit(EmitCtx* ctx) {
 	if (subRes.isType) {
 		return (ir::Type*)subRes.data;
 	} else if (((ir::PrerunValue*)subRes.data)->get_ir_type()->is_typed()) {
-		return ((ir::PrerunValue*)subRes.data)->get_ir_type()->as_typed()->get_subtype();
+		return ir::TypeInfo::get_for(((ir::PrerunValue*)subRes.data)->get_llvm_constant())->type;
 	} else {
 		ctx->Error("Expected a type here, but instead got an expression of type " +
 		               ctx->color(((ir::PrerunValue*)subRes.data)->get_ir_type()->to_string()),

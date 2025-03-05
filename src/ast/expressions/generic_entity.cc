@@ -142,7 +142,8 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 	} else {
 		auto handleRes = handle_generic_named_type(mod, curr, entityName, names, genericTypes, reqInfo, fileRange, ctx);
 		if (handleRes.has_value()) {
-			return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(handleRes.value()));
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, handleRes.value(), mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
 		} else {
 			// FIXME - Support static members of generic types
 			auto fullName = Identifier::fullName(names);

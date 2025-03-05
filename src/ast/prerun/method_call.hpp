@@ -33,9 +33,9 @@ class PrerunMemberFnCall final : public PrerunExpression {
 	useit NodeType         nodeType() const final { return NodeType::PRERUN_METHOD_CALL; }
 };
 
-useit ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<Expression*> const& arguments,
+useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expression*> const& arguments,
                                                   Identifier memberName, EmitCtx* ctx, FileRange fileRange);
-useit ir::PrerunValue* handle_type_wrap_functions(ir::TypedType* typed, Vec<PrerunExpression*> const& arguments,
+useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<PrerunExpression*> const& arguments,
                                                   Identifier memberName, EmitCtx* ctx, FileRange fileRange);
 
 } // namespace qat::ast

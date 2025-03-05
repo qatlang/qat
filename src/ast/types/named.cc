@@ -88,7 +88,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 			} else if (genParam->is_prerun()) {
 				auto* exp = genParam->as_prerun()->get_expression();
 				if (exp->get_ir_type()->is_typed()) {
-					return exp->get_ir_type()->as_typed()->get_subtype();
+					return ir::TypeInfo::get_for(exp->get_llvm_constant())->type;
 				} else {
 					ctx->Error("Generic parameter " + ctx->color(entityName.value) +
 					               " is a normal prerun expression and hence cannot be used as a type",
@@ -114,7 +114,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 				} else if (genVal->is_prerun()) {
 					auto exp = genVal->as_prerun()->get_expression();
 					if (exp->get_ir_type()->is_typed()) {
-						return exp->get_ir_type()->as_typed()->get_subtype();
+						return ir::TypeInfo::get_for(exp->get_llvm_constant())->type;
 					} else {
 						ctx->Error("The generic parameter " + ctx->color(entityName.value) +
 						               " is an expression of type " + ctx->color(exp->get_ir_type()->to_string()) +

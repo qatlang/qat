@@ -43,13 +43,14 @@ ir::PrerunValue* PrerunSubEntity::emit(EmitCtx* ctx) {
 			               ctx->color(exp->get_ir_type()->to_string()) + ". Expressions cannot have children entities",
 			           parentExpression->fileRange);
 		}
-		subRes = sub_entity_solver(
-		    ctx, true,
-		    SubEntityParent::of_type(exp->get_ir_type()->as_typed()->get_subtype(), parentExpression->fileRange), names,
-		    fileRange);
+		subRes = sub_entity_solver(ctx, true,
+		                           SubEntityParent::of_type(ir::TypeInfo::get_for(exp->get_llvm_constant())->type,
+		                                                    parentExpression->fileRange),
+		                           names, fileRange);
 	}
 	if (subRes.isType) {
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get((ir::Type*)subRes.data));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, (ir::Type*)subRes.data, ctx->mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
 	} else {
 		return (ir::PrerunValue*)subRes.data;
 	}

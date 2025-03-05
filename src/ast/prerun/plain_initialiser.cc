@@ -3,23 +3,17 @@
 namespace qat::ast {
 
 ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
-	auto  reqInfo     = ctx->get_access_info();
-	auto* typePreEmit = type.has_value() ? type.value()->emit(ctx)
-	                                     : ir::PrerunValue::get_typed_prerun(ir::TypedType::get(inferredType));
-	if (type.has_value() && is_type_inferred()) {
-		if (!typePreEmit->get_ir_type()->is_typed()) {
-			ctx->Error("Expected a type here, but got an expression", type.value()->fileRange);
-		}
-		if (!typePreEmit->get_ir_type()->as_typed()->get_subtype()->is_same(inferredType)) {
-			ctx->Error("The provided type is " +
-			               ctx->color(typePreEmit->get_ir_type()->as_typed()->get_subtype()->to_string()) +
+	auto  reqInfo  = ctx->get_access_info();
+	auto* typeEmit = type ? type.emit(ctx) : inferredType;
+	if (type && is_type_inferred()) {
+		if (not typeEmit->is_same(inferredType)) {
+			ctx->Error("The provided type is " + ctx->color(typeEmit->to_string()) +
 			               " but the type inferred from scope is " + ctx->color(inferredType->to_string()),
-			           type.value()->fileRange);
+			           type.get_range());
 		}
-	} else if (!type.has_value() && !is_type_inferred()) {
+	} else if (not(type || is_type_inferred())) {
 		ctx->Error("No type is provided for plain initialisation and no type could be inferred from scope", fileRange);
 	}
-	auto typeEmit = typePreEmit->get_ir_type()->as_typed()->get_subtype();
 	if (typeEmit->is_struct()) {
 		auto cTy = typeEmit->as_struct();
 		if (cTy->can_be_prerun()) {
@@ -37,12 +31,12 @@ ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
 					}
 					if (cTy->has_field_with_name(field.value)) {
 						auto mem = cTy->get_field_with_name(field.value);
-						if (!mem->visibility.is_accessible(reqInfo)) {
+						if (not mem->visibility.is_accessible(reqInfo)) {
 							ctx->Error("Member field " + ctx->color(field.value) + " is not accessible here",
 							           field.range);
 						}
 						auto fieldVal = fieldValues.at(i)->emit(ctx);
-						if (!mem->type->is_same(fieldVal->get_ir_type())) {
+						if (not mem->type->is_same(fieldVal->get_ir_type())) {
 							ctx->Error("Member field " + ctx->color(field.value) + " is of type " +
 							               ctx->color(mem->type->to_string()) +
 							               " but the expression provided is of type " +
@@ -58,11 +52,11 @@ ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
 				}
 				Vec<String> missingMembers;
 				for (usize i = 0; i < cTy->get_field_count(); i++) {
-					if (!presentMems.contains(i)) {
+					if (not presentMems.contains(i)) {
 						missingMembers.push_back(cTy->get_field_name_at(i));
 					}
 				}
-				if (!missingMembers.empty()) {
+				if (not missingMembers.empty()) {
 					String memMessage;
 					for (usize i = 0; i < missingMembers.size(); i++) {
 						memMessage += missingMembers[i];
@@ -115,8 +109,8 @@ ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
 
 String PrerunPlainInit::to_string() const {
 	String result;
-	if (type.has_value()) {
-		result += type.value()->to_string() + " ";
+	if (type) {
+		result += type.to_string() + " ";
 	}
 	result += "from { ";
 	for (usize i = 0; i < fieldValues.size(); i++) {
@@ -145,8 +139,8 @@ Json PrerunPlainInit::to_json() const {
 	}
 	return Json()
 	    ._("nodeType", "prerunPlainInitialiser")
-	    ._("hasType", type.has_value())
-	    ._("type", type.has_value() ? type.value()->to_json() : JsonValue())
+	    ._("hasType", (bool)type)
+	    ._("type", type)
 	    ._("hasFields", fields.has_value())
 	    ._("fields", fieldsJson)
 	    ._("fieldValues", fieldValsJson);

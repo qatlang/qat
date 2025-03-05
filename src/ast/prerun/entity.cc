@@ -1,5 +1,6 @@
 #include "./entity.hpp"
 #include "../../IR/stdlib.hpp"
+#include "../../IR/types/flag.hpp"
 #include "../../IR/types/region.hpp"
 #include "../types/generic_abstract.hpp"
 #include "../types/prerun_generic.hpp"
@@ -70,7 +71,8 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 					ctx->Error("The typed generic parameter referred to by this symbol does not have a value",
 					           fileRange);
 				}
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(tyGen->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, tyGen->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else {
 				ctx->Error("Unsupported generic parameter kind", fileRange);
 			}
@@ -80,7 +82,8 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 			SHOW("PrerunEntity: Has active function and generic parameter")
 			auto* genVal = ctx->get_fn()->get_generic_parameter(identifiers[0].value);
 			if (genVal->is_typed()) {
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else if (genVal->is_prerun()) {
 				return genVal->as_prerun()->get_expression();
 			} else {
@@ -93,7 +96,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 			    ctx->get_member_parent()->as_expanded()->has_generic_parameter(identifiers[0].value)) {
 				auto* genVal = ctx->get_member_parent()->as_expanded()->get_generic_parameter(identifiers[0].value);
 				if (genVal->is_typed()) {
-					return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+					return ir::PrerunValue::get(
+					    ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+					    ir::TypedType::get(ctx->irCtx));
 				} else if (genVal->is_prerun()) {
 					return genVal->as_prerun()->get_expression();
 				} else {
@@ -104,7 +109,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 			    ctx->get_member_parent()->as_done_skill()->has_generic_parameter(identifiers[0].value)) {
 				auto* genVal = ctx->get_member_parent()->as_done_skill()->get_generic_parameter(identifiers[0].value);
 				if (genVal->is_typed()) {
-					return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+					return ir::PrerunValue::get(
+					    ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+					    ir::TypedType::get(ctx->irCtx));
 				} else if (genVal->is_prerun()) {
 					return genVal->as_prerun()->get_expression();
 				} else {
@@ -116,7 +123,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 			if (ctx->irCtx->has_generic_parameter_in_entity(identifiers[0].value)) {
 				auto* genVal = ctx->irCtx->get_generic_parameter_from_entity(name.value);
 				if (genVal->is_typed()) {
-					return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+					return ir::PrerunValue::get(
+					    ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+					    ir::TypedType::get(ctx->irCtx));
 				} else if (genVal->is_prerun()) {
 					return genVal->as_prerun()->get_expression();
 				} else {
@@ -136,7 +145,8 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 			                   ->as_expanded()
 			                   ->get_generic_parameter(identifiers[0].value);
 			if (genVal->is_typed()) {
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else if (genVal->is_prerun()) {
 				return genVal->as_prerun()->get_expression();
 			} else {
@@ -177,27 +187,37 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 	    mod->has_type_definition_in_imports(name.value, reqInfo).first) {
 		auto resTypeDef = mod->get_type_def(name.value, reqInfo);
 		resTypeDef->add_mention(name.range);
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resTypeDef));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resTypeDef, mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_struct_type(name.value, reqInfo) || mod->has_brought_struct_type(name.value, reqInfo) ||
 	           mod->has_struct_type_in_imports(name.value, reqInfo).first) {
 		auto resCoreType = mod->get_struct_type(name.value, reqInfo);
 		resCoreType->add_mention(name.range);
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resCoreType));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resCoreType, mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_mix_type(name.value, reqInfo) || mod->has_brought_mix_type(name.value, reqInfo) ||
 	           mod->has_mix_type_in_imports(name.value, reqInfo).first) {
 		auto resMixType = mod->get_mix_type(name.value, reqInfo);
 		resMixType->add_mention(name.range);
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resMixType));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resMixType, mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_choice_type(name.value, reqInfo) || mod->has_brought_choice_type(name.value, reqInfo) ||
 	           mod->has_choice_type_in_imports(name.value, reqInfo).first) {
 		auto resChoiceType = mod->get_choice_type(name.value, reqInfo);
 		resChoiceType->add_mention(name.range);
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resChoiceType));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resChoiceType, mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
+	} else if (mod->has_flag_type(name.value, reqInfo) || mod->has_brought_flag_type(name.value, reqInfo) ||
+	           mod->has_flag_type_in_imports(name.value, reqInfo).first) {
+		auto flagTy = mod->get_flag_type(name.value, reqInfo);
+		flagTy->add_mention(name.range);
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, flagTy, mod)->id, ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_region(name.value, reqInfo) || mod->has_brought_region(name.value, reqInfo) ||
 	           mod->has_region_in_imports(name.value, reqInfo).first) {
 		auto resRegion = mod->get_region(name.value, reqInfo);
 		resRegion->add_mention(name.range);
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resRegion));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resRegion, mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_prerun_global(name.value, reqInfo) || mod->has_brought_prerun_global(name.value, reqInfo) ||
 	           mod->has_prerun_global_in_imports(name.value, reqInfo).first) {
 		auto resPre = mod->get_prerun_global(name.value, reqInfo);

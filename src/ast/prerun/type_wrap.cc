@@ -1,4 +1,5 @@
 #include "./type_wrap.hpp"
+#include "../../IR/type_id.hpp"
 #include "../../IR/types/typed.hpp"
 
 namespace qat::ast {
@@ -8,7 +9,8 @@ void TypeWrap::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> de
 }
 
 ir::PrerunValue* TypeWrap::emit(EmitCtx* ctx) {
-	return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(theType->emit(ctx)));
+	return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, theType->emit(ctx), ctx->mod)->id,
+	                            ir::TypedType::get(ctx->irCtx));
 }
 
 Json TypeWrap::to_json() const {

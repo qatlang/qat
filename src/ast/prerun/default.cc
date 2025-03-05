@@ -36,7 +36,9 @@ ir::PrerunValue* PrerunDefault::emit(EmitCtx* ctx) {
 				if (!genVal->isSet()) {
 					genVal->emit(ctx);
 				}
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->getDefault()));
+				return ir::PrerunValue::get(
+				    ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->getDefault(), ctx->mod)->id,
+				    ir::TypedType::get(ctx->irCtx));
 			} else {
 				ctx->Error(utils::number_to_position(genVal->getIndex()) + " Generic Type Parameter " +
 				               ctx->color(genVal->get_name().value) + " doesn't have a default type associated with it",

@@ -2,22 +2,22 @@
 #define QAT_PRERUN_PLAIN_INITIALISER_HPP
 
 #include "../expression.hpp"
+#include "../type_like.hpp"
 #include "../types/qat_type.hpp"
 
 namespace qat::ast {
 
 class PrerunPlainInit final : public PrerunExpression, public TypeInferrable {
-  private:
-	Maybe<PrerunExpression*> type;
-	Maybe<Vec<Identifier>>   fields;
-	Vec<PrerunExpression*>   fieldValues;
+	TypeLike               type;
+	Maybe<Vec<Identifier>> fields;
+	Vec<PrerunExpression*> fieldValues;
 
   public:
-	PrerunPlainInit(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields, Vec<PrerunExpression*> _fieldValues,
+	PrerunPlainInit(TypeLike _type, Maybe<Vec<Identifier>> _fields, Vec<PrerunExpression*> _fieldValues,
 	                FileRange _fileRange)
 	    : PrerunExpression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
-	useit static PrerunPlainInit* create(Maybe<PrerunExpression*> _type, Maybe<Vec<Identifier>> _fields,
+	useit static PrerunPlainInit* create(TypeLike _type, Maybe<Vec<Identifier>> _fields,
 	                                     Vec<PrerunExpression*> _fieldValues, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(PrerunPlainInit), _type, _fields, _fieldValues, _fileRange);
 	}
@@ -25,9 +25,7 @@ class PrerunPlainInit final : public PrerunExpression, public TypeInferrable {
 	TYPE_INFERRABLE_FUNCTIONS
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-		if (type.has_value()) {
-			UPDATE_DEPS(type.value());
-		}
+		type.update_dependencies(phase, dep, ent, ctx);
 		for (auto field : fieldValues) {
 			UPDATE_DEPS(field);
 		}

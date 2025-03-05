@@ -360,8 +360,8 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			}
 		}
 		return memFn->call(ctx->irCtx, argVals, localID, ctx->mod);
-	} else if (instType->is_typed()) {
-		return handle_type_wrap_functions(instType->as_typed(), arguments, memberName, ctx, fileRange);
+	} else if (inst->is_prerun_value() && instType->is_typed()) { // TODO: Support type traits for normal expressions
+		return handle_type_wrap_functions(inst->as_prerun(), arguments, memberName, ctx, fileRange);
 	} else if (instType->is_vector()) {
 		auto*      origInst = ir::Value::get(inst->get_llvm(), inst->get_ir_type(), false);
 		const auto isOrigRefNotVar =

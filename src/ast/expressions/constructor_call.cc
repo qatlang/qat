@@ -1,7 +1,5 @@
 #include "./constructor_call.hpp"
-#include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
-#include "../../IR/types/region.hpp"
 
 #include <llvm/IR/Constants.h>
 
@@ -9,16 +7,15 @@ namespace qat::ast {
 
 ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 	SHOW("Constructor Call - Emitting type")
-	if (!type.has_value() && !is_type_inferred()) {
-		ctx->Error("No type provided for constructor call, and no type inferred from scope", fileRange);
+	if (not type && not is_type_inferred()) {
+		ctx->Error("No type provided for the constructor call, and no type inferred from scope", fileRange);
 	}
-	auto* typ = type.has_value() ? type.value()->emit(ctx) : inferredType;
-	if (type.has_value() && is_type_inferred()) {
-		if (!typ->is_same(inferredType)) {
-			ctx->Error("The provided type for the constructor call is " + ctx->color(typ->to_string()) +
-			               " but the inferred type is " + ctx->color(inferredType->to_string()),
-			           fileRange);
-		}
+	auto* typ = type ? type.emit(ctx) : inferredType;
+	if (type && is_type_inferred() && not typ->is_same(inferredType)) {
+		ctx->Error("The type provided for the constructor call is " + ctx->color(typ->to_string()) +
+		               ", which does not match the type inferred from scope, which is " +
+		               ctx->color(inferredType->to_string()),
+		           type ? type.get_range() : fileRange);
 	}
 	SHOW("Emitted type")
 	if (typ->is_expanded()) {
@@ -31,13 +28,13 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 			    {argVal->is_ghost_reference() ? Maybe<bool>(argVal->is_variable()) : None, argVal->get_ir_type()});
 			valsIR.push_back(argVal);
 		}
-		auto reqInfo = ctx->get_access_info();
+		auto access = ctx->get_access_info();
 		SHOW("Argument values emitted for function call")
 		ir::Method* cons = nullptr;
 		if (args.empty()) {
 			if (eTy->has_default_constructor()) {
 				cons = eTy->get_default_constructor();
-				if (!cons->is_accessible(reqInfo)) {
+				if (not cons->is_accessible(access)) {
 					ctx->Error("The default constructor of type " + ctx->color(eTy->get_full_name()) +
 					               " is not accessible here",
 					           fileRange);
@@ -52,7 +49,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		} else if (args.size() == 1) {
 			if (eTy->has_from_convertor(valsType[0].first, valsType[0].second)) {
 				cons = eTy->get_from_convertor(valsType[0].first, valsType[0].second);
-				if (!cons->is_accessible(reqInfo)) {
+				if (not cons->is_accessible(access)) {
 					ctx->Error("This convertor of type " + ctx->color(eTy->get_full_name()) + " is not accessible here",
 					           fileRange);
 				}
@@ -65,7 +62,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		} else {
 			if (eTy->has_constructor_with_types(valsType)) {
 				cons = eTy->get_constructor_with_types(valsType);
-				if (!cons->is_accessible(reqInfo)) {
+				if (not cons->is_accessible(access)) {
 					ctx->Error("This constructor of type " + ctx->color(eTy->get_full_name()) +
 					               " is not accessible here",
 					           fileRange);
@@ -80,12 +77,12 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		auto argTys = cons->get_ir_type()->as_function()->get_argument_types();
 		for (usize i = 1; i < argTys.size(); i++) {
 			if (argTys.at(i)->get_type()->is_reference()) {
-				if (!valsType.at(i - 1).second->is_reference()) {
-					if (!valsType.at(i - 1).first.has_value()) {
+				if (not valsType.at(i - 1).second->is_reference()) {
+					if (not valsType.at(i - 1).first.has_value()) {
 						valsIR[i = 1] = valsIR[i - 1]->make_local(ctx, None, args[i - 1]->fileRange);
 					}
 					if (argTys.at(i)->get_type()->as_reference()->isSubtypeVariable() &&
-					    !valsIR.at(i - 1)->is_variable()) {
+					    not valsIR.at(i - 1)->is_variable()) {
 						ctx->Error("The expected argument type is " +
 						               ctx->color(argTys.at(i)->get_type()->to_string()) +
 						               " but the provided value is not a variable",
@@ -93,7 +90,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 					}
 				} else {
 					if (argTys.at(i)->get_type()->as_reference()->isSubtypeVariable() &&
-					    !valsIR.at(i - 1)->get_ir_type()->as_reference()->isSubtypeVariable()) {
+					    not valsIR.at(i - 1)->get_ir_type()->as_reference()->isSubtypeVariable()) {
 						ctx->Error("The expected argument type is " +
 						               ctx->color(argTys.at(i)->get_type()->to_string()) +
 						               " but the provided value is of type " +
@@ -140,7 +137,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		}
 	} else {
 		ctx->Error("The provided type " + ctx->color(typ->to_string()) + " cannot be constructed",
-		           type.has_value() ? type.value()->fileRange : fileRange);
+		           type ? type.get_range() : fileRange);
 	}
 	return nullptr;
 }
@@ -152,8 +149,8 @@ Json ConstructorCall::to_json() const {
 	}
 	return Json()
 	    ._("nodeType", "constructorCall")
-	    ._("hasType", type.has_value())
-	    ._("type", type.has_value() ? type.value()->to_json() : JsonValue())
+	    ._("hasType", (bool)type)
+	    ._("type", (JsonValue)type)
 	    ._("arguments", argsJson)
 	    ._("fileRange", fileRange);
 }

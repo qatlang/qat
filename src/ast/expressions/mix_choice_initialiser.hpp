@@ -2,7 +2,7 @@
 #define QAT_AST_EXPRESSIONS_MIX_TYPE_INITIALISER_HPP
 
 #include "../expression.hpp"
-#include "../types/qat_type.hpp"
+#include "../type_like.hpp"
 
 namespace qat::ast {
 
@@ -13,16 +13,15 @@ class MixOrChoiceInitialiser final : public Expression,
 	friend class LocalDeclaration;
 
   private:
-	Maybe<Type*>       type;
-	Identifier         subName;
-	Maybe<Expression*> expression;
+	TypeLike    type;
+	Identifier  subName;
+	Expression* expression;
 
   public:
-	MixOrChoiceInitialiser(Maybe<Type*> _type, Identifier _subName, Maybe<Expression*> _expression,
-	                       FileRange _fileRange)
+	MixOrChoiceInitialiser(TypeLike _type, Identifier _subName, Expression* _expression, FileRange _fileRange)
 	    : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-	useit static MixOrChoiceInitialiser* create(Maybe<Type*> type, Identifier subName, Maybe<Expression*> expression,
+	useit static MixOrChoiceInitialiser* create(TypeLike type, Identifier subName, Expression* expression,
 	                                            FileRange fileRange) {
 		return std::construct_at(OwnNormal(MixOrChoiceInitialiser), type, subName, expression, fileRange);
 	}
@@ -32,11 +31,9 @@ class MixOrChoiceInitialiser final : public Expression,
 	TYPE_INFERRABLE_FUNCTIONS
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-		if (type.has_value()) {
-			UPDATE_DEPS(type.value());
-		}
-		if (expression.has_value()) {
-			UPDATE_DEPS(expression.value());
+		type.update_dependencies(phase, dep, ent, ctx);
+		if (expression) {
+			UPDATE_DEPS(expression);
 		}
 	}
 

@@ -6,32 +6,18 @@ namespace qat::ast {
 
 ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
 	SHOW("Prerun Mix/Choice type initialiser")
-	if (!type.has_value() && !is_type_inferred()) {
-		ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
+	if (not type && not is_type_inferred()) {
+		ctx->Error("No type is provided for this expression, and no type could be inferred from scope", fileRange);
 	}
-	auto*     typeEmitOrig = type.has_value() ? type.value()->emit(ctx) : nullptr;
-	ir::Type* typeEmit;
-	if (type.has_value()) {
-		if (typeEmitOrig->get_ir_type()->is_typed()) {
-			typeEmit = typeEmitOrig->get_ir_type()->as_typed()->get_subtype();
-			if (is_type_inferred() && !typeEmit->is_same(inferredType)) {
-				ctx->Error("The type provided is " + ctx->color(typeEmit->to_string()) +
-				               " but the type inferred from scope is " + ctx->color(inferredType->to_string()),
-				           type.value()->fileRange);
-			}
-		} else {
-			ctx->Error("Expected a type here, but got a value of type " +
-			               ctx->color(typeEmitOrig->get_ir_type()->to_string()),
-			           type.value()->fileRange);
-		}
-	} else if (is_type_inferred()) {
-		typeEmit = inferredType;
-	} else {
-		ctx->Error("No type provided here, and no type could be inferred from scope", fileRange);
+	auto* typeEmit = type ? type.emit(ctx) : inferredType;
+	if (type && is_type_inferred() && not typeEmit->is_same(inferredType)) {
+		ctx->Error("The type provided is " + ctx->color(typeEmit->to_string()) +
+		               " but the type inferred from scope is " + ctx->color(inferredType->to_string()),
+		           type.get_range());
 	}
 	if (typeEmit->is_mix()) {
 		auto* mixTy = typeEmit->as_mix();
-		if (!mixTy->can_be_prerun()) {
+		if (not mixTy->can_be_prerun()) {
 			ctx->Error("Mix type " + ctx->color(mixTy->to_string()) + " cannot be used in a prerun expression",
 			           fileRange);
 		}
@@ -39,7 +25,7 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
 		SHOW("Subtype check")
 		if (subRes.first) {
 			if (subRes.second) {
-				if (!expression.has_value()) {
+				if (not expression.has_value()) {
 					ctx->Error("Variant " + ctx->color(subName.value) + " of mix type " +
 					               ctx->color(mixTy->get_full_name()) + " expects a value to be associated with it",
 					           fileRange);
@@ -103,15 +89,15 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
 }
 
 String PrerunMixOrChoiceInit::to_string() const {
-	return (type.has_value() ? type.value()->to_string() : "") + "::" + subName.value +
+	return type.to_string() + "::" + subName.value +
 	       (expression.has_value() ? ("(" + expression.value()->to_string() + ")") : "");
 }
 
 Json PrerunMixOrChoiceInit::to_json() const {
 	return Json()
 	    ._("nodeType", "prerunMixOrChoiceInit")
-	    ._("hasType", type.has_value())
-	    ._("type", type.has_value() ? type.value()->to_json() : JsonValue())
+	    ._("hasType", (bool)type)
+	    ._("type", type)
 	    ._("subName", subName)
 	    ._("hasExpression", expression.has_value())
 	    ._("expression", expression.has_value() ? expression.value()->to_json() : JsonValue())

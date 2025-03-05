@@ -16,10 +16,10 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 		           fileRange);
 	}
 	auto nameIR = args[0]->emit(ctx);
-	if (!ir::StdLib::is_std_lib_found()) {
+	if (not ir::StdLib::is_std_lib_found()) {
 		ctx->Error("The standard library could not be found, and hence cannot retrieve intrinsic", fileRange);
 	}
-	if (!ir::StdLib::stdLib->has_choice_type("Intrinsic", AccessInfo::GetPrivileged())) {
+	if (not ir::StdLib::stdLib->has_choice_type("Intrinsic", AccessInfo::GetPrivileged())) {
 		ctx->Error(
 		    "The choice type " + ctx->color("Intrinsic") +
 		        " is not found in the standard library, and hence the ID of the intrinsic could not be determined",
@@ -32,31 +32,31 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 			if (args.size() == 6) {
 				auto firstVal  = args[1]->emit(ctx);
 				auto secondVal = args[2]->emit(ctx);
-				if (!firstVal->get_ir_type()->is_typed()) {
+				if (not firstVal->get_ir_type()->is_typed()) {
 					ctx->Error("Expected a type here, got an expression of type " +
 					               ctx->color(firstVal->get_ir_type()->to_string()),
 					           args[1]->fileRange);
 				}
-				if (!secondVal->get_ir_type()->is_typed()) {
+				if (not secondVal->get_ir_type()->is_typed()) {
 					ctx->Error("Expected a type here, got an expression of type " +
 					               ctx->color(firstVal->get_ir_type()->to_string()),
 					           args[2]->fileRange);
 				}
-				if (!(firstVal->get_ir_type()->as_typed()->get_subtype()->is_vector() &&
-				      firstVal->get_ir_type()->as_typed()->get_subtype()->as_vector()->is_fixed())) {
-					ctx->Error("The first type should be a fixed vector type, got " +
-					               ctx->color(firstVal->get_ir_type()->to_string()) + " instead",
+				auto firstTy = ir::TypeInfo::get_for(firstVal->get_llvm_constant())->type;
+				if (not(firstTy->is_vector() && firstTy->as_vector()->is_fixed())) {
+					ctx->Error("The first type should be a fixed vector type, got " + ctx->color(firstTy->to_string()) +
+					               " instead",
 					           args[1]->fileRange);
 				}
-				if (!(secondVal->get_ir_type()->as_typed()->get_subtype()->is_vector() &&
-				      secondVal->get_ir_type()->as_typed()->get_subtype()->as_vector()->is_fixed())) {
+				auto secondTy = ir::TypeInfo::get_for(secondVal->get_llvm_constant())->type;
+				if (not(secondTy->is_vector() && secondTy->as_vector()->is_fixed())) {
 					ctx->Error("The second type should be a fixed vector type, got " +
 					               ctx->color(secondVal->get_ir_type()->to_string()) + " instead",
 					           args[2]->fileRange);
 				}
-				auto oneTy = firstVal->get_ir_type()->as_typed()->get_subtype()->as_vector();
-				auto twoTy = secondVal->get_ir_type()->as_typed()->get_subtype()->as_vector();
-				if (!oneTy->get_element_type()->is_same(twoTy->get_element_type())) {
+				auto oneTy = firstTy->as_vector();
+				auto twoTy = secondTy->as_vector();
+				if (not oneTy->get_element_type()->is_same(twoTy->get_element_type())) {
 					ctx->Error("The first vector type has an element type of " +
 					               ctx->color(oneTy->get_element_type()->to_string()) +
 					               " but the second vector type has an element type of " +
@@ -76,8 +76,8 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				auto fourthVal = args[4]->emit(ctx);
 				auto fifthVal  = args[5]->emit(ctx);
 				auto checkFn   = [&](ir::PrerunValue* value, FileRange range) {
-                    if (!(value->get_ir_type()->is_unsigned_integer() &&
-                          (value->get_ir_type()->as_unsigned_integer()->get_bitwidth() == 32u))) {
+                    if (not(value->get_ir_type()->is_unsigned_integer() &&
+                            (value->get_ir_type()->as_unsigned_integer()->get_bitwidth() == 32u))) {
                         ctx->Error("This value is expected to be of type " + ctx->color("u32") +
 						                 ". Got an expression of type " + ctx->color(value->get_ir_type()->to_string()),
 						             range);
@@ -88,13 +88,13 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				checkFn(fifthVal, args[5]->fileRange);
 				auto oneMulRes =
 				    llvm::ConstantExpr::getMul(thirdVal->get_llvm_constant(), fourthVal->get_llvm_constant());
-				if (!llvm::cast<llvm::ConstantInt>(
-				         llvm::ConstantFoldCompareInstruction(
-				             llvm::CmpInst::ICMP_EQ,
-				             llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), oneTy->get_count()),
-				             oneMulRes))
-				         ->getValue()
-				         .getBoolValue()) {
+				if (not llvm::cast<llvm::ConstantInt>(
+				            llvm::ConstantFoldCompareInstruction(
+				                llvm::CmpInst::ICMP_EQ,
+				                llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), oneTy->get_count()),
+				                oneMulRes))
+				            ->getValue()
+				            .getBoolValue()) {
 					ctx->Error("The first type provided is " + ctx->color(oneTy->to_string()) +
 					               " but the product of the 3rd and 4th values is " +
 					               ctx->color(std::to_string(
@@ -107,13 +107,13 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				}
 				auto twoMulRes =
 				    llvm::ConstantExpr::getMul(fourthVal->get_llvm_constant(), fifthVal->get_llvm_constant());
-				if (!llvm::cast<llvm::ConstantInt>(
-				         llvm::ConstantFoldCompareInstruction(
-				             llvm::CmpInst::ICMP_EQ,
-				             llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), twoTy->get_count()),
-				             twoMulRes))
-				         ->getValue()
-				         .getBoolValue()) {
+				if (not llvm::cast<llvm::ConstantInt>(
+				            llvm::ConstantFoldCompareInstruction(
+				                llvm::CmpInst::ICMP_EQ,
+				                llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), twoTy->get_count()),
+				                twoMulRes))
+				            ->getValue()
+				            .getBoolValue()) {
 					ctx->Error("The second type provided is " + ctx->color(oneTy->to_string()) +
 					               " but the product of the 4th and 5th values is " +
 					               ctx->color(std::to_string(

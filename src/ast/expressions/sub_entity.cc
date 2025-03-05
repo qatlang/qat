@@ -35,7 +35,8 @@ ir::Value* SubEntity::emit(EmitCtx* ctx) {
 		subRes = sub_entity_solver(ctx, false, SubEntityParent::of_type(irTy, parentType->fileRange), names, fileRange);
 	}
 	if (subRes.isType) {
-		return ir::PrerunValue::get_typed_prerun(ir::TypedType::get((ir::Type*)subRes.data));
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, (ir::Type*)subRes.data, ctx->mod)->id,
+		                            ir::TypedType::get(ctx->irCtx));
 	} else {
 		return (ir::Value*)subRes.data;
 	}

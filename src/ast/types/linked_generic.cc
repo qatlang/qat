@@ -8,14 +8,12 @@
 namespace qat::ast {
 
 ir::Type* LinkedGeneric::emit(EmitCtx* ctx) {
-	if (genAbs->is_typed() || (genAbs->as_typed() && genAbs->as_prerun()->getType()->is_typed())) {
+	if (genAbs->is_typed() || (genAbs->is_prerun() && genAbs->as_prerun()->getType()->is_typed())) {
 		if (genAbs->isSet()) {
 			if (genAbs->is_typed()) {
 				return genAbs->as_typed()->get_type();
-			} else if (genAbs->as_typed()) {
-				return genAbs->as_prerun()->getPrerun()->get_ir_type()->as_typed()->get_subtype();
 			} else {
-				ctx->Error("Invalid generic kind", fileRange);
+				return ir::TypeInfo::get_for(genAbs->as_prerun()->getPrerun()->get_llvm_constant())->type;
 			}
 		} else {
 			if (genAbs->is_typed()) {
@@ -30,7 +28,7 @@ ir::Type* LinkedGeneric::emit(EmitCtx* ctx) {
 				ctx->Error("Invalid generic kind", fileRange);
 			}
 		}
-	} else if (genAbs->as_typed()) {
+	} else if (genAbs->is_prerun()) {
 		ctx->Error(utils::number_to_position(genAbs->getIndex()) + " Generic Parameter " +
 		               ctx->color(genAbs->get_name().value) + " is a normal prerun expression with type " +
 		               genAbs->as_prerun()->getType()->to_string() + " and hence cannot be used as a type",

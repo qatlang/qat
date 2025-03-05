@@ -2,7 +2,7 @@
 #define QAT_EXPRESSIONS_CONSTRUCTOR_CALL_HPP
 
 #include "../expression.hpp"
-#include "../types/qat_type.hpp"
+#include "../type_like.hpp"
 
 namespace qat::ast {
 
@@ -10,14 +10,14 @@ class ConstructorCall final : public Expression, public LocalDeclCompatible, pub
 	friend class LocalDeclaration;
 
   private:
-	Maybe<Type*>     type;
+	TypeLike         type;
 	Vec<Expression*> args;
 
   public:
-	ConstructorCall(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange)
+	ConstructorCall(TypeLike _type, Vec<Expression*> _args, FileRange _fileRange)
 	    : Expression(_fileRange), type(_type), args(_args) {}
 
-	useit static ConstructorCall* create(Maybe<Type*> _type, Vec<Expression*> _args, FileRange _fileRange) {
+	useit static ConstructorCall* create(TypeLike _type, Vec<Expression*> _args, FileRange _fileRange) {
 		return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _fileRange);
 	}
 
@@ -25,9 +25,7 @@ class ConstructorCall final : public Expression, public LocalDeclCompatible, pub
 	TYPE_INFERRABLE_FUNCTIONS
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-		if (type.has_value()) {
-			type.value()->update_dependencies(phase, ir::DependType::childrenPartial, ent, ctx);
-		}
+		type.update_dependencies(phase, ir::DependType::childrenPartial, ent, ctx);
 		for (auto arg : args) {
 			UPDATE_DEPS(arg);
 		}

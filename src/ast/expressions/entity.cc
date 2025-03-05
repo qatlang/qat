@@ -1,12 +1,12 @@
 #include "./entity.hpp"
 #include "../../IR/stdlib.hpp"
+#include "../../IR/types/flag.hpp"
 #include "../../IR/types/region.hpp"
 #include "../types/generic_abstract.hpp"
 #include "../types/prerun_generic.hpp"
 #include "../types/typed_generic.hpp"
 
 #include <llvm/IR/GlobalVariable.h>
-#include <utility>
 
 namespace qat::ast {
 
@@ -74,14 +74,16 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 					ctx->Error("The typed generic parameter referred to by this symbol does not have a value",
 					           fileRange);
 				}
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(tyGen->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, tyGen->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else {
 				ctx->Error("Unsupported generic parameter kind", fileRange);
 			}
 		} else if (fun->has_generic_parameter(singleName.value)) {
 			auto* genVal = fun->get_generic_parameter(singleName.value);
 			if (genVal->is_typed()) {
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else if (genVal->is_prerun()) {
 				return genVal->as_prerun()->get_expression();
 			} else {
@@ -92,7 +94,9 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 			if (actTy->is_expanded() && actTy->as_expanded()->has_generic_parameter(singleName.value)) {
 				auto* genVal = actTy->as_expanded()->get_generic_parameter(singleName.value);
 				if (genVal->is_typed()) {
-					return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+					return ir::PrerunValue::get(
+					    ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+					    ir::TypedType::get(ctx->irCtx));
 				} else if (genVal->is_prerun()) {
 					return genVal->as_prerun()->get_expression();
 				} else {
@@ -102,7 +106,8 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		} else if (ctx->has_opaque_parent() && ctx->get_opaque_parent()->has_generic_parameter(singleName.value)) {
 			auto genVal = ctx->get_opaque_parent()->get_generic_parameter(singleName.value);
 			if (genVal->is_typed()) {
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else if (genVal->is_prerun()) {
 				return genVal->as_prerun()->get_expression();
 			} else {
@@ -112,7 +117,8 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		           ctx->get_member_parent()->as_done_skill()->has_generic_parameter(singleName.value)) {
 			auto* genVal = ctx->get_member_parent()->as_done_skill()->get_generic_parameter(singleName.value);
 			if (genVal->is_typed()) {
-				return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(genVal->as_typed()->get_type()));
+				return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, genVal->as_typed()->get_type(), mod)->id,
+				                            ir::TypedType::get(ctx->irCtx));
 			} else if (genVal->is_prerun()) {
 				return genVal->as_prerun()->get_expression();
 			} else {
@@ -154,7 +160,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 				if (not ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
 					ctx->mod->otherGlobals.push_back(
 					    std::construct_at(OwnNormal(llvm::GlobalVariable), *ctx->mod->get_llvm_module(),
-					                      gEnt->get_ir_type()->get_llvm_type(), !gEnt->is_variable(),
+					                      gEnt->get_ir_type()->get_llvm_type(), not gEnt->is_variable(),
 					                      llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, gName, nullptr,
 					                      llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true));
 				}
@@ -229,24 +235,35 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		           mod->has_struct_type_in_imports(entityName.value, reqInfo).first) {
 			auto resCoreType = mod->get_struct_type(entityName.value, reqInfo);
 			resCoreType->add_mention(entityName.range);
-			return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resCoreType));
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resCoreType, mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_mix_type(entityName.value, reqInfo) ||
 		           mod->has_brought_mix_type(entityName.value, reqInfo) ||
 		           mod->has_mix_type_in_imports(entityName.value, reqInfo).first) {
 			auto resMixType = mod->get_mix_type(entityName.value, reqInfo);
 			resMixType->add_mention(entityName.range);
-			return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resMixType));
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resMixType, mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_choice_type(entityName.value, reqInfo) ||
 		           mod->has_brought_choice_type(entityName.value, reqInfo) ||
 		           mod->has_choice_type_in_imports(entityName.value, reqInfo).first) {
 			auto* resChoiceTy = mod->get_choice_type(entityName.value, reqInfo);
 			resChoiceTy->add_mention(entityName.range);
-			return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resChoiceTy));
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resChoiceTy, mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
+		} else if (mod->has_flag_type(entityName.value, reqInfo) ||
+		           mod->has_brought_flag_type(entityName.value, reqInfo) ||
+		           mod->has_flag_type_in_imports(entityName.value, reqInfo).first) {
+			auto* flagTy = mod->get_flag_type(entityName.value, reqInfo);
+			flagTy->add_mention(entityName.range);
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, flagTy, mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_region(entityName.value, reqInfo) || mod->has_brought_region(entityName.value, reqInfo) ||
 		           mod->has_region_in_imports(entityName.value, reqInfo).first) {
 			auto* resRegion = mod->get_region(entityName.value, reqInfo);
 			resRegion->add_mention(entityName.range);
-			return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resRegion));
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resRegion, mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_prerun_global(entityName.value, reqInfo) ||
 		           mod->has_brought_prerun_global(entityName.value, reqInfo) ||
 		           mod->has_prerun_global_in_imports(entityName.value, reqInfo).first) {
@@ -258,7 +275,8 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		           mod->has_type_definition_in_imports(entityName.value, reqInfo).first) {
 			auto* resTy = mod->get_type_def(entityName.value, reqInfo);
 			resTy->add_mention(entityName.range);
-			return ir::PrerunValue::get_typed_prerun(ir::TypedType::get(resTy));
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resTy, mod)->id,
+			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_prerun_function(entityName.value, reqInfo) ||
 		           mod->has_brought_prerun_function(entityName.value, reqInfo) ||
 		           mod->has_prerun_function_in_imports(entityName.value, reqInfo).first) {
@@ -268,7 +286,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		} else if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
 		           mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
 		           mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {
-			ctx->Error(ctx->color(entityName.value) + " is a generic core type and cannot be used as a value or type",
+			ctx->Error(ctx->color(entityName.value) + " is a generic struct type and cannot be used as a value or type",
 			           entityName.range);
 		} else if (mod->has_generic_type_def(entityName.value, reqInfo) ||
 		           mod->has_brought_generic_type_def(entityName.value, reqInfo) ||

@@ -56,6 +56,10 @@ FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {
 	return std::construct_at(OwnNormal(FloatType), _kind, llctx);
 }
 
+PrerunValue* FloatType::get_prerun_default_value(ir::Ctx* irCtx) {
+	return ir::PrerunValue::get(llvm::ConstantFP::getZero(llvmType), this);
+}
+
 TypeKind FloatType::type_kind() const { return TypeKind::Float; }
 
 FloatTypeKind FloatType::get_float_kind() const { return kind; }

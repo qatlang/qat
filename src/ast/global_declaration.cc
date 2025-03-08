@@ -28,7 +28,7 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
 	emitCtx->name_check_in_module(name, "global entity", None);
 	auto visibInfo = emitCtx->get_visibility_info(visibSpec);
-	if (!type) {
+	if (not type) {
 		irCtx->Error("Expected a type for global declaration", fileRange);
 	}
 	SHOW("Emitting type")
@@ -44,7 +44,7 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 		foreignID  = irMetaInfo.value().get_value_as_string_for("foreign");
 		linkAlias  = irMetaInfo.value().get_value_as_string_for(ir::MetaInfo::linkAsKey);
 	}
-	if (!foreignID.has_value()) {
+	if (not foreignID.has_value()) {
 		foreignID = mod->get_relevant_foreign_id();
 	}
 	auto linkNames = mod->get_link_names().newWith(LinkNameUnit(name.value, LinkUnitType::global), foreignID);
@@ -81,13 +81,13 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 			if (val->is_prerun_value()) {
 				SHOW("Value is prerun")
 				gvar = std::construct_at(OwnNormal(llvm::GlobalVariable), *mod->get_llvm_module(), typ->get_llvm_type(),
-				                         !is_variable, irCtx->getGlobalLinkageForVisibility(visibInfo),
+				                         not is_variable, irCtx->getGlobalLinkageForVisibility(visibInfo),
 				                         llvm::dyn_cast<llvm::Constant>(val->get_llvm()), linkingName);
 				initialValue = val->get_llvm_constant();
 			} else {
 				SHOW("Value is not prerun")
-				if (typ->is_reference()) {
-					typ = typ->as_reference()->get_subtype();
+				if (typ->is_ref()) {
+					typ = typ->as_ref()->get_subtype();
 				}
 				mod->add_non_const_global_counter();
 				gvar = std::construct_at(
@@ -101,14 +101,14 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 					irCtx->builder.CreateStore(val->get_llvm(), gvar);
 				} else {
 					if (typ->is_trivially_copyable() || typ->is_trivially_movable()) {
-						if (val->is_reference()) {
-							val->load_ghost_reference(irCtx->builder);
+						if (val->is_ref()) {
+							val->load_ghost_ref(irCtx->builder);
 						}
 						auto origVal = val;
 						auto result  = irCtx->builder.CreateLoad(typ->get_llvm_type(), val->get_llvm());
-						if (!typ->is_trivially_copyable()) {
-							if (origVal->is_reference() ? origVal->get_ir_type()->as_reference()->isSubtypeVariable()
-							                            : origVal->is_variable()) {
+						if (not typ->is_trivially_copyable()) {
+							if (origVal->is_ref() ? origVal->get_ir_type()->as_ref()->has_variability()
+							                      : origVal->is_variable()) {
 								irCtx->Error(
 								    "This expression does not have variability and hence cannot be trivially moved from",
 								    value.value()->fileRange);
@@ -127,14 +127,14 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 	} else {
-		if (!foreignID.has_value()) {
+		if (not foreignID.has_value()) {
 			irCtx->Error(
 			    "This global entity is not a foreign entity, and not part of a foreign module, so it is required to have a value",
 			    fileRange);
 		}
 		SHOW("Creating global variable")
 		gvar = std::construct_at(OwnNormal(llvm::GlobalVariable), *mod->get_llvm_module(), typ->get_llvm_type(),
-		                         !is_variable, llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr,
+		                         not is_variable, llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr,
 		                         linkingName, nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, None, true);
 		SHOW("Created global")
 	}

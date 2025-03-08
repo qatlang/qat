@@ -13,7 +13,7 @@
 namespace qat::ast {
 
 class DestructorDefinition {
-	friend DefineCoreType;
+	friend DefineStructType;
 	friend DoSkill;
 
 	FileRange      nameRange;
@@ -48,7 +48,8 @@ class DestructorDefinition {
 	void  define(MethodState& state, ir::Ctx* irCtx);
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 	useit Json       to_json() const;
-	useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
+
+	useit NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

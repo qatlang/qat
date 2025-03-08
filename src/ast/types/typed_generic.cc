@@ -9,7 +9,7 @@ ir::Type* TypedGenericAbstract::getDefault() const { return defaultType; }
 
 void TypedGenericAbstract::setType(ir::Type* typ) const { typeValue.push_back(typ); }
 
-bool TypedGenericAbstract::isSet() const { return !typeValue.empty() || (defaultType != nullptr); }
+bool TypedGenericAbstract::isSet() const { return not typeValue.empty() || (defaultType != nullptr); }
 
 void TypedGenericAbstract::unset() const { typeValue.pop_back(); }
 
@@ -22,7 +22,7 @@ void TypedGenericAbstract::emit(EmitCtx* ctx) const {
 
 ir::TypedGeneric* TypedGenericAbstract::toIR() const { return ir::TypedGeneric::get(name, get_type(), range); }
 
-ir::Type* TypedGenericAbstract::get_type() const { return !typeValue.empty() ? typeValue.back() : defaultType; }
+ir::Type* TypedGenericAbstract::get_type() const { return not typeValue.empty() ? typeValue.back() : defaultType; }
 
 Json TypedGenericAbstract::to_json() const {
 	return Json()

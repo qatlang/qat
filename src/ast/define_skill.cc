@@ -50,6 +50,7 @@ void DefineSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 		fn.update_dependencies(is_generic() ? ir::EmitPhase::phase_1 : ir::EmitPhase::phase_2, ir::DependType::complete,
 		                       entityState, ctx);
 	}
+	SHOW("Skill dependencies count: " << entityState->dependencies.size())
 }
 
 void DefineSkill::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {

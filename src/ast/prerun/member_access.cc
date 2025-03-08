@@ -18,7 +18,7 @@ ir::PrerunValue* PrerunMemberAccess::emit(EmitCtx* ctx) {
 			                                   llvm::CmpInst::Predicate::ICMP_EQ,
 			                                   irExp->get_llvm_constant()->getAggregateElement(0u),
 			                                   llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
-			                               ctx->irCtx->dataLayout.value()),
+			                               ctx->irCtx->dataLayout),
 			    ir::UnsignedType::create_bool(ctx->irCtx));
 		} else if (memberName.value == "get") {
 			if (llvm::cast<llvm::ConstantInt>(

@@ -14,7 +14,7 @@
 
 namespace qat::ast {
 
-Json DefineCoreType::Member::to_json() const {
+Json DefineStructType::Member::to_json() const {
 	return Json()
 	    ._("nodeType", "coreTypeMember")
 	    ._("name", name)
@@ -25,7 +25,7 @@ Json DefineCoreType::Member::to_json() const {
 	    ._("fileRange", fileRange);
 }
 
-Json DefineCoreType::StaticMember::to_json() const {
+Json DefineStructType::StaticMember::to_json() const {
 	return Json()
 	    ._("nodeType", "coreTypeMember")
 	    ._("name", name)
@@ -36,26 +36,23 @@ Json DefineCoreType::StaticMember::to_json() const {
 	    ._("fileRange", fileRange);
 }
 
-bool DefineCoreType::is_generic() const { return !(generics.empty()); }
+bool DefineStructType::is_generic() const { return not generics.empty(); }
 
-void DefineCoreType::setOpaque(ir::OpaqueType* oTy) const { opaquedTypes.push_back(oTy); }
+void DefineStructType::setOpaque(ir::OpaqueType* oTy) const { opaquedTypes.push_back(oTy); }
 
-bool DefineCoreType::hasOpaque() const {
-	return false;
-	!opaquedTypes.empty();
-}
+bool DefineStructType::hasOpaque() const { return not opaquedTypes.empty(); }
 
-ir::OpaqueType* DefineCoreType::get_opaque() const { return opaquedTypes.back(); }
+ir::OpaqueType* DefineStructType::get_opaque() const { return opaquedTypes.back(); }
 
-void DefineCoreType::unsetOpaque() const { opaquedTypes.pop_back(); }
+void DefineStructType::unsetOpaque() const { opaquedTypes.pop_back(); }
 
-void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineStructType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 	if (not is_generic()) {
 		bool             hasAllMems = true;
 		Vec<llvm::Type*> allMemEqTys;
 		for (auto* mem : members) {
 			auto memSize = mem->type->get_type_bitsize(EmitCtx::get(irCtx, mod));
-			if (!memSize.has_value()) {
+			if (not memSize.has_value()) {
 				hasAllMems = false;
 				break;
 			} else {
@@ -67,14 +64,14 @@ void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 		if (metaInfo.has_value()) {
 			irMeta = metaInfo.value().toIR(EmitCtx::get(irCtx, mod));
 			if (irMeta->has_key(ir::MetaInfo::unionKey)) {
-				if (!irMeta->has_key("foreign") && !mod->get_relevant_foreign_id().has_value()) {
+				if (not irMeta->has_key("foreign") && not mod->get_relevant_foreign_id().has_value()) {
 					irCtx->Error(
 					    "This type is not a foreign entity and is not part of any foreign module, and hence cannot be considered as a " +
 					        irCtx->color(ir::MetaInfo::unionKey),
 					    metaInfo.value().fileRange);
 				}
 				auto typeNatVal = irMeta->get_value_for(ir::MetaInfo::unionKey);
-				if (!typeNatVal->get_ir_type()->is_bool()) {
+				if (not typeNatVal->get_ir_type()->is_bool()) {
 					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::unionKey) + " expects a value of type " +
 					                 irCtx->color("bool"),
 					             metaInfo.value().fileRange);
@@ -84,7 +81,7 @@ void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 			if (irMeta->has_key(ir::MetaInfo::packedKey)) {
 				auto packVal = irMeta->get_value_for(ir::MetaInfo::packedKey);
-				if (!packVal->get_ir_type()->is_bool()) {
+				if (not packVal->get_ir_type()->is_bool()) {
 					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
 					                 irCtx->color("bool"),
 					             metaInfo.value().fileRange);
@@ -96,12 +93,12 @@ void DefineCoreType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
 		setOpaque(ir::OpaqueType::get(
 		    name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::core, mod,
-		    eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+		    eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
 		    EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, irMeta));
 	}
 }
 
-void DefineCoreType::create_type_definitions(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineStructType::create_type_definitions(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto methodParent = ir::MethodParent::create_expanded_type(resultTy);
 	auto emitCtx      = EmitCtx::get(irCtx, mod)->with_member_parent(methodParent);
 	auto parentState  = get_state_for(methodParent);
@@ -113,8 +110,8 @@ void DefineCoreType::create_type_definitions(ir::StructType* resultTy, ir::Mod* 
 	}
 }
 
-ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& genericsToFill, ir::Mod* mod,
-                                            ir::Ctx* irCtx) const {
+ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& genericsToFill, ir::Mod* mod,
+                                              ir::Ctx* irCtx) const {
 	bool needsDestructor = false;
 	auto cTyName         = name;
 	SHOW("Creating IR generics")
@@ -165,12 +162,11 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 		auto eqStructTy =
 		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
 		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
-		                                       << genericStructType
-		                                       << "; datalayout: " << irCtx->dataLayout.has_value())
+		                                       << genericStructType)
 		setOpaque(
 		    ir::OpaqueType::get(cTyName, genericsIR, is_generic() ? Maybe<u64>(genericStructType->get_id()) : None,
 		                        ir::OpaqueSubtypeKind::core, mod,
-		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(eqStructTy)) : None,
+		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
 		                        mainVisibility, irCtx->llctx, irMeta));
 	}
 	SHOW("Set opaque")
@@ -183,7 +179,7 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 	SHOW("Generating core type members")
 	for (auto* mem : members) {
 		auto* memTy = mem->type->emit(typeEmitCtx);
-		if (memTy->is_opaque() && !memTy->as_opaque()->has_subtype()) {
+		if (memTy->is_opaque() && not memTy->as_opaque()->has_subtype()) {
 			// NOTE - Support sized opaques?
 			if (memTy->is_same(get_opaque())) {
 				irCtx->Error(
@@ -233,26 +229,26 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 	auto memParent = ir::MethodParent::create_expanded_type(resultType);
 	auto emitCtx   = EmitCtx::get(irCtx, mod)->with_member_parent(memParent);
 	for (auto* stm : staticMembers) {
-		resultType->addStaticMember(stm->name, stm->type->emit(emitCtx), stm->variability,
-		                            stm->value ? stm->value->emit(emitCtx) : nullptr,
-		                            emitCtx->get_visibility_info(stm->visibSpec), irCtx->llctx);
+		resultType->add_static_member(stm->name, stm->type->emit(emitCtx), stm->variability,
+		                              stm->value ? stm->value->emit(emitCtx) : nullptr,
+		                              emitCtx->get_visibility_info(stm->visibSpec), irCtx->llctx);
 	}
-	if (copyConstructor && !copyAssignment) {
+	if (copyConstructor && not copyAssignment) {
 		irCtx->Error("Copy constructor is defined for the type " + irCtx->color(resultType->to_string()) +
 		                 ", and hence copy assignment operator is also required to be defined",
 		             fileRange);
 	}
-	if (moveConstructor && !moveAssignment) {
+	if (moveConstructor && not moveAssignment) {
 		irCtx->Error("Move constructor is defined for the type " + irCtx->color(resultType->to_string()) +
 		                 ", and hence move assignment operator is also required to be defined",
 		             fileRange);
 	}
-	if (copyAssignment && !copyConstructor) {
+	if (copyAssignment && not copyConstructor) {
 		irCtx->Error("Copy assignment operator is defined for the type " + irCtx->color(resultType->to_string()) +
 		                 ", and hence copy constructor is also required to be defined",
 		             fileRange);
 	}
-	if (moveAssignment && !moveConstructor) {
+	if (moveAssignment && not moveConstructor) {
 		irCtx->Error("Move assignment operator is defined for the type " + irCtx->color(resultType->to_string()) +
 		                 ", and hence move constructor is also required to be defined",
 		             fileRange);
@@ -260,7 +256,7 @@ ir::StructType* DefineCoreType::create_type(Vec<ir::GenericToFill*> const& gener
 	return resultType;
 }
 
-void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineStructType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("Emitted generics")
 	if (not is_generic()) {
 		create_type({}, mod, irCtx);
@@ -274,8 +270,8 @@ void DefineCoreType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 }
 
-void DefineCoreType::do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx) {
-	if (checkResult.has_value() && !checkResult.value()) {
+void DefineStructType::do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx) {
+	if (checkResult.has_value() && not checkResult.value()) {
 		return;
 	}
 	auto memberParent = ir::MethodParent::create_expanded_type(resultTy);
@@ -324,7 +320,7 @@ void DefineCoreType::do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* 
 	}
 }
 
-void DefineCoreType::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineStructType::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("CreateEntity: " << name.value)
 	if (is_generic()) {
 		mod->entity_name_check(irCtx, name, ir::EntityType::genericStructType);
@@ -342,7 +338,7 @@ void DefineCoreType::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 }
 
-void DefineCoreType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineStructType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, mod);
 	if (defineChecker != nullptr) {
 		defineChecker->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
@@ -419,8 +415,8 @@ void DefineCoreType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 }
 
-void DefineCoreType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
-	if (checkResult.has_value() && !checkResult.value()) {
+void DefineStructType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
+	if (checkResult.has_value() && not checkResult.value()) {
 		return;
 	} else if (defineChecker) {
 		auto* checkRes = defineChecker->emit(EmitCtx::get(irCtx, mod));
@@ -452,9 +448,9 @@ void DefineCoreType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx)
 	}
 }
 
-void DefineCoreType::do_emit(ir::StructType* resultTy, ir::Ctx* irCtx) {
+void DefineStructType::do_emit(ir::StructType* resultTy, ir::Ctx* irCtx) {
 	SHOW("Emitting")
-	if (checkResult.has_value() && !checkResult.value()) {
+	if (checkResult.has_value() && not checkResult.value()) {
 		return;
 	}
 	SHOW("Creating member parent")
@@ -496,11 +492,11 @@ void DefineCoreType::do_emit(ir::StructType* resultTy, ir::Ctx* irCtx) {
 	// TODO - Member function call tree analysis
 }
 
-void DefineCoreType::addMember(Member* mem) { members.push_back(mem); }
+void DefineStructType::addMember(Member* mem) { members.push_back(mem); }
 
-void DefineCoreType::addStaticMember(StaticMember* stm) { staticMembers.push_back(stm); }
+void DefineStructType::addStaticMember(StaticMember* stm) { staticMembers.push_back(stm); }
 
-Json DefineCoreType::to_json() const {
+Json DefineStructType::to_json() const {
 	Vec<JsonValue> membersJsonValue;
 	Vec<JsonValue> staticMembersJsonValue;
 	for (auto* mem : members) {
@@ -518,7 +514,7 @@ Json DefineCoreType::to_json() const {
 	    ._("fileRange", fileRange);
 }
 
-DefineCoreType::~DefineCoreType() {
+DefineStructType::~DefineStructType() {
 	for (auto* mem : members) {
 		std::destroy_at(mem);
 	}

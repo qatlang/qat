@@ -21,6 +21,7 @@ void DoSkill::create_entity(ir::Mod* parent, ir::Ctx* irCtx) {
 		memFn->prototype->add_to_parent(entityState, irCtx);
 	}
 }
+
 void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, parent);
 	if (name.has_value()) {
@@ -75,6 +76,7 @@ void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 		opr->update_dependencies(ir::EmitPhase::phase_3, ir::DependType::complete, entityState, ctx);
 	}
 }
+
 void DoSkill::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) {
 	if (phase == ir::EmitPhase::phase_1) {
 		define_done_skill(parent, irCtx);
@@ -99,8 +101,8 @@ void DoSkill::define_types(ir::DoneSkill* skillImp, ir::Mod* mod, ir::Ctx* irCtx
 
 void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto* target = targetType->emit(EmitCtx::get(irCtx, mod));
-	if (target->is_region() || target->is_reference() || target->is_typed() || target->is_function() ||
-	    target->is_void() || target->is_poly()) {
+	if (target->is_region() || target->is_ref() || target->is_typed() || target->is_function() || target->is_void() ||
+	    target->is_poly()) {
 		irCtx->Error("Creating a default implementation for " + irCtx->color(target->to_string()) + " is not allowed",
 		             fileRange);
 	}

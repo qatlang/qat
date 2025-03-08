@@ -170,7 +170,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 			                     " is a generic type and hence cannot be used as a normal type",
 			           fileRange);
 		}
-		if (!oTy->get_visibility().is_accessible(reqInfo)) {
+		if (not oTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error((oTy->is_subtype_struct() ? "Core type "
 			                                     : (oTy->is_subtype_mix() ? "Mix type " : "Incomplete opaque type ")) +
 			               ctx->color(oTy->get_full_name()) + " inside module " +
@@ -185,7 +185,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	           mod->has_struct_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has struct")
 		auto* cTy = mod->get_struct_type(entityName.value, reqInfo);
-		if (!cTy->get_visibility().is_accessible(reqInfo)) {
+		if (not cTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) + " inside module " +
 			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
@@ -199,7 +199,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Has type def")
 		auto* dTy = mod->get_type_def(entityName.value, reqInfo);
 		SHOW("Checking accessibility")
-		if (!dTy->get_visibility().is_accessible(reqInfo)) {
+		if (not dTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Type definition " + ctx->color(dTy->get_full_name()) + " inside module " +
 			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
@@ -213,7 +213,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	           mod->has_mix_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has mix type")
 		auto* mTy = mod->get_mix_type(entityName.value, reqInfo);
-		if (!mTy->get_visibility().is_accessible(reqInfo)) {
+		if (not mTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Mix type " + ctx->color(mTy->get_full_name()) + " inside module " +
 			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
@@ -225,7 +225,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	           mod->has_choice_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has choice type")
 		auto* chTy = mod->get_choice_type(entityName.value, reqInfo);
-		if (!chTy->get_visibility().is_accessible(reqInfo)) {
+		if (not chTy->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Choice type " + ctx->color(chTy->get_full_name()) + " inside module " +
 			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);
@@ -237,7 +237,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	           mod->has_region_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has region")
 		auto* reg = mod->get_region(entityName.value, reqInfo);
-		if (!reg->get_visibility().is_accessible(reqInfo)) {
+		if (not reg->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Region " + ctx->color(reg->get_full_name()) + " inside module " +
 			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
 			           entityName.range);

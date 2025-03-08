@@ -28,8 +28,7 @@ void DefineRegion::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
 			blockSize->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(64u, irCtx));
 		}
 		auto blRes = blockSize->emit(ctx);
-		if ((not blRes->get_ir_type()->is_unsigned_integer()) ||
-		    (blRes->get_ir_type()->as_unsigned_integer()->get_bitwidth() != 64u)) {
+		if ((not blRes->get_ir_type()->is_unsigned()) || (blRes->get_ir_type()->as_unsigned()->get_bitwidth() != 64u)) {
 			irCtx->Error("The value provided has a type of " + irCtx->color(blRes->get_ir_type()->to_string()) +
 			                 ", but the block size is expected to be of " + irCtx->color("u64") + " type",
 			             blockSize->fileRange);

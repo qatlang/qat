@@ -47,8 +47,9 @@ class Region : public Type, public EntityOverview {
 
 	void update_overview() final;
 
-	useit TypeKind type_kind() const final { return TypeKind::region; }
-	useit String   to_string() const final;
+	useit TypeKind type_kind() const final { return TypeKind::REGION; }
+
+	useit String to_string() const final;
 };
 
 } // namespace qat::ir

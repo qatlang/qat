@@ -92,9 +92,15 @@ void QatSitter::display_stats() {
 void QatSitter::initialise() {
 	auto* config = cli::Config::get();
 	auto& log    = Logger::get();
+	SHOW("Module count: " << ir::Mod::allModules.size())
 	for (const auto& path : config->get_paths()) {
 		SHOW("Handling path for " << path)
 		handle_path(path, ctx);
+	}
+	SHOW("Module count: " << ir::Mod::allModules.size())
+	if (ir::Mod::allModules.size() > 0) {
+		SHOW("Module " << ir::Mod::allModules[0])
+		SHOW("Module name " << ir::Mod::allModules[0]->name.value)
 	}
 	if (config->has_std_lib_path() && ctx->stdLibPossiblyRequired) {
 		handle_path(config->get_std_lib_path(), ctx);
@@ -102,38 +108,54 @@ void QatSitter::initialise() {
 			ir::StdLib::stdLib = ir::Mod::get_file_module(config->get_std_lib_path());
 		}
 	}
+	SHOW("Module count: " << ir::Mod::allModules.size())
 	if (config->is_workflow_build() || config->is_workflow_analyse()) {
 		auto qatStartTime = std::chrono::high_resolution_clock::now();
+		SHOW("Module count: " << ir::Mod::allModules.size())
 		for (auto* entity : fileEntities) {
 			entity->node_handle_fs_brings(ctx);
 		}
+		SHOW("Module count: " << ir::Mod::allModules.size())
 		for (auto* entity : fileEntities) {
 			entity->node_create_modules(ctx);
 		}
+		SHOW("Module count: " << ir::Mod::allModules.size())
 		for (auto* entity : fileEntities) {
 			SHOW("Create Entity: " << entity->get_name())
 			entity->node_create_entities(ctx);
 		}
+		SHOW("Module count: " << ir::Mod::allModules.size())
 		for (auto* entity : fileEntities) {
 			SHOW("Update Entity Dependencies: " << entity->get_name())
 			entity->node_update_dependencies(ctx);
 		}
+		SHOW("Module count: " << ir::Mod::allModules.size())
 		bool atleastOneEntityDone  = true;
 		bool hasIncompleteEntities = true;
 		while (hasIncompleteEntities && atleastOneEntityDone) {
 			atleastOneEntityDone  = false;
 			hasIncompleteEntities = false;
-			for (auto* itMod : ir::Mod::allModules) {
+			for (usize i = 0; i < ir::Mod::allModules.size(); i++) {
+				auto itMod = ir::Mod::allModules[i];
+				SHOW("Module count: " << ir::Mod::allModules.size())
+				SHOW("Module " << itMod << ", bool := " << (bool)itMod)
+				SHOW("Module name " << itMod->name.value)
+				SHOW("Module referrable name: " << itMod->get_referrable_name())
 				for (auto ent : itMod->entityEntries) {
+					SHOW("Entity name: " << (ent->name ? ent->name.value().value : ""))
 					if (not ent->are_all_phases_complete()) {
 						if (ent->is_ready_for_next_phase()) {
 							ent->do_next_phase(itMod, ctx);
+							SHOW("do_next_phase complete")
 							atleastOneEntityDone = true;
 						}
+						SHOW("Checking are_all_phases_complete")
 						if (not ent->are_all_phases_complete()) {
 							hasIncompleteEntities = true;
 						}
+						SHOW("Done are_all_phases_complete")
 					}
+					SHOW("Incrementing iteration count")
 					ent->iterations++;
 				}
 			}
@@ -142,7 +164,7 @@ void QatSitter::initialise() {
 			Vec<ir::QatError> errors;
 			for (auto* iterMod : ir::Mod::allModules) {
 				for (auto ent : iterMod->entityEntries) {
-					if (!ent->are_all_phases_complete()) {
+					if (not ent->are_all_phases_complete()) {
 						String                     depStr;
 						usize                      incompleteDepCount = 0;
 						std::set<ir::EntityState*> ents;
@@ -287,8 +309,11 @@ void QatSitter::initialise() {
 				                                std::chrono::high_resolution_clock::now() - clangStartTime)
 				                                .count();
 				display_stats();
+				SHOW("Displayed stats")
 				ctx->write_json_result(true);
+				SHOW("Wrote JSON result")
 				clear_llvm_files();
+				SHOW("Cleared llvm files")
 				if (cfg->is_workflow_run() && not ctx->executablePaths.empty()) {
 					if (llvm::Triple(cfg->get_target_triple()) != llvm::Triple(LLVM_HOST_TRIPLE)) {
 						ctx->Error("The target provided for compilation is " + ctx->color(cfg->get_target_triple()) +
@@ -308,6 +333,7 @@ void QatSitter::initialise() {
 						}
 					}
 				}
+				SHOW("Workflow run check complete")
 			} else {
 				ctx->Error("Cannot find clang on path. Please make sure that you have clang with version 17 "
 				           "or later installed and the path to clang is available in the system environment",
@@ -319,6 +345,7 @@ void QatSitter::initialise() {
 			ctx->write_json_result(true);
 		}
 	}
+	SHOW("Initialise complete")
 }
 
 void QatSitter::remove_entity_with_path(const fs::path& path) {
@@ -364,11 +391,11 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 	std::function<void(ir::Mod*, const fs::path&)> recursiveModuleCreator = [&](ir::Mod*        parentMod,
 	                                                                            const fs::path& path) {
 		for (auto const& item : fs::directory_iterator(path)) {
-			if (fs::is_directory(item) && !fs::equivalent(item, cfg->get_output_path()) &&
-			    !ir::Mod::has_folder_module(item)) {
+			if (fs::is_directory(item) && not fs::equivalent(item, cfg->get_output_path()) &&
+			    not ir::Mod::has_folder_module(item)) {
 				auto libCheckRes = detect_lib_file(item);
 				if (libCheckRes.has_value()) {
-					if (!is_name_valid(libCheckRes->first)) {
+					if (not is_name_valid(libCheckRes->first)) {
 						irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
 						                 irCtx->color(libCheckRes->first) + " which is illegal",
 						             None);
@@ -410,10 +437,10 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 						recursiveModuleCreator(parentMod, item);
 					}
 				}
-			} else if (fs::is_regular_file(item) && !ir::Mod::has_file_module(item) &&
+			} else if (fs::is_regular_file(item) && not ir::Mod::has_file_module(item) &&
 			           (item.path().extension() == ".qat")) {
 				auto libCheckRes = detect_lib_file(item);
-				if (libCheckRes.has_value() && !is_name_valid(libCheckRes.value().first)) {
+				if (libCheckRes.has_value() && not is_name_valid(libCheckRes.value().first)) {
 					irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
 					                 irCtx->color(libCheckRes->first) + " which is illegal",
 					             None);
@@ -443,11 +470,11 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 		}
 	};
 	// FIXME - Check if modules are already part of another module
-	if (fs::is_directory(mainPath) && !fs::equivalent(mainPath, cfg->get_output_path()) &&
-	    !ir::Mod::has_folder_module(mainPath)) {
+	if (fs::is_directory(mainPath) && not fs::equivalent(mainPath, cfg->get_output_path()) &&
+	    not ir::Mod::has_folder_module(mainPath)) {
 		auto libCheckRes = detect_lib_file(mainPath);
 		if (libCheckRes.has_value()) {
-			if (!is_name_valid(libCheckRes.value().first)) {
+			if (not is_name_valid(libCheckRes.value().first)) {
 				irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
 				                 irCtx->color(libCheckRes->first) + " which is illegal",
 				             None);
@@ -474,9 +501,9 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 			fileEntities.push_back(subfolder);
 			recursiveModuleCreator(subfolder, mainPath);
 		}
-	} else if (fs::is_regular_file(mainPath) && !ir::Mod::has_file_module(mainPath)) {
+	} else if (fs::is_regular_file(mainPath) && not ir::Mod::has_file_module(mainPath)) {
 		auto libCheckRes = detect_lib_file(mainPath);
-		if (libCheckRes.has_value() && !is_name_valid(libCheckRes.value().first)) {
+		if (libCheckRes.has_value() && not is_name_valid(libCheckRes.value().first)) {
 			irCtx->Error("The name of the library file " + libCheckRes->second.string() + " is " +
 			                 irCtx->color(libCheckRes->first) + " which is illegal",
 			             None);
@@ -516,12 +543,17 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 void QatSitter::destroy() {
 	delete Lexer;
 	delete Parser;
-	ir::Value::replace_uses_for_all();
+	SHOW("Deleted lexer and parser")
 	ir::Mod::clear_all();
+	SHOW("ir::Mod complete")
 	ast::Node::clear_all();
+	SHOW("ast::Node complete")
 	ast::Type::clear_all();
+	SHOW("ast::Type complete")
 	ir::Value::clear_all();
+	SHOW("ir::Value complete")
 	ir::Type::clear_all();
+	SHOW("ir::Type complete")
 }
 
 QatSitter::~QatSitter() { destroy(); }

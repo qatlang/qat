@@ -35,23 +35,23 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 			               : None);
 		}
 	}
-	auto* limit           = count->emit(ctx);
-	auto* countTy         = limit->get_ir_type()->is_reference() ? limit->get_ir_type()->as_reference()->get_subtype()
-	                                                             : limit->get_ir_type();
+	auto* limit = count->emit(ctx);
+	auto* countTy =
+	    limit->get_ir_type()->is_ref() ? limit->get_ir_type()->as_ref()->get_subtype() : limit->get_ir_type();
 	auto* originalLimitTy = countTy;
-	limit->load_ghost_reference(ctx->irCtx->builder);
-	if (countTy->is_unsigned_integer() || countTy->is_integer() ||
+	limit->load_ghost_ref(ctx->irCtx->builder);
+	if (countTy->is_unsigned() || countTy->is_integer() ||
 	    (countTy->is_native_type() && (countTy->as_native_type()->get_subtype()->is_integer() ||
-	                                   countTy->as_native_type()->get_subtype()->is_unsigned_integer()))) {
+	                                   countTy->as_native_type()->get_subtype()->is_unsigned()))) {
 		if (countTy->is_native_type()) {
 			countTy = countTy->as_native_type()->get_subtype();
 		}
 		auto* llCount = limit->get_llvm();
-		if (limit->get_ir_type()->is_reference()) {
+		if (limit->get_ir_type()->is_ref()) {
 			llCount = ctx->irCtx->builder.CreateLoad(countTy->get_llvm_type(), llCount);
 		}
 		auto  uniq      = hasTag() ? tag.value().value : utils::uid_string();
-		auto* loopIndex = ctx->get_fn()->get_block()->new_value(uniq, originalLimitTy, false,
+		auto* loopIndex = ctx->get_fn()->get_block()->new_local(uniq, originalLimitTy, false,
 		                                                        tag.has_value() ? tag->range : fileRange);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u), loopIndex->get_alloca());
 		auto* loopBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
@@ -65,7 +65,7 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 		(void)ir::add_branch(ctx->irCtx->builder, loopBlock->get_bb());
 		loopBlock->set_active(ctx->irCtx->builder);
 		ctx->irCtx->builder.CreateCondBr(
-		    (countTy->is_unsigned_integer()
+		    (countTy->is_unsigned()
 		         ? ctx->irCtx->builder.CreateICmpULT(
 		               ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(),
 		                                              loopIndex->get_alloca()),
@@ -91,15 +91,14 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 		        llvm::ConstantInt::get(loopIndex->get_ir_type()->get_llvm_type(), 1u)),
 		    loopIndex->get_alloca());
 		ctx->irCtx->builder.CreateCondBr(
-		    (countTy->is_unsigned_integer()
-		         ? ctx->irCtx->builder.CreateICmpULT(
-		               ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(),
-		                                              loopIndex->get_alloca()),
-		               llCount)
-		         : ctx->irCtx->builder.CreateICmpSLT(
-		               ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(),
-		                                              loopIndex->get_alloca()),
-		               llCount)),
+		    (countTy->is_unsigned() ? ctx->irCtx->builder.CreateICmpULT(
+		                                  ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(),
+		                                                                 loopIndex->get_alloca()),
+		                                  llCount)
+		                            : ctx->irCtx->builder.CreateICmpSLT(
+		                                  ctx->irCtx->builder.CreateLoad(loopIndex->get_ir_type()->get_llvm_type(),
+		                                                                 loopIndex->get_alloca()),
+		                                  llCount)),
 		    trueBlock->get_bb(), restBlock->get_bb());
 		ctx->loopsInfo.pop_back();
 		ctx->breakables.pop_back();

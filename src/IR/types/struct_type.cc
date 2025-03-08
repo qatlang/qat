@@ -30,7 +30,7 @@ StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generi
 	llvmType    = opaquedType->get_llvm_type();
 	linkingName = opaquedType->get_name_for_linking();
 	llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, isPacked);
-	if (!is_generic()) {
+	if (not is_generic()) {
 		mod->coreTypes.push_back(this);
 	}
 	opaquedType->set_sub_type(this);
@@ -47,7 +47,7 @@ LinkNames StructType::get_link_names() const {
 		foreignID = metaInfo->get_foreign_id();
 		linkAlias = metaInfo->get_value_as_string_for(ir::MetaInfo::linkAsKey);
 	}
-	if (!foreignID.has_value()) {
+	if (not foreignID.has_value()) {
 		foreignID = parent->get_relevant_foreign_id();
 	}
 	auto linkNames = parent->get_link_names().newWith(LinkNameUnit(name.value, LinkUnitType::type), foreignID);
@@ -198,7 +198,7 @@ StaticMember* StructType::get_static_field(String const& name) const {
 	return nullptr;
 }
 
-bool StructType::is_type_sized() const { return !members.empty(); }
+bool StructType::is_type_sized() const { return not members.empty(); }
 
 bool StructType::is_trivially_copyable() const {
 	if (explicitTrivialCopy) {
@@ -208,7 +208,7 @@ bool StructType::is_trivially_copyable() const {
 	} else {
 		auto result = true;
 		for (auto mem : members) {
-			if (!mem->type->is_trivially_copyable()) {
+			if (not mem->type->is_trivially_copyable()) {
 				result = false;
 				break;
 			}
@@ -224,7 +224,7 @@ bool StructType::is_trivially_movable() const {
 		return false;
 	} else {
 		for (auto mem : members) {
-			if (!mem->type->is_trivially_movable()) {
+			if (not mem->type->is_trivially_movable()) {
 				return false;
 			}
 		}
@@ -238,7 +238,7 @@ bool StructType::is_copy_constructible() const {
 	} else {
 		bool allMemsRes = true;
 		for (auto* mem : members) {
-			if (!mem->type->is_copy_constructible()) {
+			if (not mem->type->is_copy_constructible()) {
 				allMemsRes = false;
 				break;
 			}
@@ -253,7 +253,7 @@ bool StructType::is_copy_assignable() const {
 	} else {
 		bool allMemsRes = true;
 		for (auto* mem : members) {
-			if (!mem->type->is_copy_assignable()) {
+			if (not mem->type->is_copy_assignable()) {
 				allMemsRes = false;
 				break;
 			}
@@ -268,7 +268,7 @@ bool StructType::is_move_constructible() const {
 	} else {
 		bool allMemsRes = true;
 		for (auto* mem : members) {
-			if (!mem->type->is_move_constructible()) {
+			if (not mem->type->is_move_constructible()) {
 				allMemsRes = false;
 				break;
 			}
@@ -283,7 +283,7 @@ bool StructType::is_move_assignable() const {
 	} else {
 		bool allMemsRes = true;
 		for (auto* mem : members) {
-			if (!mem->type->is_move_assignable()) {
+			if (not mem->type->is_move_assignable()) {
 				allMemsRes = false;
 				break;
 			}
@@ -298,7 +298,7 @@ bool StructType::is_destructible() const {
 	} else {
 		bool allMemsRes = true;
 		for (auto* mem : members) {
-			if (!mem->type->is_destructible()) {
+			if (not mem->type->is_destructible()) {
 				allMemsRes = false;
 				break;
 			}
@@ -308,127 +308,121 @@ bool StructType::is_destructible() const {
 }
 
 void StructType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_copy_constructible()) {
-		if (is_trivially_copyable()) {
-			irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()),
-			                           first->get_llvm());
-		} else if (has_copy_constructor()) {
-			(void)get_copy_constructor()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
-		} else {
-			for (usize i = 0; i < members.size(); i++) {
-				members.at(i)->type->copy_construct_value(
-				    irCtx,
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-				                   ir::ReferenceType::get(true, members.at(i)->type, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-				                   ir::ReferenceType::get(false, members.at(i)->type, irCtx), false),
-				    fun);
-			}
-		}
-	} else {
+	if (not is_copy_constructible()) {
 		irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()), None);
+	}
+	if (is_trivially_copyable()) {
+		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
+	} else if (has_copy_constructor()) {
+		(void)get_copy_constructor()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
+	} else {
+		for (usize i = 0; i < members.size(); i++) {
+			members.at(i)->type->copy_construct_value(
+			    irCtx,
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
+			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			    fun);
+		}
 	}
 }
 
 void StructType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_copy_assignable()) {
-		if (is_trivially_copyable()) {
-			irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()),
-			                           first->get_llvm());
-		} else if (has_copy_assignment()) {
-			(void)get_copy_assignment()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
-		} else {
-			for (usize i = 0; i < members.size(); i++) {
-				members.at(i)->type->copy_assign_value(
-				    irCtx,
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-				                   ir::ReferenceType::get(true, members.at(i)->type, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-				                   ir::ReferenceType::get(false, members.at(i)->type, irCtx), false),
-				    fun);
-			}
-		}
-	} else {
+	if (not is_copy_assignable()) {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()), None);
 	}
-}
-void StructType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_move_constructible()) {
-		if (is_trivially_movable()) {
-			irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()),
-			                           first->get_llvm());
-			irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
-		} else if (has_move_constructor()) {
-			(void)get_move_constructor()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
-		} else {
-			for (usize i = 0; i < members.size(); i++) {
-				members.at(i)->type->move_construct_value(
-				    irCtx,
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-				                   ir::ReferenceType::get(true, members.at(i)->type, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-				                   ir::ReferenceType::get(false, members.at(i)->type, irCtx), false),
-				    fun);
-			}
-		}
+	if (is_trivially_copyable()) {
+		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
+	} else if (has_copy_assignment()) {
+		(void)get_copy_assignment()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
 	} else {
-		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()), None);
-	}
-}
-void StructType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_move_assignable()) {
-		if (is_trivially_movable()) {
-			irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()),
-			                           first->get_llvm());
-			irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
-		} else if (has_move_assignment()) {
-			(void)get_move_assignment()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
-		} else {
-			for (usize i = 0; i < members.size(); i++) {
-				members.at(i)->type->move_assign_value(
-				    irCtx,
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-				                   ir::ReferenceType::get(true, members.at(i)->type, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-				                   ir::ReferenceType::get(false, members.at(i)->type, irCtx), false),
-				    fun);
-			}
+		for (usize i = 0; i < members.size(); i++) {
+			members.at(i)->type->copy_assign_value(
+			    irCtx,
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
+			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			    fun);
 		}
-	} else {
-		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
-	}
-}
-void StructType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
-	if (is_destructible()) {
-		if (has_destructor()) {
-			(void)get_destructor()->call(irCtx, {instance->get_llvm()}, None, fun->get_module());
-		} else if (is_trivially_movable()) {
-			irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), instance->get_llvm());
-		} else {
-			for (usize i = 0; i < members.size(); i++) {
-				members.at(i)->type->destroy_value(
-				    irCtx,
-				    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), i),
-				                   ir::ReferenceType::get(true, members.at(i)->type, irCtx), false),
-				    fun);
-			}
-		}
-	} else {
-		irCtx->Error("Could not destroy an instance of type " + irCtx->color(to_string()), None);
 	}
 }
 
-void StructType::addStaticMember(const Identifier& name, Type* type, bool variability, Value* initial,
-                                 const VisibilityInfo& visibility, llvm::LLVMContext& llctx) {
+void StructType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+	if (not is_move_constructible()) {
+		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()), None);
+	}
+	if (is_trivially_movable()) {
+		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
+		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
+	} else if (has_move_constructor()) {
+		(void)get_move_constructor()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
+	} else {
+		for (usize i = 0; i < members.size(); i++) {
+			members.at(i)->type->move_construct_value(
+			    irCtx,
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
+			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			    fun);
+		}
+	}
+}
+
+void StructType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+	if (not is_move_assignable()) {
+		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
+	}
+	if (is_trivially_movable()) {
+		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
+		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
+	} else if (has_move_assignment()) {
+		(void)get_move_assignment()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
+	} else {
+		for (usize i = 0; i < members.size(); i++) {
+			members.at(i)->type->move_assign_value(
+			    irCtx,
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
+			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			    fun);
+		}
+	}
+}
+
+void StructType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
+	if (not is_destructible()) {
+		irCtx->Error("Could not destroy an instance of type " + irCtx->color(to_string()), None);
+	}
+	if (has_destructor()) {
+		(void)get_destructor()->call(irCtx, {instance->get_llvm()}, None, fun->get_module());
+	} else if (is_trivially_movable()) {
+		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), instance->get_llvm());
+	} else {
+		for (usize i = 0; i < members.size(); i++) {
+			members.at(i)->type->destroy_value(
+			    irCtx,
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), i),
+			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
+			    fun);
+		}
+	}
+}
+
+void StructType::add_static_member(Identifier const& name, Type* type, bool variability, Value* initial,
+                                   VisibilityInfo const& visibility, llvm::LLVMContext& llctx) {
 	staticMembers.push_back(StaticMember::get(this, name, type, variability, initial, visibility));
 }
 
-TypeKind StructType::type_kind() const { return TypeKind::core; }
+TypeKind StructType::type_kind() const { return TypeKind::STRUCT; }
 
 String StructType::to_string() const { return get_full_name(); }
 
 GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                     ast::PrerunExpression* _constraint, ast::DefineCoreType* _defineCoreType,
+                                     ast::PrerunExpression* _constraint, ast::DefineStructType* _defineCoreType,
                                      Mod* _parent, const VisibilityInfo& _visibInfo)
     : EntityOverview("genericCoreType",
                      Json()
@@ -462,16 +456,16 @@ Identifier GenericStructType::get_name() const { return name; }
 
 VisibilityInfo GenericStructType::get_visibility() const { return visibility; }
 
-bool GenericStructType::allTypesHaveDefaults() const {
+bool GenericStructType::all_parameters_have_default() const {
 	for (auto* gen : generics) {
-		if (!gen->hasDefault()) {
+		if (not gen->hasDefault()) {
 			return false;
 		}
 	}
 	return true;
 }
 
-usize GenericStructType::getTypeCount() const { return generics.size(); }
+usize GenericStructType::get_parameter_count() const { return generics.size(); }
 
 usize GenericStructType::getVariantCount() const { return variants.size(); }
 
@@ -492,9 +486,10 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 			return var.get();
 		}
 	}
-	ir::fill_generics(irCtx, generics, toFillTypes, range);
+	auto* ctx = ast::EmitCtx::get(irCtx, parent);
+	ir::fill_generics(ctx, generics, toFillTypes, range);
 	if (constraint != nullptr) {
-		auto checkVal = constraint->emit(ast::EmitCtx::get(irCtx, parent));
+		auto checkVal = constraint->emit(ctx);
 		if (not checkVal->get_ir_type()->is_bool()) {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
 			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),

@@ -33,7 +33,7 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	if (isFrom && argName.has_value() && isMemArg) {
 		if (state.parent->get_parent_type()->is_struct()) {
 			auto coreType = state.parent->get_parent_type()->as_struct();
-			if (!coreType->has_field_with_name(argName->value)) {
+			if (not coreType->has_field_with_name(argName->value)) {
 				irCtx->Error("No member field named " + irCtx->color(argName->value) + " found in struct type " +
 				                 irCtx->color(coreType->get_full_name()),
 				             fileRange);
@@ -43,12 +43,12 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		} else if (state.parent->get_parent_type()->is_mix()) {
 			auto mixTy  = state.parent->get_parent_type()->as_mix();
 			auto mixRes = mixTy->has_variant_with_name(argName->value);
-			if (!mixRes.first) {
+			if (not mixRes.first) {
 				irCtx->Error("No variant named " + irCtx->color(argName->value) + " is present in mix type " +
 				                 irCtx->color(mixTy->to_string()),
 				             argName->range);
 			}
-			if (!mixRes.second) {
+			if (not mixRes.second) {
 				irCtx->Error("The variant named " + irCtx->color(argName->value) + " of mix type " +
 				                 irCtx->color(mixTy->to_string()) + " does not have a type associated with it",
 				             argName->range);
@@ -163,10 +163,10 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
-	auto* parentRefType = ir::ReferenceType::get(prototype->isFrom, state.parent->get_parent_type(), irCtx);
-	auto* self          = block->new_value("''", parentRefType, false, state.parent->get_type_range());
+	auto* parentRefType = ir::RefType::get(prototype->isFrom, state.parent->get_parent_type(), irCtx);
+	auto* self          = block->new_local("''", parentRefType, false, state.parent->get_type_range());
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0), self->get_llvm());
-	self->load_ghost_reference(irCtx->builder);
+	self->load_ghost_ref(irCtx->builder);
 	if (prototype->isFrom) {
 		if (prototype->isMemArg) {
 			llvm::Value* memPtr = nullptr;
@@ -184,7 +184,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 				                               ->as_mix()
 				                               ->get_variant_with_name(prototype->argName->value)
 				                               ->get_llvm_type(),
-				                           irCtx->dataLayout.value().getProgramAddressSpace()));
+				                           irCtx->dataLayout.getProgramAddressSpace()));
 				fnEmit->add_init_member(
 				    {parentRefType->get_subtype()->as_mix()->get_index_of(prototype->argName->value),
 				     prototype->argName->range});
@@ -202,7 +202,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 		} else {
 			auto* argTy = fnEmit->get_ir_type()->as_function()->get_argument_type_at(1);
 			auto* argVal =
-			    block->new_value(argTy->get_name(), argTy->get_type(), argTy->is_variable(), prototype->argName->range);
+			    block->new_local(argTy->get_name(), argTy->get_type(), argTy->is_variable(), prototype->argName->range);
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_llvm());
 		}
 	}
@@ -227,13 +227,13 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					auto* memVal = mem->defaultValue.value()->emit(
 					    EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent));
 					if (memVal->get_ir_type()->is_same(mem->type)) {
-						if (memVal->is_ghost_reference()) {
+						if (memVal->is_ghost_ref()) {
 							if (mem->type->is_trivially_copyable() || mem->type->is_trivially_movable()) {
 								irCtx->builder.CreateStore(
 								    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
 								    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
-								if (!mem->type->is_trivially_copyable()) {
-									if (!memVal->is_variable()) {
+								if (not mem->type->is_trivially_copyable()) {
+									if (not memVal->is_variable()) {
 										irCtx->Error(
 										    "This expression does not have variability and hence cannot be trivially moved from",
 										    mem->defaultValue.value()->fileRange);
@@ -253,14 +253,13 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 							    memVal->get_llvm(),
 							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
 						}
-					} else if (memVal->is_reference() &&
-					           memVal->get_ir_type()->as_reference()->get_subtype()->is_same(mem->type)) {
+					} else if (memVal->is_ref() && memVal->get_ir_type()->as_ref()->get_subtype()->is_same(mem->type)) {
 						if (mem->type->is_trivially_copyable() || mem->type->is_trivially_movable()) {
 							irCtx->builder.CreateStore(
 							    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
 							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
-							if (!mem->type->is_trivially_copyable()) {
-								if (!memVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
+							if (not mem->type->is_trivially_copyable()) {
+								if (not memVal->get_ir_type()->as_ref()->has_variability()) {
 									irCtx->Error(
 									    "This expression is a reference without variability and hence cannot be trivially moved from",
 									    mem->defaultValue.value()->fileRange);
@@ -275,10 +274,10 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 							                 irCtx->color("'copy") + " or " + irCtx->color("'move") + " accordingly",
 							             mem->defaultValue.value()->fileRange);
 						}
-					} else if (mem->type->is_reference() &&
-					           mem->type->as_reference()->get_subtype()->is_same(memVal->get_ir_type()) &&
-					           memVal->is_ghost_reference() &&
-					           (mem->type->as_reference()->isSubtypeVariable() ? memVal->is_variable() : true)) {
+					} else if (mem->type->is_ref() &&
+					           mem->type->as_ref()->get_subtype()->is_same(memVal->get_ir_type()) &&
+					           memVal->is_ghost_ref() &&
+					           (mem->type->as_ref()->has_variability() ? memVal->is_variable() : true)) {
 						irCtx->builder.CreateStore(
 						    memVal->get_llvm(),
 						    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
@@ -310,7 +309,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						mem->type->default_construct_value(
 						    irCtx,
 						    ir::Value::get(irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i),
-						                   ir::ReferenceType::get(true, mem->type, irCtx), false),
+						                   ir::RefType::get(true, mem->type, irCtx), false),
 						    fnEmit);
 					}
 					fnEmit->add_init_member({i, fileRange});
@@ -322,11 +321,11 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			auto                         cTy = state.parent->get_parent_type()->as_struct();
 			for (auto ind = 0; ind < cTy->get_field_count(); ind++) {
 				auto memCheck = fnEmit->is_member_initted(ind);
-				if (!memCheck.has_value()) {
+				if (not memCheck.has_value()) {
 					missingMembers.push_back({cTy->get_field_at(ind)->name.value, fileRange});
 				}
 			}
-			if (!missingMembers.empty()) {
+			if (not missingMembers.empty()) {
 				Vec<ir::QatError> errors;
 				for (usize i = 0; i < missingMembers.size(); i++) {
 					errors.push_back(ir::QatError("Member field " + irCtx->color(missingMembers[i].first) +
@@ -345,7 +344,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					break;
 				}
 			}
-			if (!isMixInitialised) {
+			if (not isMixInitialised) {
 				irCtx->Error("Mix type is not initialised in this convertor", fileRange);
 			}
 		}

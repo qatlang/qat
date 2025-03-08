@@ -67,20 +67,20 @@ class Value {
 
 	useit bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
 
-	useit bool is_value() const { return !is_reference() && !is_prerun_value() && !is_ghost_reference(); }
+	useit bool is_value() const { return not is_ref() && not is_prerun_value() && not is_ghost_ref(); }
 
 	useit bool is_local_value() const { return localID.has_value(); }
 
-	useit bool is_reference() const { return type->is_reference(); }
+	useit bool is_ref() const { return type->is_ref(); }
 
 	useit bool is_mark() const { return type->is_mark(); }
 
-	useit bool is_ghost_reference() const {
+	useit bool is_ghost_ref() const {
 		return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
 		                llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == get_ir_type()->get_llvm_type()) ||
 		               (llvm::isa<llvm::GlobalVariable>(ll) &&
 		                llvm::cast<llvm::GlobalVariable>(ll)->getValueType() == get_ir_type()->get_llvm_type())) &&
-		              !is_prerun_value());
+		              not is_prerun_value());
 	}
 
 	useit bool is_prerun_function() const;
@@ -100,21 +100,14 @@ class Value {
 
 	void set_local_id(const u64& locID) { localID = locID; }
 
-	void load_ghost_reference(llvm::IRBuilder<>& builder) {
-		if (is_ghost_reference()) {
+	void load_ghost_ref(llvm::IRBuilder<>& builder) {
+		if (is_ghost_ref()) {
 			ll = builder.CreateLoad(get_ir_type()->get_llvm_type(), ll);
 		}
 	}
 
 	useit Value* make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange);
 
-	static void replace_uses_for_all() {
-		for (auto itVal : allValues) {
-			if (itVal && (not itVal->is_prerun_function()) && itVal->get_llvm()) {
-				itVal->get_llvm()->replaceAllUsesWith(llvm::UndefValue::get(itVal->get_llvm()->getType()));
-			}
-		}
-	}
 	static void clear_all();
 };
 

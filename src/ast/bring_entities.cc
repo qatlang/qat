@@ -10,7 +10,7 @@ void BroughtGroup::addMember(BroughtGroup* mem) { members.push_back(mem); }
 
 void BroughtGroup::extendFileRange(FileRange end) { fileRange = FileRange(fileRange, end); }
 
-bool BroughtGroup::hasMembers() const { return !members.empty(); }
+bool BroughtGroup::hasMembers() const { return not members.empty(); }
 
 bool BroughtGroup::isAllBrought() const { return members.empty(); }
 

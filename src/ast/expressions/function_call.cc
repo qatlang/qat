@@ -6,8 +6,8 @@
 namespace qat::ast {
 
 ir::Value* FunctionCall::emit(EmitCtx* ctx) {
-	auto* fnVal    = fnExpr->emit(ctx);
-	auto fnValType = fnVal->is_reference() ? fnVal->get_ir_type()->as_reference()->get_subtype() : fnVal->get_ir_type();
+	auto* fnVal     = fnExpr->emit(ctx);
+	auto  fnValType = fnVal->is_ref() ? fnVal->get_ir_type()->as_ref()->get_subtype() : fnVal->get_ir_type();
 	if (fnValType->is_native_type()) {
 		fnValType = fnValType->as_native_type()->get_subtype();
 	}
@@ -84,11 +84,9 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 			                      << argsEmit.at(i)->get_ir_type()->to_string())
 			if ((not fnArgTy->get_type()->is_same(argsEmit.at(i)->get_ir_type())) &&
 			    (not fnArgTy->get_type()->isCompatible(argsEmit.at(i)->get_ir_type())) &&
-			    (argsEmit.at(i)->get_ir_type()->is_reference()
-			         ? ((not fnArgTy->get_type()->is_same(
-			                argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype())) &&
-			            (not fnArgTy->get_type()->isCompatible(
-			                argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype())))
+			    (argsEmit.at(i)->get_ir_type()->is_ref()
+			         ? ((not fnArgTy->get_type()->is_same(argsEmit.at(i)->get_ir_type()->as_ref()->get_subtype())) &&
+			            (not fnArgTy->get_type()->isCompatible(argsEmit.at(i)->get_ir_type()->as_ref()->get_subtype())))
 			         : true)) {
 				ctx->Error(
 				    "Type of this expression is " + ctx->color(argsEmit.at(i)->get_ir_type()->to_string()) +
@@ -107,20 +105,20 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 		Vec<llvm::Value*> argValues;
 		for (usize i = 0; i < fnTy->get_argument_count(); i++) {
 			SHOW("Argument provided type at " << i << " is: " << argsEmit.at(i)->get_ir_type()->to_string())
-			if (fnArgsTy.at(i)->get_type()->is_reference() &&
-			    (!argsEmit.at(i)->is_reference() && !argsEmit.at(i)->is_ghost_reference())) {
+			if (fnArgsTy.at(i)->get_type()->is_ref() &&
+			    (not argsEmit.at(i)->is_ref() && not argsEmit.at(i)->is_ghost_ref())) {
 				ctx->Error(
 				    "Cannot pass a value for the argument that expects a reference. The expression provided does not reside in an address",
 				    values.at(i)->fileRange);
-			} else if (argsEmit.at(i)->is_reference()) {
-				argsEmit.at(i)->load_ghost_reference(ctx->irCtx->builder);
+			} else if (argsEmit.at(i)->is_ref()) {
+				argsEmit.at(i)->load_ghost_ref(ctx->irCtx->builder);
 				argsEmit.at(i) = ir::Value::get(
 				    ctx->irCtx->builder.CreateLoad(
-				        argsEmit.at(i)->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
+				        argsEmit.at(i)->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(),
 				        argsEmit.at(i)->get_llvm()),
-				    argsEmit.at(i)->get_ir_type(), argsEmit.at(i)->get_ir_type()->as_reference()->isSubtypeVariable());
+				    argsEmit.at(i)->get_ir_type(), argsEmit.at(i)->get_ir_type()->as_ref()->has_variability());
 			} else {
-				argsEmit.at(i)->load_ghost_reference(ctx->irCtx->builder);
+				argsEmit.at(i)->load_ghost_ref(ctx->irCtx->builder);
 			}
 			argValues.push_back(argsEmit.at(i)->get_llvm());
 		}
@@ -130,15 +128,15 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 				auto currArg  = argsEmit[i];
 				auto argTy    = currArg->get_ir_type();
 				auto isRefVar = false;
-				if (argTy->is_reference()) {
-					isRefVar = argTy->as_reference()->isSubtypeVariable();
-					argTy    = argTy->as_reference()->get_subtype();
+				if (argTy->is_ref()) {
+					isRefVar = argTy->as_ref()->has_variability();
+					argTy    = argTy->as_ref()->get_subtype();
 				} else {
 					isRefVar = currArg->is_variable();
 				}
-				if (currArg->get_ir_type()->is_reference() || currArg->is_ghost_reference()) {
-					if (currArg->get_ir_type()->is_reference()) {
-						currArg->load_ghost_reference(ctx->irCtx->builder);
+				if (currArg->get_ir_type()->is_ref() || currArg->is_ghost_ref()) {
+					if (currArg->get_ir_type()->is_ref()) {
+						currArg->load_ghost_ref(ctx->irCtx->builder);
 					}
 					if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
 						auto* argLLVMVal = currArg->get_llvm();
@@ -147,7 +145,7 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 						if (not argTy->is_trivially_copyable()) {
 							if (not isRefVar) {
 								ctx->Error("This expression " +
-								               String(currArg->get_ir_type()->is_reference()
+								               String(currArg->get_ir_type()->is_ref()
 								                          ? "is a reference without variability"
 								                          : "does not have variability") +
 								               " and hence cannot be trivially moved from",
@@ -169,15 +167,14 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 		if (fun.has_value()) {
 			return fun.value()->call(ctx->irCtx, argValues, None, ctx->mod);
 		} else {
-			fnVal->load_ghost_reference(ctx->irCtx->builder);
-			if (fnVal->is_reference()) {
+			fnVal->load_ghost_ref(ctx->irCtx->builder);
+			if (fnVal->is_ref()) {
 				ctx->irCtx->builder.CreateLoad(fnValType->get_llvm_type(), fnVal->get_llvm());
 			}
 			return fnVal->call(ctx->irCtx, argValues, None, ctx->mod);
 		}
 	} else {
-		// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
-		ctx->Error("The expression is not callable. It has type " + fnVal->get_ir_type()->to_string(),
+		ctx->Error("This expression is not callable. It has type " + fnVal->get_ir_type()->to_string(),
 		           fnExpr->fileRange);
 	}
 	return nullptr;

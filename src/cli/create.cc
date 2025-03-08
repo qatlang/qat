@@ -26,7 +26,7 @@ void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
 	}
 	auto projDir = path / name;
 	if (fs::exists(projDir)) {
-		if (!fs::is_empty(projDir)) {
+		if (not fs::is_empty(projDir)) {
 			log->fatalError("The path " + projDir.string() +
 			                    " already exists and is not empty, so it cannot be used for the project",
 			                projDir);

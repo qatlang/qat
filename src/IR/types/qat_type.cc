@@ -15,8 +15,8 @@
 #include "./reference.hpp"
 #include "./region.hpp"
 #include "./result.hpp"
-#include "./string_slice.hpp"
 #include "./struct_type.hpp"
+#include "./text.hpp"
 #include "./tuple.hpp"
 #include "./type_kind.hpp"
 #include "./unsigned.hpp"
@@ -37,7 +37,7 @@ Vec<Type*> Type::allTypes = {};
 Vec<Region*> Type::allRegions() {
 	Vec<Region*> result;
 	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::region) {
+		if (typ->type_kind() == TypeKind::REGION) {
 			result.push_back(typ->as_region());
 		}
 	}
@@ -100,17 +100,17 @@ bool Type::isCompatible(Type* other) {
 
 bool Type::is_same(Type* other) {
 	if (type_kind() != other->type_kind()) {
-		if (type_kind() == TypeKind::definition) {
+		if (type_kind() == TypeKind::DEFINITION) {
 			return ((DefinitionType*)this)->get_subtype()->is_same(other);
-		} else if (other->type_kind() == TypeKind::definition) {
+		} else if (other->type_kind() == TypeKind::DEFINITION) {
 			return ((DefinitionType*)other)->get_subtype()->is_same(this);
-		} else if (type_kind() == TypeKind::opaque) {
+		} else if (type_kind() == TypeKind::OPAQUE) {
 			if (((OpaqueType*)this)->has_subtype()) {
 				return ((OpaqueType*)this)->get_subtype()->is_same(other);
 			} else {
 				return false;
 			}
-		} else if (other->type_kind() == TypeKind::opaque) {
+		} else if (other->type_kind() == TypeKind::OPAQUE) {
 			if (((OpaqueType*)other)->has_subtype()) {
 				return (((OpaqueType*)other)->get_subtype()->is_same(this));
 			} else {
@@ -120,10 +120,10 @@ bool Type::is_same(Type* other) {
 		return false;
 	} else {
 		switch (type_kind()) {
-			case TypeKind ::definition: {
+			case TypeKind ::DEFINITION: {
 				return ((DefinitionType*)this)->get_subtype()->is_same(((DefinitionType*)other)->get_subtype());
 			}
-			case TypeKind::opaque: {
+			case TypeKind::OPAQUE: {
 				auto* thisVal  = (OpaqueType*)this;
 				auto* otherVal = (OpaqueType*)other;
 				if (thisVal->has_subtype() && otherVal->has_subtype()) {
@@ -132,56 +132,54 @@ bool Type::is_same(Type* other) {
 					return thisVal->get_id() == otherVal->get_id();
 				}
 			}
-			case TypeKind::pointer: {
+			case TypeKind::MARK: {
 				return (((MarkType*)this)->is_subtype_variable() == ((MarkType*)other)->is_subtype_variable()) &&
 				       (((MarkType*)this)->is_nullable() == ((MarkType*)other)->is_nullable()) &&
 				       (((MarkType*)this)->get_subtype()->is_same(((MarkType*)other)->get_subtype())) &&
 				       (((MarkType*)this)->get_owner().is_same(((MarkType*)other)->get_owner()));
 			}
-			case TypeKind::reference: {
-				return (((ReferenceType*)this)->isSubtypeVariable() == ((ReferenceType*)other)->isSubtypeVariable()) &&
-				       (((ReferenceType*)this)->get_subtype()->is_same(((ReferenceType*)other)->get_subtype()));
+			case TypeKind::REFERENCE: {
+				return (((RefType*)this)->has_variability() == ((RefType*)other)->has_variability()) &&
+				       (((RefType*)this)->get_subtype()->is_same(((RefType*)other)->get_subtype()));
 			}
-			case TypeKind::future: {
+			case TypeKind::FUTURE: {
 				auto* thisVal  = (FutureType*)this;
 				auto* otherVal = (FutureType*)other;
 				return thisVal->get_subtype()->is_same(otherVal->get_subtype()) &&
 				       (thisVal->is_type_packed() == otherVal->is_type_packed());
 			}
-			case TypeKind::maybe: {
+			case TypeKind::MAYBE: {
 				auto* thisVal  = (MaybeType*)this;
 				auto* otherVal = (MaybeType*)this;
 				return thisVal->get_subtype()->is_same(otherVal->get_subtype()) &&
 				       (thisVal->is_type_packed() == otherVal->is_type_packed());
 			}
-			case TypeKind::unsignedInteger: {
+			case TypeKind::UNSIGNED_INTEGER: {
 				return (((UnsignedType*)this)->get_bitwidth() == ((UnsignedType*)other)->get_bitwidth()) &&
 				       (((UnsignedType*)this)->is_this_bool_type() == ((UnsignedType*)other)->is_this_bool_type());
 			}
-			case TypeKind::integer: {
+			case TypeKind::INTEGER: {
 				return (((IntegerType*)this)->get_bitwidth() == ((IntegerType*)other)->get_bitwidth());
 			}
-			case TypeKind::Float: {
+			case TypeKind::FLOAT: {
 				return (((FloatType*)this)->get_float_kind() == ((FloatType*)other)->get_float_kind());
 			}
-			case TypeKind::nativeType: {
+			case TypeKind::NATIVE: {
 				auto* thisVal  = (NativeType*)this;
 				auto* otherVal = (NativeType*)other;
 				return thisVal->get_c_type_kind() == otherVal->get_c_type_kind() &&
 				       (thisVal->is_c_ptr() ? (thisVal->get_subtype()->is_same(otherVal->get_subtype())) : true);
 			}
-			case TypeKind::stringSlice: {
-				auto* thisVal  = (StringSliceType*)this;
-				auto* otherVal = (StringSliceType*)other;
-				return thisVal->isPacked() == otherVal->isPacked();
+			case TypeKind::TEXT: {
+				auto* thisVal  = (TextType*)this;
+				auto* otherVal = (TextType*)other;
+				return thisVal->is_packed() == otherVal->is_packed();
 			}
-			case TypeKind::Void: {
+			case TypeKind::VOID:
+			case TypeKind::TYPED: {
 				return true;
 			}
-			case TypeKind::typed: {
-				return ((TypedType*)this)->get_subtype()->is_same(((TypedType*)other)->get_subtype());
-			}
-			case TypeKind::array: {
+			case TypeKind::ARRAY: {
 				auto* thisVal  = (ArrayType*)this;
 				auto* otherVal = (ArrayType*)other;
 				if (thisVal->get_length() == otherVal->get_length()) {
@@ -190,7 +188,7 @@ bool Type::is_same(Type* other) {
 					return false;
 				}
 			}
-			case TypeKind::vector: {
+			case TypeKind::VECTOR: {
 				auto* thisVal  = (VectorType*)this;
 				auto* otherVal = (VectorType*)other;
 				if (thisVal->get_count() == otherVal->get_count()) {
@@ -200,13 +198,13 @@ bool Type::is_same(Type* other) {
 					return false;
 				}
 			}
-			case TypeKind::tuple: {
+			case TypeKind::TUPLE: {
 				auto* thisVal  = (TupleType*)this;
 				auto* otherVal = (TupleType*)other;
 				if ((thisVal->isPackedTuple() == otherVal->isPackedTuple()) &&
 				    thisVal->getSubTypeCount() == otherVal->getSubTypeCount()) {
 					for (usize i = 0; i < thisVal->getSubTypeCount(); i++) {
-						if (!(thisVal->getSubtypeAt(i)->is_same(otherVal->getSubtypeAt(i)))) {
+						if (not(thisVal->getSubtypeAt(i)->is_same(otherVal->getSubtypeAt(i)))) {
 							return false;
 						}
 					}
@@ -215,34 +213,34 @@ bool Type::is_same(Type* other) {
 					return false;
 				}
 			}
-			case TypeKind::core: {
+			case TypeKind::STRUCT: {
 				auto* thisVal  = (StructType*)this;
 				auto* otherVal = (StructType*)other;
 				return (thisVal->get_id() == otherVal->get_id());
 			}
-			case TypeKind::region: {
+			case TypeKind::REGION: {
 				auto* thisVal  = (Region*)this;
 				auto* otherVal = (Region*)this;
 				return (thisVal->get_id() == otherVal->get_id());
 			}
-			case TypeKind::choice: {
+			case TypeKind::CHOICE: {
 				auto* thisVal  = (ChoiceType*)this;
 				auto* otherVal = (ChoiceType*)other;
 				return (thisVal->get_id() == otherVal->get_id());
 			}
-			case TypeKind::mixType: {
+			case TypeKind::MIX: {
 				auto* thisVal  = (MixType*)this;
 				auto* otherVal = (MixType*)other;
 				return (thisVal->get_id() == otherVal->get_id());
 			}
-			case TypeKind::result: {
+			case TypeKind::RESULT: {
 				auto* thisVal  = (ResultType*)this;
 				auto* otherVal = (ResultType*)other;
 				return (thisVal->isPacked == otherVal->isPacked) &&
-				       thisVal->getValidType()->is_same(otherVal->getValidType()) &&
-				       thisVal->getErrorType()->is_same(otherVal->getErrorType());
+				       thisVal->get_valid_type()->is_same(otherVal->get_valid_type()) &&
+				       thisVal->get_error_type()->is_same(otherVal->get_error_type());
 			}
-			case TypeKind::function: {
+			case TypeKind::FUNCTION: {
 				auto* thisVal  = (FunctionType*)this;
 				auto* otherVal = (FunctionType*)other;
 				if (thisVal->get_argument_count() == otherVal->get_argument_count()) {
@@ -271,32 +269,33 @@ bool Type::is_same(Type* other) {
 bool Type::is_expanded() const { return false; }
 
 ExpandedType* Type::as_expanded() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? as_type_definition()->get_subtype()->as_expanded()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_expanded() : (ExpandedType*)this);
 }
 
 bool Type::is_typed() const {
-	return (type_kind() == TypeKind::typed) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_opaque());
+	return (type_kind() == TypeKind::TYPED) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_opaque());
 }
 
 TypedType* Type::as_typed() const {
-	return (type_kind() == TypeKind::definition) ? ((DefinitionType*)this)->get_subtype()->as_typed()
+	return (type_kind() == TypeKind::DEFINITION) ? ((DefinitionType*)this)->get_subtype()->as_typed()
 	                                             : (TypedType*)this;
 }
 
 bool Type::is_opaque() const {
-	return (type_kind() == TypeKind::opaque) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_opaque());
+	return (type_kind() == TypeKind::OPAQUE) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_opaque());
 }
 
 OpaqueType* Type::as_opaque() const {
-	return (type_kind() == TypeKind::definition) ? ((DefinitionType*)this)->get_subtype()->as_opaque()
+	return (type_kind() == TypeKind::DEFINITION) ? ((DefinitionType*)this)->get_subtype()->as_opaque()
 	                                             : (OpaqueType*)this;
 }
 
 bool Type::is_trivially_copyable() const { return false; }
+
 bool Type::is_trivially_movable() const { return false; }
 
 bool Type::has_prerun_default_value() const { return false; }
@@ -304,6 +303,7 @@ bool Type::has_prerun_default_value() const { return false; }
 ir::PrerunValue* Type::get_prerun_default_value(ir::Ctx* irCtx) { return nullptr; }
 
 bool Type::is_default_constructible() const { return has_prerun_default_value(); }
+
 void Type::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
 	if (has_prerun_default_value()) {
 		auto* defVal = get_prerun_default_value(irCtx);
@@ -314,6 +314,7 @@ void Type::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Func
 }
 
 bool Type::is_copy_constructible() const { return is_trivially_copyable(); }
+
 void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (is_trivially_copyable()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
@@ -325,6 +326,7 @@ void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* sec
 }
 
 bool Type::is_copy_assignable() const { return is_trivially_copyable(); }
+
 void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (is_trivially_copyable()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
@@ -336,6 +338,7 @@ void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second
 }
 
 bool Type::is_move_constructible() const { return is_trivially_movable(); }
+
 void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (is_trivially_movable()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
@@ -348,6 +351,7 @@ void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* sec
 }
 
 bool Type::is_move_assignable() const { return is_trivially_movable(); }
+
 void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (is_trivially_movable()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
@@ -360,6 +364,7 @@ void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second
 }
 
 bool Type::is_destructible() const { return is_trivially_movable(); }
+
 void Type::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
 	if (is_trivially_movable()) {
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), instance->get_llvm());
@@ -371,34 +376,34 @@ void Type::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun)
 }
 
 bool Type::is_type_definition() const {
-	return (type_kind() == TypeKind::definition) || ((type_kind() == TypeKind::opaque) && as_opaque()->has_subtype() &&
+	return (type_kind() == TypeKind::DEFINITION) || ((type_kind() == TypeKind::OPAQUE) && as_opaque()->has_subtype() &&
 	                                                 as_opaque()->get_subtype()->is_type_definition());
 }
 
 DefinitionType* Type::as_type_definition() const { return (DefinitionType*)this; }
 
 bool Type::is_integer() const {
-	return (type_kind() == TypeKind::integer) ||
+	return (type_kind() == TypeKind::INTEGER) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_integer()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_integer());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_integer());
 }
 
 IntegerType* Type::as_integer() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_integer()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_integer() : (IntegerType*)this);
 }
 
-bool Type::is_unsigned_integer() const {
-	return ((type_kind() == TypeKind::unsignedInteger) && !((ir::UnsignedType*)this)->is_this_bool_type()) ||
-	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_unsigned_integer()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_unsigned_integer());
+bool Type::is_unsigned() const {
+	return ((type_kind() == TypeKind::UNSIGNED_INTEGER) && not((ir::UnsignedType*)this)->is_this_bool_type()) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_unsigned()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_unsigned());
 }
 
-UnsignedType* Type::as_unsigned_integer() const {
-	return (type_kind() == TypeKind::definition)
-	           ? ((DefinitionType*)this)->get_subtype()->as_unsigned_integer()
-	           : (is_opaque() ? as_opaque()->get_subtype()->as_unsigned_integer() : (UnsignedType*)this);
+UnsignedType* Type::as_unsigned() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_unsigned()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_unsigned() : (UnsignedType*)this);
 }
 
 bool Type::is_underlying_type_integer() const {
@@ -414,241 +419,239 @@ IntegerType* Type::get_underlying_integer_type() const {
 }
 
 bool Type::is_underlying_type_unsigned() const {
-	return is_unsigned_integer() || (is_native_type() && as_native_type()->get_subtype()->is_unsigned_integer());
+	return is_unsigned() || (is_native_type() && as_native_type()->get_subtype()->is_unsigned());
 }
 
 UnsignedType* Type::get_underlying_unsigned_type() const {
-	if (is_unsigned_integer()) {
-		return as_unsigned_integer();
+	if (is_unsigned()) {
+		return as_unsigned();
 	} else {
-		return as_native_type()->get_subtype()->as_unsigned_integer();
+		return as_native_type()->get_subtype()->as_unsigned();
 	}
 }
 
-bool Type::is_bool() const {
-	return (type_kind() == TypeKind::unsignedInteger) && as_unsigned_integer()->is_this_bool_type();
-}
+bool Type::is_bool() const { return (type_kind() == TypeKind::UNSIGNED_INTEGER) && as_unsigned()->is_this_bool_type(); }
 
-UnsignedType* Type::as_bool() const { return as_unsigned_integer(); }
+UnsignedType* Type::as_bool() const { return as_unsigned(); }
 
 bool Type::is_float() const {
-	return (type_kind() == TypeKind::Float) ||
+	return (type_kind() == TypeKind::FLOAT) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_float()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_float());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_float());
 }
 
 FloatType* Type::as_float() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_float()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_float() : (FloatType*)this);
 }
 
-bool Type::is_reference() const {
-	return (type_kind() == TypeKind::reference) ||
-	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_reference()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_reference());
+bool Type::is_ref() const {
+	return (type_kind() == TypeKind::REFERENCE) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_ref()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_ref());
 }
 
-ReferenceType* Type::as_reference() const {
-	return (type_kind() == TypeKind::definition)
-	           ? ((DefinitionType*)this)->get_subtype()->as_reference()
-	           : (is_opaque() ? as_opaque()->get_subtype()->as_reference() : (ReferenceType*)this);
+RefType* Type::as_ref() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_ref()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_ref() : (RefType*)this);
 }
 
 bool Type::is_poly() const {
-	return (type_kind() == TypeKind::polymorph) ||
+	return (type_kind() == TypeKind::POLYMORPH) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_poly()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_poly());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_poly());
 }
 
 Polymorph* Type::as_poly() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_poly()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_poly() : (Polymorph*)this);
 }
 
 bool Type::is_mark() const {
-	return (type_kind() == TypeKind::pointer) ||
+	return (type_kind() == TypeKind::MARK) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_mark()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_mark());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_mark());
 }
 
 MarkType* Type::as_mark() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_mark()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_mark() : (MarkType*)this);
 }
 
 bool Type::is_array() const {
-	return (type_kind() == TypeKind::array) ||
+	return (type_kind() == TypeKind::ARRAY) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_array()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_array());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_array());
 }
 
 ArrayType* Type::as_array() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_array()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_array() : (ArrayType*)this);
 }
 
 bool Type::is_vector() const {
-	return (type_kind() == TypeKind::vector) ||
+	return (type_kind() == TypeKind::VECTOR) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_vector()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_vector());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_vector());
 }
 
 VectorType* Type::as_vector() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_vector()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_vector() : (VectorType*)this);
 }
 
 bool Type::is_tuple() const {
-	return (type_kind() == TypeKind::tuple) ||
+	return (type_kind() == TypeKind::TUPLE) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_tuple()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_tuple());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_tuple());
 }
 
 TupleType* Type::as_tuple() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_tuple()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_tuple() : (TupleType*)this);
 }
 
 bool Type::is_function() const {
-	return (type_kind() == TypeKind::function) ||
+	return (type_kind() == TypeKind::FUNCTION) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_function()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_function());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_function());
 }
 
 FunctionType* Type::as_function() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_function()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_function() : (FunctionType*)this);
 }
 
 bool Type::is_struct() const {
-	return (type_kind() == TypeKind::core) ||
+	return (type_kind() == TypeKind::STRUCT) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_struct()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_struct());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_struct());
 }
 
 StructType* Type::as_struct() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_struct()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_struct() : (StructType*)this);
 }
 
 bool Type::is_mix() const {
-	return (type_kind() == TypeKind::mixType) ||
+	return (type_kind() == TypeKind::MIX) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_mix()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_mix());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_mix());
 }
 
 MixType* Type::as_mix() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_mix()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_mix() : (MixType*)this);
 }
 
 bool Type::is_choice() const {
-	return ((type_kind() == TypeKind::choice) ||
+	return ((type_kind() == TypeKind::CHOICE) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_choice()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_choice()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_choice()));
 }
 
 ChoiceType* Type::as_choice() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_choice()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_choice() : (ChoiceType*)this);
 }
 
 bool Type::is_void() const {
-	return (type_kind() == TypeKind::Void) ||
+	return (type_kind() == TypeKind::VOID) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_void()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_void());
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_void());
 }
 
-bool Type::is_string_slice() const {
-	return (type_kind() == TypeKind::stringSlice) ||
-	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_string_slice()) ||
-	       (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_string_slice());
+bool Type::is_text() const {
+	return (type_kind() == TypeKind::TEXT) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_text()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_text());
 }
 
-StringSliceType* Type::as_string_slice() const {
-	return (type_kind() == TypeKind::definition)
-	           ? ((DefinitionType*)this)->get_subtype()->as_string_slice()
-	           : (is_opaque() ? as_opaque()->get_subtype()->as_string_slice() : (StringSliceType*)this);
+TextType* Type::as_text() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_text()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_text() : (TextType*)this);
 }
 
 bool Type::is_native_type() const {
-	return ((type_kind() == TypeKind::nativeType) ||
+	return ((type_kind() == TypeKind::NATIVE) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_native_type()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_native_type()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_native_type()));
 }
 
 NativeType* Type::as_native_type() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_native_type()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_native_type() : (NativeType*)this);
 }
 
 bool Type::is_future() const {
-	return ((type_kind() == TypeKind::future) ||
+	return ((type_kind() == TypeKind::FUTURE) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_future()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_future()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_future()));
 }
 
 FutureType* Type::as_future() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_future()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_future() : (FutureType*)this);
 }
 
 bool Type::is_maybe() const {
-	return ((type_kind() == TypeKind::maybe) ||
+	return ((type_kind() == TypeKind::MAYBE) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_maybe()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_maybe()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_maybe()));
 }
 
 MaybeType* Type::as_maybe() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_maybe()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_maybe() : (MaybeType*)this);
 }
 
 bool Type::is_region() const {
-	return ((type_kind() == TypeKind::region) ||
+	return ((type_kind() == TypeKind::REGION) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_region()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_region()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_region()));
 }
 
 Region* Type::as_region() const {
-	return (type_kind() == TypeKind::definition)
+	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_region()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_region() : (Region*)this);
 }
 
 bool Type::is_result() const {
-	return ((type_kind() == TypeKind::result) ||
+	return ((type_kind() == TypeKind::RESULT) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_result()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_result()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_result()));
 }
 
 ResultType* Type::as_result() const {
-	return ((type_kind() == TypeKind::definition)
+	return ((type_kind() == TypeKind::DEFINITION)
 	            ? ((DefinitionType*)this)->get_subtype()->as_result()
 	            : (is_opaque() ? as_opaque()->get_subtype()->as_result() : (ResultType*)this));
 }
 
 bool Type::is_flag() const {
-	return ((type_kind() == TypeKind::flag) ||
+	return ((type_kind() == TypeKind::FLAG) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_flag()) ||
-	        (type_kind() == TypeKind::definition && as_type_definition()->get_subtype()->is_flag()));
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_flag()));
 }
 
 FlagType* Type::as_flag() const {
-	return ((type_kind() == TypeKind::definition)
+	return ((type_kind() == TypeKind::DEFINITION)
 	            ? ((DefinitionType*)this)->get_subtype()->as_flag()
 	            : (is_opaque() ? as_opaque()->get_subtype()->as_flag() : (FlagType*)this));
 }

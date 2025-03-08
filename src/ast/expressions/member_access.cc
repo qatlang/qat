@@ -1,6 +1,6 @@
 #include "./member_access.hpp"
 #include "../../IR/types/future.hpp"
-#include "../../IR/types/string_slice.hpp"
+#include "../../IR/types/text.hpp"
 #include "../../utils/helpers.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
@@ -38,10 +38,10 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 	auto* inst     = instance->emit(ctx);
 	auto* instType = inst->get_ir_type();
 	bool  isVar    = inst->is_variable();
-	if (instType->is_reference()) {
-		inst->load_ghost_reference(ctx->irCtx->builder);
-		isVar    = instType->as_reference()->isSubtypeVariable();
-		instType = instType->as_reference()->get_subtype();
+	if (instType->is_ref()) {
+		inst->load_ghost_ref(ctx->irCtx->builder);
+		isVar    = instType->as_ref()->has_variability();
+		instType = instType->as_ref()->get_subtype();
 	}
 	if (instType->is_array()) {
 		if (name.value == "length") {
@@ -54,7 +54,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			               ctx->color(instType->to_string()),
 			           name.range);
 		}
-	} else if (instType->is_string_slice()) {
+	} else if (instType->is_text()) {
 		if (name.value == "length") {
 			if (inst->is_prerun_value()) {
 				return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(1u),
@@ -64,8 +64,8 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				                      ir::NativeType::get_usize(ctx->irCtx), false);
 			} else {
 				return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(
-				                          ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(), 1u),
-				                      ir::ReferenceType::get(false, ir::NativeType::get_usize(ctx->irCtx), ctx->irCtx),
+				                          ir::TextType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(), 1u),
+				                      ir::RefType::get(false, ir::NativeType::get_usize(ctx->irCtx), ctx->irCtx),
 				                      false);
 			}
 		} else if (name.value == "data") {
@@ -81,13 +81,13 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			} else {
 				SHOW("String slice is an implicit pointer or a reference or pointer")
 				return ir::Value::get(
-				    ctx->irCtx->builder.CreateStructGEP(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type(),
+				    ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
 				                                        inst->get_llvm(), 0u),
-				    ir::ReferenceType::get(false,
-				                           ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
-				                                             false, // NOLINT(readability-magic-numbers)
-				                                             ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
-				                           ctx->irCtx),
+				    ir::RefType::get(false,
+				                     ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
+				                                       false, // NOLINT(readability-magic-numbers)
+				                                       ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
+				                     ctx->irCtx),
 				    false);
 			}
 		} else {
@@ -101,22 +101,21 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			inst = inst->make_local(ctx, None, instance->fileRange);
 		}
 		if (name.value == "isDone") {
-			return ir::Value::get(
-			    ctx->irCtx->builder.CreateLoad(
-			        llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-			        ctx->irCtx->builder.CreatePointerCast(
-			            ctx->irCtx->builder.CreateInBoundsGEP(
-			                llvm::Type::getInt64Ty(ctx->irCtx->llctx),
-			                ctx->irCtx->builder.CreateLoad(
-			                    llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-			                        ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
-			                    ctx->irCtx->builder.CreateStructGEP(instType->as_future()->get_llvm_type(),
-			                                                        inst->get_llvm(), 1u)),
-			                {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-			            llvm::Type::getInt1Ty(ctx->irCtx->llctx)
-			                ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace())),
-			        true),
-			    ir::UnsignedType::create_bool(ctx->irCtx), false);
+			return ir::Value::get(ctx->irCtx->builder.CreateLoad(
+			                          llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			                          ctx->irCtx->builder.CreatePointerCast(
+			                              ctx->irCtx->builder.CreateInBoundsGEP(
+			                                  llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+			                                  ctx->irCtx->builder.CreateLoad(
+			                                      llvm::Type::getInt64Ty(ctx->irCtx->llctx)
+			                                          ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+			                                      ctx->irCtx->builder.CreateStructGEP(
+			                                          instType->as_future()->get_llvm_type(), inst->get_llvm(), 1u)),
+			                                  {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
+			                              llvm::Type::getInt1Ty(ctx->irCtx->llctx)
+			                                  ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			                          true),
+			                      ir::UnsignedType::create_bool(ctx->irCtx), false);
 		} else if (name.value == "isNotDone") {
 			return ir::Value::get(
 			    ctx->irCtx->builder.CreateICmpEQ(
@@ -127,12 +126,12 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			                    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 			                    ctx->irCtx->builder.CreateLoad(
 			                        llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-			                            ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+			                            ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
 			                        ctx->irCtx->builder.CreateStructGEP(instType->as_future()->get_llvm_type(),
 			                                                            inst->get_llvm(), 1u)),
 			                    {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
 			                llvm::Type::getInt1Ty(ctx->irCtx->llctx)
-			                    ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace())),
+			                    ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			            true),
 			        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
 			    ir::UnsignedType::create_bool(ctx->irCtx), false);
@@ -142,7 +141,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			           name.range);
 		}
 	} else if (instType->is_maybe()) {
-		if (inst->is_value() && !instType->is_trivially_movable()) {
+		if (inst->is_value() && not instType->is_trivially_movable()) {
 			inst = inst->make_local(ctx, None, instance->fileRange);
 		}
 		if (name.value == "hasValue") {
@@ -188,10 +187,10 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 	} else if (instType->is_expanded()) {
-		if ((instType->is_struct() && !instType->as_struct()->has_field_with_name(name.value)) &&
+		if ((instType->is_struct() && not instType->as_struct()->has_field_with_name(name.value)) &&
 		    ((isVariationAccess.has_value() && isVariationAccess.value())
-		         ? !instType->as_expanded()->has_variation(name.value)
-		         : !instType->as_expanded()->has_normal_method(name.value))) {
+		         ? not instType->as_expanded()->has_variation(name.value)
+		         : not instType->as_expanded()->has_normal_method(name.value))) {
 			ctx->Error("Core type " + ctx->color(instType->as_struct()->to_string()) +
 			               " does not have a member field, member function or variation function named " +
 			               ctx->color(name.value) + ". Please check the logic",
@@ -210,7 +209,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			if (isExpSelf) {
 				auto* mFn = (ir::Method*)ctx->get_fn();
 				if (mFn->isConstructor()) {
-					if (!mFn->is_member_initted(eTy->as_struct()->get_field_index(name.value))) {
+					if (not mFn->is_member_initted(eTy->as_struct()->get_field_index(name.value))) {
 						auto mem = eTy->as_struct()->get_field_with_name(name.value);
 						if (mem->defaultValue.has_value()) {
 							ctx->Error(
@@ -229,12 +228,12 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 					mFn->add_used_members(mem->name.value);
 				}
 			}
-			if (!mem->visibility.is_accessible(ctx->get_access_info())) {
+			if (not mem->visibility.is_accessible(ctx->get_access_info())) {
 				ctx->Error("Member " + ctx->color(name.value) + " of core type " + ctx->color(eTy->get_full_name()) +
 				               " is not accessible here",
 				           fileRange);
 			}
-			if (inst->is_value() && !instType->is_trivially_movable()) {
+			if (inst->is_value() && not instType->is_trivially_movable()) {
 				inst = inst->make_local(ctx, None, instance->fileRange);
 			}
 			if (inst->is_prerun_value()) {
@@ -251,12 +250,12 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				    ctx->irCtx->builder.CreateStructGEP(instType->as_struct()->get_llvm_type(), inst->get_llvm(),
 				                                        instType->as_struct()->get_index_of(name.value).value());
 				auto memValTy = instType->as_struct()->get_type_of_field(name.value);
-				if (memValTy->is_reference()) {
+				if (memValTy->is_ref()) {
 					llVal = ctx->irCtx->builder.CreateLoad(memValTy->get_llvm_type(), llVal);
 				}
-				return ir::Value::get(llVal, ir::ReferenceType::get(isVar, memValTy, ctx->irCtx), false);
+				return ir::Value::get(llVal, ir::RefType::get(isVar, memValTy, ctx->irCtx), false);
 			}
-		} else if (!(isVariationAccess.has_value() && isVariationAccess.value()) &&
+		} else if (not(isVariationAccess.has_value() && isVariationAccess.value()) &&
 		           eTy->has_normal_method(name.value)) {
 			// FIXME - Implement
 			ctx->Error("Referencing member function is not supported", fileRange);

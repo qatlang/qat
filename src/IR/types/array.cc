@@ -30,7 +30,7 @@ Type* ArrayType::get_element_type() { return elementType; }
 
 u64 ArrayType::get_length() const { return length; }
 
-TypeKind ArrayType::type_kind() const { return TypeKind::array; }
+TypeKind ArrayType::type_kind() const { return TypeKind::ARRAY; }
 
 String ArrayType::to_string() const { return "[" + std::to_string(length) + "]" + elementType->to_string(); }
 
@@ -119,13 +119,14 @@ void ArrayType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->copy_construct_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::ReferenceType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::ReferenceType::get(true, elementType, irCtx), false), fun);
+			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
+			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
 		}
 	} else {
 		irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()), None);
 	}
 }
+
 void ArrayType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (is_copy_assignable()) {
 		auto* Ty64Int       = llvm::Type::getInt64Ty(irCtx->llctx);
@@ -143,8 +144,8 @@ void ArrayType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->copy_assign_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::ReferenceType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::ReferenceType::get(true, elementType, irCtx), false), fun);
+			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
+			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
 		}
 	} else {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()), None);
@@ -168,8 +169,8 @@ void ArrayType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->move_construct_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::ReferenceType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::ReferenceType::get(true, elementType, irCtx), false), fun);
+			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
+			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
 		}
 	} else {
 		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()), None);
@@ -193,8 +194,8 @@ void ArrayType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->move_assign_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::ReferenceType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::ReferenceType::get(true, elementType, irCtx), false), fun);
+			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
+			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
 		}
 	} else {
 		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
@@ -213,7 +214,7 @@ void ArrayType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 				                                                    {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->destroy_value(
-			    irCtx, ir::Value::get(instanceIndexing, ir::ReferenceType::get(true, elementType, irCtx), false), fun);
+			    irCtx, ir::Value::get(instanceIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
 		}
 	} else {
 		irCtx->Error("Could not destroy instance of type " + irCtx->color(to_string()), None);

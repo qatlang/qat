@@ -60,11 +60,11 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 		auto result = subTy->to_string();
 		return ir::PrerunValue::get(
 		    llvm::ConstantStruct::get(
-		        llvm::cast<llvm::StructType>(ir::StringSliceType::get(ctx->irCtx)->get_llvm_type()),
+		        llvm::cast<llvm::StructType>(ir::TextType::get(ctx->irCtx)->get_llvm_type()),
 		        {ctx->irCtx->builder.CreateGlobalStringPtr(result, ctx->irCtx->get_global_string_name(), 0U,
 		                                                   ctx->mod->get_llvm_module()),
 		         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), result.length())}),
-		    ir::StringSliceType::get(ctx->irCtx));
+		    ir::TextType::get(ctx->irCtx));
 	} else if (memberName.value == "is_packed") {
 		zeroArgCheck();
 		if (not subTy->get_llvm_type()->isStructTy()) {
@@ -83,12 +83,11 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 	} else if (memberName.value == "is_any_unsigned_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(
-		        llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-		        (subTy->is_unsigned_integer() ||
-		         (subTy->is_native_type() && subTy->as_native_type()->get_subtype()->is_unsigned_integer()))
-		            ? 1u
-		            : 0u),
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+		                           (subTy->is_unsigned() ||
+		                            (subTy->is_native_type() && subTy->as_native_type()->get_subtype()->is_unsigned()))
+		                               ? 1u
+		                               : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_any_signed_type") {
 		zeroArgCheck();
@@ -112,7 +111,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 	} else if (memberName.value == "is_unsigned_int_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_unsigned_integer() ? 1u : 0u),
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_unsigned() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_signed_int_type") {
 		zeroArgCheck();
@@ -132,7 +131,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 	} else if (memberName.value == "is_text_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_string_slice() ? 1u : 0u),
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_text() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_struct") {
 		zeroArgCheck();

@@ -11,7 +11,7 @@
 #include <llvm/IR/LLVMContext.h>
 
 namespace qat::ast {
-class DefineCoreType;
+class DefineStructType;
 class DefineMixType;
 } // namespace qat::ast
 
@@ -23,7 +23,7 @@ class Method;
 enum class OpaqueSubtypeKind { core, mix, Union, unknown };
 
 class OpaqueType : public Type, public EntityOverview {
-	friend class ast::DefineCoreType;
+	friend class ast::DefineStructType;
 	friend class ast::DefineMixType;
 	friend class ir::StructType;
 

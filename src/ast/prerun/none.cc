@@ -6,18 +6,18 @@ namespace qat::ast {
 ir::PrerunValue* NoneExpression::emit(EmitCtx* ctx) {
 	if (type || is_type_inferred()) {
 		if (is_type_inferred()) {
-			if (!inferredType->is_maybe()) {
+			if (not inferredType->is_maybe()) {
 				ctx->Error("The inferred type of the " + ctx->color("none") + " expression is " +
 				               ctx->color(inferredType->to_string()) + " which is not a maybe type",
 				           fileRange);
 			} else if (type && isPacked.has_value() && inferredType->is_maybe() &&
-			           (!inferredType->as_maybe()->is_type_packed())) {
+			           (not inferredType->as_maybe()->is_type_packed())) {
 				ctx->Error("The inferred maybe type is " + ctx->color(inferredType->to_string()) +
 				               " which is not packed, but " + ctx->color("pack") +
 				               " is provided for the none expression. Please change this to " +
 				               ctx->color("none:[" + type->to_string() + "]"),
 				           isPacked.value());
-			} else if (type && !isPacked.has_value() && inferredType->is_maybe() &&
+			} else if (type && not isPacked.has_value() && inferredType->is_maybe() &&
 			           inferredType->as_maybe()->is_type_packed()) {
 				ctx->Error("The inferred maybe type is " + ctx->color(inferredType->to_string()) +
 				               " which is packed, but " + ctx->color("pack") +
@@ -28,7 +28,7 @@ ir::PrerunValue* NoneExpression::emit(EmitCtx* ctx) {
 		}
 		auto* typ = type ? type->emit(ctx) : inferredType->as_maybe()->get_subtype();
 		if (inferredType && type) {
-			if (!typ->is_same(inferredType->as_maybe()->get_subtype())) {
+			if (not typ->is_same(inferredType->as_maybe()->get_subtype())) {
 				ctx->Error("The type provided for this none expression is " + ctx->color(typ->to_string()) +
 				               ", but the expected type is " + ctx->color(inferredType->as_maybe()->to_string()),
 				           fileRange);

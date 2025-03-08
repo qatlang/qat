@@ -111,7 +111,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 		SHOW("Is main function")
 		linkageType = llvm::GlobalValue::LinkageTypes::LinkOnceAnyLinkage;
 		isMainFn    = true;
-		if (!returnType.has_value()) {
+		if (not returnType.has_value()) {
 			irCtx->Error(
 			    "The " + irCtx->color("main") + " function is required to always give a value of type " +
 			        irCtx->color("int") +
@@ -160,7 +160,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 					if (generatedTypes.at(0)->as_mark()->is_subtype_variable()) {
 						irCtx->Error("Type of the argument of the " + irCtx->color("main") +
 						                 " function, cannot be a slice with variability. It should be of type " +
-						                 irCtx->color("slice![cStr]"),
+						                 irCtx->color("slice![cstring]"),
 						             arguments[0]->get_type()->fileRange);
 					}
 					mod->set_has_main_function();
@@ -183,7 +183,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 	Vec<ir::Argument> args;
 	SHOW("Setting variability of arguments")
 	if (isMainFn) {
-		if (!arguments.empty()) {
+		if (not arguments.empty()) {
 			args.push_back(
 			    // NOLINTNEXTLINE(readability-magic-numbers)
 			    ir::Argument::Create(
@@ -355,7 +355,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 		SHOW("Storing args for main function")
 		if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
 			auto* cmdArgsVal =
-			    block->new_value(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
+			    block->new_local(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
 			                     ir::MarkType::get(false, ir::NativeType::get_cstr(irCtx), false,
 			                                       ir::MarkOwner::of_anonymous(), true, irCtx),
 			                     false, fnEmit->arg_name_at(0).range);
@@ -375,10 +375,10 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 		SHOW("Iteration run for function is: " << fnEmit->get_name().value)
 		for (usize i = 0; i < argIRTypes.size(); i++) {
 			auto argType = argIRTypes[i]->get_type();
-			if (!argType->is_trivially_copyable() || argIRTypes[i]->is_variable()) {
+			if (not argType->is_trivially_copyable() || argIRTypes[i]->is_variable()) {
 				SHOW("Argument name is " << argIRTypes[i]->get_name())
 				SHOW("Argument type is " << argType->to_string())
-				auto* argVal = block->new_value(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(),
+				auto* argVal = block->new_local(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(),
 				                                arguments[i]->get_name().range);
 				SHOW("Created local value for the argument")
 				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
@@ -389,6 +389,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 	emit_sentences(definition.value().first, EmitCtx::get(irCtx, mod)->with_function(fnEmit));
 	SHOW("Sentences emitted")
 	ir::function_return_handler(irCtx, fnEmit, fileRange);
+	SHOW("Function return handler is complete")
 }
 
 void FunctionPrototype::set_variant_name(const String& value) const { variantName = value; }

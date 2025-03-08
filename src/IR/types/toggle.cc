@@ -12,8 +12,8 @@ ToggleType::ToggleType(Identifier _name, Vec<Pair<Identifier, Type*>> _variants,
 	usize       candidateAlign       = 1024;
 	llvm::Type* candidateType        = nullptr;
 	for (auto& it : variants) {
-		auto typeSize  = (usize)irCtx->dataLayout.value().getTypeStoreSize(it.second->get_llvm_type());
-		auto typeAlign = irCtx->dataLayout.value().getPrefTypeAlign(it.second->get_llvm_type()).value();
+		auto typeSize  = (usize)irCtx->dataLayout.getTypeStoreSize(it.second->get_llvm_type());
+		auto typeAlign = irCtx->dataLayout.getPrefTypeAlign(it.second->get_llvm_type()).value();
 		if (typeAlign < candidateAlign) {
 			candidateSizeInBytes = typeSize;
 			candidateAlign       = typeAlign;
@@ -49,7 +49,7 @@ LinkNames ToggleType::get_link_names() const {
 		foreignID = metaInfo->get_foreign_id();
 		linkAlias = metaInfo->get_value_as_string_for(ir::MetaInfo::linkAsKey);
 	}
-	if (!foreignID.has_value()) {
+	if (not foreignID.has_value()) {
 		foreignID = parent->get_relevant_foreign_id();
 	}
 	auto linkNames = parent->get_link_names().newWith(LinkNameUnit(name.value, LinkUnitType::toggle), foreignID);

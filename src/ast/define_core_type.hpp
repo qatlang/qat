@@ -10,7 +10,7 @@
 
 namespace qat::ast {
 
-class DefineCoreType final : public IsEntity, public Commentable, public MemberParentLike {
+class DefineStructType final : public IsEntity, public Commentable, public MemberParentLike {
 	friend class ir::GenericStructType;
 
   public:
@@ -82,16 +82,17 @@ class DefineCoreType final : public IsEntity, public Commentable, public MemberP
 	mutable Maybe<bool>            isPackedStruct;
 
   public:
-	DefineCoreType(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
-	               Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _genericConstraint,
-	               Maybe<MetaInfo> _metaInfo)
+	DefineStructType(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec,
+	                 FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics,
+	                 PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo)
 	    : IsEntity(_fileRange), name(_name), defineChecker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
 	      generics(_generics), genericConstraint(_genericConstraint) {}
 
-	useit static DefineCoreType* create(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec,
-	                                    FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics,
-	                                    PrerunExpression* _constraint, Maybe<MetaInfo> _metaInfo) {
-		return std::construct_at(OwnNormal(DefineCoreType), _name, _checker, _visibSpec, _fileRange, _generics,
+	useit static DefineStructType* create(Identifier _name, PrerunExpression* _checker,
+	                                      Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
+	                                      Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _constraint,
+	                                      Maybe<MetaInfo> _metaInfo) {
+		return std::construct_at(OwnNormal(DefineStructType), _name, _checker, _visibSpec, _fileRange, _generics,
 		                         _constraint, _metaInfo);
 	}
 
@@ -114,27 +115,34 @@ class DefineCoreType final : public IsEntity, public Commentable, public MemberP
 	void do_emit(ir::StructType* resultTy, ir::Ctx* irCtx);
 
 	useit bool hasTrivialCopy() { return trivialCopy.has_value(); }
-	void       setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
-	useit bool hasTrivialMove() { return trivialMove.has_value(); }
-	void       setTrivialMove(FileRange range) { trivialMove = std::move(range); }
 
-	useit bool            is_generic() const;
-	useit bool            has_default_constructor() const;
-	useit bool            has_destructor() const;
-	useit bool            has_copy_constructor() const;
-	useit bool            has_move_constructor() const;
-	useit bool            has_copy_assignment() const;
-	useit bool            has_move_assignment() const;
-	useit bool            is_define_core_type() const final { return true; }
-	useit DefineCoreType* as_define_core_type() final { return this; }
+	void setTrivialCopy(FileRange range) { trivialCopy = std::move(range); }
+
+	useit bool hasTrivialMove() { return trivialMove.has_value(); }
+
+	void setTrivialMove(FileRange range) { trivialMove = std::move(range); }
+
+	useit bool is_generic() const;
+	useit bool has_default_constructor() const;
+	useit bool has_destructor() const;
+	useit bool has_copy_constructor() const;
+	useit bool has_move_constructor() const;
+	useit bool has_copy_assignment() const;
+	useit bool has_move_assignment() const;
+
+	useit bool is_define_core_type() const final { return true; }
+
+	useit DefineStructType* as_define_core_type() final { return this; }
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json     to_json() const final;
+	useit Json to_json() const final;
+
 	useit NodeType nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
-	~DefineCoreType() final;
+
+	~DefineStructType() final;
 };
 
 } // namespace qat::ast

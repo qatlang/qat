@@ -12,16 +12,20 @@ class VoidType : public Type {
 
 	useit static VoidType* get(llvm::LLVMContext& llctx) {
 		for (auto* typ : allTypes) {
-			if (typ->type_kind() == TypeKind::Void) {
+			if (typ->type_kind() == TypeKind::VOID) {
 				return (VoidType*)typ;
 			}
 		}
 		return std::construct_at(OwnNormal(VoidType), llctx);
 	}
-	useit bool     is_trivially_copyable() const final { return true; }
-	useit bool     is_trivially_movable() const final { return true; }
-	useit TypeKind type_kind() const final { return TypeKind::Void; }
-	useit String   to_string() const final { return "void"; }
+
+	useit bool is_trivially_copyable() const final { return true; }
+
+	useit bool is_trivially_movable() const final { return true; }
+
+	useit TypeKind type_kind() const final { return TypeKind::VOID; }
+
+	useit String to_string() const final { return "void"; }
 };
 
 } // namespace qat::ir

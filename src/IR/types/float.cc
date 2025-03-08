@@ -60,7 +60,7 @@ PrerunValue* FloatType::get_prerun_default_value(ir::Ctx* irCtx) {
 	return ir::PrerunValue::get(llvm::ConstantFP::getZero(llvmType), this);
 }
 
-TypeKind FloatType::type_kind() const { return TypeKind::Float; }
+TypeKind FloatType::type_kind() const { return TypeKind::FLOAT; }
 
 FloatTypeKind FloatType::get_float_kind() const { return kind; }
 

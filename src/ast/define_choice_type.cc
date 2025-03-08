@@ -36,10 +36,10 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 	SHOW("Checking provided integer type")
 	if (providedIntegerTy) {
 		providedType = providedIntegerTy.value()->emit(EmitCtx::get(irCtx, mod));
-		if (!providedType.value()->is_integer() && !providedType.value()->is_unsigned_integer() &&
-		    !(providedType.value()->is_native_type() &&
-		      (providedType.value()->as_native_type()->get_subtype()->is_unsigned_integer() ||
-		       providedType.value()->as_native_type()->get_subtype()->is_integer()))) {
+		if (not providedType.value()->is_integer() && not providedType.value()->is_unsigned() &&
+		    not(providedType.value()->is_native_type() &&
+		        (providedType.value()->as_native_type()->get_subtype()->is_unsigned() ||
+		         providedType.value()->as_native_type()->get_subtype()->is_integer()))) {
 			irCtx->Error("Choice types can only have an integer or unsigned integer as its underlying type",
 			             providedIntegerTy.value()->fileRange);
 		}
@@ -62,9 +62,9 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			}
 			auto iVal   = fields.at(i).second.value()->emit(EmitCtx::get(irCtx, mod));
 			auto iValTy = iVal->get_ir_type();
-			if (!iValTy->is_integer() && !iValTy->is_unsigned_integer() &&
-			    !(iValTy->is_native_type() && (iValTy->as_native_type()->get_subtype()->is_unsigned_integer() ||
-			                                   iValTy->as_native_type()->get_subtype()->is_integer()))) {
+			if (not iValTy->is_integer() && not iValTy->is_unsigned() &&
+			    not(iValTy->is_native_type() && (iValTy->as_native_type()->get_subtype()->is_unsigned() ||
+			                                     iValTy->as_native_type()->get_subtype()->is_integer()))) {
 				irCtx->Error(
 				    "The value for a variant of this choice type should be of integer or unsigned integer type. Got an expression of type " +
 				        irCtx->color(iValTy->to_string()),
@@ -73,28 +73,28 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			if (iValTy->is_native_type()) {
 				iValTy = iValTy->as_native_type()->get_subtype();
 			}
-			if (providedType.has_value() && !iVal->get_ir_type()->is_same(providedType.value())) {
+			if (providedType.has_value() && not iVal->get_ir_type()->is_same(providedType.value())) {
 				irCtx->Error("The provided value of the variant of this choice type has type " +
 				                 irCtx->color(iVal->get_ir_type()->to_string()) +
 				                 ", which does not match the provided underlying type " +
 				                 irCtx->color(providedType.value()->to_string()),
 				             fields.at(i).second.value()->fileRange);
-			} else if (!iVal->get_ir_type()->is_integer() && !iVal->get_ir_type()->is_unsigned_integer() &&
-			           !(iVal->get_ir_type()->is_native_type() &&
-			             (iVal->get_ir_type()->as_native_type()->get_subtype()->is_unsigned_integer() ||
-			              iVal->get_ir_type()->as_native_type()->get_subtype()->is_integer()))) {
+			} else if (not iVal->get_ir_type()->is_integer() && not iVal->get_ir_type()->is_unsigned() &&
+			           not(iVal->get_ir_type()->is_native_type() &&
+			               (iVal->get_ir_type()->as_native_type()->get_subtype()->is_unsigned() ||
+			                iVal->get_ir_type()->as_native_type()->get_subtype()->is_integer()))) {
 				irCtx->Error("Value for variant for choice type should either be a signed or unsigned integer type",
 				             fields.at(i).second.value()->fileRange);
 			}
-			if (variantValueType && !variantValueType->is_same(iVal->get_ir_type())) {
+			if (variantValueType && not variantValueType->is_same(iVal->get_ir_type())) {
 				irCtx->Error("Value provided for this variant does not match the type of the previous values",
 				             fields.at(i).second.value()->fileRange);
-			} else if (!variantValueType) {
+			} else if (not variantValueType) {
 				variantValueType = iVal->get_ir_type();
 			}
-			llvm::ConstantInt* fieldResult = llvm::cast<llvm::ConstantInt>(
-			    llvm::ConstantFoldConstant(iVal->get_llvm_constant(), irCtx->dataLayout.value()));
-			if (!lastVal.has_value() && i > 0) {
+			llvm::ConstantInt* fieldResult =
+			    llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(iVal->get_llvm_constant(), irCtx->dataLayout));
+			if ((not lastVal.has_value()) && (i > 0)) {
 				Vec<llvm::ConstantInt*> prevVals; // In reverse
 				for (usize j = i - 1; j >= 0; j--) {
 					if ((prevVals.empty() ? fieldResult : prevVals.back())->isMinValue(iValTy->is_integer()) &&
@@ -114,7 +114,7 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 					prevVals.push_back(llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
 					    llvm::ConstantExpr::getSub(
 					        fieldResult, llvm::ConstantInt::get(fieldResult->getType(), 1u, iValTy->is_integer())),
-					    irCtx->dataLayout.value())));
+					    irCtx->dataLayout)));
 					if (prevVals.back()->isNegative()) {
 						areValuesUnsigned = false;
 					}
@@ -123,8 +123,9 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 				fieldValues.value().insert(fieldValues.value().end(), prevVals.end(), prevVals.begin());
 			}
 			lastVal = fieldResult;
-			SHOW("Index for field " << fields.at(i).first.value << " is " << *lastVal.value()->getValue().getRawData())
-			if (!fieldValues.has_value()) {
+			SHOW("Index for field " << fields.at(i).first.front().value << " is "
+			                        << *lastVal.value()->getValue().getRawData())
+			if (not fieldValues.has_value()) {
 				fieldValues = Vec<llvm::ConstantInt*>{};
 			}
 			SHOW("Pushing field value")
@@ -147,8 +148,8 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			auto newVal = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
 			    llvm::ConstantExpr::getAdd(lastVal.value(), llvm::ConstantInt::get(lastVal.value()->getType(), 1u,
 			                                                                       variantValueType->is_integer())),
-			    irCtx->dataLayout.value()));
-			SHOW("Index for field " << fields.at(i).first.value << " is " << newVal)
+			    irCtx->dataLayout));
+			SHOW("Index for field " << fields.at(i).first.front().value << " is " << newVal)
 			if (newVal->isNegative()) {
 				areValuesUnsigned = false;
 			}

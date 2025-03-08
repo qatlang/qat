@@ -61,14 +61,14 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 	}
 	if (isUnsigned.has_value() && isUnsigned.value()) {
 		numberIsUnsigned = true;
-		if (bitWidth && !ctx->mod->has_unsigned_bitwidth(bitWidth.value())) {
+		if (bitWidth && not ctx->mod->has_unsigned_bitwidth(bitWidth.value())) {
 			ctx->Error("The unsigned integer bitwidth " + ctx->color("u" + std::to_string(bitWidth.value())) +
 			               " is not brought into this module. Please bring it using " +
 			               ctx->color("bring u" + std::to_string(bitWidth.value()) + "."),
 			           fileRange);
 		}
 	} else {
-		if (bitWidth && !ctx->mod->has_integer_bitwidth(bitWidth.value())) {
+		if (bitWidth && not ctx->mod->has_integer_bitwidth(bitWidth.value())) {
 			ctx->Error("The integer bitwidth " + ctx->color("i" + std::to_string(bitWidth.value())) +
 			               " is not brought into this module. Please bring it using " +
 			               ctx->color("bring i" + std::to_string(bitWidth.value()) + "."),
@@ -88,7 +88,7 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 		}
 	}
 	if (is_type_inferred()) {
-		if (suffixType.has_value() && !suffixType.value()->is_same(inferredType)) {
+		if (suffixType.has_value() && not suffixType.value()->is_same(inferredType)) {
 			ctx->Error("The type inferred from scope for this custom integer literal is " +
 			               ctx->color(inferredType->to_string()) + " but the type from the provided suffix is " +
 			               ctx->color(suffixType.value()->to_string()),
@@ -101,10 +101,9 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 					ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
 					               " which is not an unsigned integer type",
 					           fileRange);
-				} else if (!isUnsigned.value() &&
-				           (inferredType->is_unsigned_integer() ||
-				            (inferredType->is_native_type() &&
-				             inferredType->as_native_type()->get_subtype()->is_unsigned_integer()))) {
+				} else if (not isUnsigned.value() && (inferredType->is_unsigned() ||
+				                                      (inferredType->is_native_type() &&
+				                                       inferredType->as_native_type()->get_subtype()->is_unsigned()))) {
 					ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
 					               " which is not a signed integer type",
 					           fileRange);

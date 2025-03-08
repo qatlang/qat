@@ -12,7 +12,7 @@ void PrerunGenericAbstract::emit(EmitCtx* ctx) const {
 	SHOW("TypeKind for prerun param type " << (u32)expTy->type_kind());
 	expressionType = expTy->emit(ctx);
 	SHOW("Emitted type of prerun generic parameter")
-	if (!expressionType->can_be_prerun_generic()) {
+	if (not expressionType->can_be_prerun_generic()) {
 		ctx->Error("The provided type is not qualified to be used for a prerun generic expression", expTy->fileRange);
 	}
 	if (hasDefault()) {
@@ -22,7 +22,7 @@ void PrerunGenericAbstract::emit(EmitCtx* ctx) const {
 		}
 		defaultValue = astVal->emit(ctx);
 		if (defaultValue) {
-			if (!defaultValue->get_ir_type()->is_same(expressionType)) {
+			if (not defaultValue->get_ir_type()->is_same(expressionType)) {
 				ctx->Error("The expected type for the prerun generic expression is " +
 				               ctx->color(expressionType->to_string()) + " but the provided expression is of type " +
 				               ctx->color(defaultValue->get_ir_type()->to_string()),
@@ -37,10 +37,10 @@ void PrerunGenericAbstract::emit(EmitCtx* ctx) const {
 ir::Type* PrerunGenericAbstract::getType() const { return expressionType; }
 
 ir::PrerunValue* PrerunGenericAbstract::getPrerun() const {
-	return !expressionValue.empty() ? expressionValue.back() : defaultValue;
+	return not expressionValue.empty() ? expressionValue.back() : defaultValue;
 }
 
-bool PrerunGenericAbstract::isSet() const { return !expressionValue.empty() || (defaultValue != nullptr); }
+bool PrerunGenericAbstract::isSet() const { return not expressionValue.empty() || (defaultValue != nullptr); }
 
 void PrerunGenericAbstract::setExpression(ir::PrerunValue* exp) const { expressionValue.push_back(exp); }
 

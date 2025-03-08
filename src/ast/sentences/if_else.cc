@@ -43,10 +43,10 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 		const auto& section = chain.at(i);
 		auto*       exp     = std::get<0>(section)->emit(ctx);
 		auto*       expTy   = exp->get_ir_type();
-		if (expTy->is_reference()) {
-			expTy = expTy->as_reference()->get_subtype();
+		if (expTy->is_ref()) {
+			expTy = expTy->as_ref()->get_subtype();
 		}
-		if (!expTy->is_bool()) {
+		if (not expTy->is_bool()) {
 			ctx->Error("Condition in an " + ctx->color("if") + " block should be of " + ctx->color("bool") + " type",
 			           std::get<0>(section)->fileRange);
 		}
@@ -58,7 +58,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 		} else {
 			knownVals.push_back(None);
 		}
-		if (!trueKnownValueBefore(i).first) {
+		if (not trueKnownValueBefore(i).first) {
 			if (hasValueAt(i) && isFalseTill(i)) {
 				if (getKnownValue(i)) {
 					auto* trueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
@@ -74,7 +74,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 				auto* trueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 				trueBlock->set_file_range(std::get<2>(section));
 				ir::Block* falseBlock = nullptr;
-				if (exp->is_ghost_reference() || exp->is_reference()) {
+				if (exp->is_ghost_ref() || exp->is_ref()) {
 					exp = ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), exp->get_llvm()), expTy,
 					                     false);
 				}
@@ -108,7 +108,7 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 			emit_sentences(elseCase.value().first, ctx);
 			elseBlock->destroy_locals(ctx);
 			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
-		} else if (!hasAnyKnownValue() || (hasAnyKnownValue() && !trueKnownValueBefore(knownVals.size()).first)) {
+		} else if (not hasAnyKnownValue() || (hasAnyKnownValue() && not trueKnownValueBefore(knownVals.size()).first)) {
 			emit_sentences(elseCase.value().first, ctx);
 			ctx->get_fn()->get_block()->destroy_locals(ctx);
 			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());

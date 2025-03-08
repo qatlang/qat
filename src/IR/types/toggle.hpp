@@ -34,10 +34,12 @@ class ToggleType : public ExpandedType {
 	useit LinkNames get_link_names() const final;
 
 	useit bool is_trivially_copyable() const final { return true; }
+
 	useit bool is_trivially_movable() const final { return true; }
 
-	useit TypeKind type_kind() const final { return TypeKind::toggle; }
-	useit String   to_string() const final { return name.value; }
+	useit TypeKind type_kind() const final { return TypeKind::TOGGLE; }
+
+	useit String to_string() const final { return name.value; }
 };
 
 } // namespace qat::ir

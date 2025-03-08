@@ -30,7 +30,7 @@ String kind_to_string(VisibilityKind kind) {
 AccessInfo::AccessInfo(ir::Mod* _module, Maybe<ir::Type*> _type, Maybe<ir::DoneSkill*> _skill)
     : module(_module), type(_type), skill(_skill) {}
 
-AccessInfo AccessInfo::GetPrivileged() {
+AccessInfo AccessInfo::get_privileged() {
 	AccessInfo result   = AccessInfo(nullptr, None, None);
 	result.isPrivileged = true;
 	return result;
@@ -102,16 +102,16 @@ VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
 VisibilityInfo::VisibilityInfo(const VisibilityInfo& other)
     : kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
 
-const std::map<VisibilityKind, String> Visibility::kind_value_map = {
+const std::map<VisibilityKind, String> Visibility::kindValueMap = {
     {VisibilityKind::pub, "public"}, {VisibilityKind::type, "type"},     {VisibilityKind::lib, "library"},
     {VisibilityKind::file, "file"},  {VisibilityKind::parent, "parent"}, {VisibilityKind::folder, "folder"}};
 
-const std::map<String, VisibilityKind> Visibility::value_kind_map = {
+const std::map<String, VisibilityKind> Visibility::valueKindMap = {
     {"public", VisibilityKind::pub}, {"type", VisibilityKind::type},     {"library", VisibilityKind::lib},
     {"file", VisibilityKind::file},  {"parent", VisibilityKind::parent}, {"folder", VisibilityKind::folder}};
 
-String Visibility::getValue(VisibilityKind kind) { return kind_value_map.find(kind)->second; }
+String Visibility::getValue(VisibilityKind kind) { return kindValueMap.find(kind)->second; }
 
-VisibilityKind Visibility::getKind(const String& value) { return value_kind_map.find(value)->second; }
+VisibilityKind Visibility::getKind(const String& value) { return valueKindMap.find(value)->second; }
 
 } // namespace qat

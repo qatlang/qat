@@ -31,7 +31,7 @@ Region::Region(Identifier _name, usize _blockSize, Mod* _module, const Visibilit
 	auto& llCtx        = irCtx->llctx;
 	auto* Ty64Int      = llvm::Type::getInt64Ty(llCtx);
 	auto* zero64Bit    = llvm::ConstantInt::get(Ty64Int, 0u);
-	auto  addressSpace = irCtx->dataLayout->getProgramAddressSpace();
+	auto  addressSpace = irCtx->dataLayout.getProgramAddressSpace();
 	blocks             = new llvm::GlobalVariable(
         *parent->get_llvm_module(), llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), addressSpace), false,
         llvm::GlobalValue::LinkageTypes::LinkOnceODRLinkage,
@@ -454,7 +454,7 @@ ir::Value* Region::ownData(ir::Type* otype, Maybe<llvm::Value*> _count, ir::Ctx*
 	            {(_count.has_value() ? _count.value()
 	                                 : llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u)),
 	             llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx),
-	                                    irCtx->dataLayout.value().getTypeAllocSize(otype->get_llvm_type())),
+	                                    irCtx->dataLayout.getTypeAllocSize(otype->get_llvm_type())),
 	             ((otype->is_struct() && otype->as_struct()->has_destructor())
 	                  ? irCtx->builder.CreatePointerCast(
 	                        irCtx->builder.CreateBitCast(otype->as_struct()->get_destructor()->get_llvm_function(),

@@ -139,10 +139,10 @@ Maybe<ir::Method*> ExpandedType::check_binary_operator(Vec<ir::Method*> const& b
 		if (bin->get_name().value == opr) {
 			auto* binArgTy = bin->get_ir_type()->as_function()->get_argument_type_at(1)->get_type();
 			if (binArgTy->is_same(argType.second) ||
-			    (argType.first.has_value() && binArgTy->is_reference() &&
-			     (binArgTy->as_reference()->isSubtypeVariable() ? argType.first.value() : true) &&
-			     binArgTy->as_reference()->get_subtype()->is_same(argType.second)) ||
-			    (argType.second->is_reference() && argType.second->as_reference()->get_subtype()->is_same(binArgTy))) {
+			    (argType.first.has_value() && binArgTy->is_ref() &&
+			     (binArgTy->as_ref()->has_variability() ? argType.first.value() : true) &&
+			     binArgTy->as_ref()->get_subtype()->is_same(argType.second)) ||
+			    (argType.second->is_ref() && argType.second->as_ref()->get_subtype()->is_same(binArgTy))) {
 				return bin;
 			}
 		}
@@ -187,9 +187,9 @@ bool ExpandedType::has_default_constructor() const { return defaultConstructor !
 
 Method* ExpandedType::get_default_constructor() const { return defaultConstructor; }
 
-bool ExpandedType::has_any_constructor() const { return (!constructors.empty()) || (defaultConstructor != nullptr); }
+bool ExpandedType::has_any_constructor() const { return (not constructors.empty()) || (defaultConstructor != nullptr); }
 
-bool ExpandedType::has_any_from_convertor() const { return !fromConvertors.empty(); }
+bool ExpandedType::has_any_from_convertor() const { return not fromConvertors.empty(); }
 
 Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> const&           cons,
                                                               Vec<Pair<Maybe<bool>, ir::Type*>> types) {
@@ -199,14 +199,14 @@ Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> c
 			bool result = true;
 			for (usize i = 1; i < argTys.size(); i++) {
 				auto* argType = argTys.at(i)->get_type();
-				if (!argType->is_same(types.at(i - 1).second) && !argType->isCompatible(types.at(i - 1).second) &&
-				    (!(types.at(i - 1).first.has_value() && argType->is_reference() &&
-				       (argType->as_reference()->isSubtypeVariable() ? types.at(i - 1).first.value() : true) &&
-				       (argType->as_reference()->get_subtype()->is_same(types.at(i - 1).second) ||
-				        argType->as_reference()->get_subtype()->isCompatible(types.at(i - 1).second)))) &&
-				    (!(types.at(i - 1).second->is_reference() &&
-				       (types.at(i - 1).second->as_reference()->get_subtype()->is_same(argType) ||
-				        types.at(i - 1).second->as_reference()->get_subtype()->isCompatible(argType))))) {
+				if (not argType->is_same(types.at(i - 1).second) && not argType->isCompatible(types.at(i - 1).second) &&
+				    (not(types.at(i - 1).first.has_value() && argType->is_ref() &&
+				         (argType->as_ref()->has_variability() ? types.at(i - 1).first.value() : true) &&
+				         (argType->as_ref()->get_subtype()->is_same(types.at(i - 1).second) ||
+				          argType->as_ref()->get_subtype()->isCompatible(types.at(i - 1).second)))) &&
+				    (not(types.at(i - 1).second->is_ref() &&
+				         (types.at(i - 1).second->as_ref()->get_subtype()->is_same(argType) ||
+				          types.at(i - 1).second->as_ref()->get_subtype()->isCompatible(argType))))) {
 					result = false;
 					break;
 				}
@@ -234,11 +234,11 @@ Maybe<ir::Method*> ExpandedType::check_from_convertor(Vec<ir::Method*> const& fr
 	for (auto* fconv : fromConvs) {
 		auto* argTy = fconv->get_ir_type()->as_function()->get_argument_type_at(1)->get_type();
 		if (argTy->is_same(candTy) || argTy->isCompatible(candTy) ||
-		    (isValueVar.has_value() && argTy->is_reference() &&
-		     (argTy->as_reference()->isSubtypeVariable() ? isValueVar.value() : true) &&
-		     (argTy->as_reference()->get_subtype()->is_same(candTy) ||
-		      argTy->as_reference()->get_subtype()->isCompatible(candTy))) ||
-		    (candTy->is_reference() && candTy->as_reference()->get_subtype()->is_same(argTy))) {
+		    (isValueVar.has_value() && argTy->is_ref() &&
+		     (argTy->as_ref()->has_variability() ? isValueVar.value() : true) &&
+		     (argTy->as_ref()->get_subtype()->is_same(candTy) ||
+		      argTy->as_ref()->get_subtype()->isCompatible(candTy))) ||
+		    (candTy->is_ref() && candTy->as_ref()->get_subtype()->is_same(argTy))) {
 			return fconv;
 		}
 	}
@@ -256,9 +256,8 @@ Method* ExpandedType::get_from_convertor(Maybe<bool> isValueVar, ir::Type* candT
 Maybe<Method*> ExpandedType::check_to_convertor(Vec<Method*> const& toConvertors, ir::Type* targetTy) {
 	for (auto* tconv : toConvertors) {
 		auto* retTy = tconv->get_ir_type()->as_function()->get_return_type()->get_type();
-		if (retTy->is_same(targetTy) ||
-		    (retTy->is_reference() && retTy->as_reference()->get_subtype()->is_same(targetTy)) ||
-		    (targetTy->is_reference() && targetTy->as_reference()->get_subtype()->is_same(retTy))) {
+		if (retTy->is_same(targetTy) || (retTy->is_ref() && retTy->as_ref()->get_subtype()->is_same(targetTy)) ||
+		    (targetTy->is_ref() && targetTy->as_ref()->get_subtype()->is_same(retTy))) {
 			return tconv;
 		}
 	}
@@ -273,21 +272,21 @@ Method* ExpandedType::get_to_convertor(ir::Type* typ) const {
 	return ExpandedType::check_to_convertor(toConvertors, typ).value();
 }
 
-bool ExpandedType::has_copy_constructor() const { return copyConstructor.has_value(); }
+bool ExpandedType::has_copy_constructor() const { return copyConstructor != nullptr; }
 
-Method* ExpandedType::get_copy_constructor() const { return copyConstructor.value(); }
+Method* ExpandedType::get_copy_constructor() const { return copyConstructor; }
 
-bool ExpandedType::has_move_constructor() const { return moveConstructor.has_value(); }
+bool ExpandedType::has_move_constructor() const { return moveConstructor != nullptr; }
 
-Method* ExpandedType::get_move_constructor() const { return moveConstructor.value(); }
+Method* ExpandedType::get_move_constructor() const { return moveConstructor; }
 
-bool ExpandedType::has_copy_assignment() const { return copyAssignment.has_value(); }
+bool ExpandedType::has_copy_assignment() const { return copyAssignment != nullptr; }
 
-Method* ExpandedType::get_copy_assignment() const { return copyAssignment.value(); }
+Method* ExpandedType::get_copy_assignment() const { return copyAssignment; }
 
-bool ExpandedType::has_move_assignment() const { return moveAssignment.has_value(); }
+bool ExpandedType::has_move_assignment() const { return moveAssignment != nullptr; }
 
-Method* ExpandedType::get_move_assignment() const { return moveAssignment.value(); }
+Method* ExpandedType::get_move_assignment() const { return moveAssignment; }
 
 bool ExpandedType::has_copy() const { return has_copy_constructor() && has_copy_assignment(); }
 

@@ -1,4 +1,5 @@
 #include "./opaque.hpp"
+#include "../../show.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
 
@@ -26,7 +27,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 		foreignID = metaInfo->get_foreign_id();
 		linkAlias = metaInfo->get_value_as_string_for(ir::MetaInfo::linkAsKey);
 	}
-	if (!foreignID.has_value()) {
+	if (not foreignID.has_value()) {
 		foreignID = parent->get_relevant_foreign_id();
 	}
 	auto linkNames = parent->get_link_names().newWith(
@@ -58,7 +59,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 	linkingName = linkNames.toName();
 	SHOW("Linking name is " << linkingName)
 	llvmType = llvm::StructType::create(llctx, linkingName);
-	if (!is_generic()) {
+	if (not is_generic()) {
 		parent->opaqueTypes.push_back(this);
 	}
 }
@@ -89,7 +90,7 @@ Identifier OpaqueType::get_name() const { return name; }
 
 ir::Mod* OpaqueType::get_module() const { return parent; }
 
-bool OpaqueType::is_generic() const { return !generics.empty(); }
+bool OpaqueType::is_generic() const { return not generics.empty(); }
 
 Maybe<u64> OpaqueType::get_generic_id() const { return genericID; }
 
@@ -124,7 +125,7 @@ bool OpaqueType::has_subtype() const { return subTy != nullptr; }
 void OpaqueType::set_sub_type(ir::ExpandedType* _subTy) {
 	subTy = _subTy;
 	SHOW("Opaque: set subtype")
-	if (!is_generic()) {
+	if (not is_generic()) {
 		for (auto item = parent->opaqueTypes.begin(); item != parent->opaqueTypes.end(); item++) {
 			if ((*item)->get_id() == get_id()) {
 				parent->opaqueTypes.erase(item);
@@ -219,7 +220,7 @@ void OpaqueType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
 	}
 }
 
-TypeKind OpaqueType::type_kind() const { return TypeKind::opaque; }
+TypeKind OpaqueType::type_kind() const { return TypeKind::OPAQUE; }
 
 String OpaqueType::to_string() const { return get_full_name(); }
 

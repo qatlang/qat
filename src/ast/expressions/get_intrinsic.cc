@@ -19,13 +19,13 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 	if (not ir::StdLib::is_std_lib_found()) {
 		ctx->Error("The standard library could not be found, and hence cannot retrieve intrinsic", fileRange);
 	}
-	if (not ir::StdLib::stdLib->has_choice_type("Intrinsic", AccessInfo::GetPrivileged())) {
+	if (not ir::StdLib::stdLib->has_choice_type("Intrinsic", AccessInfo::get_privileged())) {
 		ctx->Error(
 		    "The choice type " + ctx->color("Intrinsic") +
 		        " is not found in the standard library, and hence the ID of the intrinsic could not be determined",
 		    fileRange);
 	}
-	auto intrChTy = ir::StdLib::stdLib->get_choice_type("Intrinsic", AccessInfo::GetPrivileged());
+	auto intrChTy = ir::StdLib::stdLib->get_choice_type("Intrinsic", AccessInfo::get_privileged());
 	if (nameIR->get_ir_type()->is_same(intrChTy)) {
 		auto nmVal = (u32)(*llvm::cast<llvm::ConstantInt>(nameIR->get_llvm_constant())->getValue().getRawData());
 		if (nmVal == (u32)IntrinsicID::llvm_matrix_multiply) {
@@ -76,8 +76,8 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				auto fourthVal = args[4]->emit(ctx);
 				auto fifthVal  = args[5]->emit(ctx);
 				auto checkFn   = [&](ir::PrerunValue* value, FileRange range) {
-                    if (not(value->get_ir_type()->is_unsigned_integer() &&
-                            (value->get_ir_type()->as_unsigned_integer()->get_bitwidth() == 32u))) {
+                    if (not(value->get_ir_type()->is_unsigned() &&
+                            (value->get_ir_type()->as_unsigned()->get_bitwidth() == 32u))) {
                         ctx->Error("This value is expected to be of type " + ctx->color("u32") +
 						                 ". Got an expression of type " + ctx->color(value->get_ir_type()->to_string()),
 						             range);
@@ -99,7 +99,7 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 					               " but the product of the 3rd and 4th values is " +
 					               ctx->color(std::to_string(
 					                   *llvm::cast<llvm::ConstantInt>(
-					                        llvm::ConstantFoldConstant(oneMulRes, ctx->irCtx->dataLayout.value()))
+					                        llvm::ConstantFoldConstant(oneMulRes, ctx->irCtx->dataLayout))
 					                        ->getValue()
 					                        .getRawData())) +
 					               ". The element count does not match",
@@ -118,7 +118,7 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 					               " but the product of the 4th and 5th values is " +
 					               ctx->color(std::to_string(
 					                   *llvm::cast<llvm::ConstantInt>(
-					                        llvm::ConstantFoldConstant(oneMulRes, ctx->irCtx->dataLayout.value()))
+					                        llvm::ConstantFoldConstant(oneMulRes, ctx->irCtx->dataLayout))
 					                        ->getValue()
 					                        .getRawData())) +
 					               ". The element count does not match",
@@ -129,7 +129,7 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				    *llvm::cast<llvm::ConstantInt>(
 				         llvm::ConstantFoldConstant(
 				             llvm::ConstantExpr::getMul(thirdVal->get_llvm_constant(), fifthVal->get_llvm_constant()),
-				             ctx->irCtx->dataLayout.value()))
+				             ctx->irCtx->dataLayout))
 				         ->getValue()
 				         .getRawData(),
 				    ir::VectorKind::fixed, ctx->irCtx);

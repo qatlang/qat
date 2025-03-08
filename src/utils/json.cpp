@@ -336,7 +336,7 @@ bool JsonValue::operator==(JsonValue const& other) const {
 	}
 }
 
-bool JsonValue::operator!=(const JsonValue& other) const { return !(*this == other); }
+bool JsonValue::operator!=(const JsonValue& other) const { return not(*this == other); }
 
 bool JsonValue::operator==(int val) const {
 	if (isInt()) {
@@ -344,6 +344,7 @@ bool JsonValue::operator==(int val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(int val) const {
 	if (isInt()) {
 		return ((*((int64_t*)data)) != ((int64_t)val));
@@ -357,6 +358,7 @@ bool JsonValue::operator==(unsigned val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(unsigned val) const {
 	if (isInt()) {
 		return ((*((int64_t*)data)) != ((int64_t)val));
@@ -370,6 +372,7 @@ bool JsonValue::operator==(unsigned long long val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(unsigned long long val) const {
 	if (isInt()) {
 		return ((*((int64_t*)data)) != ((int64_t)val));
@@ -384,6 +387,7 @@ bool JsonValue::operator==(uint64_t val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(uint64_t val) const {
 	if (isInt()) {
 		return ((*((int64_t*)data)) != ((int64_t)val));
@@ -398,6 +402,7 @@ bool JsonValue::operator==(int64_t val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(int64_t val) const {
 	if (isInt()) {
 		return ((*((int64_t*)data)) != val);
@@ -411,6 +416,7 @@ bool JsonValue::operator==(float val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(float val) const {
 	if (isDouble()) {
 		return ((*((double*)data)) != ((double)val));
@@ -424,6 +430,7 @@ bool JsonValue::operator==(double val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(double val) const {
 	if (isDouble()) {
 		return ((*((double*)data)) != val);
@@ -437,6 +444,7 @@ bool JsonValue::operator==(const char* val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(const char* val) const {
 	if (isString()) {
 		return ((*((std::string*)data)) != std::string(val));
@@ -450,6 +458,7 @@ bool JsonValue::operator==(const std::string& val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(const std::string& val) const {
 	if (isString()) {
 		return ((*((std::string*)data)) != val);
@@ -463,6 +472,7 @@ bool JsonValue::operator==(const bool val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(const bool val) const {
 	if (is_bool()) {
 		return ((*((bool*)data)) != val);
@@ -476,6 +486,7 @@ bool JsonValue::operator==(const Json& val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(const Json& val) const {
 	if (isJson()) {
 		return ((*((Json*)data)) != val);
@@ -499,6 +510,7 @@ bool JsonValue::operator==(const Vec<JsonValue>& val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(const Vec<JsonValue>& val) const {
 	if (isList()) {
 		auto* thisList = (Vec<JsonValue>*)data;
@@ -534,6 +546,7 @@ bool JsonValue::operator==(const std::initializer_list<JsonValue>& val) const {
 	}
 	return false;
 }
+
 bool JsonValue::operator!=(const std::initializer_list<JsonValue>& val) const {
 	if (isList()) {
 		auto* thisList = (Vec<JsonValue>*)data;
@@ -822,7 +835,7 @@ bool Json::operator==(const Json& other) const {
 		return false;
 	}
 	for (std::size_t i = 0; i < keys.size(); i++) {
-		if (!values.at(i).isNone()) {
+		if (not values.at(i).isNone()) {
 			if (keys.at(i) != other.keys.at(i)) {
 				return false;
 			}
@@ -834,7 +847,7 @@ bool Json::operator==(const Json& other) const {
 	return true;
 }
 
-bool Json::operator!=(const Json& other) const { return !((*this) == other); }
+bool Json::operator!=(const Json& other) const { return not((*this) == other); }
 
 std::size_t Json::size() const {
 	std::size_t result = 0;

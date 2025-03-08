@@ -94,26 +94,36 @@ class Block : public Uniq {
 	~Block() = default;
 
 	useit String get_name() const { return name; }
+
 	useit llvm::BasicBlock* get_bb() const { return bb; }
 
-	useit bool   has_previous_block() const { return prevBlock != nullptr; }
+	useit bool has_previous_block() const { return prevBlock != nullptr; }
+
 	useit Block* get_previous_block() const { return prevBlock; }
-	useit bool   has_next_block() const { return nextBlock != nullptr; }
+
+	useit bool has_next_block() const { return nextBlock != nullptr; }
+
 	useit Block* get_next_block() const { return nextBlock; }
 
-	useit bool        has_parent() const { return parent != nullptr; }
-	useit Block*      get_parent() const { return parent; }
-	useit Function*   get_fn() const { return fn; }
+	useit bool has_parent() const { return parent != nullptr; }
+
+	useit Block* get_parent() const { return parent; }
+
+	useit Function* get_fn() const { return fn; }
+
 	useit bool        has_value(const String& name) const;
 	useit LocalValue* get_value(const String& name) const;
-	useit LocalValue* new_value(const String& name, ir::Type* type, bool isVar, FileRange fileRange) {
+
+	useit LocalValue* new_local(const String& name, ir::Type* type, bool isVar, FileRange fileRange) {
 		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
 		return values.back();
 	}
+
 	useit bool is_moved(u64 locID) const;
 	useit bool has_give_in_all_control_paths() const;
 
-	useit bool   has_todo() const { return hasTodo; }
+	useit bool has_todo() const { return hasTodo; }
+
 	useit Block* get_active() {
 		if (active) {
 			return children.at(active.value())->get_active();
@@ -123,6 +133,7 @@ class Block : public Uniq {
 	}
 
 	useit Vec<LocalValue*>& get_locals() { return values; }
+
 	useit Maybe<FileRange> get_file_range() const {
 		if (fileRange.has_value()) {
 			return fileRange;
@@ -137,9 +148,13 @@ class Block : public Uniq {
 		prevBlock        = block;
 		block->nextBlock = this;
 	}
+
 	void set_file_range(FileRange _fileRange) { fileRange = _fileRange; }
+
 	void set_has_give() const { hasGive = true; }
+
 	void set_has_todo() const { hasTodo = true; }
+
 	void add_moved_value(u64 locID) const { movedValues.push_back(locID); }
 
 	void set_active(llvm::IRBuilder<>& builder);
@@ -183,30 +198,47 @@ class Function : public Value, public Uniq, public EntityOverview {
 	                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
 	                        Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
-	useit Value*             call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod) override;
-	useit virtual bool       is_method() const { return false; }
-	useit bool               has_variadic_args() const { return hasVariadicArguments; }
-	useit Identifier         arg_name_at(u32 index) const { return arguments[index].get_name(); }
+	useit Value* call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod) override;
+
+	useit virtual bool is_method() const { return false; }
+
+	useit bool has_variadic_args() const { return hasVariadicArguments; }
+
+	useit Identifier arg_name_at(u32 index) const { return arguments[index].get_name(); }
+
 	useit virtual Identifier get_name() const { return name; }
-	useit virtual String     get_full_name() const;
+
+	useit virtual String get_full_name() const;
+
 	useit bool is_accessible(const AccessInfo& req_info) const { return visibilityInfo.is_accessible(req_info); }
+
 	useit VisibilityInfo const& get_visibility() const { return visibilityInfo; }
+
 	useit ir::Mod* get_module() const { return mod; }
+
 	useit llvm::Function* get_llvm_function() { return llvm::cast<llvm::Function>(ll); }
-	useit Block*          get_block() const { return blocks.at(activeBlock)->get_active(); }
-	useit Block*          get_first_block() const { return blocks[0]; }
-	useit usize           get_block_count() const { return blocks.size(); }
-	useit bool            is_inline() const { return isInline; }
-	useit LocalValue*     get_str_comparison_index();
-	useit bool            is_generic() const { return !generics.empty(); }
-	useit bool            has_generic_parameter(const String& name) const {
-        for (auto* gen : generics) {
-            if (gen->get_name().value == name) {
-                return true;
-            }
-        }
-        return false;
+
+	useit Block* get_block() const { return blocks.at(activeBlock)->get_active(); }
+
+	useit Block* get_first_block() const { return blocks[0]; }
+
+	useit usize get_block_count() const { return blocks.size(); }
+
+	useit bool is_inline() const { return isInline; }
+
+	useit LocalValue* get_str_comparison_index();
+
+	useit bool is_generic() const { return !generics.empty(); }
+
+	useit bool has_generic_parameter(const String& name) const {
+		for (auto* gen : generics) {
+			if (gen->get_name().value == name) {
+				return true;
+			}
+		}
+		return false;
 	}
+
 	useit GenericArgument* get_generic_parameter(const String& name) const {
 		for (auto* gen : generics) {
 			if (gen->get_name().value == name) {
@@ -215,7 +247,9 @@ class Function : public Value, public Uniq, public EntityOverview {
 		}
 		return nullptr;
 	}
-	useit bool      has_definition_range() const { return fileRange.has_value(); }
+
+	useit bool has_definition_range() const { return fileRange.has_value(); }
+
 	useit FileRange get_definition_range() const { return fileRange.value(); }
 
 	useit String get_random_alloca_name() const {

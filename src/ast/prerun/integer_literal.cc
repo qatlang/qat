@@ -4,12 +4,12 @@ namespace qat::ast {
 
 ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred() &&
-	    (!inferredType->is_integer() && !inferredType->is_unsigned_integer() &&
-	     (!bits.has_value() && !inferredType->is_float()) &&
-	     (!bits.has_value() && inferredType->is_native_type() &&
-	      !inferredType->as_native_type()->get_subtype()->is_float()) &&
-	     (inferredType->is_native_type() && !(inferredType->as_native_type()->get_subtype()->is_unsigned_integer() ||
-	                                          inferredType->as_native_type()->get_subtype()->is_integer())))) {
+	    (not inferredType->is_integer() && not inferredType->is_unsigned() &&
+	     (not bits.has_value() && not inferredType->is_float()) &&
+	     (not bits.has_value() && inferredType->is_native_type() &&
+	      not inferredType->as_native_type()->get_subtype()->is_float()) &&
+	     (inferredType->is_native_type() && not(inferredType->as_native_type()->get_subtype()->is_unsigned() ||
+	                                            inferredType->as_native_type()->get_subtype()->is_integer())))) {
 		if (bits.has_value()) {
 			ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) +
 			               ". The only supported types for this literal are signed & unsigned integers",
@@ -25,7 +25,7 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 	    is_type_inferred()
 	        ? (inferredType->is_native_type() ? inferredType->as_native_type()->get_subtype() : inferredType)
 	        : ir::IntegerType::get(32, ctx->irCtx);
-	if (bits.has_value() && !ctx->mod->has_integer_bitwidth(bits.value().first)) {
+	if (bits.has_value() && not ctx->mod->has_integer_bitwidth(bits.value().first)) {
 		ctx->Error("The custom integer bitwidth " + ctx->color(std::to_string(bits.value().first)) +
 		               " is not brought into the current module",
 		           bits.value().second);

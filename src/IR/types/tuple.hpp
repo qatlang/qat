@@ -32,17 +32,19 @@ class TupleType : public Type {
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
 	useit bool is_type_sized() const;
+
 	useit bool is_trivially_copyable() const final {
 		for (auto* sub : subTypes) {
-			if (!sub->is_trivially_copyable()) {
+			if (not sub->is_trivially_copyable()) {
 				return false;
 			}
 		}
 		return true;
 	}
+
 	useit bool is_trivially_movable() const final {
 		for (auto* sub : subTypes) {
-			if (!sub->is_trivially_movable()) {
+			if (not sub->is_trivially_movable()) {
 				return false;
 			}
 		}

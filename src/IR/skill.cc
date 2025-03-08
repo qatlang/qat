@@ -93,6 +93,7 @@ Skill::Skill(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, Vi
                          ._("visibility", _visibInfo),
                      _name.range),
       name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)) {
+	SHOW("Skill name is " << name.value)
 	if (generics.empty()) {
 		parent->skills.push_back(this);
 	}
@@ -198,7 +199,7 @@ Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx
 			return var.get();
 		}
 	}
-	ir::fill_generics(irCtx, generics, toFillTypes, range);
+	ir::fill_generics(ast::EmitCtx::get(irCtx, parent), generics, toFillTypes, range);
 	if (constraint != nullptr) {
 		auto checkVal = constraint->emit(ast::EmitCtx::get(irCtx, parent));
 		if (not checkVal->get_ir_type()->is_bool()) {
@@ -302,7 +303,7 @@ String DoneSkill::get_full_name() const {
 	       "]";
 }
 
-bool DoneSkill::is_type_extension() const { return !skill.has_value(); }
+bool DoneSkill::is_type_extension() const { return not skill.has_value(); }
 
 bool DoneSkill::is_normal_skill() const { return skill.has_value(); }
 

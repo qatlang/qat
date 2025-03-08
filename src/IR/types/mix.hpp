@@ -66,7 +66,7 @@ class MixType : public ExpandedType, public EntityOverview {
 
 	useit bool can_be_prerun() const final {
 		for (auto sub : subtypes) {
-			if (sub.second.has_value() && !sub.second.value()->can_be_prerun()) {
+			if (sub.second.has_value() && not sub.second.value()->can_be_prerun()) {
 				return false;
 			}
 		}

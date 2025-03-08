@@ -177,7 +177,7 @@ Json TypeDefinition::to_json() const {
 	    ._("nodeType", "typeDefinition")
 	    ._("name", name)
 	    ._("subType", subType->to_json())
-	    ._("hasGenerics", !generics.empty())
+	    ._("hasGenerics", not generics.empty())
 	    ._("generics", genJson)
 	    ._("hasVisibility", visibSpec.has_value())
 	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())

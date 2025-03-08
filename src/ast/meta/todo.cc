@@ -24,7 +24,7 @@ ir::Value* MetaTodo::emit(EmitCtx* ctx) {
 	}
 	if (ctx->has_fn()) {
 		if (ctx->get_fn()->get_block()->get_bb()->empty() ||
-		    !llvm::isa<llvm::UnreachableInst>(*ctx->get_fn()->get_block()->get_bb()->end())) {
+		    not llvm::isa<llvm::UnreachableInst>(*ctx->get_fn()->get_block()->get_bb()->end())) {
 			ctx->irCtx->builder.CreateUnreachable();
 		}
 		ctx->get_fn()->get_block()->set_has_todo();

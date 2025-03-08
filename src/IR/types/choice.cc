@@ -70,7 +70,7 @@ String ChoiceType::get_full_name() const { return parent->get_fullname_with_chil
 Mod* ChoiceType::get_module() const { return parent; }
 
 bool ChoiceType::has_negative_values() const {
-	return (!areValuesUnsigned) ||
+	return (not areValuesUnsigned) ||
 	       (providedType.has_value() && (providedType.value()->is_integer() ||
 	                                     (providedType.value()->is_native_type() &&
 	                                      providedType.value()->as_native_type()->get_subtype()->is_integer())));
@@ -173,7 +173,7 @@ void ChoiceType::get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missi
 				}
 			}
 		}
-		if (!result) {
+		if (not result) {
 			missing.push_back(sub.front());
 		}
 	}

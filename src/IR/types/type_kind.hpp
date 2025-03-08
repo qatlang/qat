@@ -5,31 +5,31 @@ namespace qat::ir {
 
 // I almost named this TypeType
 enum class TypeKind {
-	Void,            // Void type
-	array,           // Array of elements of Type type
-	core,            // Struct type
-	Float,           // Floating point number
-	integer,         // Signed integer
-	unsignedInteger, // Unsigned integer
-	stringSlice,     // String Slice
-	mixType,         // Mix Type (Discriminated Union / Sum Type)
-	tuple,           // Tuple is a product type of multiple types
-	pointer,         // Pointer to another Type type
-	reference,       // Reference to another Type type
-	function,        // Function type
-	definition,      // A type definition
-	choice,          // Choice (C++ style enums)
-	future,          // Future type
-	maybe,           // Optional type
-	region,          // Memory safe arena allocator
-	opaque,          // Opaque type for temporary representation
-	typed,           // Type Wrapping to hold another type
-	nativeType,      // Type from C language
-	result,          // Result Type that also wraps an error
-	vector,
-	toggle,
-	polymorph,
-	flag,
+	VOID,             // Void type
+	ARRAY,            // Array of elements of Type type
+	STRUCT,           // Struct type
+	FLOAT,            // Floating point number
+	INTEGER,          // Signed integer
+	UNSIGNED_INTEGER, // Unsigned integer
+	TEXT,             // Text type (String View)
+	MIX,              // Mix Type (Discriminated Union / Sum Type)
+	TUPLE,            // Tuple is a product type of multiple types
+	MARK,             // Pointer to another Type type
+	REFERENCE,        // Reference to another Type type
+	FUNCTION,         // Function type
+	DEFINITION,       // A type definition
+	CHOICE,           // Choice (C++ style enums)
+	FUTURE,           // Future type
+	MAYBE,            // Optional type
+	REGION,           // Memory safe arena allocator
+	OPAQUE,           // Opaque type for temporary representation
+	TYPED,            // Representation for Type Information
+	NATIVE,           // Type from C language
+	RESULT,           // Result Type that also wraps an error
+	VECTOR,           // SIMD Vector types
+	TOGGLE,           // C-style unions
+	POLYMORPH,        // Runtime behavioural polymorphism object
+	FLAG,             // Bitflag
 };
 
 } // namespace qat::ir

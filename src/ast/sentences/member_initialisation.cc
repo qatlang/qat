@@ -14,7 +14,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 			case ir::MethodType::defaultConstructor:
 			case ir::MethodType::fromConvertor:
 			case ir::MethodType::constructor: {
-				if (!isAllowed) {
+				if (not isAllowed) {
 					ctx->Error(
 					    "Member initialisation is not supported in this scope. It can only be present in the top level scope of the " +
 					        String(memFn->get_method_type() == ir::MethodType::fromConvertor ? "convertor"
@@ -46,7 +46,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 					}
 				} else if (parentTy->is_mix()) {
 					auto mixRes = parentTy->as_mix()->has_variant_with_name(memName.value);
-					if (!mixRes.first) {
+					if (not mixRes.first) {
 						ctx->Error("No variant named " + ctx->color(memName.value) + " found in parent mix type " +
 						               ctx->color(parentTy->to_string()),
 						           memName.range);
@@ -62,7 +62,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 					}
 					SHOW("Adding mix init member")
 					memFn->add_init_member({parentTy->as_mix()->get_index_of(memName.value), fileRange});
-					if (!mixRes.second) {
+					if (not mixRes.second) {
 						if (isInitOfMixVariantWithoutValue) {
 							ctx->irCtx->builder.CreateStore(
 							    llvm::ConstantInt::get(
@@ -89,19 +89,18 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 								    ctx->irCtx->builder.CreatePointerCast(
 								        ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(),
 								                                            selfVal->get_llvm(), 1u),
-								        llvm::PointerType::get(
-								            memTy->get_llvm_type(),
-								            ctx->irCtx->dataLayout.value().getProgramAddressSpace())));
+								        llvm::PointerType::get(memTy->get_llvm_type(),
+								                               ctx->irCtx->dataLayout.getProgramAddressSpace())));
 							} else if (memTy->is_default_constructible()) {
 								memTy->default_construct_value(
 								    ctx->irCtx,
-								    ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
-								                       ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(),
-								                                                           selfVal->get_llvm(), 1u),
-								                       llvm::PointerType::get(
-								                           memTy->get_llvm_type(),
-								                           ctx->irCtx->dataLayout.value().getProgramAddressSpace())),
-								                   ir::ReferenceType::get(true, memTy, ctx->irCtx), false),
+								    ir::Value::get(
+								        ctx->irCtx->builder.CreatePointerCast(
+								            ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(),
+								                                                selfVal->get_llvm(), 1u),
+								            llvm::PointerType::get(memTy->get_llvm_type(),
+								                                   ctx->irCtx->dataLayout.getProgramAddressSpace())),
+								        ir::RefType::get(true, memTy, ctx->irCtx), false),
 								    memFn);
 							} else {
 								ctx->Error(
@@ -132,15 +131,15 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 					SHOW("Getting value")
 					memRef = ir::Value::get(ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(),
 					                                                            selfRef->get_llvm(), memIndex.value()),
-					                        ir::ReferenceType::get(true, memTy, ctx->irCtx), false);
+					                        ir::RefType::get(true, memTy, ctx->irCtx), false);
 				} else {
 					SHOW("Getting value")
 					memRef = ir::Value::get(
 					    ctx->irCtx->builder.CreatePointerCast(
 					        ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(), selfRef->get_llvm(), 1u),
 					        llvm::PointerType::get(memTy->get_llvm_type(),
-					                               ctx->irCtx->dataLayout.value().getProgramAddressSpace())),
-					    ir::ReferenceType::get(true, memTy, ctx->irCtx), false);
+					                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
+					    ir::RefType::get(true, memTy, ctx->irCtx), false);
 				}
 				SHOW("Got value")
 				if (value->isInPlaceCreatable()) {
@@ -150,13 +149,13 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 				} else {
 					auto* irVal = value->emit(ctx);
 					if (memTy->is_same(irVal->get_ir_type())) {
-						if (!memTy->is_reference() && irVal->is_ghost_reference()) {
+						if (not memTy->is_ref() && irVal->is_ghost_ref()) {
 							if (memTy->is_trivially_copyable() || memTy->is_trivially_movable()) {
 								ctx->irCtx->builder.CreateStore(
 								    ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm()),
 								    memRef->get_llvm());
-								if (!memTy->is_trivially_copyable()) {
-									if (!irVal->is_variable()) {
+								if (not memTy->is_trivially_copyable()) {
+									if (not irVal->is_variable()) {
 										ctx->Error(
 										    "This expression does not have variability and hence cannot be trivially moved from",
 										    value->fileRange);
@@ -173,14 +172,13 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 						} else {
 							ctx->irCtx->builder.CreateStore(irVal->get_llvm(), memRef->get_llvm());
 						}
-					} else if (irVal->is_reference() &&
-					           irVal->get_ir_type()->as_reference()->get_subtype()->is_same(memTy)) {
+					} else if (irVal->is_ref() && irVal->get_ir_type()->as_ref()->get_subtype()->is_same(memTy)) {
 						if (memTy->is_trivially_copyable() || memTy->is_trivially_movable()) {
 							ctx->irCtx->builder.CreateStore(
 							    ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm()),
 							    memRef->get_llvm());
-							if (!memTy->is_trivially_copyable()) {
-								if (!irVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
+							if (not memTy->is_trivially_copyable()) {
+								if (not irVal->get_ir_type()->as_ref()->has_variability()) {
 									ctx->Error(
 									    "This expression is a reference without variability and hence cannot be trivially moved from",
 									    value->fileRange);

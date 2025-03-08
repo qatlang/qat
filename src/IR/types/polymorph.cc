@@ -8,7 +8,7 @@ namespace qat::ir {
 
 Polymorph::Polymorph(bool _isTyped, Vec<Skill*> _skills, MarkOwner _owner, ir::Ctx* ctx)
     : isTyped(_isTyped), skills(std::move(skills)), owner(_owner) {
-	auto             ptrTy  = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.value().getProgramAddressSpace());
+	auto             ptrTy  = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
 	Vec<llvm::Type*> subTys = {ptrTy, ptrTy};
 	linkingName += "qat'poly_";
 	if (isTyped) {

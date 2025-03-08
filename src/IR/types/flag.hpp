@@ -49,23 +49,11 @@ class FlagType final : public EntityOverview, public Type {
 
 	useit bool can_be_prerun_generic() const final { return true; }
 
-	useit bool has_prerun_default_value() const final { return true; }
-
-	useit bool is_default_constructible() const final { return true; }
-
-	useit bool is_copy_constructible() const final { return true; }
-
-	useit bool is_copy_assignable() const final { return true; }
-
-	useit bool is_move_constructible() const final { return true; }
-
-	useit bool is_move_assignable() const final { return true; }
-
-	useit bool is_destructible() const final { return true; }
-
 	useit bool is_trivially_copyable() const final { return true; }
 
 	useit bool is_trivially_movable() const final { return true; }
+
+	useit bool has_prerun_default_value() const final { return true; }
 
 	useit PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 
@@ -85,7 +73,7 @@ class FlagType final : public EntityOverview, public Type {
 
 	useit PrerunValue* get_value_for(String name) const;
 
-	useit TypeKind type_kind() const final { return TypeKind::flag; }
+	useit TypeKind type_kind() const final { return TypeKind::FLAG; }
 
 	useit String to_string() const final;
 };

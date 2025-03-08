@@ -17,15 +17,16 @@ add_library(QAT_IR_TYPES STATIC
 	reference.cc
 	region.cc
 	result.cc
-	string_slice.cc
 	struct_type.cc
+	text.cc
 	toggle.cc
 	tuple.cc
 	typed.cc
 	mix.cc
 	unsigned.cc
 	vector.cc
-   void.cc)
+	void.cc
+)
 
 target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
 

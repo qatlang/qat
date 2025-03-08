@@ -16,11 +16,11 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 	}
 	SHOW("Emitted lhs of Assignment")
 	if (lhsVal->is_variable() ||
-	    (lhsVal->get_ir_type()->is_reference() && lhsVal->get_ir_type()->as_reference()->isSubtypeVariable())) {
+	    (lhsVal->get_ir_type()->is_ref() && lhsVal->get_ir_type()->as_ref()->has_variability())) {
 		SHOW("Is variable nature")
-		if (lhsVal->get_ir_type()->is_reference() || lhsVal->is_ghost_reference()) {
-			if (lhsVal->is_reference()) {
-				lhsVal->load_ghost_reference(ctx->irCtx->builder);
+		if (lhsVal->get_ir_type()->is_ref() || lhsVal->is_ghost_ref()) {
+			if (lhsVal->is_ref()) {
+				lhsVal->load_ghost_ref(ctx->irCtx->builder);
 			}
 			if (value->nodeType() == NodeType::COPY) {
 				auto copyExp          = (ast::Copy*)value;
@@ -42,35 +42,35 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 			auto* lhsTy = lhsVal->get_ir_type();
 			auto* expTy = expVal->get_ir_type();
 			if (lhsTy->is_same(expTy) || lhsTy->isCompatible(expTy) ||
-			    (lhsTy->is_reference() && lhsTy->as_reference()->get_subtype()->is_same(
-			                                  expTy->is_reference() ? expTy->as_reference()->get_subtype() : expTy)) ||
-			    (expTy->is_reference() && expTy->as_reference()->get_subtype()->is_same(
-			                                  lhsTy->is_reference() ? lhsTy->as_reference()->get_subtype() : lhsTy))) {
+			    (lhsTy->is_ref() &&
+			     lhsTy->as_ref()->get_subtype()->is_same(expTy->is_ref() ? expTy->as_ref()->get_subtype() : expTy)) ||
+			    (expTy->is_ref() &&
+			     expTy->as_ref()->get_subtype()->is_same(lhsTy->is_ref() ? lhsTy->as_ref()->get_subtype() : lhsTy))) {
 				SHOW("The general types are the same")
-				if (lhsVal->is_ghost_reference() && lhsTy->is_reference()) {
+				if (lhsVal->is_ghost_ref() && lhsTy->is_ref()) {
 					SHOW("LHS is implicit pointer")
-					lhsVal->load_ghost_reference(ctx->irCtx->builder);
+					lhsVal->load_ghost_ref(ctx->irCtx->builder);
 					SHOW("Loaded implicit pointer")
 				}
-				if (expTy->is_reference() || expVal->is_ghost_reference()) {
-					if (expTy->is_reference()) {
-						expVal->load_ghost_reference(ctx->irCtx->builder);
+				if (expTy->is_ref() || expVal->is_ghost_ref()) {
+					if (expTy->is_ref()) {
+						expVal->load_ghost_ref(ctx->irCtx->builder);
 						SHOW("Expression for assignment is of type "
 						     << expTy->as_reference()->get_subtype()->to_string())
-						expTy = expTy->as_reference()->get_subtype();
+						expTy = expTy->as_ref()->get_subtype();
 					}
 					if (expTy->is_trivially_copyable() || expTy->is_trivially_movable()) {
 						auto prevRef = expVal->get_llvm();
 						expVal =
 						    ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), expVal->get_llvm()),
 						                   expVal->get_ir_type(), expVal->is_variable());
-						if (!expTy->is_trivially_copyable()) {
-							if (expTy->is_reference() && !expTy->as_reference()->isSubtypeVariable()) {
+						if (not expTy->is_trivially_copyable()) {
+							if (expTy->is_ref() && not expTy->as_ref()->has_variability()) {
 								ctx->Error(
 								    "This expression is of type " + ctx->color(expTy->to_string()) +
 								        " which is a reference without variability and hence cannot be trivially moved from",
 								    value->fileRange);
-							} else if (!expVal->is_variable()) {
+							} else if (not expVal->is_variable()) {
 								ctx->Error(
 								    "This expression does not have variability and hence cannot be trivially moved from",
 								    fileRange);
@@ -103,7 +103,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 			ctx->Error("Left hand side of the assignment cannot be assigned to as it is value", lhs->fileRange);
 		}
 	} else {
-		if (lhsVal->get_ir_type()->is_reference()) {
+		if (lhsVal->get_ir_type()->is_ref()) {
 			ctx->Error(
 			    "Left hand side of the assignment cannot be assigned to because the reference does not have variability",
 			    lhs->fileRange);

@@ -91,13 +91,13 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 	    mod->has_brought_generic_function(entityName.value, ctx->get_access_info()) ||
 	    mod->has_generic_function_in_imports(entityName.value, reqInfo).first) {
 		auto* genericFn = mod->get_generic_function(entityName.value, reqInfo);
-		if (!genericFn->get_visibility().is_accessible(ctx->get_access_info())) {
+		if (not genericFn->get_visibility().is_accessible(ctx->get_access_info())) {
 			auto fullName = Identifier::fullName(names);
 			ctx->Error("Generic function " + ctx->color(fullName.value) + " is not accessible here", fullName.range);
 		}
 		if (genericTypes.empty()) {
 			SHOW("Checking if all generic abstracts have defaults")
-			if (!genericFn->all_generics_have_default()) {
+			if (not genericFn->all_generics_have_default()) {
 				ctx->Error(
 				    "Not all generic parameters in this function have a default type associated with it, and hence the generic values can't be empty. Use " +
 				        ctx->color("default") + " to use the default type or value of the generic parameter.",

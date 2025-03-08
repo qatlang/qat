@@ -51,12 +51,12 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	auto emitCtx = EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent);
 	if (defineChecker) {
 		auto condRes = defineChecker->emit(emitCtx);
-		if (!condRes->get_ir_type()->is_bool()) {
+		if (not condRes->get_ir_type()->is_bool()) {
 			irCtx->Error("The condition for defining the method should be of " + irCtx->color("bool") + " type",
 			             defineChecker->fileRange);
 		}
 		state.defineCondition = llvm::cast<llvm::ConstantInt>(condRes->get_llvm())->getValue().getBoolValue();
-		if (state.defineCondition.has_value() && !state.defineCondition.value()) {
+		if (state.defineCondition.has_value() && not state.defineCondition.value()) {
 			return;
 		}
 	}
@@ -200,9 +200,9 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 					}
 					if (fnTy == MethodType::variation) {
 						auto* memTy = structType->get_type_of_field(arg->get_name().value);
-						if (memTy->is_reference()) {
-							if (memTy->as_reference()->isSubtypeVariable()) {
-								memTy = memTy->as_reference()->get_subtype();
+						if (memTy->is_ref()) {
+							if (memTy->as_ref()->has_variability()) {
+								memTy = memTy->as_ref()->get_subtype();
 							} else {
 								irCtx->Error("Member " + irCtx->color(arg->get_name().value) + " of struct type " +
 								                 irCtx->color(structType->get_full_name()) +
@@ -323,7 +323,7 @@ Json MethodPrototype::to_json() const {
 void MethodDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
 
 ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
-	if (state.defineCondition.has_value() && !state.defineCondition.value()) {
+	if (state.defineCondition.has_value() && not state.defineCondition.value()) {
 		return nullptr;
 	}
 	auto* fnEmit = state.result;
@@ -333,14 +333,14 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
-	auto               argIRTypes = fnEmit->get_ir_type()->as_function()->get_argument_types();
-	ir::ReferenceType* coreRefTy  = nullptr;
-	ir::LocalValue*    self       = nullptr;
+	auto            argIRTypes = fnEmit->get_ir_type()->as_function()->get_argument_types();
+	ir::RefType*    coreRefTy  = nullptr;
+	ir::LocalValue* self       = nullptr;
 	if (prototype->fnTy != MethodType::Static && prototype->fnTy != MethodType::valued) {
-		coreRefTy = argIRTypes.at(0)->get_type()->as_reference();
-		self      = block->new_value("''", coreRefTy, false, coreRefTy->get_subtype()->as_struct()->get_name().range);
+		coreRefTy = argIRTypes.at(0)->get_type()->as_ref();
+		self      = block->new_local("''", coreRefTy, false, coreRefTy->get_subtype()->as_struct()->get_name().range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
-		self->load_ghost_reference(irCtx->builder);
+		self->load_ghost_ref(irCtx->builder);
 	}
 	SHOW("Arguments size is " << argIRTypes.size())
 	for (usize i = 1; i < argIRTypes.size(); i++) {
@@ -351,14 +351,14 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			    coreRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),
 			    coreRefTy->get_subtype()->as_struct()->get_index_of(argIRTypes.at(i)->get_name()).value());
 			auto* memTy = coreRefTy->get_subtype()->as_struct()->get_type_of_field(argIRTypes.at(i)->get_name());
-			if (memTy->is_reference()) {
-				memPtr = irCtx->builder.CreateLoad(memTy->as_reference()->get_llvm_type(), memPtr);
+			if (memTy->is_ref()) {
+				memPtr = irCtx->builder.CreateLoad(memTy->as_ref()->get_llvm_type(), memPtr);
 			}
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr, false);
 		} else if (not argIRTypes.at(i)->is_variadic_argument()) {
-			if (!argIRTypes.at(i)->get_type()->is_trivially_copyable() || argIRTypes.at(i)->is_variable()) {
+			if (not argIRTypes.at(i)->get_type()->is_trivially_copyable() || argIRTypes.at(i)->is_variable()) {
 				auto* argVal =
-				    block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
+				    block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
 				                     argIRTypes.at(i)->is_variable(), prototype->arguments.at(i - 1)->get_name().range);
 				SHOW("Created local value for the argument")
 				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);

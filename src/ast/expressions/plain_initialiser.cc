@@ -32,7 +32,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 						alloca = localValue->get_llvm();
 					} else if (irName) {
 						auto newAlloca =
-						    ctx->get_fn()->get_block()->new_value(irName->value, cTy, isVar, irName->range);
+						    ctx->get_fn()->get_block()->new_local(irName->value, cTy, isVar, irName->range);
 						alloca = newAlloca->get_llvm();
 					} else {
 						alloca = ir::Logic::newAlloca(ctx->get_fn(), None, cTy->get_llvm_type());
@@ -50,7 +50,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				}
 			}
 		}
-		if (ctx->get_fn()->is_method() ? !((ir::Method*)ctx->get_fn())->get_parent_type()->is_same(cTy) : true) {
+		if (ctx->get_fn()->is_method() ? not((ir::Method*)ctx->get_fn())->get_parent_type()->is_same(cTy) : true) {
 			if (cTy->has_any_constructor()) {
 				ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) +
 				               " have constructors and hence the plain initialiser "
@@ -72,7 +72,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		if (fields.empty()) {
 			for (usize i = 0; i < fieldValues.size(); i++) {
 				auto* mem = cTy->get_field_at(i);
-				if (!mem->visibility.is_accessible(reqInfo)) {
+				if (not mem->visibility.is_accessible(reqInfo)) {
 					ctx->Error("Member " + ctx->color(mem->name.value) + " of struct type " +
 					               ctx->color(cTy->get_full_name()) +
 					               " is not accessible here and hence plain "
@@ -87,7 +87,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				auto fRange = fields.at(i).second;
 				if (cTy->has_field_with_name(fName)) {
 					auto* mem = cTy->get_field_at(cTy->get_index_of(fName).value());
-					if (!mem->visibility.is_accessible(reqInfo)) {
+					if (not mem->visibility.is_accessible(reqInfo)) {
 						ctx->Error("The member " + ctx->color(fName) + " of struct type " +
 						               ctx->color(cTy->get_full_name()) + " is not accessible here",
 						           fRange);
@@ -118,12 +118,10 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			auto* fVal  = fieldValues.at(i)->emit(ctx);
 			auto* memTy = cTy->get_field_at(i)->type;
 			if (fVal->get_ir_type()->is_same(memTy) ||
-			    (memTy->is_reference() && memTy->as_reference()->get_subtype()->is_same(fVal->get_ir_type()) &&
-			     fVal->is_ghost_reference() &&
-			     (memTy->as_reference()->isSubtypeVariable() ? fVal->is_variable() : true)) ||
-			    (fVal->get_ir_type()->is_reference() &&
-			     fVal->get_ir_type()->as_reference()->get_subtype()->is_same(memTy))) {
-				if (!fVal->is_prerun_value()) {
+			    (memTy->is_ref() && memTy->as_ref()->get_subtype()->is_same(fVal->get_ir_type()) &&
+			     fVal->is_ghost_ref() && (memTy->as_ref()->has_variability() ? fVal->is_variable() : true)) ||
+			    (fVal->get_ir_type()->is_ref() && fVal->get_ir_type()->as_ref()->get_subtype()->is_same(memTy))) {
+				if (not fVal->is_prerun_value()) {
 					areAllValsPrerun = false;
 				}
 				irVals.push_back(fVal);
@@ -142,7 +140,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			type_check_local(cTy, ctx->irCtx, fileRange);
 			alloca = localValue->get_llvm();
 		} else {
-			auto newAlloca = ctx->get_fn()->get_block()->new_value(
+			auto newAlloca = ctx->get_fn()->get_block()->new_local(
 			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), cTy, isVar,
 			    irName.has_value() ? irName->range : fileRange);
 			alloca = newAlloca->get_llvm();
@@ -160,18 +158,18 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				auto* memPtr = ctx->irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), alloca, indices.at(i));
 				auto  irVal  = irVals.at(i);
 				auto  memTy  = cTy->get_field_at(indices.at(i))->type;
-				if (irVal->is_ghost_reference() || irVal->is_reference()) {
+				if (irVal->is_ghost_ref() || irVal->is_ref()) {
 					if (memTy->is_trivially_copyable() || memTy->is_trivially_movable()) {
-						if (irVal->is_reference()) {
-							irVal->load_ghost_reference(ctx->irCtx->builder);
+						if (irVal->is_ref()) {
+							irVal->load_ghost_ref(ctx->irCtx->builder);
 						}
 						auto* irOrigVal = ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm());
-						if (!memTy->is_trivially_copyable()) {
-							if (irVal->is_reference() && !irVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
+						if (not memTy->is_trivially_copyable()) {
+							if (irVal->is_ref() && not irVal->get_ir_type()->as_ref()->has_variability()) {
 								ctx->Error(
 								    "This is a reference without variability and hence cannot be trivially moved from",
 								    fieldValues.at(i)->fileRange);
-							} else if (!irVal->is_reference() && !irVal->is_variable()) {
+							} else if (not irVal->is_ref() && not irVal->is_variable()) {
 								ctx->Error(
 								    "This is an expression without variability and hence cannot be trivially moved from",
 								    fieldValues.at(i)->fileRange);
@@ -200,55 +198,55 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		} else {
 			return ir::Value::get(alloca, cTy, true);
 		}
-	} else if (typeEmit->is_string_slice()) {
+	} else if (typeEmit->is_text()) {
 		if (fieldValues.size() == 2) {
 			auto* strData  = fieldValues.at(0)->emit(ctx);
 			auto* strLen   = fieldValues.at(1)->emit(ctx);
 			auto* dataType = strData->get_ir_type();
 			auto* lenType  = strLen->get_ir_type();
-			if (dataType->is_reference()) {
-				dataType = dataType->as_reference()->get_subtype();
+			if (dataType->is_ref()) {
+				dataType = dataType->as_ref()->get_subtype();
 			}
-			if (lenType->is_reference()) {
-				lenType = lenType->as_reference()->get_subtype();
+			if (lenType->is_ref()) {
+				lenType = lenType->as_ref()->get_subtype();
 			}
-			if (dataType->is_mark() && dataType->as_mark()->get_subtype()->is_unsigned_integer() &&
-			    dataType->as_mark()->get_subtype()->as_unsigned_integer()->is_bitWidth(8u)) {
+			if (dataType->is_mark() && dataType->as_mark()->get_subtype()->is_unsigned() &&
+			    dataType->as_mark()->get_subtype()->as_unsigned()->is_bitwidth(8u)) {
 				if (dataType->as_mark()->is_slice()) {
 					// FIXME - Change when `check` is added
 					// FIXME - Add length confirmation if pointer is multi, compare with
 					// the provided length of the string
-					if (strData->is_reference()) {
-						strData->load_ghost_reference(ctx->irCtx->builder);
+					if (strData->is_ref()) {
+						strData->load_ghost_ref(ctx->irCtx->builder);
 					}
 					strData = ir::Value::get(
 					    strData->is_value()
 					        ? ctx->irCtx->builder.CreateExtractValue(strData->get_llvm(), {0u})
 					        : ctx->irCtx->builder.CreateLoad(
 					              llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-					                                     ctx->irCtx->dataLayout->getProgramAddressSpace()),
+					                                     ctx->irCtx->dataLayout.getProgramAddressSpace()),
 					              ctx->irCtx->builder.CreateStructGEP(dataType->get_llvm_type(), strData->get_llvm(),
 					                                                  0u)),
 					    ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
 					                      ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
 					    false);
 				} else {
-					if (strData->is_ghost_reference() || strData->get_ir_type()->is_reference()) {
-						if (strData->is_reference() && strData->is_ghost_reference()) {
-							strData->load_ghost_reference(ctx->irCtx->builder);
+					if (strData->is_ghost_ref() || strData->get_ir_type()->is_ref()) {
+						if (strData->is_ref() && strData->is_ghost_ref()) {
+							strData->load_ghost_ref(ctx->irCtx->builder);
 						}
 						strData = ir::Value::get(
 						    ctx->irCtx->builder.CreateLoad(dataType->get_llvm_type(), strData->get_llvm()), dataType,
 						    false);
 					}
 				}
-				if (lenType->is_unsigned_integer() && lenType->as_unsigned_integer()->get_bitwidth() == 64u) {
-					if (strLen->is_ghost_reference() || strLen->is_reference()) {
+				if (lenType->is_unsigned() && lenType->as_unsigned()->get_bitwidth() == 64u) {
+					if (strLen->is_ghost_ref() || strLen->is_ref()) {
 						strLen =
 						    ir::Value::get(ctx->irCtx->builder.CreateLoad(lenType->get_llvm_type(), strLen->get_llvm()),
 						                   lenType, false);
 					}
-					auto* strSliceTy = ir::StringSliceType::get(ctx->irCtx);
+					auto* strSliceTy = ir::TextType::get(ctx->irCtx);
 					auto* strAlloca  = ir::Logic::newAlloca(ctx->get_fn(), None, strSliceTy->get_llvm_type());
 					ctx->irCtx->builder.CreateStore(
 					    strData->get_llvm(),
@@ -270,27 +268,26 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		} else if (fieldValues.size() == 1) {
 			auto* strData   = fieldValues.at(0)->emit(ctx);
 			auto* strDataTy = strData->get_ir_type();
-			if (strDataTy->is_reference()) {
-				strDataTy = strDataTy->as_reference()->get_subtype();
+			if (strDataTy->is_ref()) {
+				strDataTy = strDataTy->as_ref()->get_subtype();
 			}
 			if (strDataTy->is_mark() && strDataTy->as_mark()->is_slice() &&
-			    (strDataTy->as_mark()->get_subtype()->is_unsigned_integer() &&
-			     strDataTy->as_mark()->get_subtype()->as_unsigned_integer()->is_bitWidth(8u))) {
-				auto* strTy = ir::StringSliceType::get(ctx->irCtx);
-				if (strData->is_ghost_reference() || strData->is_reference()) {
-					if (strData->is_reference()) {
-						strData->load_ghost_reference(ctx->irCtx->builder);
+			    (strDataTy->as_mark()->get_subtype()->is_unsigned() &&
+			     strDataTy->as_mark()->get_subtype()->as_unsigned()->is_bitwidth(8u))) {
+				auto* strTy = ir::TextType::get(ctx->irCtx);
+				if (strData->is_ghost_ref() || strData->is_ref()) {
+					if (strData->is_ref()) {
+						strData->load_ghost_ref(ctx->irCtx->builder);
 					}
-					return ir::Value::get(
-					    ctx->irCtx->builder.CreatePointerCast(
-					        strData->get_llvm(),
-					        llvm::PointerType::get(strTy->get_llvm_type(),
-					                               ctx->irCtx->dataLayout->getProgramAddressSpace())),
-					    ir::ReferenceType::get(strData->is_ghost_reference()
-					                               ? strData->is_variable()
-					                               : strData->get_ir_type()->as_reference()->isSubtypeVariable(),
-					                           strTy, ctx->irCtx),
-					    false);
+					return ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
+					                          strData->get_llvm(),
+					                          llvm::PointerType::get(strTy->get_llvm_type(),
+					                                                 ctx->irCtx->dataLayout.getProgramAddressSpace())),
+					                      ir::RefType::get(strData->is_ghost_ref()
+					                                           ? strData->is_variable()
+					                                           : strData->get_ir_type()->as_ref()->has_variability(),
+					                                       strTy, ctx->irCtx),
+					                      false);
 				} else {
 					return ir::Value::get(
 					    ctx->irCtx->builder.CreateBitCast(strData->get_llvm(), strDataTy->get_llvm_type()), strDataTy,
@@ -316,7 +313,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		}
 	} else if (typeEmit->is_vector()) {
 		auto* vecTy = typeEmit->as_vector();
-		if (!fields.empty()) {
+		if (not fields.empty()) {
 			ctx->Error("The type for initialisation is " + ctx->color(vecTy->to_string()) +
 			               " so field names cannot be used here",
 			           fileRange);
@@ -345,20 +342,20 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			}
 			auto irVal = val->emit(ctx);
 			auto irTy  = irVal->get_ir_type();
-			if (!irVal->is_prerun_value()) {
+			if (not irVal->is_prerun_value()) {
 				areAllValuesConstant = false;
 			} else {
 				constVals.push_back(irVal->get_llvm_constant());
 			}
-			if (!irTy->is_same(vecTy->get_element_type()) &&
-			    !(irTy->is_reference() && irTy->as_reference()->get_subtype()->is_same(vecTy->get_element_type()))) {
+			if (not irTy->is_same(vecTy->get_element_type()) &&
+			    not(irTy->is_ref() && irTy->as_ref()->get_subtype()->is_same(vecTy->get_element_type()))) {
 				ctx->Error("Expected an expression of type " + ctx->color(vecTy->get_element_type()->to_string()) +
 				               " but got an expression of type " + ctx->color(irTy->to_string()),
 				           fileRange);
 			}
 			SHOW("Done type check")
-			if (irTy->is_reference() || irVal->is_ghost_reference()) {
-				irTy  = irTy->is_reference() ? irTy->as_reference()->get_subtype() : irTy;
+			if (irTy->is_ref() || irVal->is_ghost_ref()) {
+				irTy  = irTy->is_ref() ? irTy->as_ref()->get_subtype() : irTy;
 				irVal = ir::Value::get(ctx->irCtx->builder.CreateLoad(irTy->get_llvm_type(), irVal->get_llvm()), irTy,
 				                       false);
 			}
@@ -374,7 +371,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				ctx->irCtx->builder.CreateStore(llvm::ConstantVector::get(constVals), localValue->get_llvm());
 				return localValue->to_new_ir_value();
 			} else if (irName.has_value()) {
-				auto newAlloca = ctx->get_fn()->get_block()->new_value(irName.value().value, vecTy, isVar, fileRange);
+				auto newAlloca = ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, fileRange);
 				ctx->irCtx->builder.CreateStore(llvm::ConstantVector::get(constVals), newAlloca->get_llvm());
 				return newAlloca->to_new_ir_value();
 			} else {
@@ -392,7 +389,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				ctx->irCtx->builder.CreateStore(lastValue, localValue->get_llvm());
 				return localValue->to_new_ir_value();
 			} else if (irName.has_value()) {
-				auto newAlloca = ctx->get_fn()->get_block()->new_value(irName.value().value, vecTy, isVar, fileRange);
+				auto newAlloca = ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, fileRange);
 				ctx->irCtx->builder.CreateStore(lastValue, localValue->get_llvm());
 				return newAlloca->to_new_ir_value();
 			} else {

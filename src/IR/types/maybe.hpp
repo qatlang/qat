@@ -19,9 +19,12 @@ class MaybeType : public Type {
 	useit bool  has_sized_sub_type(ir::Ctx* irCtx) const;
 	useit Type* get_subtype() const;
 	useit bool  is_type_sized() const final;
-	useit bool  is_trivially_copyable() const final { return subTy->is_trivially_copyable(); }
-	useit bool  is_trivially_movable() const final { return subTy->is_trivially_movable(); }
-	useit bool  is_type_packed() const;
+
+	useit bool is_trivially_copyable() const final { return subTy->is_trivially_copyable(); }
+
+	useit bool is_trivially_movable() const final { return subTy->is_trivially_movable(); }
+
+	useit bool is_type_packed() const;
 
 	useit bool is_copy_constructible() const final;
 	void       copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
@@ -35,12 +38,15 @@ class MaybeType : public Type {
 	void       destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
 	useit bool can_be_prerun() const final { return subTy->is_type_sized() && subTy->can_be_prerun(); }
+
 	useit bool can_be_prerun_generic() const final { return subTy->is_type_sized() && subTy->can_be_prerun_generic(); }
+
 	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final;
 	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-	useit String   to_string() const final;
-	useit TypeKind type_kind() const final { return TypeKind::maybe; }
+	useit String to_string() const final;
+
+	useit TypeKind type_kind() const final { return TypeKind::MAYBE; }
 };
 
 } // namespace qat::ir

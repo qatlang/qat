@@ -9,7 +9,7 @@
 
 namespace qat::ir {
 
-void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec<GenericToFill*>& types,
+void fill_generics(ast::EmitCtx* ctx, Vec<ast::GenericAbstractType*>& generics, Vec<GenericToFill*>& types,
                    FileRange const& fileRange) {
 	for (usize i = 0; i < generics.size(); i++) {
 		if (generics.at(i)->is_typed()) {
@@ -19,11 +19,11 @@ void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec
 				} else {
 					if (types.at(i)->as_prerun()->get_ir_type()->is_typed()) {
 						generics.at(i)->as_typed()->setType(
-						    types.at(i)->as_prerun()->get_ir_type()->as_typed()->get_subtype());
+						    TypeInfo::get_for(types.at(i)->as_prerun()->get_llvm_constant())->type);
 					} else {
-						irCtx->Error(
+						ctx->Error(
 						    utils::number_to_position(i + 1) + " Generic Parameter " +
-						        irCtx->color(generics.at(i)->get_name().value) +
+						        ctx->color(generics.at(i)->get_name().value) +
 						        " expects a type or a constant expression that gives a type, but a normal constant expression was provided",
 						    fileRange);
 					}
@@ -33,10 +33,10 @@ void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec
 					types.push_back(ir::GenericToFill::GetType(generics.at(i)->as_typed()->get_type(),
 					                                           generics.at(i)->get_range()));
 				} else {
-					irCtx->Error("No type set for " + utils::number_to_position(i + 1) + " Generic Parameter " +
-					                 irCtx->color(generics.at(i)->get_name().value) +
-					                 " and it doesn't have a default type associated with it",
-					             generics.at(i)->get_range());
+					ctx->Error("No type set for " + utils::number_to_position(i + 1) + " Generic Parameter " +
+					               ctx->color(generics.at(i)->get_name().value) +
+					               " and it doesn't have a default type associated with it",
+					           generics.at(i)->get_range());
 				}
 			}
 		} else {
@@ -46,23 +46,24 @@ void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& generics, Vec
 						generics.at(i)->as_prerun()->setExpression(types.at(i)->as_prerun());
 					} else {
 						generics.at(i)->as_prerun()->setExpression(
-						    ir::PrerunValue::get_typed_prerun(ir::TypedType::get(types.at(i)->as_type())));
+						    ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, types.at(i)->as_type(), ctx->mod)->id,
+						                         ir::TypedType::get(ctx->irCtx)));
 					}
 				} else {
-					irCtx->Error(utils::number_to_position(i + 1) + " Generic Parameter " +
-					                 irCtx->color(generics.at(i)->get_name().value) +
-					                 " expects a constant expression, not a type",
-					             fileRange);
+					ctx->Error(utils::number_to_position(i + 1) + " Generic Parameter " +
+					               ctx->color(generics.at(i)->get_name().value) +
+					               " expects a constant expression, not a type",
+					           fileRange);
 				}
 			} else {
 				if (generics.at(i)->isSet()) {
 					types.push_back(ir::GenericToFill::GetPrerun(generics.at(i)->as_prerun()->getPrerun(),
 					                                             generics.at(i)->get_range()));
 				} else {
-					irCtx->Error("No const expression set for " + utils::number_to_position(i + 1) +
-					                 " Generic Parameter " + irCtx->color(generics.at(i)->get_name().value) +
-					                 " and it doesn't have a default const expression associated with it",
-					             generics.at(i)->get_range());
+					ctx->Error("No const expression set for " + utils::number_to_position(i + 1) +
+					               " Generic Parameter " + ctx->color(generics.at(i)->get_name().value) +
+					               " and it doesn't have a default const expression associated with it",
+					           generics.at(i)->get_range());
 				}
 			}
 		}
@@ -116,7 +117,7 @@ bool GenericArgument::is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const {
 			return as_typed()->get_type()->is_same(fill->as_type());
 		} else {
 			if (fill->as_prerun()->get_ir_type()->is_typed()) {
-				return as_typed()->get_type()->is_same(fill->as_prerun()->get_ir_type()->as_typed()->get_subtype());
+				return as_typed()->get_type()->is_same(TypeInfo::get_for(fill->as_prerun()->get_llvm_constant())->type);
 			} else {
 				return false;
 			}

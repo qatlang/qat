@@ -27,7 +27,7 @@ void PrerunGlobal::define(ir::Mod* mod, ir::Ctx* irCtx) const {
 	}
 	auto resVal = value->emit(emitCtx);
 	if (type.has_value()) {
-		if (!valTy->is_same(resVal->get_ir_type())) {
+		if (not valTy->is_same(resVal->get_ir_type())) {
 			irCtx->Error("The provided type for the prerun global is " + irCtx->color(valTy->to_string()) +
 			                 " but the value is of type " + irCtx->color(resVal->get_ir_type()->to_string()),
 			             value->fileRange);

@@ -43,16 +43,13 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					}
 					auto* expEmit = expression->emit(ctx);
 					if (typ->is_same(expEmit->get_ir_type())) {
-						expEmit->load_ghost_reference(ctx->irCtx->builder);
+						expEmit->load_ghost_ref(ctx->irCtx->builder);
 						exp = expEmit->get_llvm();
-					} else if (expEmit->is_reference() &&
-					           expEmit->get_ir_type()->as_reference()->get_subtype()->is_same(typ)) {
+					} else if (expEmit->is_ref() && expEmit->get_ir_type()->as_ref()->get_subtype()->is_same(typ)) {
 						exp = ctx->irCtx->builder.CreateLoad(
-						    expEmit->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
-						    expEmit->get_llvm());
-					} else if (typ->is_reference() &&
-					           typ->as_reference()->get_subtype()->is_same(expEmit->get_ir_type())) {
-						if (expEmit->is_ghost_reference()) {
+						    expEmit->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(), expEmit->get_llvm());
+					} else if (typ->is_ref() && typ->as_ref()->get_subtype()->is_same(expEmit->get_ir_type())) {
+						if (expEmit->is_ghost_ref()) {
 							exp = expEmit->get_llvm();
 						} else {
 							ctx->Error("The expected type is " + ctx->color(typ->to_string()) +
@@ -82,11 +79,10 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					}
 				} else if (canCreateIn()) {
 					SHOW("Is createIn")
-					if (createIn->is_reference() || createIn->is_ghost_reference()) {
-						auto expTy = createIn->is_ghost_reference()
-						                 ? createIn->get_ir_type()
-						                 : createIn->get_ir_type()->as_reference()->get_subtype();
-						if (!expTy->is_same(mixTy)) {
+					if (createIn->is_ref() || createIn->is_ghost_ref()) {
+						auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+						                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+						if (not expTy->is_same(mixTy)) {
 							ctx->Error(
 							    "Trying to optimise the mix type initialisation by creating in-place, but the expression type is " +
 							        ctx->color(mixTy->to_string()) +
@@ -100,7 +96,7 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 						    fileRange);
 					}
 				} else {
-					createIn = ctx->get_fn()->get_block()->new_value(
+					createIn = ctx->get_fn()->get_block()->new_local(
 					    irName.has_value() ? irName->value : utils::uid_string(), mixTy, isVar,
 					    irName.has_value() ? irName->range : fileRange);
 				}
@@ -134,11 +130,10 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 				ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), localValue->get_llvm());
 				return nullptr;
 			} else if (canCreateIn()) {
-				if (createIn->is_reference() || createIn->is_ghost_reference()) {
-					auto expTy = createIn->is_ghost_reference()
-					                 ? createIn->get_ir_type()
-					                 : createIn->get_ir_type()->as_reference()->get_subtype();
-					if (!expTy->is_same(chTy)) {
+				if (createIn->is_ref() || createIn->is_ghost_ref()) {
+					auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+					                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+					if (not expTy->is_same(chTy)) {
 						ctx->Error(
 						    "Trying to optimise the choice type initialisation by creating in-place, but the expression type is " +
 						        ctx->color(chTy->to_string()) +
@@ -153,7 +148,7 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 				}
 				ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), createIn->get_llvm());
 			} else if (irName.has_value()) {
-				auto locVal = ctx->get_fn()->get_block()->new_value(irName->value, chTy, isVar, irName->range);
+				auto locVal = ctx->get_fn()->get_block()->new_local(irName->value, chTy, isVar, irName->range);
 				ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), locVal->get_llvm());
 				return nullptr;
 			} else {

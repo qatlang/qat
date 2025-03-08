@@ -3,13 +3,13 @@
 namespace qat::ast {
 
 ir::PrerunValue* UnsignedLiteral::emit(EmitCtx* ctx) {
-	if (is_type_inferred() && !inferredType->is_unsigned_integer() &&
-	    (inferredType->is_native_type() && !inferredType->as_native_type()->get_subtype()->is_unsigned_integer())) {
+	if (is_type_inferred() && not inferredType->is_unsigned() &&
+	    (inferredType->is_native_type() && not inferredType->as_native_type()->get_subtype()->is_unsigned())) {
 		ctx->Error("The inferred type of this expression is " + inferredType->to_string() +
 		               " which is not an unsigned integer type",
 		           fileRange);
 	}
-	if (bits.has_value() && !ctx->mod->has_unsigned_bitwidth(bits.value().first)) {
+	if (bits.has_value() && not ctx->mod->has_unsigned_bitwidth(bits.value().first)) {
 		ctx->Error("The custom unsigned integer bitwidth " + ctx->color(std::to_string(bits.value().first)) +
 		               " is not brought into the module",
 		           bits.value().second);

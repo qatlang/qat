@@ -21,14 +21,15 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 			count->as_type_inferrable()->set_inference_type(ir::NativeType::get_usize(ctx->irCtx));
 		}
 		countRes = count->emit(ctx);
-		countRes->load_ghost_reference(ctx->irCtx->builder);
-		if (countRes->get_ir_type()->is_reference()) {
+		countRes->load_ghost_ref(ctx->irCtx->builder);
+		if (countRes->get_ir_type()->is_ref()) {
 			countRes = ir::Value::get(
-			    ctx->irCtx->builder.CreateLoad(countRes->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
+			    ctx->irCtx->builder.CreateLoad(countRes->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(),
 			                                   countRes->get_llvm()),
-			    countRes->get_ir_type()->as_reference()->get_subtype(), false);
+			    countRes->get_ir_type()->as_ref()->get_subtype(), false);
 		}
-		if (!countRes->get_ir_type()->is_native_type() || !countRes->get_ir_type()->as_native_type()->is_usize()) {
+		if (not countRes->get_ir_type()->is_native_type() ||
+		    not countRes->get_ir_type()->as_native_type()->is_usize()) {
 			ctx->Error("The number of instances to allocate should be of " +
 			               ir::NativeType::get_usize(ctx->irCtx)->to_string() + " type",
 			           count->fileRange);
@@ -58,7 +59,7 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 		            mallocFn->getFunctionType(), mallocFn,
 		            {count ? ctx->irCtx->builder.CreateMul(size, countRes->get_llvm()) : size}),
 		        llvm::PointerType::get(resTy->get_subtype()->get_llvm_type(),
-		                               ctx->irCtx->dataLayout->getProgramAddressSpace())),
+		                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
 		    ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), llAlloca, 0u));
 		SHOW("Storing the size of the multi pointer")
 		ctx->irCtx->builder.CreateStore(countRes->get_llvm(),
@@ -87,10 +88,10 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 		ctx->Error("Null mark cannot be freed", ptr->fileRange);
 	}
 	auto* exp   = ptr->emit(ctx);
-	auto  expTy = exp->is_reference() ? exp->get_ir_type()->as_reference()->get_subtype() : exp->get_ir_type();
+	auto  expTy = exp->is_ref() ? exp->get_ir_type()->as_ref()->get_subtype() : exp->get_ir_type();
 	if (expTy->is_mark()) {
 		auto ptrTy = expTy->as_mark();
-		if (!ptrTy->get_owner().is_of_heap()) {
+		if (not ptrTy->get_owner().is_of_heap()) {
 			ctx->Error("The mark type of this expression is " + ctx->color(ptrTy->to_string()) +
 			               " which does not have heap ownership and hence cannot be used here",
 			           ptr->fileRange);
@@ -102,9 +103,9 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 		    ptr->fileRange);
 	}
 	llvm::Value* candExp = nullptr;
-	if (exp->get_ir_type()->is_reference() || exp->is_ghost_reference()) {
-		if (exp->get_ir_type()->is_reference()) {
-			exp->load_ghost_reference(ctx->irCtx->builder);
+	if (exp->get_ir_type()->is_ref() || exp->is_ghost_ref()) {
+		if (exp->get_ir_type()->is_ref()) {
+			exp->load_ghost_ref(ctx->irCtx->builder);
 		}
 		exp = ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), exp->get_llvm()), expTy, false);
 	}
@@ -129,48 +130,48 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 	auto* ptrVal = ptr->emit(ctx);
 	// FIXME - Add check to see if the new size is lower than the previous size
 	ir::MarkType* ptrType = nullptr;
-	if (ptrVal->is_reference()) {
-		if (!ptrVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
+	if (ptrVal->is_ref()) {
+		if (not ptrVal->get_ir_type()->as_ref()->has_variability()) {
 			ctx->Error("This reference does not have variability and hence the pointer inside cannot be grown",
 			           ptr->fileRange);
 		}
-		if (ptrVal->get_ir_type()->as_reference()->get_subtype()->is_mark()) {
-			ptrType = ptrVal->get_ir_type()->as_reference()->get_subtype()->as_mark();
-			ptrVal->load_ghost_reference(ctx->irCtx->builder);
-			if (!ptrType->get_owner().is_of_heap()) {
+		if (ptrVal->get_ir_type()->as_ref()->get_subtype()->is_mark()) {
+			ptrType = ptrVal->get_ir_type()->as_ref()->get_subtype()->as_mark();
+			ptrVal->load_ghost_ref(ctx->irCtx->builder);
+			if (not ptrType->get_owner().is_of_heap()) {
 				ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
 				               " and hence cannot be used in heap:grow",
 				           fileRange);
 			}
-			if (!ptrType->is_slice()) {
+			if (not ptrType->is_slice()) {
 				ctx->Error("The type of the expression is " +
-				               ctx->color(ptrVal->get_ir_type()->as_reference()->get_subtype()->to_string()) +
+				               ctx->color(ptrVal->get_ir_type()->as_ref()->get_subtype()->to_string()) +
 				               " which is not a multi pointer and hence cannot be grown",
 				           ptr->fileRange);
 			}
-			if (!ptrType->get_subtype()->is_same(typ)) {
+			if (not ptrType->get_subtype()->is_same(typ)) {
 				ctx->Error("The first argument should be a pointer to " + ctx->color(typ->to_string()), ptr->fileRange);
 			}
 		} else {
 			ctx->Error("The first argument should be a pointer to " + ctx->color(typ->to_string()), ptr->fileRange);
 		}
-	} else if (ptrVal->is_ghost_reference()) {
+	} else if (ptrVal->is_ghost_ref()) {
 		if (ptrVal->get_ir_type()->is_mark()) {
 			if (ptrVal->is_variable()) {
 				ctx->Error("This expression is not a variable", fileRange);
 			}
 			ptrType = ptrVal->get_ir_type()->as_mark();
-			if (!ptrType->get_owner().is_of_heap()) {
+			if (not ptrType->get_owner().is_of_heap()) {
 				ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
 				               " and hence cannot be used in heap:grow",
 				           fileRange);
 			}
-			if (!ptrType->is_slice()) {
+			if (not ptrType->is_slice()) {
 				ctx->Error("The type of the expression is " + ctx->color(ptrVal->get_ir_type()->to_string()) +
 				               " which is not a multi pointer and hence cannot be grown",
 				           ptr->fileRange);
 			}
-			if (!ptrType->get_subtype()->is_same(typ)) {
+			if (not ptrType->get_subtype()->is_same(typ)) {
 				ctx->Error("The first argument to heap'grow should be a pointer to " + ctx->color(typ->to_string()),
 				           ptr->fileRange);
 			}
@@ -180,28 +181,28 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		}
 	} else {
 		ptrType = ptrVal->get_ir_type()->as_mark();
-		if (!ptrType->get_owner().is_of_heap()) {
+		if (not ptrType->get_owner().is_of_heap()) {
 			ctx->Error("Expected a multipointer with " + ctx->color("heap") +
 			               " ownership. The ownership of this pointer is " +
 			               ctx->color(ptrType->get_owner().to_string()) + " and hence cannot be used.",
 			           fileRange);
 		}
-		if (!ptrType->is_slice()) {
+		if (not ptrType->is_slice()) {
 			ctx->Error("The type of the expression is " + ctx->color(ptrVal->get_ir_type()->to_string()) +
 			               " which is not a multi pointer and hence cannot be used here",
 			           ptr->fileRange);
 		}
-		if (!ptrType->get_subtype()->is_same(typ)) {
+		if (not ptrType->get_subtype()->is_same(typ)) {
 			ctx->Error("The first argument should be a pointer to " + ctx->color(typ->to_string()), ptr->fileRange);
 		}
 	}
 	auto* countVal = count->emit(ctx);
-	countVal->load_ghost_reference(ctx->irCtx->builder);
-	if (countVal->is_reference()) {
-		countVal = ir::Value::get(
-		    ctx->irCtx->builder.CreateLoad(countVal->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
-		                                   countVal->get_llvm()),
-		    countVal->get_ir_type()->as_reference()->get_subtype(), false);
+	countVal->load_ghost_ref(ctx->irCtx->builder);
+	if (countVal->is_ref()) {
+		countVal =
+		    ir::Value::get(ctx->irCtx->builder.CreateLoad(
+		                       countVal->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(), countVal->get_llvm()),
+		                   countVal->get_ir_type()->as_ref()->get_subtype(), false);
 	}
 	if (countVal->get_ir_type()->is_native_type() && countVal->get_ir_type()->as_native_type()->is_usize()) {
 		auto  reallocName = ctx->mod->link_internal_dependency(ir::InternalDependency::realloc, ctx->irCtx, fileRange);
@@ -212,7 +213,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
                 {ctx->irCtx->builder.CreatePointerCast(
                      ctx->irCtx->builder.CreateLoad(
                          llvm::PointerType::get(ptrType->get_subtype()->get_llvm_type(),
-		                                             ctx->irCtx->dataLayout->getProgramAddressSpace()),
+		                                             ctx->irCtx->dataLayout.getProgramAddressSpace()),
                          ptrVal->is_value()
 		                          ? ctx->irCtx->builder.CreateExtractValue(ptrVal->get_llvm(), {0u})
 		                          : ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), ptrVal->get_llvm(), 0u)),
@@ -221,9 +222,9 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
                      countVal->get_llvm(),
                      llvm::ConstantInt::get(
                          ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(),
-                         ctx->irCtx->dataLayout.value().getTypeStoreSize(ptrType->get_subtype()->get_llvm_type())))}),
+                         ctx->irCtx->dataLayout.getTypeStoreSize(ptrType->get_subtype()->get_llvm_type())))}),
             llvm::PointerType::get(ptrType->as_mark()->get_subtype()->get_llvm_type(),
-		                                ctx->irCtx->dataLayout->getProgramAddressSpace()));
+		                                ctx->irCtx->dataLayout.getProgramAddressSpace()));
 		auto* resAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, ptrType->get_llvm_type());
 		SHOW("Storing raw pointer into multipointer")
 		ctx->irCtx->builder.CreateStore(ptrRes,

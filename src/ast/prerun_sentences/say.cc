@@ -15,8 +15,8 @@ void PrerunSay::emit(EmitCtx* ctx) {
 	for (auto val : values) {
 		auto irVal = val->emit(ctx);
 		auto irTy  = irVal->get_ir_type();
-		if (irVal->get_ir_type()->is_string_slice()) {
-			std::cout << irTy->as_string_slice()->value_to_string(irVal);
+		if (irVal->get_ir_type()->is_text()) {
+			std::cout << irTy->as_text()->value_to_string(irVal);
 		} else {
 			auto strVal = irTy->to_prerun_generic_string(irVal);
 			if (not strVal.has_value()) {

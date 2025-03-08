@@ -7,7 +7,8 @@
 namespace qat::ast {
 
 MixOrChoiceMatchValue* MatchValue::asMixOrChoice() { return (MixOrChoiceMatchValue*)this; }
-ExpressionMatchValue*  MatchValue::asExp() { return (ExpressionMatchValue*)this; }
+
+ExpressionMatchValue* MatchValue::asExp() { return (ExpressionMatchValue*)this; }
 
 MixOrChoiceMatchValue::MixOrChoiceMatchValue(Identifier _name, Maybe<Identifier> _valueName, bool _isVar)
     : name(std::move(_name)), valueName(std::move(_valueName)), isVar(_isVar) {}
@@ -41,10 +42,10 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 	auto* expEmit       = candidate->emit(ctx);
 	auto* expTy         = expEmit->get_ir_type();
 	bool  isExpVariable = false;
-	if (expTy->is_reference()) {
-		expEmit->load_ghost_reference(ctx->irCtx->builder);
-		isExpVariable = expTy->as_reference()->isSubtypeVariable();
-		expTy         = expTy->as_reference()->get_subtype();
+	if (expTy->is_ref()) {
+		expEmit->load_ghost_ref(ctx->irCtx->builder);
+		isExpVariable = expTy->as_ref()->has_variability();
+		expTy         = expTy->as_ref()->get_subtype();
 	} else {
 		isExpVariable = expEmit->is_variable();
 	}
@@ -67,7 +68,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 				}
 				auto* uMatch = section.first.at(k)->asMixOrChoice();
 				if (uMatch->is_variable()) {
-					if (!isExpVariable) {
+					if (not isExpVariable) {
 						ctx->Error("The expression being matched does not possess variability and "
 						           "hence the matched "
 						           "case cannot use a variable reference to the subtype value",
@@ -75,7 +76,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					}
 				}
 				auto subRes = mTy->has_variant_with_name(uMatch->get_name().value);
-				if (!subRes.first) {
+				if (not subRes.first) {
 					ctx->Error("No field named " + ctx->color(uMatch->get_name().value) + " in mix type " +
 					               ctx->color(mTy->get_full_name()),
 					           uMatch->get_name().range);
@@ -87,7 +88,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 						    uMatch->getMainRange());
 					}
 				}
-				if (!subRes.second && uMatch->hasValueName()) {
+				if (not subRes.second && uMatch->hasValueName()) {
 					ctx->Error("Sub-field " + ctx->color(uMatch->get_name().value) + " of mix type " +
 					               ctx->color(mTy->get_full_name()) +
 					               " does not have a type associated with it, and hence you "
@@ -150,12 +151,12 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					           uMatch->getValueName().range);
 				} else {
 					SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
-					auto* loc = trueBlock->new_value(
+					auto* loc = trueBlock->new_local(
 					    uMatch->getValueName().value,
 					    expEmit->is_value()
 					        ? mTy->get_variant_with_name(uMatch->get_name().value)
-					        : ir::ReferenceType::get(uMatch->is_variable(),
-					                                 mTy->get_variant_with_name(uMatch->get_name().value), ctx->irCtx),
+					        : ir::RefType::get(uMatch->is_variable(),
+					                           mTy->get_variant_with_name(uMatch->get_name().value), ctx->irCtx),
 					    false, uMatch->getValueName().range);
 					SHOW("Local Entity for match case created")
 					ctx->irCtx->builder.CreateStore(
@@ -192,7 +193,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 				(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 			}
 		} else {
-			if (!elseCase.has_value()) {
+			if (not elseCase.has_value()) {
 				ctx->Error("Not all possible variants of the mix type are provided. "
 				           "Please add the else case to handle all missing variants",
 				           fileRange);
@@ -202,7 +203,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 		auto* chTy = expTy->as_choice();
 		SHOW("Got choice type")
 		llvm::Value* choiceVal;
-		if (expEmit->is_reference() || expEmit->is_ghost_reference()) {
+		if (expEmit->is_ref() || expEmit->is_ghost_ref()) {
 			choiceVal = ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), expEmit->get_llvm());
 		} else {
 			choiceVal = expEmit->get_llvm();
@@ -244,13 +245,13 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					auto* eMatch  = caseValElem->asExp();
 					auto* caseExp = eMatch->getExpression()->emit(ctx);
 					if (caseExp->get_ir_type()->is_choice() ||
-					    (caseExp->get_ir_type()->is_reference() &&
-					     caseExp->get_ir_type()->as_reference()->get_subtype()->is_choice())) {
-						if (caseExp->get_ir_type()->is_choice() && caseExp->is_ghost_reference()) {
+					    (caseExp->get_ir_type()->is_ref() &&
+					     caseExp->get_ir_type()->as_ref()->get_subtype()->is_choice())) {
+						if (caseExp->get_ir_type()->is_choice() && caseExp->is_ghost_ref()) {
 							caseComparisons.push_back(ctx->irCtx->builder.CreateICmpEQ(
 							    choiceVal, ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), caseExp->get_llvm())));
-						} else if (caseExp->get_ir_type()->is_reference()) {
-							caseExp->load_ghost_reference(ctx->irCtx->builder);
+						} else if (caseExp->get_ir_type()->is_ref()) {
+							caseExp->load_ghost_ref(ctx->irCtx->builder);
 							caseComparisons.push_back(ctx->irCtx->builder.CreateICmpEQ(
 							    choiceVal, ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), caseExp->get_llvm())));
 						}
@@ -303,13 +304,13 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 				falseBlock->set_active(ctx->irCtx->builder);
 				(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 			}
-		} else if (!elseCase.has_value()) {
+		} else if (not elseCase.has_value()) {
 			ctx->Error(
 			    "Not all possible variants of the choice type are provided. Please add the else case to handle all missing variants",
 			    fileRange);
 		}
-	} else if (expTy->is_string_slice()) {
-		auto*        strTy = expTy->as_string_slice();
+	} else if (expTy->is_text()) {
+		auto*        strTy = expTy->as_text();
 		llvm::Value* strBuff;
 		llvm::Value* strCount;
 		bool         isMatchStrConstant = false;
@@ -318,16 +319,16 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			strBuff            = expEmit->as_prerun()->get_llvm_constant()->getAggregateElement(0u);
 			strCount           = expEmit->as_prerun()->get_llvm_constant()->getAggregateElement(1u);
 		} else {
-			if (expEmit->is_ghost_reference() || expEmit->is_reference()) {
-				if (expEmit->is_reference()) {
-					expEmit->load_ghost_reference(ctx->irCtx->builder);
+			if (expEmit->is_ghost_ref() || expEmit->is_ref()) {
+				if (expEmit->is_ref()) {
+					expEmit->load_ghost_ref(ctx->irCtx->builder);
 				}
 			}
 			strBuff  = expEmit->is_value()
 			               ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {0u})
 			               : ctx->irCtx->builder.CreateLoad(
                                 llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-                                    ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
+                                    ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
                                 ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), expEmit->get_llvm(), 0u));
 			strCount = expEmit->is_value()
 			               ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {1u})
@@ -406,25 +407,23 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 				llvm::Value* caseStrBuff  = nullptr;
 				llvm::Value* caseStrCount = nullptr;
 				// FIXME - Add optimisation for constant strings
-				if (caseIR->get_ir_type()->is_string_slice() ||
-				    (caseIR->is_reference() &&
-				     caseIR->get_ir_type()->as_reference()->get_subtype()->is_string_slice())) {
+				if (caseIR->get_ir_type()->is_text() ||
+				    (caseIR->is_ref() && caseIR->get_ir_type()->as_ref()->get_subtype()->is_text())) {
 					auto* elemIter = ctx->get_fn()->get_str_comparison_index();
 					if (caseIR->is_prerun_value()) {
 						caseStrBuff  = caseIR->get_llvm_constant()->getAggregateElement(0u);
 						caseStrCount = caseIR->get_llvm_constant()->getAggregateElement(1u);
 					} else {
-						if (caseIR->is_reference()) {
-							caseIR->load_ghost_reference(ctx->irCtx->builder);
+						if (caseIR->is_ref()) {
+							caseIR->load_ghost_ref(ctx->irCtx->builder);
 						}
-						caseStrBuff =
-						    caseIR->is_value()
-						        ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})
-						        : ctx->irCtx->builder.CreateLoad(
-						              llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-						                  ->getPointerTo(ctx->irCtx->dataLayout.value().getProgramAddressSpace()),
-						              ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), caseIR->get_llvm(),
-						                                                  0u));
+						caseStrBuff  = caseIR->is_value()
+						                   ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})
+						                   : ctx->irCtx->builder.CreateLoad(
+                                                llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+                                                    ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+                                                ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(),
+						                                                             caseIR->get_llvm(), 0u));
 						caseStrCount = ctx->irCtx->builder.CreateLoad(
 						    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 						    caseIR->is_value()
@@ -505,7 +504,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 				emit_sentences(elseCase.value().first, ctx);
 				elseBlock->destroy_locals(ctx);
 				(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
-			} else if (!isTrueForACase()) {
+			} else if (not isTrueForACase()) {
 				auto* activeBlock = ctx->get_fn()->get_block();
 				emit_sentences(elseCase.value().first, ctx);
 				activeBlock->destroy_locals(ctx);
@@ -513,7 +512,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			}
 		}
 	} else {
-		if (!elseNotRequired && !isTrueForACase()) {
+		if (not elseNotRequired && not isTrueForACase()) {
 			ctx->Error(
 			    "A string slice has infinite number of patterns to match. Please add an else case to account for the remaining possibilies",
 			    fileRange);
@@ -526,7 +525,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 
 bool Match::hasConstResultForAllCases() {
 	for (auto& val : matchResult) {
-		if (!val.result.has_value() || !val.areAllConstant) {
+		if (not val.result.has_value() || not val.areAllConstant) {
 			return false;
 		}
 	}

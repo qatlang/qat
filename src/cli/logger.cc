@@ -11,7 +11,7 @@ Maybe<Unique<Logger>> Logger::instance = None;
 Logger::Logger() {}
 
 Unique<Logger> const& Logger::get() {
-	if (!instance.has_value()) {
+	if (not instance.has_value()) {
 		instance = std::make_unique<Logger>();
 	}
 	return instance.value();

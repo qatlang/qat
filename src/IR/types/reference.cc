@@ -6,39 +6,37 @@
 
 namespace qat::ir {
 
-ReferenceType::ReferenceType(bool _isSubtypeVariable, Type* _type, ir::Ctx* irCtx)
+RefType::RefType(bool _isSubtypeVariable, Type* _type, ir::Ctx* irCtx)
     : subType(_type), isSubVariable(_isSubtypeVariable) {
 	if (subType->is_type_sized()) {
-		llvmType = llvm::PointerType::get(subType->get_llvm_type(), irCtx->dataLayout->getProgramAddressSpace());
+		llvmType = llvm::PointerType::get(subType->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace());
 	} else {
 		llvmType =
-		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout->getProgramAddressSpace());
+		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace());
 	}
 	linkingName = "qat'@" + String(isSubVariable ? "var[" : "[") + subType->get_name_for_linking() + "]";
 }
 
-ReferenceType* ReferenceType::get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx) {
+RefType* RefType::get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
-		if (typ->is_reference()) {
-			if (typ->as_reference()->get_subtype()->is_same(_subtype) &&
-			    (typ->as_reference()->isSubtypeVariable() == _isSubtypeVariable)) {
-				return typ->as_reference();
+		if (typ->is_ref()) {
+			if (typ->as_ref()->get_subtype()->is_same(_subtype) &&
+			    (typ->as_ref()->has_variability() == _isSubtypeVariable)) {
+				return typ->as_ref();
 			}
 		}
 	}
-	return std::construct_at(OwnNormal(ReferenceType), _isSubtypeVariable, _subtype, irCtx);
+	return std::construct_at(OwnNormal(RefType), _isSubtypeVariable, _subtype, irCtx);
 }
 
-Type* ReferenceType::get_subtype() const { return subType; }
+Type* RefType::get_subtype() const { return subType; }
 
-bool ReferenceType::isSubtypeVariable() const { return isSubVariable; }
+bool RefType::has_variability() const { return isSubVariable; }
 
-bool ReferenceType::is_type_sized() const { return true; }
+bool RefType::is_type_sized() const { return true; }
 
-TypeKind ReferenceType::type_kind() const { return TypeKind::reference; }
+TypeKind RefType::type_kind() const { return TypeKind::REFERENCE; }
 
-String ReferenceType::to_string() const {
-	return "@" + String(isSubVariable ? "var[" : "[") + subType->to_string() + "]";
-}
+String RefType::to_string() const { return "@" + String(isSubVariable ? "var[" : "[") + subType->to_string() + "]"; }
 
 } // namespace qat::ir

@@ -23,11 +23,11 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 				ir::method_handler(ctx->irCtx, fun);
 				return ir::Value::get(ctx->irCtx->builder.CreateRetVoid(), retType, false);
 			} else {
-				if (retVal->is_ghost_reference()) {
+				if (retVal->is_ghost_ref()) {
 					if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
 						auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
-						if (!retType->is_trivially_copyable()) {
-							if (!retVal->is_variable()) {
+						if (not retType->is_trivially_copyable()) {
+							if (not retVal->is_variable()) {
 								ctx->Error(
 								    "This expression does not have variability, and hence cannot be trivially moved from",
 								    give_expr.value()->fileRange);
@@ -51,34 +51,33 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 					return ir::Value::get(ctx->irCtx->builder.CreateRet(retVal->get_llvm()), retType, false);
 				}
 			}
-		} else if (retType->is_reference() &&
-		           retType->as_reference()->get_subtype()->is_same(
-		               retVal->is_reference() ? retVal->get_ir_type()->as_reference()->get_subtype()
-		                                      : retVal->get_ir_type()) &&
-		           (retType->as_reference()->isSubtypeVariable()
-		                ? (retVal->is_ghost_reference()
+		} else if (retType->is_ref() &&
+		           retType->as_ref()->get_subtype()->is_same(
+		               retVal->is_ref() ? retVal->get_ir_type()->as_ref()->get_subtype() : retVal->get_ir_type()) &&
+		           (retType->as_ref()->has_variability()
+		                ? (retVal->is_ghost_ref()
 		                       ? retVal->is_variable()
-		                       : (retVal->is_reference() && retVal->get_ir_type()->as_reference()->isSubtypeVariable()))
+		                       : (retVal->is_ref() && retVal->get_ir_type()->as_ref()->has_variability()))
 		                : true)) {
 			SHOW("Return type is compatible")
-			if (retType->is_reference() && !retVal->is_reference() && retVal->is_local_value()) {
+			if (retType->is_ref() && not retVal->is_ref() && retVal->is_local_value()) {
 				ctx->irCtx->Warning(
 				    "Returning reference to a local value. The value pointed to by the reference might be destroyed before the function call is complete",
 				    fileRange);
 			}
-			if (retVal->is_reference()) {
-				retVal->load_ghost_reference(ctx->irCtx->builder);
+			if (retVal->is_ref()) {
+				retVal->load_ghost_ref(ctx->irCtx->builder);
 			}
 			ir::destructor_caller(ctx->irCtx, fun);
 			ir::method_handler(ctx->irCtx, fun);
 			return ir::Value::get(ctx->irCtx->builder.CreateRet(retVal->get_llvm()), retType, false);
-		} else if (retVal->get_ir_type()->is_reference() &&
-		           retVal->get_ir_type()->as_reference()->get_subtype()->is_same(retType)) {
+		} else if (retVal->get_ir_type()->is_ref() &&
+		           retVal->get_ir_type()->as_ref()->get_subtype()->is_same(retType)) {
 			if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
-				retVal->load_ghost_reference(ctx->irCtx->builder);
+				retVal->load_ghost_ref(ctx->irCtx->builder);
 				auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
-				if (!retType->is_trivially_copyable()) {
-					if (!retVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
+				if (not retType->is_trivially_copyable()) {
+					if (not retVal->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error(
 						    "The expression is of type " + ctx->irCtx->color(retVal->get_ir_type()->to_string()) +
 						        " which is a reference without variability, and hence cannot be trivially moved from",

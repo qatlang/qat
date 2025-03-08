@@ -2,7 +2,7 @@
 #define QAT_IR_META_INFO_HPP
 
 #include "../utils/identifier.hpp"
-#include "./types/string_slice.hpp"
+#include "./types/text.hpp"
 #include "value.hpp"
 
 namespace qat::ir {
@@ -36,6 +36,7 @@ struct MetaInfo {
 		}
 		return false;
 	}
+
 	useit ir::PrerunValue* get_value_for(String const& name) const {
 		usize ind = 0;
 		for (auto& k : keys) {
@@ -60,14 +61,14 @@ struct MetaInfo {
 
 	useit Maybe<String> get_foreign_id() const {
 		if (has_key("foreign")) {
-			return ir::StringSliceType::value_to_string(get_value_for("foreign"));
+			return ir::TextType::value_to_string(get_value_for("foreign"));
 		}
 		return None;
 	}
 
 	useit Maybe<String> get_value_as_string_for(String key) const {
 		if (has_key(key)) {
-			return ir::StringSliceType::value_to_string(get_value_for(key));
+			return ir::TextType::value_to_string(get_value_for(key));
 		}
 		return None;
 	}

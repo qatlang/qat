@@ -24,7 +24,7 @@ class TypedType : public Type {
 
 	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-	useit TypeKind type_kind() const final { return TypeKind::typed; }
+	useit TypeKind type_kind() const final { return TypeKind::TYPED; }
 
 	useit String to_string() const final { return "type"; }
 };

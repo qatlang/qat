@@ -313,7 +313,7 @@ Config::Config(u64 count, const char** args)
 	    std::atoi(verNum.substr(verNum.find_first_of('.') + 1, verNum.find_last_of('.') - verNum.find_first_of('.') - 1)
 	                  .c_str()),
 	    std::atoi(verNum.substr(verNum.find_last_of('.') + 1, verNum.length() - verNum.find_last_of('.') - 1).c_str()));
-	if (!hasInstance()) {
+	if (not hasInstance()) {
 #if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
 		HANDLE handle      = GetStdHandle(STD_OUTPUT_HANDLE);
 		DWORD  consoleMode = 0;
@@ -487,7 +487,7 @@ Config::Config(u64 count, const char** args)
 				    None);
 			}
 		}
-		for (usize i = proceed; ((i < count) && !exitAfter); i++) {
+		for (usize i = proceed; ((i < count) && not exitAfter); i++) {
 			String arg     = args[i];
 			auto   hasNext = [&]() { return (i + 1) < count; };
 			auto   getNext = [&]() {
@@ -524,7 +524,7 @@ Config::Config(u64 count, const char** args)
 			} else if (arg.find("--clang=") == 0) {
 				if (arg.length() > String::traits_type::length("--clang=")) {
 					clangPath = arg.substr(String::traits_type::length("--clang="));
-					if (!fs::exists(clangPath.value())) {
+					if (not fs::exists(clangPath.value())) {
 						cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
 					}
 				} else {
@@ -533,7 +533,7 @@ Config::Config(u64 count, const char** args)
 			} else if (String(arg) == "--clang") {
 				if (hasNext()) {
 					clangPath = (getNext());
-					if (!fs::exists(clangPath.value())) {
+					if (not fs::exists(clangPath.value())) {
 						cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
 					}
 				} else {
@@ -544,7 +544,7 @@ Config::Config(u64 count, const char** args)
 			} else if (arg.find("--linker=") == 0) {
 				if (arg.length() > String::traits_type::length("--linker=")) {
 					linkerPath = filter_quotes(arg.substr(String::traits_type::length("--linker=")));
-					if (!fs::exists(linkerPath.value())) {
+					if (not fs::exists(linkerPath.value())) {
 						cli::Error("Provided path to '--linker' does not exist: " + linkerPath.value(), None);
 					}
 				} else {
@@ -553,7 +553,7 @@ Config::Config(u64 count, const char** args)
 			} else if (String(arg) == "--linker") {
 				if (hasNext()) {
 					linkerPath = filter_quotes(getNext());
-					if (!fs::exists(linkerPath.value())) {
+					if (not fs::exists(linkerPath.value())) {
 						cli::Error("Provided --linker path does not exist: " + linkerPath.value(), None);
 					}
 				} else {

@@ -34,7 +34,7 @@ ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
 		if (functionType) {
 			auto irTy = functionType->emit(ctx);
 			SHOW("AssemblyBlock :: Emitted function type")
-			if (!irTy->is_function()) {
+			if (not irTy->is_function()) {
 				ctx->Error("Expected a function type to represent the nature of the assembly code",
 				           functionType->fileRange);
 			}
@@ -45,10 +45,10 @@ ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
 		}
 		auto asmStrExp = asmValue->emit(ctx);
 		SHOW("ASM string emitted")
-		if (!asmStrExp->get_ir_type()->is_string_slice()) {
-			ctx->Error("Expected this expression to be of type " + ctx->color("str"), asmValue->fileRange);
+		if (not asmStrExp->get_ir_type()->is_text()) {
+			ctx->Error("Expected this expression to be of type " + ctx->color("text"), asmValue->fileRange);
 		}
-		auto asmStr = ir::StringSliceType::value_to_string(asmStrExp);
+		auto asmStr = ir::TextType::value_to_string(asmStrExp);
 		if (asmFnTy->get_argument_count() != arguments.size()) {
 			if (asmFnTy->get_argument_count() == 0) {
 				ctx->Error("Expected no arguments for this assembly code", argsRange);
@@ -84,26 +84,28 @@ ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
 		String clobberString;
 		auto   clobberExpr = clobbers->emit(ctx);
 		SHOW("Clobber str emitted")
+		SHOW("Clobber expr uses is " << clobberExpr->get_llvm_constant()->getNumUses())
 		if (clobberExpr->get_ir_type()->is_array() &&
-		    clobberExpr->get_ir_type()->as_array()->get_element_type()->is_string_slice()) {
+		    clobberExpr->get_ir_type()->as_array()->get_element_type()->is_text()) {
 			SHOW("ClobberExpr: " << clobberExpr->get_ir_type()->to_prerun_generic_string(clobberExpr).value())
 			auto clobConst = llvm::cast<llvm::ConstantArray>(
-			    llvm::ConstantFoldConstant(clobberExpr->get_llvm_constant(), ctx->irCtx->dataLayout.value()));
+			    llvm::ConstantFoldConstant(clobberExpr->get_llvm_constant(), ctx->irCtx->dataLayout));
 			auto itemCount = clobberExpr->get_ir_type()->as_array()->get_length();
 			for (usize i = 0; i < itemCount; i++) {
 				auto item = clobConst->getAggregateElement(i);
-				clobberString += ir::StringSliceType::value_to_string(
-				    ir::PrerunValue::get(item, ir::StringSliceType::get(ctx->irCtx)));
+				SHOW("Clobber item uses: " << item->getNumUses())
+				clobberString +=
+				    ir::TextType::value_to_string(ir::PrerunValue::get(item, ir::TextType::get(ctx->irCtx)));
 				if (i != (itemCount - 1)) {
 					clobberString += ",";
 				}
 			}
 		} else {
-			ctx->Error("The list of constraints is expected to be of " + ctx->color("[n]str") + " type",
+			ctx->Error("The list of constraints is expected to be of " + ctx->color("[n]text") + " type",
 			           clobbers->fileRange);
 		}
 		SHOW("Got clobber string")
-		if (!clobberString.empty()) {
+		if (not clobberString.empty()) {
 			auto verifyRes =
 			    llvm::InlineAsm::verify(llvm::cast<llvm::FunctionType>(asmFnTy->get_llvm_type()), clobberString);
 			if (verifyRes) {
@@ -118,7 +120,7 @@ ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
 		bool isVolatileValue = true;
 		if (volatileExp) {
 			auto vExp = volatileExp->emit(ctx);
-			if (!vExp->get_ir_type()->is_bool()) {
+			if (not vExp->get_ir_type()->is_bool()) {
 				ctx->Error("The expression to determine volatility of the assembly block is expected to be of " +
 				               ctx->color("bool") + " type",
 				           volatileExp->fileRange);

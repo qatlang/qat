@@ -20,11 +20,11 @@ class DoneSkill;
 class IntegerType;
 class UnsignedType;
 class FloatType;
-class ReferenceType;
+class RefType;
 class MarkType;
 class TupleType;
 class FunctionType;
-class StringSliceType;
+class TextType;
 class StructType;
 class DefinitionType;
 class MixType;
@@ -107,8 +107,8 @@ class Type : public Uniq {
 	useit bool         is_integer() const;
 	useit IntegerType* as_integer() const;
 
-	useit bool          is_unsigned_integer() const;
-	useit UnsignedType* as_unsigned_integer() const;
+	useit bool          is_unsigned() const;
+	useit UnsignedType* as_unsigned() const;
 
 	useit bool          is_underlying_type_integer() const;
 	useit bool          is_underlying_type_unsigned() const;
@@ -121,8 +121,8 @@ class Type : public Uniq {
 	useit bool       is_float() const;
 	useit FloatType* as_float() const;
 
-	useit bool           is_reference() const;
-	useit ReferenceType* as_reference() const;
+	useit bool     is_ref() const;
+	useit RefType* as_ref() const;
 
 	useit bool       is_poly() const;
 	useit Polymorph* as_poly() const;
@@ -148,8 +148,8 @@ class Type : public Uniq {
 	useit bool        is_choice() const;
 	useit ChoiceType* as_choice() const;
 
-	useit bool             is_string_slice() const;
-	useit StringSliceType* as_string_slice() const;
+	useit bool      is_text() const;
+	useit TextType* as_text() const;
 
 	useit bool        is_future() const;
 	useit FutureType* as_future() const;

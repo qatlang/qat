@@ -13,7 +13,7 @@ ir::Type* SelfType::emit(EmitCtx* ctx) {
 			               " type can only be used as the given type in normal and variation methods",
 			           fileRange);
 		}
-		return ir::ReferenceType::get(
+		return ir::RefType::get(
 		    isVarRef, ctx->has_member_parent() ? ctx->get_member_parent()->get_parent_type() : ctx->get_opaque_parent(),
 		    ctx->irCtx);
 	} else if (ctx->has_skill()) {

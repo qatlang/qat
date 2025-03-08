@@ -24,7 +24,7 @@ bool is_terminator_instruction(llvm::Value* value) {
 }
 
 llvm::Instruction* add_branch(llvm::IRBuilder<>& builder, llvm::BasicBlock* dest) {
-	if (!has_terminator_instruction(builder.GetInsertBlock())) {
+	if (not has_terminator_instruction(builder.GetInsertBlock())) {
 		return builder.CreateBr(dest);
 	}
 	return nullptr;

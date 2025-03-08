@@ -24,7 +24,7 @@ void DefineOpaqueType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* i
 	if (condition.has_value()) {
 		auto cond = condition.value()->emit(emitCtx);
 		if (cond->get_ir_type()->is_bool()) {
-			if (!llvm::cast<llvm::ConstantInt>(cond->get_llvm_constant())->getValue().getBoolValue()) {
+			if (not llvm::cast<llvm::ConstantInt>(cond->get_llvm_constant())->getValue().getBoolValue()) {
 				return;
 			}
 		} else {

@@ -15,7 +15,7 @@ void EntityOverview::add_bring_mention(ir::Mod* otherMod, const FileRange& fileR
 Vec<Pair<Mod*, FileRange>> const& EntityOverview::get_brought_mentions() const { return ovBroughtMentions; }
 
 Json EntityOverview::overviewToJson() {
-	if (!isOverviewUpdated) {
+	if (not isOverviewUpdated) {
 		update_overview();
 		isOverviewUpdated = true;
 	}

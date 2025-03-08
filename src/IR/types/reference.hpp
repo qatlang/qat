@@ -5,20 +5,24 @@
 
 namespace qat::ir {
 
-class ReferenceType : public Type {
-  private:
+class RefType : public Type {
 	Type* subType;
 	bool  isSubVariable;
 
   public:
-	ReferenceType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
-	useit static ReferenceType* get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx);
+	RefType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
 
-	useit Type*    get_subtype() const;
-	useit bool     isSubtypeVariable() const;
-	useit bool     is_type_sized() const final;
+	useit static RefType* get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx);
+
+	useit Type* get_subtype() const;
+
+	useit bool has_variability() const;
+
+	useit bool is_type_sized() const final;
+
 	useit TypeKind type_kind() const final;
-	useit String   to_string() const final;
+
+	useit String to_string() const final;
 };
 
 } // namespace qat::ir

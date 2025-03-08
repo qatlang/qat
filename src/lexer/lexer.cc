@@ -91,7 +91,7 @@ void Lexer::analyse() {
 	auto startTime = std::chrono::high_resolution_clock::now();
 	tokens->push_back(Token::valued(TokenType::startOfFile, filePath.string(), this->get_position(0)));
 	read();
-	while (!file.eof()) {
+	while (not file.eof()) {
 		tokens->push_back(tokeniser());
 	}
 	file.close();
@@ -126,7 +126,7 @@ void Lexer::change_file(fs::path newFilePath) {
 #define CURRENT_IS_DIGIT (current >= DIGIT_FIRST && current <= DIGIT_LAST)
 
 Token Lexer::tokeniser() {
-	if (!buffer.empty()) {
+	if (not buffer.empty()) {
 		Token token = buffer.back();
 		buffer.pop_back();
 		return token;
@@ -179,7 +179,7 @@ Token Lexer::tokeniser() {
 		}
 		case ']': {
 			read();
-			if ((!bracketOccurences.empty()) && (bracketOccurences.back() == TokenType::genericTypeStart)) {
+			if ((not bracketOccurences.empty()) && (bracketOccurences.back() == TokenType::genericTypeStart)) {
 				bracketOccurences.pop_back();
 				return Token::normal(TokenType::genericTypeEnd, this->get_position(1));
 			} else {
@@ -231,7 +231,7 @@ Token Lexer::tokeniser() {
 				String commentValue;
 				read();
 				auto commentPos = this->get_position(0);
-				while ((!star || (current != '/')) && !file.eof()) {
+				while ((not star || (current != '/')) && not file.eof()) {
 					if (star) {
 						star = false;
 					}
@@ -239,7 +239,7 @@ Token Lexer::tokeniser() {
 						star = true;
 					}
 					read();
-					if (!star || (current != '/')) {
+					if (not star || (current != '/')) {
 						commentValue += current;
 						if (current == '\n') {
 							commentPos.end.line++;
@@ -255,7 +255,7 @@ Token Lexer::tokeniser() {
 			} else if (current == '/') {
 				String commentValue;
 				auto   commentPos = this->get_position(0);
-				while ((current != '\n' && prev != '\r') && !file.eof()) {
+				while ((current != '\n' && prev != '\r') && not file.eof()) {
 					read();
 					if (current != '\n' && current != '\r') {
 						commentValue += current;
@@ -392,7 +392,7 @@ Token Lexer::tokeniser() {
 			bool escape = false;
 			read();
 			String str_val;
-			while (escape ? !file.eof() : (current != '"' && !file.eof())) {
+			while (escape ? not file.eof() : (current != '"' && not file.eof())) {
 				if (escape) {
 					escape = false;
 					if (current == '"') {
@@ -475,11 +475,12 @@ Token Lexer::tokeniser() {
 				}
 			}
 			bool foundSpec = false;
-			while ((CURRENT_IS_DIGIT || (foundRadix && !foundSpec && CURRENT_IS_ALPHABET) ||
-			        (!is_float && (current == '.')) || (!foundRadix && !exponentialFloat && (current == 'e')) ||
-			        (!foundSpec && (current == '_'))) &&
-			       !file.eof()) {
-				if (!foundRadix && !exponentialFloat && current == 'e') {
+			while ((CURRENT_IS_DIGIT || (foundRadix && not foundSpec && CURRENT_IS_ALPHABET) ||
+			        (not is_float && (current == '.')) ||
+			        (not foundRadix && not exponentialFloat && (current == 'e')) ||
+			        (not foundSpec && (current == '_'))) &&
+			       not file.eof()) {
+				if (not foundRadix && not exponentialFloat && current == 'e') {
 					is_float         = true;
 					exponentialFloat = true;
 					String expStr("e");
@@ -551,7 +552,7 @@ Token Lexer::tokeniser() {
 		default: {
 			if (CURRENT_IS_ALPHABET || current == '_') {
 				String value;
-				while ((CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_')) && !file.eof()) {
+				while ((CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_')) && not file.eof()) {
 					value += current;
 					read();
 				}
@@ -721,12 +722,12 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 		if (wordValue.empty()) {
 			return None;
 		}
-		if (!((wordValue[0] >= LOWER_LETTER_FIRST && wordValue[0] <= LOWER_LETTER_LAST) ||
-		      (wordValue[0] >= UPPER_LETTER_FIRST && wordValue[0] <= UPPER_LETTER_LAST))) {
+		if (not((wordValue[0] >= LOWER_LETTER_FIRST && wordValue[0] <= LOWER_LETTER_LAST) ||
+		        (wordValue[0] >= UPPER_LETTER_FIRST && wordValue[0] <= UPPER_LETTER_LAST))) {
 			return None;
 		}
 		for (auto current : wordValue) {
-			if (!(CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_'))) {
+			if (not(CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_'))) {
 				return None;
 			}
 		}

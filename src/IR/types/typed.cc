@@ -14,7 +14,7 @@ TypedType* TypedType::instance = nullptr;
 
 TypedType::TypedType(ir::Ctx* _ctx) {
 	ctx         = _ctx;
-	llvmType    = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.value().getDefaultGlobalsAddressSpace());
+	llvmType    = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 	linkingName = "qat'type";
 }
 

@@ -7,7 +7,7 @@ namespace qat::ast {
 ir::Value* Move::emit(EmitCtx* ctx) {
 	FnAtEnd fnObj{[&] { createIn = nullptr; }};
 	if (isExpSelf) {
-		if (!ctx->get_fn()->is_method()) {
+		if (not ctx->get_fn()->is_method()) {
 			ctx->Error("Cannot perform move on the parent instance as this is not a member function", fileRange);
 		} else {
 			auto memFn = (ir::Method*)ctx->get_fn();
@@ -27,29 +27,27 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 	}
 	auto* expEmit = exp->emit(ctx);
 	auto* expTy   = expEmit->get_ir_type();
-	if (expEmit->is_ghost_reference() || expTy->is_reference()) {
-		if (expTy->is_reference()) {
-			expEmit->load_ghost_reference(ctx->irCtx->builder);
+	if (expEmit->is_ghost_ref() || expTy->is_ref()) {
+		if (expTy->is_ref()) {
+			expEmit->load_ghost_ref(ctx->irCtx->builder);
 		}
-		auto* candTy =
-		    expEmit->is_reference() ? expEmit->get_ir_type()->as_reference()->get_subtype() : expEmit->get_ir_type();
-		if (!isAssignment) {
+		auto* candTy = expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->get_subtype() : expEmit->get_ir_type();
+		if (not isAssignment) {
 			if (candTy->is_move_constructible()) {
 				bool shouldLoadValue = false;
 				if (isLocalDecl()) {
-					if (!candTy->is_same(localValue->get_ir_type())) {
+					if (not candTy->is_same(localValue->get_ir_type())) {
 						ctx->Error(
 						    "The type provided in the local declaration does not match the type of the value to be moved",
 						    fileRange);
 					}
-					createIn = ir::Value::get(localValue->get_alloca(),
-					                          ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+					createIn =
+					    ir::Value::get(localValue->get_alloca(), ir::RefType::get(true, candTy, ctx->irCtx), false);
 				} else if (canCreateIn()) {
-					if (createIn->is_reference() || createIn->is_ghost_reference()) {
-						auto expTy = createIn->is_ghost_reference()
-						                 ? createIn->get_ir_type()
-						                 : createIn->get_ir_type()->as_reference()->get_subtype();
-						if (!expTy->is_same(candTy)) {
+					if (createIn->is_ref() || createIn->is_ghost_ref()) {
+						auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+						                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+						if (not expTy->is_same(candTy)) {
 							ctx->Error(
 							    "Trying to optimise the move by creating in-place, but the expression type is " +
 							        ctx->color(candTy->to_string()) +
@@ -64,11 +62,11 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					}
 				} else {
 					if (irName.has_value()) {
-						createIn = ctx->get_fn()->get_block()->new_value(irName->value, candTy, isVar, irName->range);
+						createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
 					} else {
 						shouldLoadValue = true;
 						createIn = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, candTy->get_llvm_type()),
-						                          ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+						                          ir::RefType::get(true, candTy, ctx->irCtx), false);
 					}
 				}
 				(void)candTy->move_construct_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
@@ -83,20 +81,19 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 				}
 			} else if (candTy->is_trivially_movable()) {
 				if (isLocalDecl()) {
-					if (!candTy->is_same(localValue->get_ir_type())) {
+					if (not candTy->is_same(localValue->get_ir_type())) {
 						ctx->Error(
 						    "The type provided in the local declaration does not match the type of the value to be moved",
 						    fileRange);
 					}
-					createIn = ir::Value::get(localValue->get_alloca(),
-					                          ir::ReferenceType::get(true, candTy, ctx->irCtx), false);
+					createIn =
+					    ir::Value::get(localValue->get_alloca(), ir::RefType::get(true, candTy, ctx->irCtx), false);
 				}
 				if (canCreateIn()) {
-					if (createIn->is_reference() || createIn->is_ghost_reference()) {
-						auto expTy = createIn->is_ghost_reference()
-						                 ? createIn->get_ir_type()
-						                 : createIn->get_ir_type()->as_reference()->get_subtype();
-						if (!expTy->is_same(candTy)) {
+					if (createIn->is_ref() || createIn->is_ghost_ref()) {
+						auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+						                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+						if (not expTy->is_same(candTy)) {
 							ctx->Error(
 							    "Trying to optimise the move by creating in-place, but the expression type is " +
 							        ctx->color(candTy->to_string()) +
@@ -131,12 +128,11 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		} else {
-			if (createIn->is_ghost_reference()
+			if (createIn->is_ghost_ref()
 			        ? createIn->get_ir_type()->is_same(candTy)
-			        : (createIn->is_reference() &&
-			           createIn->get_ir_type()->as_reference()->get_subtype()->is_same(candTy))) {
-				if (expEmit->is_reference()) {
-					expEmit->load_ghost_reference(ctx->irCtx->builder);
+			        : (createIn->is_ref() && createIn->get_ir_type()->as_ref()->get_subtype()->is_same(candTy))) {
+				if (expEmit->is_ref()) {
+					expEmit->load_ghost_ref(ctx->irCtx->builder);
 				}
 				if (candTy->is_trivially_movable()) {
 					ctx->irCtx->builder.CreateStore(

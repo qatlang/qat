@@ -227,7 +227,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 	           mod->has_global_in_imports(name.value, reqInfo).first) {
 		auto* gEnt = mod->get_global(name.value, reqInfo);
 		gEnt->add_mention(name.range);
-		if ((!gEnt->is_variable()) && gEnt->has_initial_value()) {
+		if ((not gEnt->is_variable()) && gEnt->has_initial_value()) {
 			return ir::PrerunValue::get(gEnt->get_initial_value(), gEnt->get_ir_type());
 		} else {
 			if (gEnt->is_variable()) {

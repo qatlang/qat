@@ -30,15 +30,15 @@ struct MetaInfo {
 			auto irVal = kv.second->emit(ctx);
 			if (kv.first.value == ir::MetaInfo::foreignKey || kv.first.value == ir::MetaInfo::linkAsKey ||
 			    kv.first.value == ir::MetaInfo::providesKey) {
-				if (not irVal->get_ir_type()->is_string_slice()) {
+				if (not irVal->get_ir_type()->is_text()) {
 					ctx->Error("The " + ctx->color(kv.first.value) + " field is expected to be of type " +
-					               ctx->color(ir::StringSliceType::get(ctx->irCtx, false)->to_string()) +
+					               ctx->color(ir::TextType::get(ctx->irCtx, false)->to_string()) +
 					               ". Got an expression of type " + ctx->color(irVal->get_ir_type()->to_string()) +
 					               " instead",
 					           kv.second->fileRange);
 				}
 			} else if (kv.first.value == ir::MetaInfo::inlineKey) {
-				if (!isParentFunction) {
+				if (not isParentFunction) {
 					ctx->Error("This " + ctx->color("meta") + " info does not belong to a function, and hence the " +
 					               ctx->color("inline") + " keyword cannot be used",
 					           kv.second->fileRange);
@@ -52,7 +52,7 @@ struct MetaInfo {
 					               inlineRange.value().is_before(kv.second->fileRange) ? inlineRange.value()
 					                                                                   : kv.second->fileRange});
 				}
-				if (!irVal->get_ir_type()->is_bool()) {
+				if (not irVal->get_ir_type()->is_bool()) {
 					ctx->Error("The " + ctx->color(ir::MetaInfo::inlineKey) + " field is expected to be of type " +
 					               ctx->color("bool") + ". Got an expression of type " +
 					               ctx->color(irVal->get_ir_type()->to_string()) + " instead",
@@ -63,7 +63,7 @@ struct MetaInfo {
 			valuesRange.push_back(kv.second->fileRange);
 		}
 		if (inlineRange.has_value()) {
-			if (!isParentFunction) {
+			if (not isParentFunction) {
 				ctx->Error("This " + ctx->color("meta") + " info does not belong to a parent, and hence the " +
 				               ctx->color("inline") + " keyword cannot be used here",
 				           inlineRange);

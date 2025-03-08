@@ -45,13 +45,13 @@ void DefineFlagType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irC
 		ir::UnsignedType*     underType = nullptr;
 		if (providedType) {
 			auto provTy = providedType->emit(ctx);
-			if (not provTy->is_unsigned_integer()) {
+			if (not provTy->is_unsigned()) {
 				irCtx->Error(
 				    "The provided underlying type of this flag type is " + irCtx->color(provTy->to_string()) +
 				        ", which is not an unsigned integer type. The underlying type must be an unsigned integer type",
 				    providedType->fileRange);
 			}
-			underType = provTy->as_unsigned_integer();
+			underType = provTy->as_unsigned();
 		} else {
 			underType = ir::UnsignedType::create(variants.size(), irCtx);
 		}

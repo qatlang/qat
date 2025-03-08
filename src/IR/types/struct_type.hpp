@@ -16,7 +16,7 @@
 #include <vector>
 
 namespace qat::ast {
-class DefineCoreType;
+class DefineStructType;
 class Expression;
 } // namespace qat::ast
 
@@ -76,31 +76,46 @@ class StructType final : public ExpandedType, public EntityOverview {
 	~StructType() final;
 
 	useit Maybe<usize> get_index_of(const String& member) const;
-	useit bool         has_field_with_name(const String& member) const;
+
+	useit bool has_field_with_name(const String& member) const;
+
 	useit StructField* get_field_with_name(const String& name) const;
-	useit u64          get_field_count() const;
+
+	useit u64 get_field_count() const;
+
 	useit StructField* get_field_at(u64 index);
-	useit usize        get_field_index(String const& name) const;
-	useit String       get_field_name_at(u64 index) const;
-	useit Type*        get_type_of_field(const String& member) const;
+
+	useit usize get_field_index(String const& name) const;
+
+	useit String get_field_name_at(u64 index) const;
+
+	useit Type* get_type_of_field(const String& member) const;
+
 	useit Vec<StructField*>& get_members();
 
-	useit bool          has_static_field(String const& name) const;
+	useit bool has_static_field(String const& name) const;
+
 	useit StaticMember* get_static_field(String const& name) const;
 
 	useit bool is_type_sized() const final;
 
 	useit bool is_trivially_copyable() const final;
+
 	useit bool is_trivially_movable() const final;
+
 	useit bool is_copy_constructible() const final;
+
 	useit bool is_copy_assignable() const final;
+
 	useit bool is_move_constructible() const final;
+
 	useit bool is_move_assignable() const final;
+
 	useit bool is_destructible() const final;
 
 	useit bool can_be_prerun() const final {
 		for (auto* mem : members) {
-			if (!mem->type->can_be_prerun()) {
+			if (not mem->type->can_be_prerun()) {
 				return false;
 			}
 		}
@@ -109,7 +124,7 @@ class StructType final : public ExpandedType, public EntityOverview {
 
 	useit bool can_be_prerun_generic() const final {
 		for (auto* mem : members) {
-			if (!mem->type->can_be_prerun_generic()) {
+			if (not mem->type->can_be_prerun_generic()) {
 				return false;
 			}
 		}
@@ -138,26 +153,34 @@ class StructType final : public ExpandedType, public EntityOverview {
 	}
 
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+
 	void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+
 	void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+
 	void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
 	useit LinkNames get_link_names() const final;
-	useit TypeKind  type_kind() const override;
-	useit String    to_string() const override;
-	void            addStaticMember(const Identifier& name, Type* type, bool variability, Value* initial,
-	                                const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
-	void            update_overview() final;
+
+	useit TypeKind type_kind() const override;
+
+	useit String to_string() const override;
+
+	void add_static_member(const Identifier& name, Type* type, bool variability, Value* initial,
+	                       const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
+
+	void update_overview() final;
 };
 
 class GenericStructType : public Uniq, public EntityOverview {
-	friend ast::DefineCoreType;
+	friend ast::DefineStructType;
 
   private:
 	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;
-	ast::DefineCoreType*           defineStructType;
+	ast::DefineStructType*         defineStructType;
 	Mod*                           parent;
 	VisibilityInfo                 visibility;
 	ast::PrerunExpression*         constraint;
@@ -169,10 +192,10 @@ class GenericStructType : public Uniq, public EntityOverview {
 
   public:
 	GenericStructType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::PrerunExpression* _constraint,
-	                  ast::DefineCoreType* defineCoreType, Mod* parent, const VisibilityInfo& visibInfo);
+	                  ast::DefineStructType* defineStructType, Mod* parent, VisibilityInfo const& visibInfo);
 
 	useit static GenericStructType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                                       ast::PrerunExpression* _constraint, ast::DefineCoreType* defineCoreType,
+	                                       ast::PrerunExpression* _constraint, ast::DefineStructType* defineCoreType,
 	                                       Mod* parent, const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericStructType), std::move(name), std::move(generics), _constraint,
 		                         defineCoreType, parent, visibInfo);
@@ -188,15 +211,22 @@ class GenericStructType : public Uniq, public EntityOverview {
 	}
 
 	useit Identifier get_name() const;
-	useit usize      getTypeCount() const;
-	useit bool       allTypesHaveDefaults() const;
-	useit usize      getVariantCount() const;
-	useit Mod*       get_module() const;
-	useit Type*      fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+
+	useit usize get_parameter_count() const;
+
+	useit bool all_parameters_have_default() const;
+
+	useit usize getVariantCount() const;
+
+	useit Mod* get_module() const;
+
+	useit Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
 
 	useit ast::GenericAbstractType* getGenericAt(usize index) const;
-	useit VisibilityInfo            get_visibility() const;
-	void                            update_overview() final;
+
+	useit VisibilityInfo get_visibility() const;
+
+	void update_overview() final;
 };
 
 } // namespace qat::ir

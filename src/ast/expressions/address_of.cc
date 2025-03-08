@@ -4,12 +4,11 @@ namespace qat::ast {
 
 ir::Value* AddressOf::emit(EmitCtx* ctx) {
 	auto inst = instance->emit(ctx);
-	if (inst->is_reference() || inst->is_ghost_reference()) {
-		auto subTy = inst->is_reference() ? inst->get_ir_type()->as_reference()->get_subtype() : inst->get_ir_type();
-		bool isPtrVar =
-		    inst->is_reference() ? inst->get_ir_type()->as_reference()->isSubtypeVariable() : inst->is_variable();
-		if (inst->is_reference()) {
-			inst->load_ghost_reference(ctx->irCtx->builder);
+	if (inst->is_ref() || inst->is_ghost_ref()) {
+		auto subTy    = inst->is_ref() ? inst->get_ir_type()->as_ref()->get_subtype() : inst->get_ir_type();
+		bool isPtrVar = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->is_variable();
+		if (inst->is_ref()) {
+			inst->load_ghost_ref(ctx->irCtx->builder);
 		}
 		return ir::Value::get(
 		           inst->get_llvm(),

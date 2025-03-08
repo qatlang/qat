@@ -1,16 +1,12 @@
 #include "./sub_entity.hpp"
 #include "../sub_entity_solver.hpp"
-#include "../types/qat_type.hpp"
 
 namespace qat::ast {
 
 void PrerunSubEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
                                           EmitCtx* ctx) {
-	if (parentType != nullptr) {
-		UPDATE_DEPS(parentType);
-	}
-	if (parentExpression != nullptr) {
-		UPDATE_DEPS(parentExpression);
+	if (parentType) {
+		parentType.update_dependencies(phase, dep, ent, ctx);
 	}
 }
 
@@ -33,20 +29,9 @@ ir::PrerunValue* PrerunSubEntity::emit(EmitCtx* ctx) {
 		subRes = sub_entity_solver(
 		    ctx, true, SubEntityParent::of_done_skill(ctx->get_member_parent()->as_done_skill(), doneSkill.value()),
 		    names, fileRange);
-	} else if (parentType != nullptr) {
-		auto irTy = parentType->emit(ctx);
-		subRes = sub_entity_solver(ctx, true, SubEntityParent::of_type(irTy, parentType->fileRange), names, fileRange);
-	} else if (parentExpression != nullptr) {
-		auto exp = parentExpression->emit(ctx);
-		if (not exp->get_ir_type()->is_typed()) {
-			ctx->Error("Expected a type here, but found an expression of type " +
-			               ctx->color(exp->get_ir_type()->to_string()) + ". Expressions cannot have children entities",
-			           parentExpression->fileRange);
-		}
-		subRes = sub_entity_solver(ctx, true,
-		                           SubEntityParent::of_type(ir::TypeInfo::get_for(exp->get_llvm_constant())->type,
-		                                                    parentExpression->fileRange),
-		                           names, fileRange);
+	} else if (parentType) {
+		auto irTy = parentType.emit(ctx);
+		subRes = sub_entity_solver(ctx, true, SubEntityParent::of_type(irTy, parentType.get_range()), names, fileRange);
 	}
 	if (subRes.isType) {
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, (ir::Type*)subRes.data, ctx->mod)->id,
@@ -66,8 +51,8 @@ Json PrerunSubEntity::to_json() const {
 	    ._("hasSkill", skill.has_value())
 	    ._("skillRange", skill.has_value() ? skill.value() : JsonValue())
 	    ._("names", namesJSON)
-	    ._("hasParentType", parentType != nullptr)
-	    ._("parentType", parentType ? parentType->to_json() : JsonValue())
+	    ._("hasParentType", (bool)parentType)
+	    ._("parentType", (JsonValue)parentType)
 	    ._("fileRange", fileRange);
 }
 
@@ -76,7 +61,7 @@ String PrerunSubEntity::to_string() const {
 	for (usize i = 0; i < names.size(); i++) {
 		nameStr += ":" + names[i].value;
 	}
-	return (skill.has_value() ? "skill" : (parentType->to_string())) + nameStr;
+	return (skill.has_value() ? "skill" : (doneSkill.has_value() ? "do:skill" : (parentType.to_string()))) + nameStr;
 }
 
 } // namespace qat::ast

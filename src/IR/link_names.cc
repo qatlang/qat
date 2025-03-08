@@ -45,9 +45,9 @@ String LinkNames::toName() const {
 		// FIXME - Implement C++ name mangling
 		return result;
 	} else {
-		String result = ((!units.empty()) && (units.front().unitType == LinkUnitType::name ||
-		                                      units.front().unitType == LinkUnitType::genericTypeValue ||
-		                                      units.front().unitType == LinkUnitType::genericPrerunValue))
+		String result = ((not units.empty()) && (units.front().unitType == LinkUnitType::name ||
+		                                         units.front().unitType == LinkUnitType::genericTypeValue ||
+		                                         units.front().unitType == LinkUnitType::genericPrerunValue))
 		                    ? ""
 		                    : "qat'";
 		for (usize i = 0; i < units.size(); i++) {

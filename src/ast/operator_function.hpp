@@ -58,14 +58,16 @@ class OperatorPrototype {
 		}
 	}
 
-	void           define(MethodState& state, ir::Ctx* irCtx);
-	useit Json     to_json() const;
+	void       define(MethodState& state, ir::Ctx* irCtx);
+	useit Json to_json() const;
+
 	useit NodeType nodeType() const { return NodeType::OPERATOR_PROTOTYPE; }
+
 	~OperatorPrototype();
 };
 
 class OperatorDefinition {
-	friend DefineCoreType;
+	friend DefineStructType;
 	friend DoSkill;
 
 	Vec<Sentence*>     sentences;
@@ -90,7 +92,8 @@ class OperatorDefinition {
 	void  define(MethodState& state, ir::Ctx* irCtx);
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 	useit Json       to_json() const;
-	useit NodeType   nodeType() const { return NodeType::OPERATOR_DEFINITION; }
+
+	useit NodeType nodeType() const { return NodeType::OPERATOR_DEFINITION; }
 };
 
 } // namespace qat::ast

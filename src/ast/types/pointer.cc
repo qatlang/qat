@@ -16,22 +16,22 @@ void MarkType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> ex
 
 Maybe<usize> MarkType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
-	    isSlice ? llvm::cast<llvm::Type>(llvm::StructType::create(
-	                  {llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-	                                          ctx->irCtx->dataLayout->getProgramAddressSpace()),
-	                   llvm::Type::getInt64Ty(ctx->irCtx->llctx)}))
+	    isSlice ? llvm::cast<llvm::Type>(
+	                  llvm::StructType::create({llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+	                                                                   ctx->irCtx->dataLayout.getProgramAddressSpace()),
+	                                            llvm::Type::getInt64Ty(ctx->irCtx->llctx)}))
 	            : llvm::cast<llvm::Type>(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-	                                                            ctx->irCtx->dataLayout->getProgramAddressSpace()))));
+	                                                            ctx->irCtx->dataLayout.getProgramAddressSpace()))));
 }
 
 ir::Type* MarkType::emit(EmitCtx* ctx) {
 	if (ownTyp == MarkOwnType::function) {
-		if (!ctx->get_fn()) {
+		if (not ctx->get_fn()) {
 			ctx->Error("This pointer type is not inside a function and hence cannot have function ownership",
 			           fileRange);
 		}
 	} else if (ownTyp == MarkOwnType::typeParent) {
-		if (!(ctx->has_member_parent())) {
+		if (not ctx->has_member_parent()) {
 			ctx->Error("No parent type found in scope and hence the pointer "
 			           "cannot be owned by the parent type instance",
 			           fileRange);
@@ -39,7 +39,7 @@ ir::Type* MarkType::emit(EmitCtx* ctx) {
 	}
 	Maybe<ir::Type*> ownerVal;
 	if (ownTyp == MarkOwnType::type) {
-		if (!ownerTyTy) {
+		if (not ownerTyTy) {
 			ctx->Error("Expected a type to be provided for pointer ownership", fileRange);
 		}
 		auto* typVal = ownerTyTy.value()->emit(ctx);
@@ -52,7 +52,7 @@ ir::Type* MarkType::emit(EmitCtx* ctx) {
 	} else if (ownTyp == MarkOwnType::region) {
 		if (ownerTyTy) {
 			auto* regTy = ownerTyTy.value()->emit(ctx);
-			if (!regTy->is_region()) {
+			if (not regTy->is_region()) {
 				ctx->Error("The provided type is not a region type and hence pointer "
 				           "owner cannot be " +
 				               ctx->color("region"),

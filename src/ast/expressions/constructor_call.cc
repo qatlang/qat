@@ -25,7 +25,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		for (auto* arg : args) {
 			auto* argVal = arg->emit(ctx);
 			valsType.push_back(
-			    {argVal->is_ghost_reference() ? Maybe<bool>(argVal->is_variable()) : None, argVal->get_ir_type()});
+			    {argVal->is_ghost_ref() ? Maybe<bool>(argVal->is_variable()) : None, argVal->get_ir_type()});
 			valsIR.push_back(argVal);
 		}
 		auto access = ctx->get_access_info();
@@ -76,21 +76,20 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
 		auto argTys = cons->get_ir_type()->as_function()->get_argument_types();
 		for (usize i = 1; i < argTys.size(); i++) {
-			if (argTys.at(i)->get_type()->is_reference()) {
-				if (not valsType.at(i - 1).second->is_reference()) {
+			if (argTys.at(i)->get_type()->is_ref()) {
+				if (not valsType.at(i - 1).second->is_ref()) {
 					if (not valsType.at(i - 1).first.has_value()) {
 						valsIR[i = 1] = valsIR[i - 1]->make_local(ctx, None, args[i - 1]->fileRange);
 					}
-					if (argTys.at(i)->get_type()->as_reference()->isSubtypeVariable() &&
-					    not valsIR.at(i - 1)->is_variable()) {
+					if (argTys.at(i)->get_type()->as_ref()->has_variability() && not valsIR.at(i - 1)->is_variable()) {
 						ctx->Error("The expected argument type is " +
 						               ctx->color(argTys.at(i)->get_type()->to_string()) +
 						               " but the provided value is not a variable",
 						           args.at(i - 1)->fileRange);
 					}
 				} else {
-					if (argTys.at(i)->get_type()->as_reference()->isSubtypeVariable() &&
-					    not valsIR.at(i - 1)->get_ir_type()->as_reference()->isSubtypeVariable()) {
+					if (argTys.at(i)->get_type()->as_ref()->has_variability() &&
+					    not valsIR.at(i - 1)->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error("The expected argument type is " +
 						               ctx->color(argTys.at(i)->get_type()->to_string()) +
 						               " but the provided value is of type " +
@@ -101,9 +100,9 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 			} else {
 				auto* valTy = valsType.at(i - 1).second;
 				auto* val   = valsIR.at(i - 1);
-				if (valTy->is_reference() || val->is_ghost_reference()) {
-					if (valTy->is_reference()) {
-						valTy = valTy->as_reference()->get_subtype();
+				if (valTy->is_ref() || val->is_ghost_ref()) {
+					if (valTy->is_ref()) {
+						valTy = valTy->as_ref()->get_subtype();
 					}
 					valsIR.at(i - 1) = ir::Value::get(
 					    ctx->irCtx->builder.CreateLoad(valTy->get_llvm_type(), val->get_llvm()), valTy, false);
@@ -115,7 +114,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 		if (isLocalDecl()) {
 			llAlloca = localValue->get_alloca();
 		} else {
-			auto newAlloca = ctx->get_fn()->get_block()->new_value(
+			auto newAlloca = ctx->get_fn()->get_block()->new_local(
 			    irName.has_value() ? irName.value().value : ctx->get_fn()->get_random_alloca_name(), eTy, isVar,
 			    irName.has_value() ? irName.value().range : fileRange);
 			llAlloca = newAlloca->get_llvm();

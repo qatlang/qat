@@ -6,7 +6,8 @@
 
 namespace qat::ast {
 class GenericAbstractType;
-}
+struct EmitCtx;
+} // namespace qat::ast
 
 namespace qat::ir {
 
@@ -20,7 +21,7 @@ class PrerunGeneric;
 class PrerunValue;
 class GenericToFill;
 
-void fill_generics(ir::Ctx* irCtx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
+void fill_generics(ast::EmitCtx* irCtx, Vec<ast::GenericAbstractType*>& genAbs, Vec<GenericToFill*>& fills,
                    FileRange const& fileRange);
 
 class GenericToFill {

@@ -1,6 +1,7 @@
 #ifndef QAT_IR_QAT_MODULE_HPP
 #define QAT_IR_QAT_MODULE_HPP
 
+#include "../show.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/identifier.hpp"
 #include "../utils/qat_region.hpp"
@@ -167,8 +168,11 @@ class LibToLink {
 	}
 
 	useit bool isName() { return type == LibToLinkType::namedLib; }
+
 	useit bool isLibPath() { return type == LibToLinkType::libPath; }
+
 	useit bool isStaticAndSharedPaths() { return type == LibToLinkType::staticAndSharedPaths; }
+
 	useit bool isNameWithLookupPath() { return type == LibToLinkType::nameWithLookupPath; }
 
 	useit bool operator==(LibToLink const& other) {
@@ -294,6 +298,7 @@ inline String entity_child_type_to_string(EntityChildType type) {
 }
 
 struct EntityState;
+
 struct EntityDependency {
 	EntityState* entity;
 	DependType   type;
@@ -585,7 +590,9 @@ class Mod final : public Uniq, public EntityOverview {
 	                                  Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
 	useit static bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
+
 	static void add_provided_function(InternalDependency unit, Function* fnVal) { providedFunctions[unit] = fnVal; }
+
 	useit static Function* get_provided_function(InternalDependency unit) { return providedFunctions[unit]; }
 
 	static bool triple_is_equivalent(llvm::Triple const& first, llvm::Triple const& second);
@@ -599,14 +606,14 @@ class Mod final : public Uniq, public EntityOverview {
 			}
 		}
 		for (auto sub : submodules) {
-			if (!sub->should_be_named()) {
+			if (not sub->should_be_named()) {
 				if (sub->has_entity_with_name(name)) {
 					return true;
 				}
 			}
 		}
 		for (auto bMod : broughtModules) {
-			if (!bMod.is_named() && !bMod.get()->should_be_named()) {
+			if (not bMod.is_named() && not bMod.get()->should_be_named()) {
 				if (bMod.get()->has_entity_with_name(name)) {
 					return true;
 				}
@@ -627,14 +634,14 @@ class Mod final : public Uniq, public EntityOverview {
 			}
 		}
 		for (auto sub : submodules) {
-			if (!sub->should_be_named()) {
+			if (not sub->should_be_named()) {
 				if (sub->has_entity_with_name(name)) {
 					return sub->get_entity(name);
 				}
 			}
 		}
 		for (auto bMod : broughtModules) {
-			if (!bMod.is_named() && !bMod.get()->should_be_named()) {
+			if (not bMod.is_named() && not bMod.get()->should_be_named()) {
 				if (bMod.get()->has_entity_with_name(name)) {
 					return bMod.get()->get_entity(name);
 				}
@@ -687,7 +694,8 @@ class Mod final : public Uniq, public EntityOverview {
 	                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
 	useit bool is_submodule() const { return parent != nullptr; }
-	useit bool has_submodules() const { return !submodules.empty(); }
+
+	useit bool has_submodules() const { return not submodules.empty(); }
 
 	void add_dependency(ir::Mod* dep);
 
@@ -695,10 +703,12 @@ class Mod final : public Uniq, public EntityOverview {
 		return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
 		       integerBitwidths.contains(bits);
 	}
+
 	useit bool has_unsigned_bitwidth(u64 bits) const {
 		return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
 		       unsignedBitwidths.contains(bits);
 	}
+
 	useit bool has_float_kind(FloatTypeKind kind) const {
 		return (kind == FloatTypeKind::_32 || kind == FloatTypeKind::_64) || floatKinds.contains(kind);
 	}
@@ -710,13 +720,16 @@ class Mod final : public Uniq, public EntityOverview {
 	void add_float_kind(FloatTypeKind kind) { floatKinds.insert(kind); }
 
 	useit bool has_main_function() const { return hasMain; }
-	void       set_has_main_function() { hasMain = true; }
 
-	useit std::set<String> getAllObjectPaths() const;
-	useit std::set<String> getAllLinkableLibs() const;
+	void set_has_main_function() { hasMain = true; }
 
-	void                              add_fs_bring_mention(ir::Mod* otherMod, const FileRange& fileRange);
-	Vec<Pair<Mod*, FileRange>> const& get_fs_bring_mentions() const;
+	useit std::set<String> get_all_object_files() const;
+
+	useit std::set<String> get_all_linkable_libs() const;
+
+	void add_fs_bring_mention(ir::Mod* otherMod, const FileRange& fileRange);
+
+	useit Vec<Pair<Mod*, FileRange>> const& get_fs_bring_mentions() const;
 
 	void update_overview() final;
 	void output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,

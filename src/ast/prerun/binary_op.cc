@@ -29,13 +29,13 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 		lhs->as_type_inferrable()->set_inference_type(rhsEmit->get_ir_type());
 		lhsEmit = lhs->emit(ctx);
 	} else if (rhs->has_type_inferrance() && expect_same_operand_types(opr)) {
-		lhsEmit    = lhs->emit(ctx);
-		auto lhsTy = lhsEmit->get_ir_type()->is_reference() ? lhsEmit->get_ir_type()->as_reference()->get_subtype()
-		                                                    : lhsEmit->get_ir_type();
+		lhsEmit = lhs->emit(ctx);
+		auto lhsTy =
+		    lhsEmit->get_ir_type()->is_ref() ? lhsEmit->get_ir_type()->as_ref()->get_subtype() : lhsEmit->get_ir_type();
 		if (lhsTy->is_native_type()) {
 			lhsTy = lhsTy->as_native_type()->get_subtype();
 		}
-		if (lhsTy->is_integer() || lhsTy->is_unsigned_integer() || lhsTy->is_float()) {
+		if (lhsTy->is_integer() || lhsTy->is_unsigned() || lhsTy->is_float()) {
 			rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
 		}
 		rhsEmit = rhs->emit(ctx);
@@ -139,7 +139,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 					           fileRange);
 				}
 			}
-			return ir::PrerunValue::get(llvm::ConstantFoldConstant(llRes, ctx->irCtx->dataLayout.value()), resType);
+			return ir::PrerunValue::get(llvm::ConstantFoldConstant(llRes, ctx->irCtx->dataLayout), resType);
 		} else {
 			if (rhsValTy->is_choice() && (rhsValTy->as_choice()->get_underlying_type()->is_same(lhsValTy))) {
 				if (opr == Op::bitwiseAnd) {
@@ -183,7 +183,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 				           " It is recommended to convert the operand with smaller bitwidth to the bigger "
 				           "bitwidth to prevent potential loss of data and logical errors",
 				           fileRange);
-			} else if (rhsValTy->is_unsigned_integer()) {
+			} else if (rhsValTy->is_unsigned()) {
 				ctx->Error("Left hand side is a signed integer and right hand side is "
 				           "an unsigned integer. Please check logic or convert one side "
 				           "to the other type if this was intentional",
@@ -202,7 +202,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		}
-	} else if (lhsValTy->is_unsigned_integer()) {
+	} else if (lhsValTy->is_unsigned()) {
 		if (lhsType->is_same(rhsType)) {
 			auto            lhsConst = lhsEmit->get_llvm_constant();
 			auto            rhsConst = rhsEmit->get_llvm_constant();
@@ -294,7 +294,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 					           fileRange);
 				}
 			}
-			return ir::PrerunValue::get(llvm::ConstantFoldConstant(llRes, ctx->irCtx->dataLayout.value()), resType);
+			return ir::PrerunValue::get(llvm::ConstantFoldConstant(llRes, ctx->irCtx->dataLayout), resType);
 		} else {
 			if (rhsValTy->is_choice() && rhsValTy->as_choice()->get_underlying_type()->is_same(lhsValTy)) {
 				if (opr == Op::bitwiseAnd) {
@@ -319,9 +319,9 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 					           fileRange);
 				}
 			} else if (rhsValTy->is_choice()) {
-				if (!rhsValTy->as_choice()->has_negative_values()) {
+				if (not rhsValTy->as_choice()->has_negative_values()) {
 					ctx->Error("The bitwidth of the operand on the left is " +
-					               ctx->color(std::to_string(lhsValTy->as_unsigned_integer()->get_bitwidth())) +
+					               ctx->color(std::to_string(lhsValTy->as_unsigned()->get_bitwidth())) +
 					               ", but the operand on the right is of the choice type " +
 					               ctx->color(rhsValTy->to_string()) + " whose underlying type is " +
 					               ctx->color(rhsValTy->as_choice()->get_underlying_type()->to_string()),
@@ -333,7 +333,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 					        " whose underlying type is a signed integer type",
 					    fileRange);
 				}
-			} else if (rhsValTy->is_unsigned_integer()) {
+			} else if (rhsValTy->is_unsigned()) {
 				ctx->Error("Unsigned integers in this binary operation have different "
 				           "bitwidths. Cast the operand with smaller bitwidth to the bigger "
 				           "bitwidth to prevent potential loss of data and logical errors",
@@ -471,7 +471,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 				           "If this was intentional, convert the integer value to " +
 				               ctx->color(lhsType->to_string()),
 				           fileRange);
-			} else if (rhsType->is_unsigned_integer()) {
+			} else if (rhsType->is_unsigned()) {
 				ctx->Error("The right hand side of the expression is an unsigned integer. "
 				           "If this was intentional, convert the unsigned integer value to " +
 				               ctx->color(lhsType->to_string()),
@@ -482,7 +482,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		}
-	} else if (lhsType->is_string_slice() && rhsType->is_string_slice()) {
+	} else if (lhsType->is_text() && rhsType->is_text()) {
 		if (opr == Op::equalTo) {
 			return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
 			                                                   lhsEmit->is_equal_to(ctx->irCtx, rhsEmit) ? 1u : 0u),
@@ -554,8 +554,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 	} else if (lhsType->is_choice() &&
-	           (lhsType->as_choice()->has_negative_values() ? rhsValTy->is_integer()
-	                                                        : rhsValTy->is_unsigned_integer())) {
+	           (lhsType->as_choice()->has_negative_values() ? rhsValTy->is_integer() : rhsValTy->is_unsigned())) {
 		if (lhsType->as_choice()->get_underlying_type()->is_same(rhsValTy)) {
 			auto chTy     = lhsType->as_choice();
 			auto lhsConst = lhsEmit->get_llvm_constant();
@@ -636,7 +635,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 				                                         rhsEmit->get_llvm()->getAggregateElement(1u)),
 				    finalCondition);
 			}
-			return ir::PrerunValue::get(llvm::ConstantFoldConstant(finalCondition, ctx->irCtx->dataLayout.value()),
+			return ir::PrerunValue::get(llvm::ConstantFoldConstant(finalCondition, ctx->irCtx->dataLayout),
 			                            ir::UnsignedType::create_bool(ctx->irCtx));
 		} else {
 			ctx->Error("The operands have different pointer types. The left hand side is of type " +
@@ -651,6 +650,7 @@ ir::PrerunValue* PrerunBinaryOp::emit(EmitCtx* ctx) {
 		           fileRange);
 	}
 }
+
 String PrerunBinaryOp::to_string() const {
 	return lhs->to_string() + " " + operator_to_string(opr) + " " + rhs->to_string();
 }

@@ -46,7 +46,7 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
 				auto* expEmit = expression.value()->emit(ctx);
 				if (typ->is_same(expEmit->get_ir_type())) {
 					exp           = expEmit->get_llvm_constant();
-					auto typeBits = (u64)ctx->irCtx->dataLayout.value().getTypeStoreSizeInBits(typ->get_llvm_type());
+					auto typeBits = (u64)ctx->irCtx->dataLayout.getTypeStoreSizeInBits(typ->get_llvm_type());
 					exp           = llvm::ConstantFoldCastInstruction(llvm::CastInst::CastOps::BitCast, exp,
 					                                                  llvm::Type::getIntNTy(ctx->irCtx->llctx, typeBits));
 				} else {

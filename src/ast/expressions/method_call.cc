@@ -51,10 +51,10 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 	auto* inst     = instance->emit(ctx);
 	auto* instType = inst->get_ir_type();
 	bool  isVar    = inst->is_variable();
-	if (instType->is_reference()) {
-		inst->load_ghost_reference(ctx->irCtx->builder);
-		isVar    = instType->as_reference()->isSubtypeVariable();
-		instType = instType->as_reference()->get_subtype();
+	if (instType->is_ref()) {
+		inst->load_ghost_ref(ctx->irCtx->builder);
+		isVar    = instType->as_ref()->has_variability();
+		instType = instType->as_ref()->get_subtype();
 	}
 	if (instType->is_mark()) {
 		ctx->Error("The expression is of pointer type. Please dereference the pointer to call the method",
@@ -65,23 +65,23 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			if (isExpSelf) {
 				ctx->Error("Cannot call the destructor on the parent instance. This is not allowed", fileRange);
 			}
-			if (!instType->as_expanded()->has_destructor()) {
+			if (not instType->as_expanded()->has_destructor()) {
 				ctx->Error("Type " + ctx->color(instType->as_expanded()->get_full_name()) +
 				               " does not have a destructor",
 				           fileRange);
 			}
 			auto* desFn = instType->as_expanded()->get_destructor();
-			if (!inst->is_ghost_reference() && !inst->is_reference()) {
+			if (not inst->is_ghost_ref() && not inst->is_ref()) {
 				inst = inst->make_local(ctx, None, instance->fileRange);
-			} else if (inst->is_reference()) {
-				inst->load_ghost_reference(ctx->irCtx->builder);
+			} else if (inst->is_ref()) {
+				inst->load_ghost_ref(ctx->irCtx->builder);
 			}
 			return desFn->call(ctx->irCtx, {inst->get_llvm()}, None, ctx->mod);
 		}
 		auto* eTy = instType->as_expanded();
 		if (callNature.has_value()) {
 			if (callNature.value()) {
-				if (!eTy->has_variation(memberName.value)) {
+				if (not eTy->has_variation(memberName.value)) {
 					if (eTy->has_normal_method(memberName.value)) {
 						ctx->Error(ctx->color(memberName.value) + " is not a variation method of type " +
 						               ctx->color(eTy->get_full_name()) + " and hence cannot be called as a variation",
@@ -92,12 +92,12 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 						           fileRange);
 					}
 				}
-				if (!isVar) {
+				if (not isVar) {
 					ctx->Error("The expression does not have variability and hence variation methods cannot be called",
 					           instance->fileRange);
 				}
 			} else {
-				if (!eTy->has_normal_method(memberName.value)) {
+				if (not eTy->has_normal_method(memberName.value)) {
 					if (eTy->has_variation(memberName.value)) {
 						ctx->Error(ctx->color(memberName.value) + " is a variation method of type " +
 						               ctx->color(eTy->get_full_name()) +
@@ -112,22 +112,22 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			}
 		} else {
 			if (isVar) {
-				if (!eTy->has_valued_method(memberName.value) && !eTy->has_normal_method(memberName.value) &&
-				    !eTy->has_variation(memberName.value)) {
+				if (not eTy->has_valued_method(memberName.value) && not eTy->has_normal_method(memberName.value) &&
+				    not eTy->has_variation(memberName.value)) {
 					ctx->Error("Type " + ctx->color(instType->as_expanded()->to_string()) +
 					               " does not have a method named " + ctx->color(memberName.value) +
 					               ". Please check the logic",
 					           fileRange);
 				}
 			} else {
-				if (!eTy->has_valued_method(memberName.value)) {
-					if (!eTy->has_normal_method(memberName.value)) {
+				if (not eTy->has_valued_method(memberName.value)) {
+					if (not eTy->has_normal_method(memberName.value)) {
 						if (eTy->has_variation(memberName.value)) {
 							ctx->Error(ctx->color(memberName.value) + " is a variation method of type " +
 							               ctx->color(eTy->get_full_name()) +
 							               " and cannot be called here as this expression " +
-							               (inst->is_reference() ? "is a reference without variability"
-							                                     : "does not have variability"),
+							               (inst->is_ref() ? "is a reference without variability"
+							                               : "does not have variability"),
 							           memberName.range);
 						} else {
 							ctx->Error("Type " + ctx->color(instType->as_expanded()->to_string()) +
@@ -144,7 +144,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		        ? eTy->get_variation(memberName.value)
 		        : (eTy->has_valued_method(memberName.value) ? eTy->get_valued_method(memberName.value)
 		                                                    : eTy->get_normal_method(memberName.value));
-		if (!memFn->is_accessible(ctx->get_access_info())) {
+		if (not memFn->is_accessible(ctx->get_access_info())) {
 			ctx->Error("Method " + ctx->color(memberName.value) + " of type " + ctx->color(eTy->get_full_name()) +
 			               " is not accessible here",
 			           fileRange);
@@ -154,11 +154,11 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			if (thisFn->isConstructor()) {
 				Vec<String> missingMembers;
 				for (usize i = 0; i < instType->as_struct()->get_field_count(); i++) {
-					if (!thisFn->is_member_initted(i)) {
+					if (not thisFn->is_member_initted(i)) {
 						missingMembers.push_back(instType->as_struct()->get_field_name_at(i));
 					}
 				}
-				if (!missingMembers.empty()) {
+				if (not missingMembers.empty()) {
 					String message;
 					for (usize i = 0; i < missingMembers.size(); i++) {
 						message.append(ctx->color(missingMembers[i]));
@@ -180,23 +180,23 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			}
 			thisFn->add_method_call(memFn);
 		}
-		if (!inst->is_ghost_reference() && !inst->is_reference() &&
+		if (not inst->is_ghost_ref() && not inst->is_ref() &&
 		    (memFn->get_method_type() != ir::MethodType::valueMethod)) {
 			inst = inst->make_local(ctx, None, instance->fileRange);
 		} else if ((memFn->get_method_type() == ir::MethodType::valueMethod) &&
-		           (inst->is_ghost_reference() || inst->is_reference())) {
+		           (inst->is_ghost_ref() || inst->is_ref())) {
 			if (instType->is_trivially_copyable() || instType->is_trivially_movable()) {
-				if (inst->is_reference()) {
-					inst->load_ghost_reference(ctx->irCtx->builder);
+				if (inst->is_ref()) {
+					inst->load_ghost_ref(ctx->irCtx->builder);
 				}
 				auto origInst = inst;
 				inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()),
 				                      instType, true);
-				if (!instType->is_trivially_copyable()) {
-					if (inst->is_reference() && !inst->get_ir_type()->as_reference()->isSubtypeVariable()) {
+				if (not instType->is_trivially_copyable()) {
+					if (inst->is_ref() && not inst->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
 						           instance->fileRange);
-					} else if (inst->is_ghost_reference() && !inst->is_variable()) {
+					} else if (inst->is_ghost_ref() && not inst->is_variable()) {
 						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
 						           instance->fileRange);
 					}
@@ -239,10 +239,10 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		for (usize i = 1; i < fnTy->get_argument_count(); i++) {
 			auto fnArgType = fnArgsTy[i]->get_type();
 			auto argType   = argsEmit[i - 1]->get_ir_type();
-			if (!(fnArgType->is_same(argType) || fnArgType->isCompatible(argType) ||
-			      (fnArgType->is_reference() && argsEmit[i - 1]->is_ghost_reference() &&
-			       fnArgType->as_reference()->get_subtype()->is_same(argType)) ||
-			      (argType->is_reference() && argType->as_reference()->get_subtype()->is_same(fnArgType)))) {
+			if (not(fnArgType->is_same(argType) || fnArgType->isCompatible(argType) ||
+			        (fnArgType->is_ref() && argsEmit[i - 1]->is_ghost_ref() &&
+			         fnArgType->as_ref()->get_subtype()->is_same(argType)) ||
+			        (argType->is_ref() && argType->as_ref()->get_subtype()->is_same(fnArgType)))) {
 				ctx->Error("Type of this expression " + ctx->color(argType->to_string()) +
 				               " does not match the type of the "
 				               "corresponding argument " +
@@ -256,21 +256,20 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		argVals.push_back(inst->get_llvm());
 		for (usize i = 1; i < fnTy->get_argument_count(); i++) {
 			auto* currArg = argsEmit[i - 1];
-			if (fnArgsTy[i]->get_type()->is_reference()) {
-				auto fnRefTy = fnArgsTy[i]->get_type()->as_reference();
-				if (currArg->is_reference()) {
-					if (fnRefTy->isSubtypeVariable() &&
-					    not currArg->get_ir_type()->as_reference()->isSubtypeVariable()) {
+			if (fnArgsTy[i]->get_type()->is_ref()) {
+				auto fnRefTy = fnArgsTy[i]->get_type()->as_ref();
+				if (currArg->is_ref()) {
+					if (fnRefTy->has_variability() && not currArg->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error("The type of the argument is " + ctx->color(fnArgsTy[i]->get_type()->to_string()) +
 						               " but the expression is of type " +
 						               ctx->color(currArg->get_ir_type()->to_string()),
 						           arguments[i - 1]->fileRange);
 					}
-					currArg->load_ghost_reference(ctx->irCtx->builder);
-				} else if (not currArg->is_ghost_reference()) {
+					currArg->load_ghost_ref(ctx->irCtx->builder);
+				} else if (not currArg->is_ghost_ref()) {
 					ctx->Error("Cannot pass a value for the argument that expects a reference",
 					           arguments[i - 1]->fileRange);
-				} else if (fnArgsTy[i]->get_type()->as_reference()->isSubtypeVariable()) {
+				} else if (fnArgsTy[i]->get_type()->as_ref()->has_variability()) {
 					if (not currArg->is_variable()) {
 						ctx->Error(
 						    "The argument " + ctx->color(fnArgsTy.at(i)->get_name()) + " is of type " +
@@ -279,22 +278,22 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 						    arguments[i - 1]->fileRange);
 					}
 				}
-			} else if (currArg->is_reference() || currArg->is_ghost_reference()) {
-				if (currArg->is_reference()) {
-					currArg->load_ghost_reference(ctx->irCtx->builder);
+			} else if (currArg->is_ref() || currArg->is_ghost_ref()) {
+				if (currArg->is_ref()) {
+					currArg->load_ghost_ref(ctx->irCtx->builder);
 				}
 				SHOW("Loading ref arg at " << i - 1 << " with type " << currArg->get_ir_type()->to_string())
 				auto* argTy    = fnArgsTy[i]->get_type();
 				auto* argValTy = currArg->get_ir_type();
-				auto  isRefVar = currArg->is_reference() ? currArg->get_ir_type()->as_reference()->isSubtypeVariable()
-				                                         : currArg->is_variable();
+				auto  isRefVar =
+                    currArg->is_ref() ? currArg->get_ir_type()->as_ref()->has_variability() : currArg->is_variable();
 				if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
 					auto* argEmitLLVMValue = currArg->get_llvm();
 					argsEmit[i - 1]        = ir::Value::get(
                         ctx->irCtx->builder.CreateLoad(argTy->get_llvm_type(), currArg->get_llvm()), argTy, false);
 					if (not argTy->is_trivially_copyable()) {
 						if (not isRefVar) {
-							if (argValTy->is_reference()) {
+							if (argValTy->is_ref()) {
 								ctx->Error(
 								    "This expression is a reference without variability and hence cannot be trivially moved from",
 								    arguments[i - 1]->fileRange);
@@ -323,15 +322,15 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 				auto currArg  = argsEmit[i];
 				auto argTy    = currArg->get_ir_type();
 				auto isRefVar = false;
-				if (argTy->is_reference()) {
-					isRefVar = argTy->as_reference()->isSubtypeVariable();
-					argTy    = argTy->as_reference()->get_subtype();
+				if (argTy->is_ref()) {
+					isRefVar = argTy->as_ref()->has_variability();
+					argTy    = argTy->as_ref()->get_subtype();
 				} else {
 					isRefVar = currArg->is_variable();
 				}
-				if (currArg->get_ir_type()->is_reference() || currArg->is_ghost_reference()) {
-					if (currArg->get_ir_type()->is_reference()) {
-						currArg->load_ghost_reference(ctx->irCtx->builder);
+				if (currArg->get_ir_type()->is_ref() || currArg->is_ghost_ref()) {
+					if (currArg->get_ir_type()->is_ref()) {
+						currArg->load_ghost_ref(ctx->irCtx->builder);
 					}
 					if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
 						auto* argLLVMVal = currArg->get_llvm();
@@ -340,7 +339,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 						if (not argTy->is_trivially_copyable()) {
 							if (not isRefVar) {
 								ctx->Error("This expression " +
-								               String(currArg->get_ir_type()->is_reference()
+								               String(currArg->get_ir_type()->is_ref()
 								                          ? "is a reference without variability"
 								                          : "does not have variability") +
 								               " and hence cannot be trivially moved from",
@@ -363,16 +362,15 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 	} else if (inst->is_prerun_value() && instType->is_typed()) { // TODO: Support type traits for normal expressions
 		return handle_type_wrap_functions(inst->as_prerun(), arguments, memberName, ctx, fileRange);
 	} else if (instType->is_vector()) {
-		auto*      origInst = ir::Value::get(inst->get_llvm(), inst->get_ir_type(), false);
-		const auto isOrigRefNotVar =
-		    (origInst->is_ghost_reference() && !origInst->is_variable()) ||
-		    (origInst->is_reference() && !origInst->get_ir_type()->as_reference()->isSubtypeVariable());
-		const auto shouldStore = origInst->is_ghost_reference() || origInst->is_reference();
+		auto*      origInst        = ir::Value::get(inst->get_llvm(), inst->get_ir_type(), false);
+		const auto isOrigRefNotVar = (origInst->is_ghost_ref() && not origInst->is_variable()) ||
+		                             (origInst->is_ref() && not origInst->get_ir_type()->as_ref()->has_variability());
+		const auto shouldStore = origInst->is_ghost_ref() || origInst->is_ref();
 		auto*      vecTy       = instType->as_vector();
 		auto       refHandler  = [&]() {
-            if (inst->is_reference() || inst->is_ghost_reference()) {
-                inst->load_ghost_reference(ctx->irCtx->builder);
-                if (inst->is_reference()) {
+            if (inst->is_ref() || inst->is_ghost_ref()) {
+                inst->load_ghost_ref(ctx->irCtx->builder);
+                if (inst->is_ref()) {
                     inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(vecTy->get_llvm_type(), inst->get_llvm()),
 					                             vecTy, false);
                 }
@@ -381,7 +379,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		if (memberName.value == "insert") {
 			if (isOrigRefNotVar) {
 				ctx->Error(
-				    "This " + String(origInst->is_ghost_reference() ? "expression" : "reference") +
+				    "This " + String(origInst->is_ghost_ref() ? "expression" : "reference") +
 				        " does not have variability and hence cannot be inserted into. Inserting vectors to values are possible, but for clarity, make sure to copy the vector first using " +
 				        ctx->color("'copy"),
 				    fileRange);
@@ -404,11 +402,10 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			}
 			auto* argVec = arguments[0]->emit(ctx);
 			if (argVec->get_ir_type()->is_same(vecTy->get_non_scalable_type(ctx->irCtx)) ||
-			    argVec->get_ir_type()->as_reference()->get_subtype()->is_same(
-			        vecTy->get_non_scalable_type(ctx->irCtx))) {
-				if (argVec->is_reference() || argVec->is_ghost_reference()) {
-					argVec->load_ghost_reference(ctx->irCtx->builder);
-					if (argVec->is_reference()) {
+			    argVec->get_ir_type()->as_ref()->get_subtype()->is_same(vecTy->get_non_scalable_type(ctx->irCtx))) {
+				if (argVec->is_ref() || argVec->is_ghost_ref()) {
+					argVec->load_ghost_ref(ctx->irCtx->builder);
+					if (argVec->is_ref()) {
 						argVec = ir::Value::get(
 						    ctx->irCtx->builder.CreateLoad(vecTy->get_non_scalable_type(ctx->irCtx)->get_llvm_type(),
 						                                   argVec->get_llvm()),
@@ -420,8 +417,8 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 				    vecTy->get_llvm_type(), inst->get_llvm(), argVec->get_llvm(),
 				    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
 				if (shouldStore) {
-					if (origInst->is_reference()) {
-						origInst->load_ghost_reference(ctx->irCtx->builder);
+					if (origInst->is_ref()) {
+						origInst->load_ghost_ref(ctx->irCtx->builder);
 					}
 					ctx->irCtx->builder.CreateStore(result, origInst->get_llvm());
 					return origInst;
@@ -436,12 +433,12 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		} else if (memberName.value == "reverse") {
 			if (isOrigRefNotVar) {
 				ctx->Error(
-				    "This " + String(origInst->is_ghost_reference() ? "expression" : "reference") +
+				    "This " + String(origInst->is_ghost_ref() ? "expression" : "reference") +
 				        " does not have variability and hence cannot be reversed in-place. Reversing vector values are possible, but for clarity, make sure to copy the vector first using " +
 				        ctx->color("'copy"),
 				    fileRange);
 			}
-			if (!arguments.empty()) {
+			if (not arguments.empty()) {
 				ctx->Error("The method " + ctx->color(memberName.value) + " expects zero arguments, but " +
 				               ctx->color(std::to_string(arguments.size())) + " values were provided",
 				           fileRange);

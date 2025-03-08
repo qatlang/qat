@@ -12,7 +12,7 @@ ir::PrerunValue* PrerunNegative::emit(EmitCtx* ctx) {
 	}
 	auto* irVal = value->emit(ctx);
 	if (is_type_inferred()) {
-		if (!irVal->get_ir_type()->is_same(inferredType)) {
+		if (not irVal->get_ir_type()->is_same(inferredType)) {
 			ctx->Error("The expression is of type " + ctx->color(irVal->get_ir_type()->to_string()) +
 			               ", but the type inferred from scope is " + ctx->color(inferredType->to_string()),
 			           value->fileRange);
@@ -20,16 +20,16 @@ ir::PrerunValue* PrerunNegative::emit(EmitCtx* ctx) {
 	}
 	if (irVal->get_ir_type()->is_integer() || (irVal->get_ir_type()->is_native_type() &&
 	                                           irVal->get_ir_type()->as_native_type()->get_subtype()->is_integer())) {
-		return ir::PrerunValue::get(llvm::ConstantFoldConstant(llvm::ConstantExpr::getNeg(irVal->get_llvm_constant()),
-		                                                       ctx->irCtx->dataLayout.value()),
-		                            irVal->get_ir_type());
+		return ir::PrerunValue::get(
+		    llvm::ConstantFoldConstant(llvm::ConstantExpr::getNeg(irVal->get_llvm_constant()), ctx->irCtx->dataLayout),
+		    irVal->get_ir_type());
 	} else if (irVal->get_ir_type()->is_float() ||
 	           (irVal->get_ir_type()->is_native_type() &&
 	            irVal->get_ir_type()->as_native_type()->get_subtype()->is_float())) {
 		return ir::PrerunValue::get(
 		    llvm::cast<llvm::Constant>(ctx->irCtx->builder.CreateFNeg(irVal->get_llvm_constant())),
 		    irVal->get_ir_type());
-	} else if (irVal->get_ir_type()->is_unsigned_integer() ||
+	} else if (irVal->get_ir_type()->is_unsigned() ||
 	           (irVal->get_ir_type()->is_native_type() &&
 	            irVal->get_ir_type()->as_native_type()->get_subtype()->is_integer())) {
 		ctx->Error("Expression of unsigned integer type " + ctx->color(irVal->get_ir_type()->to_string()) +

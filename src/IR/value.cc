@@ -18,8 +18,8 @@ Value::Value(llvm::Value* _llvmValue, ir::Type* _type, bool _isVariable)
 Vec<Value*> Value::allValues = {};
 
 Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange) {
-	if (!is_ghost_reference()) {
-		auto result = ctx->get_fn()->get_block()->new_value(name.value_or(ctx->get_fn()->get_random_alloca_name()),
+	if (not is_ghost_ref()) {
+		auto result = ctx->get_fn()->get_block()->new_local(name.value_or(ctx->get_fn()->get_random_alloca_name()),
 		                                                    type, true, fileRange);
 		ctx->irCtx->builder.CreateStore(get_llvm(), result->get_llvm());
 		return result;
@@ -62,19 +62,13 @@ void Value::clear_all() {
 bool PrerunValue::is_equal_to(ir::Ctx* irCtx, PrerunValue* other) {
 	if (get_ir_type()->is_typed()) {
 		if (other->get_ir_type()->is_typed()) {
-			return get_ir_type()->as_typed()->get_subtype()->is_same(other->get_ir_type()->as_typed()->get_subtype());
+			return TypeInfo::get_for(get_llvm_constant())
+			    ->type->is_same(TypeInfo::get_for(other->get_llvm_constant())->type);
 		} else {
 			return false;
 		}
 	} else {
-		if (as_prerun()->get_ir_type()->is_typed()) {
-			if (other->get_ir_type()->is_typed()) {
-				return as_prerun()->get_ir_type()->as_typed()->get_subtype()->is_same(
-				    other->get_ir_type()->as_typed()->get_subtype());
-			} else {
-				return false;
-			}
-		} else if (other->get_ir_type()->is_typed()) {
+		if (other->get_ir_type()->is_typed()) {
 			return false;
 		} else {
 			return get_ir_type()->equality_of(irCtx, this, other).value_or(false);

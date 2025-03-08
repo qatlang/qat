@@ -16,7 +16,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 				return nullptr;
 			} else if (irName.has_value()) {
 				auto* block = ctx->get_fn()->get_block();
-				auto* loc   = block->new_value(irName->value, theType, isVar, irName->range);
+				auto* loc   = block->new_local(irName->value, theType, isVar, irName->range);
 				ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u, true),
 				                                loc->get_alloca());
 				return loc->to_new_ir_value();
@@ -24,18 +24,18 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 				return ir::PrerunValue::get(llvm::ConstantInt::get(theType->as_integer()->get_llvm_type(), 0u, true),
 				                            theType);
 			}
-		} else if (theType->is_unsigned_integer()) {
+		} else if (theType->is_unsigned()) {
 			if (isLocalDecl()) {
 				ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u),
 				                                localValue->get_alloca());
 				return nullptr;
 			} else if (irName.has_value()) {
-				auto* loc = ctx->get_fn()->get_block()->new_value(irName->value, theType, isVar, irName->range);
+				auto* loc = ctx->get_fn()->get_block()->new_local(irName->value, theType, isVar, irName->range);
 				ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(theType->get_llvm_type(), 0u),
 				                                loc->get_alloca());
 				return loc->to_new_ir_value();
 			} else {
-				return ir::PrerunValue::get(llvm::ConstantInt::get(theType->as_unsigned_integer()->get_llvm_type(), 0u),
+				return ir::PrerunValue::get(llvm::ConstantInt::get(theType->as_unsigned()->get_llvm_type(), 0u),
 				                            theType);
 			}
 		} else if (theType->is_mark()) {
@@ -46,7 +46,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 				               " which is not nullable, and hence cannot have a default value",
 				           fileRange);
 			}
-		} else if (theType->is_reference()) {
+		} else if (theType->is_ref()) {
 			ctx->Error("Cannot get default value for a reference type", fileRange);
 		} else if (theType->is_expanded()) {
 			SHOW("Type is expanded")
@@ -54,7 +54,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 			if (eTy->has_default_constructor()) {
 				auto* defFn = eTy->get_default_constructor();
 				SHOW("Got default constructor")
-				if (!defFn->is_accessible(ctx->get_access_info())) {
+				if (not defFn->is_accessible(ctx->get_access_info())) {
 					ctx->Error("The default constructor of type " + ctx->color(eTy->to_string()) +
 					               " is not accessible here",
 					           fileRange);
@@ -67,7 +67,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 					return nullptr;
 				} else {
 					SHOW("Creating value for default constructor call")
-					auto* loc = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), eTy, true,
+					auto* loc = block->new_local(irName.has_value() ? irName->value : utils::uid_string(), eTy, true,
 					                             fileRange);
 					(void)defFn->call(ctx->irCtx, {loc->get_alloca()}, None, ctx->mod);
 					return loc->to_new_ir_value();
@@ -86,7 +86,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 				return nullptr;
 			} else {
 				// FIXME - Change after adding checks if type can be prerun
-				auto* loc = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), mTy, true,
+				auto* loc = block->new_local(irName.has_value() ? irName->value : utils::uid_string(), mTy, true,
 				                             irName.has_value() ? irName->range : fileRange);
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(mTy->get_llvm_type()), loc->get_llvm());
 				return loc->to_new_ir_value();
@@ -105,7 +105,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 				                                localValue->get_llvm());
 				return nullptr;
 			} else if (irName.has_value()) {
-				auto* loc = ctx->get_fn()->get_block()->new_value(irName->value, theType, isVar, irName->range);
+				auto* loc = ctx->get_fn()->get_block()->new_local(irName->value, theType, isVar, irName->range);
 				ctx->irCtx->builder.CreateStore(theType->get_prerun_default_value(ctx->irCtx)->get_llvm(),
 				                                loc->get_llvm());
 				return nullptr;

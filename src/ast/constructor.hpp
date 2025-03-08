@@ -20,7 +20,7 @@ enum class ConstructorType {
 
 class ConstructorPrototype {
 	friend class ConstructorDefinition;
-	friend class DefineCoreType;
+	friend class DefineStructType;
 
   private:
 	Vec<Argument*>        arguments;
@@ -78,15 +78,16 @@ class ConstructorPrototype {
 		}
 	}
 
-	void           define(MethodState& state, ir::Ctx* irCtx);
-	useit Json     to_json() const;
+	void       define(MethodState& state, ir::Ctx* irCtx);
+	useit Json to_json() const;
+
 	useit NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
 
 	~ConstructorPrototype();
 };
 
 class ConstructorDefinition {
-	friend DefineCoreType;
+	friend DefineStructType;
 	friend DoSkill;
 
 	Vec<Sentence*>        sentences;
@@ -111,7 +112,8 @@ class ConstructorDefinition {
 	void  define(MethodState& state, ir::Ctx* irCtx);
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 	useit Json       to_json() const;
-	useit NodeType   nodeType() const { return NodeType::MEMBER_DEFINITION; }
+
+	useit NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

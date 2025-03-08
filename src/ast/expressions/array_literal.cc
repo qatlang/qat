@@ -27,7 +27,7 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 		               ((values.size() < infLen) ? "only " : "") + ctx->color(std::to_string(values.size())) +
 		               " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
 		           fileRange);
-	} else if (is_type_inferred() && !inferredType->is_array()) {
+	} else if (is_type_inferred() && not inferredType->is_array()) {
 		ctx->Error("Type inferred from scope for this expression is " + ctx->color(inferredType->to_string()) +
 		               ". This expression expects to be of array type",
 		           fileRange);
@@ -41,30 +41,28 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 			val->as_type_inferrable()->set_inference_type(elemInferredTy);
 		}
 		valsIR.push_back(val->emit(ctx));
-		if (!valsIR.back()->is_prerun_value()) {
+		if (not valsIR.back()->is_prerun_value()) {
 			areAllValsConstant = false;
 		}
 	}
 	SHOW("Getting element type")
 	ir::Type* elemTy = nullptr;
-	if (!values.empty()) {
-		if (valsIR.front()->is_reference()) {
-			elemTy = valsIR.front()->get_ir_type()->as_reference()->get_subtype();
+	if (not values.empty()) {
+		if (valsIR.front()->is_ref()) {
+			elemTy = valsIR.front()->get_ir_type()->as_ref()->get_subtype();
 		} else {
 			elemTy = valsIR.front()->get_ir_type();
 		}
 		for (usize i = 1; i < valsIR.size(); i++) {
 			auto* val = valsIR.at(i);
 			if (val->get_ir_type()->is_same(elemTy) ||
-			    (val->get_ir_type()->is_reference() &&
-			     val->get_ir_type()->as_reference()->get_subtype()->is_same(elemTy))) {
-				val->load_ghost_reference(ctx->irCtx->builder);
-				if (val->get_ir_type()->is_reference()) {
+			    (val->get_ir_type()->is_ref() && val->get_ir_type()->as_ref()->get_subtype()->is_same(elemTy))) {
+				val->load_ghost_ref(ctx->irCtx->builder);
+				if (val->get_ir_type()->is_ref()) {
 					valsIR.at(i) = ir::Value::get(
-					    ctx->irCtx->builder.CreateLoad(
-					        val->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(), val->get_llvm()),
-					    val->get_ir_type()->as_reference()->get_subtype(),
-					    val->get_ir_type()->as_reference()->isSubtypeVariable());
+					    ctx->irCtx->builder.CreateLoad(val->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(),
+					                                   val->get_llvm()),
+					    val->get_ir_type()->as_ref()->get_subtype(), val->get_ir_type()->as_ref()->has_variability());
 				}
 			} else {
 				ctx->Error("The expected type is " + ctx->color(elemTy->to_string()) +
@@ -76,14 +74,14 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 		// TODO - Implement constant array literals
 		llvm::Value*    alloca   = nullptr;
 		llvm::Constant* constVal = nullptr;
-		if (areAllValsConstant && !isLocalDecl() && !irName.has_value()) {
+		if (areAllValsConstant && not isLocalDecl() && not irName.has_value()) {
 			Vec<llvm::Constant*> valsConst;
 			for (auto v : valsIR) {
 				valsConst.push_back(v->get_llvm_constant());
 			}
 			constVal =
 			    llvm::ConstantArray::get(llvm::ArrayType::get(elemTy->get_llvm_type(), valsIR.size()), valsConst);
-			if (!isLocalDecl() && !irName.has_value()) {
+			if (not isLocalDecl() && not irName.has_value()) {
 				return ir::PrerunValue::get(constVal, ir::ArrayType::get(elemTy, valsIR.size(), ctx->irCtx->llctx))
 				    ->with_range(fileRange);
 			}
@@ -93,7 +91,7 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 		} else if (canCreateIn()) {
 			alloca = createIn->get_llvm();
 		} else {
-			auto* loc = ctx->get_fn()->get_block()->new_value(
+			auto* loc = ctx->get_fn()->get_block()->new_local(
 			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(),
 			    ir::ArrayType::get(elemTy, values.size(), ctx->irCtx->llctx), isVar,
 			    irName.has_value() ? irName->range : fileRange);

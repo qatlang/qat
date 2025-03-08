@@ -37,7 +37,7 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 	}
 	ir::Value* cond = isDoAndLoop ? nullptr : condition->emit(ctx);
 	if (cond == nullptr || cond->get_ir_type()->is_bool() ||
-	    (cond->get_ir_type()->is_reference() && cond->get_ir_type()->as_reference()->get_subtype()->is_bool())) {
+	    (cond->get_ir_type()->is_ref() && cond->get_ir_type()->as_ref()->get_subtype()->is_bool())) {
 		auto*        fun       = ctx->get_fn();
 		auto*        trueBlock = ir::Block::create(fun, fun->get_block());
 		auto*        condBlock = ir::Block::create(fun, fun->get_block());
@@ -47,11 +47,11 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 			(void)ir::add_branch(ctx->irCtx->builder, trueBlock->get_bb());
 		} else {
 			llCond = cond->get_llvm();
-			cond->load_ghost_reference(ctx->irCtx->builder);
-			if (cond->get_ir_type()->is_reference()) {
-				cond->load_ghost_reference(ctx->irCtx->builder);
-				llCond = ctx->irCtx->builder.CreateLoad(
-				    cond->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(), cond->get_llvm());
+			cond->load_ghost_ref(ctx->irCtx->builder);
+			if (cond->get_ir_type()->is_ref()) {
+				cond->load_ghost_ref(ctx->irCtx->builder);
+				llCond = ctx->irCtx->builder.CreateLoad(cond->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(),
+				                                        cond->get_llvm());
 			}
 			ctx->irCtx->builder.CreateCondBr(llCond, trueBlock->get_bb(), restBlock->get_bb());
 		}
@@ -67,8 +67,8 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 		condBlock->set_active(ctx->irCtx->builder);
 		cond = condition->emit(ctx);
 		if (isDoAndLoop) {
-			if (!cond->get_ir_type()->is_bool() && !(cond->get_ir_type()->is_reference() &&
-			                                         cond->get_ir_type()->as_reference()->get_subtype()->is_bool())) {
+			if (not cond->get_ir_type()->is_bool() &&
+			    not(cond->get_ir_type()->is_ref() && cond->get_ir_type()->as_ref()->get_subtype()->is_bool())) {
 				ctx->Error(
 				    "The condition for the " + ctx->color("do-while") + " loop should be of " + ctx->color("bool") +
 				        " type. Got an expression of type " + ctx->color(cond->get_ir_type()->to_string()) +
@@ -76,9 +76,9 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 				    condition->fileRange);
 			}
 		}
-		cond->load_ghost_reference(ctx->irCtx->builder);
-		if (cond->get_ir_type()->is_reference()) {
-			llCond = ctx->irCtx->builder.CreateLoad(cond->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
+		cond->load_ghost_ref(ctx->irCtx->builder);
+		if (cond->get_ir_type()->is_ref()) {
+			llCond = ctx->irCtx->builder.CreateLoad(cond->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(),
 			                                        cond->get_llvm());
 		} else {
 			llCond = cond->get_llvm();

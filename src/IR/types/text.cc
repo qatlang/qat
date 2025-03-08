@@ -1,4 +1,4 @@
-#include "./string_slice.hpp"
+#include "./text.hpp"
 #include "../../IR/logic.hpp"
 #include "../context.hpp"
 
@@ -8,7 +8,7 @@
 
 namespace qat::ir {
 
-StringSliceType::StringSliceType(ir::Ctx* irCtx, bool _isPacked) : isPack(_isPacked) {
+TextType::TextType(ir::Ctx* irCtx, bool _isPacked) : isPack(_isPacked) {
 	linkingName = "qat'text" + String(isPack ? ":[pack]" : "");
 	if (llvm::StructType::getTypeByName(irCtx->llctx, linkingName)) {
 		llvmType = llvm::StructType::getTypeByName(irCtx->llctx, linkingName);
@@ -23,31 +23,31 @@ StringSliceType::StringSliceType(ir::Ctx* irCtx, bool _isPacked) : isPack(_isPac
 	}
 }
 
-ir::PrerunValue* StringSliceType::create_value(ir::Ctx* irCtx, String value) {
-	auto strTy = ir::StringSliceType::get(irCtx);
+ir::PrerunValue* TextType::create_value(ir::Ctx* irCtx, ir::Mod* mod, String value) {
+	auto strTy = ir::TextType::get(irCtx);
 	return ir::PrerunValue::get(
-	    llvm::ConstantStruct::get(
-	        llvm::cast<llvm::StructType>(strTy->get_llvm_type()),
-	        {irCtx->builder.CreateGlobalStringPtr(value, irCtx->get_global_string_name(),
-	                                              irCtx->dataLayout.value().getDefaultGlobalsAddressSpace()),
-	         llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), value.length())}),
+	    llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(strTy->get_llvm_type()),
+	                              {irCtx->builder.CreateGlobalStringPtr(
+	                                   value, irCtx->get_global_string_name(),
+	                                   irCtx->dataLayout.getDefaultGlobalsAddressSpace(), mod->get_llvm_module()),
+	                               llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), value.length())}),
 	    strTy);
 }
 
-bool StringSliceType::isPacked() const { return isPack; }
+bool TextType::is_packed() const { return isPack; }
 
-bool StringSliceType::is_type_sized() const { return true; }
+bool TextType::is_type_sized() const { return true; }
 
-StringSliceType* StringSliceType::get(ir::Ctx* irCtx, bool isPacked) {
+TextType* TextType::get(ir::Ctx* irCtx, bool isPacked) {
 	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::stringSlice && (((StringSliceType*)typ)->isPack = isPacked)) {
-			return (StringSliceType*)typ;
+		if (typ->type_kind() == TypeKind::TEXT && (((TextType*)typ)->isPack = isPacked)) {
+			return (TextType*)typ;
 		}
 	}
-	return std::construct_at(OwnNormal(StringSliceType), irCtx, isPacked);
+	return std::construct_at(OwnNormal(TextType), irCtx, isPacked);
 }
 
-String StringSliceType::value_to_string(ir::PrerunValue* value) {
+String TextType::value_to_string(ir::PrerunValue* value) {
 	auto* initial =
 	    llvm::cast<llvm::ConstantDataArray>(value->get_llvm_constant()->getAggregateElement(0u)->getOperand(0u));
 	if (initial->getNumElements() == 1u) {
@@ -61,7 +61,7 @@ String StringSliceType::value_to_string(ir::PrerunValue* value) {
 	}
 }
 
-Maybe<String> StringSliceType::to_prerun_generic_string(ir::PrerunValue* val) const {
+Maybe<String> TextType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	auto* initial =
 	    llvm::cast<llvm::ConstantDataArray>(val->get_llvm_constant()->getAggregateElement(0u)->getOperand(0u));
 	if (initial->getNumElements() == 1u) {
@@ -75,15 +75,15 @@ Maybe<String> StringSliceType::to_prerun_generic_string(ir::PrerunValue* val) co
 	}
 }
 
-Maybe<bool> StringSliceType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> TextType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	return ir::Logic::compareConstantStrings(first->get_llvm_constant()->getAggregateElement(0u),
 	                                         first->get_llvm_constant()->getAggregateElement(1u),
 	                                         second->get_llvm_constant()->getAggregateElement(0u),
 	                                         second->get_llvm_constant()->getAggregateElement(1u), irCtx->llctx);
 }
 
-TypeKind StringSliceType::type_kind() const { return TypeKind::stringSlice; }
+TypeKind TextType::type_kind() const { return TypeKind::TEXT; }
 
-String StringSliceType::to_string() const { return "text" + String(isPack ? ":[pack]" : ""); }
+String TextType::to_string() const { return "text" + String(isPack ? ":[pack]" : ""); }
 
 } // namespace qat::ir

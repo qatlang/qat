@@ -18,9 +18,9 @@ ir::PrerunValue* PrerunDefault::emit(EmitCtx* ctx) {
 		if (type->is_integer()) {
 			return ir::PrerunValue::get(llvm::ConstantInt::get(type->as_integer()->get_llvm_type(), 0u),
 			                            type->as_integer());
-		} else if (type->is_unsigned_integer()) {
-			return ir::PrerunValue::get(llvm::ConstantInt::get(type->as_unsigned_integer()->get_llvm_type(), 0u),
-			                            type->as_unsigned_integer());
+		} else if (type->is_unsigned()) {
+			return ir::PrerunValue::get(llvm::ConstantInt::get(type->as_unsigned()->get_llvm_type(), 0u),
+			                            type->as_unsigned());
 		} else if (type->is_choice() && type->as_choice()->has_default()) {
 			return ir::PrerunValue::get(type->as_choice()->get_default(), type);
 		} else if (type->has_prerun_default_value()) {
@@ -33,7 +33,7 @@ ir::PrerunValue* PrerunDefault::emit(EmitCtx* ctx) {
 		auto* genVal = genericAbstractType.value();
 		if (genVal->is_typed()) {
 			if (genVal->as_typed()->hasDefault()) {
-				if (!genVal->isSet()) {
+				if (not genVal->isSet()) {
 					genVal->emit(ctx);
 				}
 				return ir::PrerunValue::get(
@@ -48,7 +48,7 @@ ir::PrerunValue* PrerunDefault::emit(EmitCtx* ctx) {
 			// NOTE - The above is not just else, because there might be additional kinds of generic parameters in the
 			// future Although it is foolish to consider this possibility in this file, but not in any other file
 			if (genVal->as_prerun()->hasDefault()) {
-				if (!genVal->isSet()) {
+				if (not genVal->isSet()) {
 					genVal->emit(ctx);
 				}
 				return genVal->as_prerun()->getDefault();

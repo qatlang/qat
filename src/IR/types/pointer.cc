@@ -83,7 +83,7 @@ MarkType::MarkType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Mark
 		} else {
 			llvmType = llvm::StructType::create(
 			    {llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-			                            irCtx->dataLayout->getProgramAddressSpace()),
+			                            irCtx->dataLayout.getProgramAddressSpace()),
 			     llvm::Type::getIntNTy(irCtx->llctx,
 			                           irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()))},
 			    linkingName);
@@ -92,7 +92,7 @@ MarkType::MarkType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Mark
 		linkingName = (nonNullable ? "qat'mark![" : "qat'mark:[") + String(isSubtypeVar ? "var " : "") +
 		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
 		llvmType =
-		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout->getProgramAddressSpace());
+		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace());
 	}
 }
 
@@ -115,7 +115,7 @@ bool MarkType::is_subtype_variable() const { return isSubtypeVar; }
 
 bool MarkType::is_type_sized() const { return true; }
 
-bool MarkType::has_prerun_default_value() const { return !nonNullable; }
+bool MarkType::has_prerun_default_value() const { return not nonNullable; }
 
 PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
 	if (has_prerun_default_value()) {
@@ -125,7 +125,7 @@ PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
 			        llvm::cast<llvm::StructType>(get_llvm_type()),
 			        {llvm::ConstantPointerNull::get(llvm::PointerType::get(
 			            get_subtype()->is_void() ? llvm::Type::getInt8Ty(irCtx->llctx) : get_subtype()->get_llvm_type(),
-			            irCtx->dataLayout.value().getProgramAddressSpace()))}),
+			            irCtx->dataLayout.getProgramAddressSpace()))}),
 			    this);
 		} else {
 			return ir::PrerunValue::get(llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(get_llvm_type())),
@@ -139,11 +139,11 @@ PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
 
 bool MarkType::is_trivially_copyable() const { return true; }
 
-bool MarkType::is_trivially_movable() const { return !nonNullable; }
+bool MarkType::is_trivially_movable() const { return not nonNullable; }
 
 bool MarkType::is_slice() const { return hasMulti; }
 
-bool MarkType::is_nullable() const { return !nonNullable; }
+bool MarkType::is_nullable() const { return not nonNullable; }
 
 bool MarkType::is_non_nullable() const { return nonNullable; }
 
@@ -151,7 +151,7 @@ Type* MarkType::get_subtype() const { return subType; }
 
 MarkOwner MarkType::get_owner() const { return owner; }
 
-TypeKind MarkType::type_kind() const { return TypeKind::pointer; }
+TypeKind MarkType::type_kind() const { return TypeKind::MARK; }
 
 String MarkType::to_string() const {
 	return String(is_slice() ? (nonNullable ? "slice![" : "slice:[") : (nonNullable ? "mark![" : "mark:[")) +

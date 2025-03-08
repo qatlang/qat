@@ -53,17 +53,18 @@ void QatError::setRange(FileRange range) { fileRange = range; }
 
 Ctx* Ctx::instance = nullptr;
 
-Ctx::Ctx() : llctx(), clangTargetInfo(nullptr), builder(llctx), hasMain(false) {
-	SHOW("llctx address: " << &llctx)
-	SHOW("Builder llctx address: " << &builder.getContext())
-	auto diagnosticEngine =
-	    clang::DiagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
-	                             llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions()));
-	auto targetOpts    = std::make_shared<clang::TargetOptions>();
-	targetOpts->Triple = cli::Config::get()->get_target_triple();
-	clangTargetInfo    = clang::TargetInfo::CreateTargetInfo(diagnosticEngine, targetOpts);
-	dataLayout         = llvm::DataLayout(clangTargetInfo->getDataLayoutString());
-}
+Ctx::Ctx()
+    : llctx(), diagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
+                                 llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions())),
+      clangTargetInfo(clang::TargetInfo::CreateTargetInfo(diagnosticsEngine,
+                                                          []() {
+	                                                          auto targetOpts =
+	                                                              std::make_shared<clang::TargetOptions>();
+	                                                          targetOpts->Triple =
+	                                                              cli::Config::get()->get_target_triple();
+	                                                          return targetOpts;
+                                                          }())),
+      dataLayout(clangTargetInfo->getDataLayoutString()), builder(llctx), hasMain(false) {}
 
 llvm::GlobalValue::LinkageTypes Ctx::getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const {
 	switch (visibInfo.kind) {

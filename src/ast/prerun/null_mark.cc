@@ -6,12 +6,12 @@
 namespace qat::ast {
 
 ir::PrerunValue* NullMark::emit(EmitCtx* ctx) {
-	if (!providedType.has_value() && !is_type_inferred()) {
+	if (not providedType.has_value() && !is_type_inferred()) {
 		ctx->Error("No type provided for null mark and no type inferred from scope", fileRange);
 	}
 	auto theType = providedType.has_value() ? providedType.value()->emit(ctx) : inferredType;
 	if (providedType.has_value() && is_type_inferred()) {
-		if (!theType->is_same(inferredType)) {
+		if (not theType->is_same(inferredType)) {
 			ctx->Error("The provided type for the null mark is " + ctx->color(theType->to_string()) +
 			               ", but the inferred type is " + ctx->color(inferredType->to_string()),
 			           fileRange);
@@ -36,7 +36,7 @@ ir::PrerunValue* NullMark::emit(EmitCtx* ctx) {
 	    llvm::PointerType::get(llvm::PointerType::isValidElementType(finalTy->as_mark()->get_subtype()->get_llvm_type())
 	                               ? finalTy->as_mark()->get_subtype()->get_llvm_type()
 	                               : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-	                           ctx->irCtx->dataLayout->getProgramAddressSpace());
+	                           ctx->irCtx->dataLayout.getProgramAddressSpace());
 	return ir::PrerunValue::get(
 	    finalTy->as_mark()->is_slice()
 	        ? llvm::ConstantStruct::get(llvm::dyn_cast<llvm::StructType>(finalTy->get_llvm_type()),

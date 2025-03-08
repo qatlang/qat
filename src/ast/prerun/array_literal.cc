@@ -6,7 +6,7 @@ namespace qat::ast {
 
 ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred()) {
-		if (!inferredType->is_array()) {
+		if (not inferredType->is_array()) {
 			ctx->Error("This expression expects an array type, but the type inferred from scope is " +
 			               ctx->color(inferredType->to_string()),
 			           fileRange);
@@ -26,7 +26,7 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 		}
 		auto itVal = valuesExp.at(i)->emit(ctx);
 		if (is_type_inferred()) {
-			if (!inferredType->as_array()->get_element_type()->is_same(itVal->get_ir_type())) {
+			if (not inferredType->as_array()->get_element_type()->is_same(itVal->get_ir_type())) {
 				ctx->Error("This expression is of type " + ctx->color(itVal->get_ir_type()->to_string()) +
 				               " which does not match with the expected element type of the inferred type, which is " +
 				               ctx->color(inferredType->as_array()->get_element_type()->to_string()),
@@ -34,7 +34,7 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 			}
 		} else {
 			if (elementType) {
-				if (!elementType->is_same(itVal->get_ir_type())) {
+				if (not elementType->is_same(itVal->get_ir_type())) {
 					ctx->Error("Type of this expression is " + ctx->color(itVal->get_ir_type()->to_string()) +
 					               " which does not match the type of the previous elements, which is " +
 					               ctx->color(elementType->to_string()),

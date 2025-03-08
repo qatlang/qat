@@ -27,7 +27,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                                                              val->get_llvm_constant(),
 			                                                              target->get_llvm_type()),
 			                            usableTarget);
-		} else if (target->is_unsigned_integer()) {
+		} else if (target->is_unsigned()) {
 			return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::ZExt,
 			                                                              val->get_llvm_constant(),
 			                                                              target->get_llvm_type()),
@@ -38,13 +38,13 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                                                              target->get_llvm_type()),
 			                            usableTarget);
 		}
-	} else if (valTy->is_unsigned_integer()) {
+	} else if (valTy->is_unsigned()) {
 		if (target->is_integer()) {
 			return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::SExt,
 			                                                              val->get_llvm_constant(),
 			                                                              target->get_llvm_type()),
 			                            usableTarget);
-		} else if (target->is_unsigned_integer()) {
+		} else if (target->is_unsigned()) {
 			return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::ZExt,
 			                                                              val->get_llvm_constant(),
 			                                                              target->get_llvm_type()),
@@ -61,7 +61,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                                                              val->get_llvm_constant(),
 			                                                              target->get_llvm_type()),
 			                            usableTarget);
-		} else if (target->is_unsigned_integer()) {
+		} else if (target->is_unsigned()) {
 			return ir::PrerunValue::get(llvm::ConstantFoldCastInstruction(llvm::Instruction::CastOps::FPToUI,
 			                                                              val->get_llvm_constant(),
 			                                                              target->get_llvm_type()),
@@ -72,22 +72,22 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                                                              target->get_llvm_type()),
 			                            usableTarget);
 		}
-	} else if (valTy->is_string_slice()) {
+	} else if (valTy->is_text()) {
 		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_cstring()) {
 			return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
 		} else if (valTy->is_mark() &&
-		           (valTy->as_mark()->get_subtype()->is_unsigned_integer() ||
+		           (valTy->as_mark()->get_subtype()->is_unsigned() ||
 		            (valTy->as_mark()->get_subtype()->is_native_type() &&
-		             valTy->as_mark()->get_subtype()->as_native_type()->get_subtype()->is_unsigned_integer())) &&
-		           (valTy->as_mark()->get_subtype()->is_unsigned_integer()
-		                ? (valTy->as_mark()->get_subtype()->as_unsigned_integer()->get_bitwidth() == 8u)
+		             valTy->as_mark()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
+		           (valTy->as_mark()->get_subtype()->is_unsigned()
+		                ? (valTy->as_mark()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
 		                : (valTy->as_mark()
 		                       ->get_subtype()
 		                       ->as_native_type()
 		                       ->get_subtype()
-		                       ->as_unsigned_integer()
+		                       ->as_unsigned()
 		                       ->get_bitwidth() == 8u)) &&
-		           (valTy->as_mark()->get_owner().is_of_anonymous()) && (!valTy->as_mark()->is_subtype_variable())) {
+		           (valTy->as_mark()->get_owner().is_of_anonymous()) && (not valTy->as_mark()->is_subtype_variable())) {
 			if (valTy->as_mark()->is_slice()) {
 				return ir::PrerunValue::get(
 				    llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()),
@@ -97,7 +97,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			}
 		}
 	} else if (valTy->is_choice()) {
-		if ((target->is_integer() || target->is_unsigned_integer()) && valTy->as_choice()->has_provided_type() &&
+		if ((target->is_integer() || target->is_unsigned()) && valTy->as_choice()->has_provided_type() &&
 		    (target->is_integer() == valTy->as_choice()->get_provided_type()->is_integer())) {
 			auto* intTy = valTy->as_choice()->get_provided_type()->as_integer();
 			if (intTy->get_bitwidth() == target->as_integer()->get_bitwidth()) {

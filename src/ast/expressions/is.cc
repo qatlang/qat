@@ -10,15 +10,15 @@ namespace qat::ast {
 ir::Value* IsExpression::emit(EmitCtx* ctx) {
 	if (subExpr) {
 		SHOW("Found sub expression")
-		if (isLocalDecl() && !localValue->get_ir_type()->is_maybe()) {
+		if (isLocalDecl() && not localValue->get_ir_type()->is_maybe()) {
 			ctx->Error("Expected an expression of type " + ctx->color(localValue->get_ir_type()->to_string()) +
 			               ", but found an is expression",
 			           fileRange);
-		} else if (isLocalDecl() && !localValue->get_ir_type()->as_maybe()->has_sized_sub_type(ctx->irCtx)) {
+		} else if (isLocalDecl() && not localValue->get_ir_type()->as_maybe()->has_sized_sub_type(ctx->irCtx)) {
 			auto* subIR = subExpr->emit(ctx);
 			if (localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(subIR->get_ir_type()) ||
-			    (subIR->get_ir_type()->is_reference() && localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(
-			                                                 subIR->get_ir_type()->as_reference()->get_subtype()))) {
+			    (subIR->get_ir_type()->is_ref() && localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(
+			                                           subIR->get_ir_type()->as_ref()->get_subtype()))) {
 				ctx->irCtx->builder.CreateStore(
 				    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
 				    localValue->get_llvm());
@@ -42,27 +42,26 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		}
-		auto* subIR   = subExpr->emit(ctx);
-		auto* subType = subIR->get_ir_type();
-		auto* expectSubTy =
-		    isLocalDecl()
-		        ? localValue->get_ir_type()->as_maybe()->get_subtype()
-		        : (confirmedRef ? (subType->is_reference() ? subType->as_reference()
-		                                                   : ir::ReferenceType::get(isRefVar, subType, ctx->irCtx))
-		                        : (subType->is_reference() ? subType->as_reference()->get_subtype() : subType));
+		auto* subIR       = subExpr->emit(ctx);
+		auto* subType     = subIR->get_ir_type();
+		auto* expectSubTy = isLocalDecl()
+		                        ? localValue->get_ir_type()->as_maybe()->get_subtype()
+		                        : (confirmedRef ? (subType->is_ref() ? subType->as_ref()
+		                                                             : ir::RefType::get(isRefVar, subType, ctx->irCtx))
+		                                        : (subType->is_ref() ? subType->as_ref()->get_subtype() : subType));
 		if (isLocalDecl() && localValue->get_ir_type()->is_maybe() &&
-		    !localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(subType) &&
-		    !(subType->is_reference() &&
-		      localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(subType->as_reference()->get_subtype()))) {
+		    not localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(subType) &&
+		    not(subType->is_ref() &&
+		        localValue->get_ir_type()->as_maybe()->get_subtype()->is_same(subType->as_ref()->get_subtype()))) {
 			ctx->Error("Expected an expression of type " +
 			               ctx->color(localValue->get_ir_type()->as_maybe()->get_subtype()->to_string()) +
 			               ", but found an expression of type " + ctx->color(subType->to_string()),
 			           fileRange);
 		}
-		if ((subType->is_reference() || subIR->is_ghost_reference()) && !expectSubTy->is_reference()) {
-			if (subType->is_reference()) {
-				subType = subType->as_reference()->get_subtype();
-				subIR->load_ghost_reference(ctx->irCtx->builder);
+		if ((subType->is_ref() || subIR->is_ghost_ref()) && not expectSubTy->is_ref()) {
+			if (subType->is_ref()) {
+				subType = subType->as_ref()->get_subtype();
+				subIR->load_ghost_ref(ctx->irCtx->builder);
 			}
 			ir::Method* mFn = nullptr;
 			if (subType->is_expanded()) {
@@ -84,7 +83,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 				} else {
 					auto* maybeTy = ir::MaybeType::get(subType, false, ctx->irCtx);
 					auto* block   = ctx->get_fn()->get_block();
-					auto* loc     = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), maybeTy,
+					auto* loc     = block->new_local(irName.has_value() ? irName->value : utils::uid_string(), maybeTy,
 					                             isVar, irName.has_value() ? irName->range : fileRange);
 					maybeTagPtr = ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), loc->get_alloca(), 0u);
 					maybeValuePtr =
@@ -108,7 +107,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					return nullptr;
 				} else {
 					auto* block  = ctx->get_fn()->get_block();
-					auto* newLoc = block->new_value(irName.has_value() ? irName->value : utils::uid_string(), maybeTy,
+					auto* newLoc = block->new_local(irName.has_value() ? irName->value : utils::uid_string(), maybeTy,
 					                                isVar, irName.has_value() ? irName->range : fileRange);
 					ctx->irCtx->builder.CreateStore(subValue, ctx->irCtx->builder.CreateStructGEP(
 					                                              maybeTy->get_llvm_type(), newLoc->get_alloca(), 1u));
@@ -118,18 +117,17 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					return newLoc->to_new_ir_value();
 				}
 			}
-		} else if (expectSubTy->is_reference()) {
-			if (subType->is_reference() || subIR->is_ghost_reference()) {
-				if (subType->is_reference()) {
-					subIR->load_ghost_reference(ctx->irCtx->builder);
+		} else if (expectSubTy->is_ref()) {
+			if (subType->is_ref() || subIR->is_ghost_ref()) {
+				if (subType->is_ref()) {
+					subIR->load_ghost_ref(ctx->irCtx->builder);
 				}
 				if (isLocalDecl()) {
-					if (expectSubTy->as_reference()->get_subtype()->is_type_sized()) {
+					if (expectSubTy->as_ref()->get_subtype()->is_type_sized()) {
 						ctx->irCtx->builder.CreateStore(
 						    ctx->irCtx->builder.CreatePointerCast(
-						        subIR->get_llvm(),
-						        llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-						            ->getPointerTo(ctx->irCtx->dataLayout->getProgramAddressSpace())),
+						        subIR->get_llvm(), llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+						                               ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
 						    ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
 						                                        localValue->get_alloca(), 1u));
 					} else {
@@ -145,15 +143,14 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					return nullptr;
 				} else {
 					auto maybeTy   = ir::MaybeType::get(expectSubTy, false, ctx->irCtx);
-					auto new_value = ctx->get_fn()->get_block()->new_value(
+					auto new_value = ctx->get_fn()->get_block()->new_local(
 					    irName.has_value() ? irName->value : utils::uid_string(), maybeTy, isVar,
 					    irName.has_value() ? irName->range : fileRange);
-					if (expectSubTy->as_reference()->get_subtype()->is_type_sized()) {
+					if (expectSubTy->as_ref()->get_subtype()->is_type_sized()) {
 						ctx->irCtx->builder.CreateStore(
 						    ctx->irCtx->builder.CreatePointerCast(
-						        subIR->get_llvm(),
-						        llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-						            ->getPointerTo(ctx->irCtx->dataLayout->getProgramAddressSpace())),
+						        subIR->get_llvm(), llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+						                               ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
 						    ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), new_value->get_alloca(), 1u));
 					} else {
 						ctx->irCtx->builder.CreateStore(
@@ -169,7 +166,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 		} else {
 			if (isLocalDecl()) {
 				if (expectSubTy->is_type_sized()) {
-					subIR->load_ghost_reference(ctx->irCtx->builder);
+					subIR->load_ghost_ref(ctx->irCtx->builder);
 					ctx->irCtx->builder.CreateStore(
 					    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
 					    ctx->irCtx->builder.CreateStructGEP(localValue->get_ir_type()->get_llvm_type(),
@@ -186,7 +183,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 			} else {
 				if (expectSubTy->is_type_sized()) {
 					auto* new_value =
-					    ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::uid_string(),
+					    ctx->get_fn()->get_block()->new_local(irName.has_value() ? irName->value : utils::uid_string(),
 					                                          ir::MaybeType::get(expectSubTy, false, ctx->irCtx),
 					                                          irName.has_value() ? isVar : true, fileRange);
 					ctx->irCtx->builder.CreateStore(
@@ -199,7 +196,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					return new_value->to_new_ir_value();
 				} else {
 					auto* new_value =
-					    ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName->value : utils::uid_string(),
+					    ctx->get_fn()->get_block()->new_local(irName.has_value() ? irName->value : utils::uid_string(),
 					                                          ir::MaybeType::get(expectSubTy, false, ctx->irCtx),
 					                                          irName.has_value() ? isVar : true, fileRange);
 					ctx->irCtx->builder.CreateStore(
@@ -231,7 +228,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 		} else if (irName.has_value()) {
 			auto* resMTy    = ir::MaybeType::get(ir::VoidType::get(ctx->irCtx->llctx), false, ctx->irCtx);
 			auto* block     = ctx->get_fn()->get_block();
-			auto* newAlloca = block->new_value(irName->value, resMTy, isVar, irName->range);
+			auto* newAlloca = block->new_local(irName->value, resMTy, isVar, irName->range);
 			ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u, false),
 			                                newAlloca->get_alloca(), false);
 			return newAlloca->to_new_ir_value();

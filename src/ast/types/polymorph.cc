@@ -5,8 +5,8 @@
 namespace qat::ast {
 
 Maybe<usize> PolymorphType::get_type_bitsize(EmitCtx* ctx) const {
-	auto ptrTy = llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.value().getProgramAddressSpace());
-	return (usize)ctx->irCtx->dataLayout.value().getTypeAllocSizeInBits(
+	auto ptrTy = llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace());
+	return (usize)ctx->irCtx->dataLayout.getTypeAllocSizeInBits(
 	    isTyped ? llvm::StructType::create({ptrTy, ptrTy, ptrTy}) : llvm::StructType::create({ptrTy, ptrTy}));
 }
 

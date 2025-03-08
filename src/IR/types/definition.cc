@@ -120,7 +120,7 @@ void DefinitionType::update_overview() {
 	    ._("typeID", get_id())
 	    ._("subTypeID", subType->get_id())
 	    ._("visibility", visibility)
-	    ._("hasGenerics", !generics.empty())
+	    ._("hasGenerics", not generics.empty())
 	    ._("generics", genJson)
 	    ._("moduleID", parent->get_id());
 }
@@ -141,7 +141,7 @@ Maybe<bool> DefinitionType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, 
 	}
 }
 
-TypeKind DefinitionType::type_kind() const { return TypeKind::definition; }
+TypeKind DefinitionType::type_kind() const { return TypeKind::DEFINITION; }
 
 String DefinitionType::to_string() const { return get_full_name(); }
 
@@ -163,11 +163,11 @@ GenericDefinitionType::GenericDefinitionType(Identifier _name, Vec<ast::GenericA
 
 Identifier GenericDefinitionType::get_name() const { return name; }
 
-VisibilityInfo GenericDefinitionType::get_visibility() const { return visibility; }
+VisibilityInfo const& GenericDefinitionType::get_visibility() const { return visibility; }
 
 bool GenericDefinitionType::all_generics_have_defaults() const {
 	for (auto* gen : generics) {
-		if (!gen->hasDefault()) {
+		if (not gen->hasDefault()) {
 			return false;
 		}
 	}
@@ -188,11 +188,11 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
 			return var.get();
 		}
 	}
-	ir::fill_generics(irCtx, generics, types, range);
+	ir::fill_generics(ast::EmitCtx::get(irCtx, parent), generics, types, range);
 	if (constraint.has_value()) {
 		auto checkVal = constraint.value()->emit(ast::EmitCtx::get(irCtx, parent));
 		if (checkVal->get_ir_type()->is_bool()) {
-			if (!llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
+			if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 				irCtx->Error(
 				    "The provided generic parameters for the generic function do not satisfy the constraints", range,
 				    Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});

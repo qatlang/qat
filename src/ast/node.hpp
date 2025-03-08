@@ -11,8 +11,8 @@
 #include "../IR/types/native_type.hpp"
 #include "../IR/types/pointer.hpp"
 #include "../IR/types/reference.hpp"
-#include "../IR/types/string_slice.hpp"
 #include "../IR/types/struct_type.hpp"
+#include "../IR/types/text.hpp"
 #include "../IR/types/tuple.hpp"
 #include "../IR/types/unsigned.hpp"
 #include "../show.hpp"
@@ -45,13 +45,15 @@ struct VisibilitySpec {
 				return "pub:skill";
 		}
 	}
+
 	useit Json to_json() const { return Json()._("visibilityKind", kind_to_string(kind))._("fileRange", range); }
 };
 
 class Commentable {
   public:
 	Maybe<Pair<String, FileRange>> commentValue;
-	useit bool                     hasCommentValue() const { return commentValue.has_value(); }
+
+	useit bool hasCommentValue() const { return commentValue.has_value(); }
 };
 
 #define COMMENTABLE_FUNCTIONS                                                                                          \
@@ -73,11 +75,15 @@ class Node {
 
 	explicit Node(FileRange _fileRange);
 	virtual ~Node() = default;
-	useit virtual bool         isCommentable() const { return false; }
+
+	useit virtual bool isCommentable() const { return false; }
+
 	useit virtual Commentable* asCommentable() { return nullptr; }
-	useit virtual bool         isPrerunNode() const { return false; }
+
+	useit virtual bool isPrerunNode() const { return false; }
 
 	virtual void create_module(ir::Mod* mod, ir::Ctx* irCtx) const {}
+
 	virtual void handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {}
 
 	useit virtual bool is_entity() const { return false; }
@@ -92,6 +98,7 @@ class IsEntity : public Node {
 	ir::EntityState* entityState = nullptr;
 
 	IsEntity(FileRange _fileRange) : Node(_fileRange) {}
+
 	virtual ~IsEntity() = default;
 
 	useit bool is_entity() const final { return true; }
@@ -109,7 +116,8 @@ class HolderNode : public Node {
 	explicit HolderNode(Node* _node) : Node(_node->fileRange), node(_node) {}
 
 	// NOLINTNEXTLINE(misc-unused-parameters)
-	useit Json     to_json() const final { return node->to_json(); }
+	useit Json to_json() const final { return node->to_json(); }
+
 	useit NodeType nodeType() const final { return NodeType::HOLDER; }
 };
 

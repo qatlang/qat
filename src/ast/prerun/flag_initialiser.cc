@@ -8,13 +8,13 @@ namespace qat::ast {
 void FlagInitialiser::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
                                           EmitCtx* ctx) {
 	if (type) {
-		UPDATE_DEPS(type);
+		type.update_dependencies(phase, dep, ent, ctx);
 	}
 }
 
 ir::PrerunValue* FlagInitialiser::emit(EmitCtx* ctx) {
-	ir::Type* useType = type ? type->emit(ctx) : (inferredType ? inferredType : nullptr);
-	if (useType == nullptr) {
+	ir::Type* useType = type ? type.emit(ctx) : inferredType;
+	if (not useType) {
 		ctx->Error("The flag type for this expression was not provided, and no type could be inferred from scope",
 		           fileRange);
 	}
@@ -34,7 +34,7 @@ ir::PrerunValue* FlagInitialiser::emit(EmitCtx* ctx) {
 			return ir::PrerunValue::get(llvm::ConstantInt::get(useType->get_llvm_type(), 0u, false), useType);
 		}
 	} else {
-		std::map<usize, Identifier> foundVariants;
+		Map<usize, Identifier> foundVariants;
 		for (usize i = 0; i < variants.size(); i++) {
 			auto ind = useType->as_flag()->get_index_of(variants[i].value);
 			if (not ind.has_value()) {

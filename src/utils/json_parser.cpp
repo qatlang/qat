@@ -422,7 +422,7 @@ Maybe<Vec<Pair<String, JsonValue>>> JsonParser::parsePairs(usize from, usize upt
 				return None;
 			}
 		} else if (tok.type == TokenType::comma) {
-			if (!isNext(TokenType::string, i)) {
+			if (not isNext(TokenType::string, i)) {
 				return None;
 			}
 		} else {

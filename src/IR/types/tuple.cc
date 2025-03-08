@@ -26,7 +26,7 @@ TupleType::TupleType(Vec<Type*> _types, bool _isPacked, llvm::LLVMContext& llctx
 
 bool TupleType::is_copy_constructible() const {
 	for (auto* sub : subTypes) {
-		if (!sub->is_copy_constructible()) {
+		if (not sub->is_copy_constructible()) {
 			return false;
 		}
 	}
@@ -35,7 +35,7 @@ bool TupleType::is_copy_constructible() const {
 
 bool TupleType::is_copy_assignable() const {
 	for (auto* sub : subTypes) {
-		if (!sub->is_copy_assignable()) {
+		if (not sub->is_copy_assignable()) {
 			return false;
 		}
 	}
@@ -44,7 +44,7 @@ bool TupleType::is_copy_assignable() const {
 
 bool TupleType::is_move_constructible() const {
 	for (auto* sub : subTypes) {
-		if (!sub->is_move_constructible()) {
+		if (not sub->is_move_constructible()) {
 			return false;
 		}
 	}
@@ -53,7 +53,7 @@ bool TupleType::is_move_constructible() const {
 
 bool TupleType::is_move_assignable() const {
 	for (auto* sub : subTypes) {
-		if (!sub->is_move_assignable()) {
+		if (not sub->is_move_assignable()) {
 			return false;
 		}
 	}
@@ -62,7 +62,7 @@ bool TupleType::is_move_assignable() const {
 
 bool TupleType::is_destructible() const {
 	for (auto* sub : subTypes) {
-		if (!sub->is_destructible()) {
+		if (not sub->is_destructible()) {
 			return false;
 		}
 	}
@@ -79,9 +79,9 @@ void TupleType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				subTy->copy_construct_value(
 				    irCtx,
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                   ir::ReferenceType::get(true, subTy, irCtx), false),
+				                   ir::RefType::get(true, subTy, irCtx), false),
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                   ir::ReferenceType::get(false, subTy, irCtx), false),
+				                   ir::RefType::get(false, subTy, irCtx), false),
 				    fun);
 			}
 		} else {
@@ -99,9 +99,9 @@ void TupleType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 				auto* subTy = subTypes.at(i);
 				subTy->copy_assign_value(irCtx,
 				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                                        ir::ReferenceType::get(true, subTy, irCtx), false),
+				                                        ir::RefType::get(true, subTy, irCtx), false),
 				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                                        ir::ReferenceType::get(false, subTy, irCtx), false),
+				                                        ir::RefType::get(false, subTy, irCtx), false),
 				                         fun);
 			}
 		} else {
@@ -121,9 +121,9 @@ void TupleType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				subTy->move_construct_value(
 				    irCtx,
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                   ir::ReferenceType::get(true, subTy, irCtx), false),
+				                   ir::RefType::get(true, subTy, irCtx), false),
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                   ir::ReferenceType::get(false, subTy, irCtx), false),
+				                   ir::RefType::get(false, subTy, irCtx), false),
 				    fun);
 			}
 		} else {
@@ -142,9 +142,9 @@ void TupleType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 				auto* subTy = subTypes.at(i);
 				subTy->move_assign_value(irCtx,
 				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                                        ir::ReferenceType::get(true, subTy, irCtx), false),
+				                                        ir::RefType::get(true, subTy, irCtx), false),
 				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                                        ir::ReferenceType::get(false, subTy, irCtx), false),
+				                                        ir::RefType::get(false, subTy, irCtx), false),
 				                         fun);
 			}
 		} else {
@@ -162,7 +162,7 @@ void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 				auto* subTy = subTypes.at(i);
 				subTy->destroy_value(irCtx,
 				                     ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), i),
-				                                    ir::ReferenceType::get(false, subTy, irCtx), false),
+				                                    ir::RefType::get(false, subTy, irCtx), false),
 				                     fun);
 			}
 		} else {
@@ -182,7 +182,7 @@ TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMConte
 				is_same = false;
 			} else {
 				for (usize i = 0; i < subTys.size(); i++) {
-					if (!subTys.at(i)->is_same(newSubTypes.at(i))) {
+					if (not subTys.at(i)->is_same(newSubTypes.at(i))) {
 						is_same = false;
 						break;
 					}
@@ -204,9 +204,9 @@ u32 TupleType::getSubTypeCount() const { return subTypes.size(); }
 
 bool TupleType::isPackedTuple() const { return isPacked; }
 
-bool TupleType::is_type_sized() const { return !subTypes.empty(); }
+bool TupleType::is_type_sized() const { return not subTypes.empty(); }
 
-TypeKind TupleType::type_kind() const { return TypeKind::tuple; }
+TypeKind TupleType::type_kind() const { return TypeKind::TUPLE; }
 
 String TupleType::to_string() const {
 	String result = String(isPacked ? "pack " : "") + "(";

@@ -24,8 +24,8 @@ Maybe<usize> ArrayType::get_type_bitsize(EmitCtx* ctx) const {
 	auto elemSize = elementType->get_type_bitsize(ctx);
 	typeInferenceForLength(ctx->irCtx);
 	auto* lengthIR = lengthExp->emit(ctx);
-	if (lengthIR->get_ir_type()->is_unsigned_integer() &&
-	    (lengthIR->get_ir_type()->as_unsigned_integer()->get_bitwidth() <= ARRAY_LENGTH_BITWIDTH)) {
+	if (lengthIR->get_ir_type()->is_unsigned() &&
+	    (lengthIR->get_ir_type()->as_unsigned()->get_bitwidth() <= ARRAY_LENGTH_BITWIDTH)) {
 		auto length = *llvm::cast<llvm::ConstantInt>(lengthIR->get_llvm_constant())->getValue().getRawData();
 		if (elemSize.has_value() && (length > 0u)) {
 			return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
@@ -38,11 +38,11 @@ Maybe<usize> ArrayType::get_type_bitsize(EmitCtx* ctx) const {
 ir::Type* ArrayType::emit(EmitCtx* ctx) {
 	typeInferenceForLength(ctx->irCtx);
 	auto* lengthIR = lengthExp->emit(ctx);
-	if (lengthIR->get_ir_type()->is_unsigned_integer()) {
-		if (lengthIR->get_ir_type()->as_unsigned_integer()->get_bitwidth() > ARRAY_LENGTH_BITWIDTH) {
+	if (lengthIR->get_ir_type()->is_unsigned()) {
+		if (lengthIR->get_ir_type()->as_unsigned()->get_bitwidth() > ARRAY_LENGTH_BITWIDTH) {
 			ctx->Error(
 			    "Length of an array is an unsigned integer with bitwidth of " +
-			        ctx->color(std::to_string(lengthIR->get_ir_type()->as_unsigned_integer()->get_bitwidth())) +
+			        ctx->color(std::to_string(lengthIR->get_ir_type()->as_unsigned()->get_bitwidth())) +
 			        " which is not allowed. Bitwidth of the length of the array should be less than or equal to 64, as there can be loss of data during compilation otherwise",
 			    lengthExp->fileRange);
 		}

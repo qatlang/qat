@@ -8,12 +8,12 @@ namespace qat::ast {
 ir::Value* TupleValue::emit(EmitCtx* ctx) {
 	ir::TupleType* tupleTy = nullptr;
 	if (is_type_inferred() || isLocalDecl()) {
-		if (isLocalDecl() && !localValue->get_ir_type()->is_tuple()) {
+		if (isLocalDecl() && not localValue->get_ir_type()->is_tuple()) {
 			ctx->Error("Expected expression of type " + ctx->color(localValue->get_ir_type()->to_string()) +
 			               ", but found a tuple",
 			           fileRange);
 		}
-		if (!inferredType->is_tuple()) {
+		if (not inferredType->is_tuple()) {
 			ctx->Error("The inferred type for this tuple expression is " + ctx->color(inferredType->to_string()) +
 			               ", which is not a tuple type",
 			           fileRange);
@@ -34,39 +34,38 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
 		auto* mem      = members.at(i);
 		if (expMemTy) {
 			if (mem->has_type_inferrance()) {
-				mem->as_type_inferrable()->set_inference_type(
-				    expMemTy->is_reference() ? expMemTy->as_reference()->get_subtype() : expMemTy);
+				mem->as_type_inferrable()->set_inference_type(expMemTy->is_ref() ? expMemTy->as_ref()->get_subtype()
+				                                                                 : expMemTy);
 			}
 		}
 		auto* memRes = mem->emit(ctx);
-		if (!tupleTy) {
-			tupleMemTys.push_back(memRes->get_ir_type()->is_reference()
-			                          ? memRes->get_ir_type()->as_reference()->get_subtype()
-			                          : memRes->get_ir_type());
+		if (not tupleTy) {
+			tupleMemTys.push_back(memRes->get_ir_type()->is_ref() ? memRes->get_ir_type()->as_ref()->get_subtype()
+			                                                      : memRes->get_ir_type());
 		}
-		if (memRes->get_ir_type()->is_reference()) {
-			memRes->load_ghost_reference(ctx->irCtx->builder);
+		if (memRes->get_ir_type()->is_ref()) {
+			memRes->load_ghost_ref(ctx->irCtx->builder);
 		}
 		if (expMemTy) {
 			auto valRes = ir::Logic::handle_pass_semantics(ctx, expMemTy, memRes, mem->fileRange);
-			if (!valRes->is_prerun_value()) {
+			if (not valRes->is_prerun_value()) {
 				isAllMemsPre = false;
 			}
 			tupleMemVals.push_back(valRes);
 		} else {
-			if (!memRes->is_prerun_value()) {
+			if (not memRes->is_prerun_value()) {
 				isAllMemsPre = false;
 			}
 			tupleMemVals.push_back(memRes);
 		}
 	}
-	if (!tupleTy) {
+	if (not tupleTy) {
 		tupleTy = ir::TupleType::get(tupleMemTys, isPacked, ctx->irCtx->llctx);
 	}
 	auto* newLocal =
 	    isLocalDecl()
 	        ? localValue
-	        : ctx->get_fn()->get_block()->new_value(irName.has_value() ? irName.value().value : utils::uid_string(),
+	        : ctx->get_fn()->get_block()->new_local(irName.has_value() ? irName.value().value : utils::uid_string(),
 	                                                tupleTy, irName.has_value() ? isVar : true,
 	                                                irName.has_value() ? irName.value().range : fileRange);
 	if (isAllMemsPre) {

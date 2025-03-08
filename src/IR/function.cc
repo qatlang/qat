@@ -117,10 +117,10 @@ bool Block::has_give_in_all_control_paths() const {
 		if (hasGive) {
 			return true;
 		} else {
-			if (!children.empty()) {
+			if (not children.empty()) {
 				bool result = true;
 				for (auto* child : children) {
-					if (!child->has_give_in_all_control_paths()) {
+					if (not child->has_give_in_all_control_paths()) {
 						result = false;
 						break;
 					}
@@ -160,7 +160,7 @@ void Block::collect_all_local_values_so_far(Vec<LocalValue*>& vals) const {
 				break;
 			}
 		}
-		if (!exists) {
+		if (not exists) {
 			vals.push_back(val);
 		}
 	}
@@ -313,7 +313,7 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 	SHOW("Number of args: " << argValues.size())
 	SHOW("Return type is " << retType->get_type()->to_string())
 	auto result = ir::Value::get(irCtx->builder.CreateCall(fnTy, llvmFunction, argValues), retType->get_type(), false);
-	if (get_module()->get_id() != destMod->get_id() && !get_module()->is_parent_mod_of(destMod)) {
+	if (get_module()->get_id() != destMod->get_id() && not get_module()->is_parent_mod_of(destMod)) {
 		destMod->add_dependency(get_module());
 	}
 	if (localID && retType->is_return_self()) {
@@ -364,7 +364,7 @@ String Function::get_full_name() const { return mod->get_fullname_with_child(nam
 
 ir::LocalValue* Function::get_str_comparison_index() {
 	if (not strComparisonIndex) {
-		strComparisonIndex = get_first_block()->new_value("qat'strCmpInd",
+		strComparisonIndex = get_first_block()->new_local("qat'strCmpInd",
 		                                                  // NOLINTNEXTLINE(readability-magic-numbers)
 		                                                  ir::UnsignedType::create(64u, ctx), true, name.range);
 	}
@@ -409,7 +409,7 @@ ast::GenericAbstractType* GenericFunction::getGenericAt(usize index) const { ret
 
 useit bool GenericFunction::all_generics_have_default() const {
 	for (auto* gen : generics) {
-		if (!gen->hasDefault()) {
+		if (not gen->hasDefault()) {
 			return false;
 		}
 	}
@@ -422,12 +422,12 @@ Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, Ctx* irC
 			return var.get();
 		}
 	}
-	ir::fill_generics(irCtx, generics, types, fileRange);
+	ir::fill_generics(ast::EmitCtx::get(irCtx, parent), generics, types, fileRange);
 	if (constraint != nullptr) {
 		auto emitCtx  = ast::EmitCtx::get(irCtx, parent)->with_generics(generics);
 		auto checkVal = constraint->emit(emitCtx);
 		if (checkVal->get_ir_type()->is_bool()) {
-			if (!llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
+			if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 				irCtx->Error("The provided generic parameters for the generic function do not satisfy the constraints",
 				             fileRange,
 				             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
@@ -474,7 +474,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 	SHOW(locals.size() << " locals collected so far")
 	for (auto* loc : locals) {
 		SHOW("Local name is: " << loc->get_name() << " and type is " << loc->get_ir_type()->to_string())
-		if (loc->is_reference()) {
+		if (loc->is_ref()) {
 			continue;
 		}
 		if (loc->get_ir_type()->is_expanded() && loc->get_ir_type()->as_expanded()->has_destructor()) {
@@ -498,7 +498,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					restBlock->link_previous_block(currBlock);
 					// NOLINTNEXTLINE(readability-magic-numbers)
 					auto* count =
-					    currBlock->new_value(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true, {""});
+					    currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true, {""});
 					irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 					                           count->get_llvm());
 					irCtx->builder.CreateCondBr(
@@ -580,7 +580,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 	if (fun->is_method()) {
 		auto* mFn = (ir::Method*)fun;
 		// FIXME - Change this
-		if (!mFn->get_parent_type()->is_struct()) {
+		if (not mFn->get_parent_type()->is_struct()) {
 			return;
 		}
 		auto* cTy = mFn->get_parent_type()->as_struct();
@@ -604,7 +604,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							auto* restBlock = ir::Block::create(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							// NOLINTNEXTLINE(readability-magic-numbers)
-							auto* count = currBlock->new_value(utils::uid_string(),
+							auto* count = currBlock->new_local(utils::uid_string(),
 							                                   ir::UnsignedType::create(64u, irCtx), true, {""});
 							irCtx->builder.CreateStore(
 							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
@@ -720,7 +720,7 @@ void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange&
 		}
 	} else {
 		auto* lastInst = ((llvm::Instruction*)&block->get_bb()->back());
-		if (!llvm::isa<llvm::ReturnInst>(lastInst)) {
+		if (not llvm::isa<llvm::ReturnInst>(lastInst)) {
 			SHOW("Last instruction is not a return")
 			if (retTy->get_type()->is_void()) {
 				SHOW("Calling destructor caller")

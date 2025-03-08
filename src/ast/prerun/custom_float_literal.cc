@@ -9,7 +9,7 @@ ir::PrerunValue* CustomFloatLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred()) {
 		if (inferredType->is_float() ||
 		    (inferredType->is_native_type() && inferredType->as_native_type()->get_subtype()->is_float())) {
-			if (!kind.empty() && inferredType->to_string() != kind) {
+			if (not kind.empty() && inferredType->to_string() != kind) {
 				ctx->Error("The suffix provided here is " + ctx->color(kind) + " but the inferred type is " +
 				               ctx->color(inferredType->to_string()),
 				           fileRange);
@@ -20,7 +20,7 @@ ir::PrerunValue* CustomFloatLiteral::emit(EmitCtx* ctx) {
 			               " but this literal is expected to have a floating point type",
 			           fileRange);
 		}
-	} else if (!kind.empty()) {
+	} else if (not kind.empty()) {
 		if (kind == "f16") {
 			floatResTy = ir::FloatType::get(ir::FloatTypeKind::_16, ctx->irCtx->llctx);
 		} else if (kind == "fbrain") {

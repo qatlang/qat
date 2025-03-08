@@ -21,13 +21,13 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	SHOW("Type for local declaration is " << (type ? type->to_string() : "not provided"));
 
 	auto typeCheck = [&]() {
-		if (declType && declType->is_maybe() && !variability) {
+		if (declType && declType->is_maybe() && not variability) {
 			ctx->irCtx->Warning("The type of the declaration is " +
 			                        ctx->irCtx->highlightWarning(declType->to_string()) +
 			                        ", but the local declaration is not a variable. And hence, it might not be usable",
 			                    fileRange);
 		}
-		if (declType && !declType->is_type_sized()) {
+		if (declType && not declType->is_type_sized()) {
 			ctx->Error("The type " + ctx->color(declType->to_string()) + " is not sized and hence cannot be allocated",
 			           fileRange);
 		}
@@ -42,12 +42,12 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		}
 		if (value.value()->isLocalDeclCompatible()) {
 			if ((type || declType)) {
-				if (!declType) {
+				if (not declType) {
 					declType = type->emit(ctx);
 					typeCheck();
 				}
 				value.value()->asLocalDeclCompatible()->setLocalValue(
-				    ctx->get_fn()->get_block()->new_value(name.value, declType, variability, name.range));
+				    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range));
 			} else {
 				auto* localDeclCompat   = value.value()->asLocalDeclCompatible();
 				localDeclCompat->irName = name;
@@ -64,7 +64,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		if (type) {
 			declType = type->emit(ctx);
 			if (declType->is_trivially_movable()) {
-				auto result = ctx->get_fn()->get_block()->new_value(name.value, declType, variability, name.range);
+				auto result = ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range);
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(declType->get_llvm_type()),
 				                                result->get_llvm());
 				return result->to_new_ir_value();
@@ -79,16 +79,16 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	SHOW("Type inference for value is complete")
 	if (type) {
 		SHOW("Checking & setting declType")
-		if (!declType) {
+		if (not declType) {
 			declType = type->emit(ctx);
 			typeCheck();
 		}
 		SHOW("About to type match")
 		if (value &&
-		    (((declType->is_reference() && !expVal->is_reference()) &&
-		      !declType->as_reference()->get_subtype()->is_same(expVal->get_ir_type())) &&
-		     (declType->is_maybe() && !(declType->as_maybe()->get_subtype()->is_same(expVal->get_ir_type()))) &&
-		     !declType->is_same(expVal->get_ir_type()))) {
+		    (((declType->is_ref() && not expVal->is_ref()) &&
+		      not declType->as_ref()->get_subtype()->is_same(expVal->get_ir_type())) &&
+		     (declType->is_maybe() && not(declType->as_maybe()->get_subtype()->is_same(expVal->get_ir_type()))) &&
+		     not declType->is_same(expVal->get_ir_type()))) {
 			ctx->Error("Type of the local value " + ctx->color(name.value) + " is " +
 			               ctx->color(declType->to_string()) +
 			               " which is not compatible with the expression to be assigned which is of type " +
@@ -101,24 +101,23 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 			SHOW("Getting type from expression")
 			declType = expVal->get_ir_type();
 			typeCheck();
-			if (expVal->get_ir_type()->is_reference()) {
-				if (!isRef) {
-					declType = expVal->get_ir_type()->as_reference()->get_subtype();
+			if (expVal->get_ir_type()->is_ref()) {
+				if (not isRef) {
+					declType = expVal->get_ir_type()->as_ref()->get_subtype();
 				}
 			}
 		} else {
 			ctx->Error("Type inference for declarations require a value", fileRange);
 		}
 	}
-	if (declType->is_reference() && ((!expVal->get_ir_type()->is_reference()) && expVal->is_ghost_reference())) {
-		if (declType->as_reference()->isSubtypeVariable() && (!expVal->is_variable())) {
+	if (declType->is_ref() && ((not expVal->get_ir_type()->is_ref()) && expVal->is_ghost_ref())) {
+		if (declType->as_ref()->has_variability() && (not expVal->is_variable())) {
 			ctx->Error("The referred type of the left hand side has variability, but the "
 			           "value provided for initialisation do not have variability",
 			           value.value()->fileRange);
 		}
-	} else if (declType->is_reference() && expVal->get_ir_type()->is_reference()) {
-		if (declType->as_reference()->isSubtypeVariable() &&
-		    (!expVal->get_ir_type()->as_reference()->isSubtypeVariable())) {
+	} else if (declType->is_ref() && expVal->get_ir_type()->is_ref()) {
+		if (declType->as_ref()->has_variability() && (not expVal->get_ir_type()->as_ref()->has_variability())) {
 			ctx->Error("The reference on the left hand side refers to a value with "
 			           "variability, but the value provided for initialisation is a "
 			           "reference that refers to a value without variability",
@@ -126,16 +125,15 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		}
 	}
 	SHOW("Creating new value")
-	auto* new_value = block->new_value(name.value, declType, variability, name.range);
+	auto* new_value = block->new_local(name.value, declType, variability, name.range);
 	if (expVal) {
-		if (expVal->get_ir_type()->is_reference() || expVal->is_ghost_reference()) {
-			if (expVal->get_ir_type()->is_reference()) {
-				expVal->load_ghost_reference(ctx->irCtx->builder);
+		if (expVal->get_ir_type()->is_ref() || expVal->is_ghost_ref()) {
+			if (expVal->get_ir_type()->is_ref()) {
+				expVal->load_ghost_ref(ctx->irCtx->builder);
 			}
-			auto* expValTy = expVal->get_ir_type()->is_reference()
-			                     ? expVal->get_ir_type()->as_reference()->get_subtype()
-			                     : expVal->get_ir_type();
-			if (!expValTy->is_same(new_value->get_ir_type())) {
+			auto* expValTy = expVal->get_ir_type()->is_ref() ? expVal->get_ir_type()->as_ref()->get_subtype()
+			                                                 : expVal->get_ir_type();
+			if (not expValTy->is_same(new_value->get_ir_type())) {
 				ctx->Error("Type of the provided expression is " + ctx->color(expValTy->to_string()) +
 				               " and does not match the type of the declaration which is " +
 				               ctx->color(declType->to_string()),
@@ -145,13 +143,13 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 				ctx->irCtx->builder.CreateStore(
 				    ctx->irCtx->builder.CreateLoad(expValTy->get_llvm_type(), expVal->get_llvm()),
 				    new_value->get_llvm());
-				if (!expValTy->is_trivially_copyable()) {
-					if (expVal->is_reference() && !expVal->get_ir_type()->as_reference()->isSubtypeVariable()) {
+				if (not expValTy->is_trivially_copyable()) {
+					if (expVal->is_ref() && not expVal->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error(
 						    "This expression is of type " + ctx->color(expVal->get_ir_type()->to_string()) +
 						        " which is a reference without variability and hence cannot be trivially moved from",
 						    value.value()->fileRange);
-					} else if (!expVal->is_variable()) {
+					} else if (not expVal->is_variable()) {
 						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
 						           value.value()->fileRange);
 					}
@@ -173,7 +171,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 				           value.value()->fileRange);
 			}
 		} else {
-			if (!expVal->get_ir_type()->is_same(new_value->get_ir_type())) {
+			if (not expVal->get_ir_type()->is_same(new_value->get_ir_type())) {
 				ctx->Error("Type of the provided expression is " + ctx->color(expVal->get_ir_type()->to_string()) +
 				               " and does not match the type of the declaration which is " +
 				               ctx->color(declType->to_string()),

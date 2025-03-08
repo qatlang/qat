@@ -12,7 +12,7 @@ void PrerunTupleValue::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depend
 ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 	Maybe<ir::TupleType*> expected;
 	if (is_type_inferred()) {
-		if (!inferredType->is_tuple()) {
+		if (not inferredType->is_tuple()) {
 			ctx->Error("This expression should be of a tuple type, but the type inferred from scope is " +
 			               ctx->color(inferredType->to_string()),
 			           fileRange);
@@ -34,7 +34,7 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 			}
 		}
 		memberVals.push_back(members.at(i)->emit(ctx));
-		if (expected.has_value() && !expected.value()->getSubtypeAt(i)->is_same(memberVals.back()->get_ir_type())) {
+		if (expected.has_value() && not expected.value()->getSubtypeAt(i)->is_same(memberVals.back()->get_ir_type())) {
 			ctx->Error("The tuple type inferred is " + ctx->color(expected.value()->to_string()) +
 			               " so the expected type of this expression is " +
 			               ctx->color(expected.value()->getSubtypeAt(i)->to_string()) +
@@ -49,7 +49,7 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 		memTys.push_back(mem->get_ir_type());
 		memConsts.push_back(mem->get_llvm_constant());
 	}
-	if (!expected.has_value()) {
+	if (not expected.has_value()) {
 		// FIXME - Support packing
 		expected = ir::TupleType::get(memTys, false, ctx->irCtx->llctx);
 	}

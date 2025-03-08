@@ -54,7 +54,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 	    mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
 	    mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {
 		auto* genericCoreTy = mod->get_generic_struct_type(entityName.value, reqInfo);
-		if (!genericCoreTy->get_visibility().is_accessible(reqInfo)) {
+		if (not genericCoreTy->get_visibility().is_accessible(reqInfo)) {
 			auto fullName = Identifier::fullName(names);
 			ctx->Error("Generic core type " + ctx->color(fullName.value) + " is not accessible here", fullName.range);
 		}
@@ -63,18 +63,18 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 		Vec<ir::GenericToFill*> types;
 		if (genericTypes.empty()) {
 			SHOW("Checking if all generic abstracts have defaults")
-			if (!genericCoreTy->allTypesHaveDefaults()) {
+			if (not genericCoreTy->all_parameters_have_default()) {
 				ctx->Error(
 				    "Not all generic parameters in this type have a default value associated with it, and hence the type parameter list cannot be empty. Use " +
 				        ctx->color("default") + " to use the default type or value of the generic parameter.",
 				    fileRange);
 			}
 			SHOW("Check complete")
-		} else if (genericCoreTy->getTypeCount() != genericTypes.size()) {
+		} else if (genericCoreTy->get_parameter_count() != genericTypes.size()) {
 			ctx->Error(
 			    "Generic core type " + ctx->color(genericCoreTy->get_name().value) + " has " +
-			        ctx->color(std::to_string(genericCoreTy->getTypeCount())) + " generic parameters. But " +
-			        ((genericCoreTy->getTypeCount() > genericTypes.size()) ? "only " : "") +
+			        ctx->color(std::to_string(genericCoreTy->get_parameter_count())) + " generic parameters. But " +
+			        ((genericCoreTy->get_parameter_count() > genericTypes.size()) ? "only " : "") +
 			        ctx->color(std::to_string(genericTypes.size())) +
 			        " values were provided. Not all generic parameters have default values, and hence the number of values provided must match. Use " +
 			        ctx->color("default") + " to use the default type or value of the generic parameter.",
@@ -112,7 +112,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 	           mod->has_brought_generic_type_def(entityName.value, reqInfo) ||
 	           mod->has_generic_type_def_in_imports(entityName.value, reqInfo).first) {
 		auto* genericTypeDef = mod->get_generic_type_def(entityName.value, reqInfo);
-		if (!genericTypeDef->get_visibility().is_accessible(reqInfo)) {
+		if (not genericTypeDef->get_visibility().is_accessible(reqInfo)) {
 			auto fullName = Identifier::fullName(names);
 			ctx->Error("Generic type definition " + ctx->color(fullName.value) + " is not accessible here",
 			           fullName.range);
@@ -121,7 +121,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 		Vec<ir::GenericToFill*> types;
 		if (genericTypes.empty()) {
 			SHOW("Checking if all generic abstracts have defaults")
-			if (!genericTypeDef->all_generics_have_defaults()) {
+			if (not genericTypeDef->all_generics_have_defaults()) {
 				ctx->Error(
 				    "Not all generic parameters in this type have a default value associated with it, and hence the generic parameter list cannot be empty. Use " +
 				        ctx->color("default") + " to use the default type or value of the generic parameter.",

@@ -2,7 +2,7 @@
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/native_type.hpp"
-#include "../../IR/types/string_slice.hpp"
+#include "../../IR/types/text.hpp"
 
 #include <llvm/IR/Instructions.h>
 
@@ -24,18 +24,17 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 	} else {
 		auto* typ     = val->get_ir_type();
 		auto  loadRef = [&] {
-            if (val->is_reference()) {
-                val->load_ghost_reference(ctx->irCtx->builder);
-                val = ir::Value::get(
-                    ctx->irCtx->builder.CreateLoad(val->get_ir_type()->as_reference()->get_subtype()->get_llvm_type(),
-				                                    val->get_llvm()),
-                    val->get_ir_type()->as_reference()->get_subtype(), false);
+            if (val->is_ref()) {
+                val->load_ghost_ref(ctx->irCtx->builder);
+                val = ir::Value::get(ctx->irCtx->builder.CreateLoad(
+                                         val->get_ir_type()->as_ref()->get_subtype()->get_llvm_type(), val->get_llvm()),
+				                      val->get_ir_type()->as_ref()->get_subtype(), false);
                 typ = val->get_ir_type();
             } else {
-                val->load_ghost_reference(ctx->irCtx->builder);
+                val->load_ghost_ref(ctx->irCtx->builder);
             }
 		};
-		auto valType = val->is_reference() ? val->get_ir_type()->as_reference()->get_subtype() : val->get_ir_type();
+		auto valType = val->is_ref() ? val->get_ir_type()->as_ref()->get_subtype() : val->get_ir_type();
 		if (valType->is_native_type()) {
 			valType = valType->as_native_type()->get_subtype();
 		}
@@ -44,8 +43,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				loadRef();
 				auto targetTy =
 				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_mark() : destTy->as_mark();
-				if (!valType->as_mark()->get_owner().is_same(targetTy->get_owner()) &&
-				    !targetTy->get_owner().is_of_anonymous()) {
+				if (not valType->as_mark()->get_owner().is_same(targetTy->get_owner()) &&
+				    not targetTy->get_owner().is_of_anonymous()) {
 					ctx->Error(
 					    "This change of ownership of the pointer type is not allowed. Pointers with valid ownership can only be converted to anonymous ownership",
 					    fileRange);
@@ -66,19 +65,19 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						            valType->as_mark()->is_slice()
 						                ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
 						                : val->get_llvm(),
-						            llvm::ConstantPointerNull::get(llvm::PointerType::get(
-						                valType->as_mark()->get_subtype()->is_type_sized()
-						                    ? valType->as_mark()->get_subtype()->get_llvm_type()
-						                    : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-						                ctx->irCtx->dataLayout.value().getProgramAddressSpace()))),
+						            llvm::ConstantPointerNull::get(
+						                llvm::PointerType::get(valType->as_mark()->get_subtype()->is_type_sized()
+						                                           ? valType->as_mark()->get_subtype()->get_llvm_type()
+						                                           : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+						                                       ctx->irCtx->dataLayout.getProgramAddressSpace()))),
 						        llvm::ConstantInt::get(ir::NativeType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u,
 						                               true)),
 						    nullTrueBlock->get_bb(), restBlock->get_bb());
 						nullTrueBlock->set_active(ctx->irCtx->builder);
 						ir::Logic::panic_in_function(
 						    fun,
-						    {ir::StringSliceType::create_value(
-						        ctx->irCtx,
+						    {ir::TextType::create_value(
+						        ctx->irCtx, ctx->mod,
 						        "This is a null-pointer and hence cannot be converted to the non-nullable pointer type " +
 						            destTy->to_string())},
 						    {}, fileRange, ctx);
@@ -86,7 +85,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						restBlock->set_active(ctx->irCtx->builder);
 					}
 				}
-				if (!valType->as_mark()->get_subtype()->is_same(targetTy->get_subtype())) {
+				if (not valType->as_mark()->get_subtype()->is_same(targetTy->get_subtype())) {
 					ctx->Error(
 					    "The value to be converted is of type " + ctx->color(typ->to_string()) +
 					        " but the destination type is " + ctx->color(destTy->to_string()) +
@@ -99,7 +98,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						                      false);
 					} else {
 						auto newVal =
-						    ctx->get_fn()->get_block()->new_value(utils::uid_string(), destTy, false, fileRange);
+						    ctx->get_fn()->get_block()->new_local(utils::uid_string(), destTy, false, fileRange);
 						ctx->irCtx->builder.CreateStore(
 						    val->get_llvm(),
 						    ctx->irCtx->builder.CreateStructGEP(destTy->get_llvm_type(), newVal->get_llvm(), 0u));
@@ -129,7 +128,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				ctx->Error("Pointer conversion to type " + ctx->color(destTy->to_string()) + " is not supported",
 				           fileRange);
 			}
-		} else if (valType->is_string_slice()) {
+		} else if (valType->is_text()) {
 			auto destValTy = destTy->is_native_type() ? destTy->as_native_type()->get_subtype() : destTy;
 			if (destTy->is_native_type() && destTy->as_native_type()->is_cstring()) {
 				if (val->is_prerun_value()) {
@@ -139,22 +138,19 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 					return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy, false);
 				}
 			} else if (destValTy->is_mark() &&
-			           (destValTy->as_mark()->get_subtype()->is_unsigned_integer() ||
-			            (destValTy->as_mark()->get_subtype()->is_native_type() && destValTy->as_mark()
-			                                                                          ->get_subtype()
-			                                                                          ->as_native_type()
-			                                                                          ->get_subtype()
-			                                                                          ->is_unsigned_integer())) &&
+			           (destValTy->as_mark()->get_subtype()->is_unsigned() ||
+			            (destValTy->as_mark()->get_subtype()->is_native_type() &&
+			             destValTy->as_mark()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
 			           destValTy->as_mark()->get_owner().is_of_anonymous() &&
-			           (destValTy->as_mark()->get_subtype()->is_unsigned_integer()
-			                ? (destValTy->as_mark()->get_subtype()->as_unsigned_integer()->get_bitwidth() == 8u)
+			           (destValTy->as_mark()->get_subtype()->is_unsigned()
+			                ? (destValTy->as_mark()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
 			                : (destValTy->as_mark()
 			                       ->get_subtype()
 			                       ->as_native_type()
 			                       ->get_subtype()
-			                       ->as_unsigned_integer()
+			                       ->as_unsigned()
 			                       ->get_bitwidth() == 8u)) &&
-			           !destValTy->as_mark()->is_subtype_variable()) {
+			           not destValTy->as_mark()->is_subtype_variable()) {
 				loadRef();
 				if (destValTy->as_mark()->is_slice()) {
 					val->get_llvm()->mutateType(destTy->get_llvm_type());
@@ -173,11 +169,11 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true),
 				                      destTy, val->is_variable());
-			} else if (destTy->is_unsigned_integer() ||
-			           (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
+			} else if (destTy->is_unsigned() ||
+			           (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned())) {
 				loadRef();
 				ctx->irCtx->Warning("Conversion from signed integer to unsigned integers can be lossy", fileRange);
-				if (valType->as_integer()->get_bitwidth() == destTy->as_unsigned_integer()->get_bitwidth()) {
+				if (valType->as_integer()->get_bitwidth() == destTy->as_unsigned()->get_bitwidth()) {
 					return ir::Value::get(
 					    ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true), destTy,
 					    false);
@@ -195,9 +191,9 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				               ctx->color(destTy->to_string()) + " is not supported",
 				           fileRange);
 			}
-		} else if (valType->is_unsigned_integer()) {
-			if (destTy->is_unsigned_integer() ||
-			    (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
+		} else if (valType->is_unsigned()) {
+			if (destTy->is_unsigned() ||
+			    (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned())) {
 				loadRef();
 				return ir::Value::get(
 				    ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), false), destTy, false);
@@ -205,7 +201,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			           (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_integer())) {
 				loadRef();
 				ctx->irCtx->Warning("Conversion from unsigned integer to signed integers can be lossy", fileRange);
-				if (typ->as_unsigned_integer()->get_bitwidth() == destTy->as_integer()->get_bitwidth()) {
+				if (typ->as_unsigned()->get_bitwidth() == destTy->as_integer()->get_bitwidth()) {
 					return ir::Value::get(val->get_llvm(), destTy, false);
 				} else {
 					return ir::Value::get(
@@ -233,8 +229,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateFPToSI(val->get_llvm(), destTy->get_llvm_type()),
 				                      destTy, false);
-			} else if (destTy->is_unsigned_integer() ||
-			           (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned_integer())) {
+			} else if (destTy->is_unsigned() ||
+			           (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateFPToUI(val->get_llvm(), destTy->get_llvm_type()),
 				                      destTy, false);
@@ -281,9 +277,9 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			}
 		} else if (valType->is_expanded() && valType->as_expanded()->has_to_convertor(destTy)) {
 			auto convFn = valType->as_expanded()->get_to_convertor(destTy);
-			if (val->get_ir_type()->is_reference()) {
-				val->load_ghost_reference(ctx->irCtx->builder);
-			} else if (not val->is_ghost_reference()) {
+			if (val->get_ir_type()->is_ref()) {
+				val->load_ghost_ref(ctx->irCtx->builder);
+			} else if (not val->is_ghost_ref()) {
 				ctx->Error(
 				    "This expression is a value and hence cannot call the convertor on this expression. Expected a reference, a local or global value or something similar. Consider saving this value in a local value first and then the convertor on it",
 				    source->fileRange);
@@ -304,9 +300,9 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				               ctx->color(destTy->to_string()),
 				           fileRange);
 			}
-			if (val->get_ir_type()->is_reference()) {
-				val->load_ghost_reference(ctx->irCtx->builder);
-			} else if (not val->is_ghost_reference()) {
+			if (val->get_ir_type()->is_ref()) {
+				val->load_ghost_ref(ctx->irCtx->builder);
+			} else if (not val->is_ghost_ref()) {
 				ctx->Error(
 				    "This expression is a value and hence cannot call the convertor on this expression. Expected a reference, a local or global value or something similar. Consider saving this value in a local value first and then the convertor on it",
 				    source->fileRange);

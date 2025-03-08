@@ -10,7 +10,7 @@ Vec<void*> QatRegion::allBlockTails{};
 usize      QatRegion::totalSize = 0;
 
 void QatRegion::destroyAllBlocks() {
-	while (!regionMutex.try_lock()) {
+	while (not regionMutex.try_lock()) {
 	}
 	for (auto currBlockTail : allBlockTails) {
 		auto candidatePtr = currBlockTail;
@@ -41,7 +41,7 @@ void* QatRegion::getMemory(usize typeSize) {
 			exit(1);
 		} else {
 			// Updating blockTails for each new thread requesting for memory
-			while (!regionMutex.try_lock()) {
+			while (not regionMutex.try_lock()) {
 			}
 			allBlockTails.push_back(blockTail);
 			regionMutex.unlock();

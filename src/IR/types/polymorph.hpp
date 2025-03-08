@@ -35,7 +35,7 @@ class Polymorph final : public Type {
 
 	useit bool is_trivially_movable() const final { return true; }
 
-	useit TypeKind type_kind() const final { return TypeKind::polymorph; }
+	useit TypeKind type_kind() const final { return TypeKind::POLYMORPH; }
 
 	useit String to_string() const final;
 };

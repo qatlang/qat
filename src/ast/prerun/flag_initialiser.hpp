@@ -2,22 +2,23 @@
 #define QAT_AST_PRERUN_EXPRESSIONS_FLAG_INITIALISER_HPP
 
 #include "../expression.hpp"
+#include "../type_like.hpp"
 
 namespace qat::ast {
 
 class FlagInitialiser final : public PrerunExpression, public TypeInferrable {
-	Type*            type;
+	TypeLike         type;
 	Maybe<FileRange> specialRange;
 	bool             isSpecialDefault;
 	Vec<Identifier>  variants;
 
   public:
-	FlagInitialiser(Type* _type, Maybe<FileRange> _specialRange, bool _isSpecialDefault, Vec<Identifier> _variants,
+	FlagInitialiser(TypeLike _type, Maybe<FileRange> _specialRange, bool _isSpecialDefault, Vec<Identifier> _variants,
 	                FileRange _range)
 	    : PrerunExpression(std::move(_range)), type(_type), specialRange(_specialRange),
 	      isSpecialDefault(_isSpecialDefault), variants(_variants) {}
 
-	useit static FlagInitialiser* create(Type* type, Maybe<FileRange> specialRange, bool isSpecialDefault,
+	useit static FlagInitialiser* create(TypeLike type, Maybe<FileRange> specialRange, bool isSpecialDefault,
 	                                     Vec<Identifier> variants, FileRange range) {
 		return std::construct_at(OwnNormal(FlagInitialiser), type, std::move(specialRange), isSpecialDefault,
 		                         std::move(variants), std::move(range));

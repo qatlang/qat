@@ -47,7 +47,7 @@ Maybe<String> IntegerType::to_prerun_generic_string(ir::PrerunValue* val) const 
 	auto value = val->get_llvm_constant();
 	if (isValNegative) {
 		value = llvm::cast<llvm::ConstantInt>(
-		    llvm::ConstantFoldConstant(llvm::ConstantExpr::getNeg(value), irCtx->dataLayout.value()));
+		    llvm::ConstantFoldConstant(llvm::ConstantExpr::getNeg(value), irCtx->dataLayout));
 	}
 	auto temp = value;
 	while (llvm::cast<llvm::ConstantInt>(
@@ -56,30 +56,27 @@ Maybe<String> IntegerType::to_prerun_generic_string(ir::PrerunValue* val) const 
 	           ->getValue()
 	           .getBoolValue()) {
 		len         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-            llvm::ConstantExpr::getAdd(len, llvm::ConstantInt::get(len->getType(), 1u, false)),
-            irCtx->dataLayout.value()));
+            llvm::ConstantExpr::getAdd(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout));
 		auto* radix = llvm::ConstantInt::get(temp->getType(), 10u, true);
 		temp        = llvm::ConstantFoldBinaryOpOperands(
             llvm::Instruction::BinaryOps::SDiv,
-            llvm::ConstantExpr::getSub(temp,
-		                                      llvm::ConstantFoldBinaryOpOperands(llvm::Instruction::BinaryOps::SRem, temp,
-		                                                                         radix, irCtx->dataLayout.value())),
-            radix, irCtx->dataLayout.value());
+            llvm::ConstantExpr::getSub(temp, llvm::ConstantFoldBinaryOpOperands(llvm::Instruction::BinaryOps::SRem,
+		                                                                               temp, radix, irCtx->dataLayout)),
+            radix, irCtx->dataLayout);
 	}
 	Vec<llvm::ConstantInt*> resultDigits(*len->getValue().getRawData(), nullptr);
 	do {
-		digit                                       = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
-            llvm::Instruction::BinaryOps::SRem, value, llvm::ConstantInt::get(value->getType(), 10u, true),
-            irCtx->dataLayout.value()));
+		digit = llvm::cast<llvm::ConstantInt>(
+		    llvm::ConstantFoldBinaryOpOperands(llvm::Instruction::BinaryOps::SRem, value,
+		                                       llvm::ConstantInt::get(value->getType(), 10u, true), irCtx->dataLayout));
 		len                                         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-            llvm::ConstantExpr::getSub(len, llvm::ConstantInt::get(len->getType(), 1u, false)),
-            irCtx->dataLayout.value()));
+            llvm::ConstantExpr::getSub(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout));
 		resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-		    llvm::ConstantFoldIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout.value()),
-		    irCtx->dataLayout.value()));
+		    llvm::ConstantFoldIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout),
+		    irCtx->dataLayout));
 		value                                       = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
             llvm::Instruction::BinaryOps::SDiv, llvm::ConstantExpr::getSub(value, digit),
-            llvm::ConstantInt::get(value->getType(), 10u, true), irCtx->dataLayout.value()));
+            llvm::ConstantInt::get(value->getType(), 10u, true), irCtx->dataLayout));
 	} while (llvm::cast<llvm::ConstantInt>(
 	             llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, len,
 	                                                  llvm::ConstantInt::get(len->getType(), 0u, false)))

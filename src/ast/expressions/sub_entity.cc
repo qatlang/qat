@@ -1,13 +1,12 @@
 #include "./sub_entity.hpp"
 #include "../sub_entity_solver.hpp"
-#include "../types/qat_type.hpp"
 
 namespace qat::ast {
 
 void SubEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
                                     EmitCtx* ctx) {
-	if (parentType != nullptr) {
-		UPDATE_DEPS(parentType);
+	if (parentType) {
+		parentType.update_dependencies(phase, dep, ent, ctx);
 	}
 }
 
@@ -30,9 +29,10 @@ ir::Value* SubEntity::emit(EmitCtx* ctx) {
 		subRes = sub_entity_solver(
 		    ctx, false, SubEntityParent::of_done_skill(ctx->get_member_parent()->as_done_skill(), doneSkill.value()),
 		    names, fileRange);
-	} else if (parentType != nullptr) {
-		auto irTy = parentType->emit(ctx);
-		subRes = sub_entity_solver(ctx, false, SubEntityParent::of_type(irTy, parentType->fileRange), names, fileRange);
+	} else if (parentType) {
+		auto irTy = parentType.emit(ctx);
+		subRes =
+		    sub_entity_solver(ctx, false, SubEntityParent::of_type(irTy, parentType.get_range()), names, fileRange);
 	}
 	if (subRes.isType) {
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, (ir::Type*)subRes.data, ctx->mod)->id,
@@ -52,8 +52,8 @@ Json SubEntity::to_json() const {
 	    ._("hasSkill", skill.has_value())
 	    ._("skillRange", skill.has_value() ? skill.value() : JsonValue())
 	    ._("names", namesJSON)
-	    ._("hasParentType", parentType != nullptr)
-	    ._("parentType", parentType ? parentType->to_json() : JsonValue())
+	    ._("hasParentType", (bool)parentType)
+	    ._("parentType", (JsonValue)parentType)
 	    ._("fileRange", fileRange);
 }
 

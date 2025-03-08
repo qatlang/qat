@@ -20,7 +20,7 @@ void ErrorExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependT
 }
 
 ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
-	if (!ctx->has_fn()) {
+	if (not ctx->has_fn()) {
 		ctx->Error("Expected this expression to be inside a function", fileRange);
 	}
 	FnAtEnd endFn      = FnAtEnd([&]() { createIn = nullptr; });
@@ -29,7 +29,7 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	if (isPacked.has_value()) {
 		if (isPacked.value().second) {
 			auto packExp = isPacked.value().second->emit(ctx);
-			if (!packExp->get_ir_type()->is_bool()) {
+			if (not packExp->get_ir_type()->is_bool()) {
 				ctx->Error("The condition for packing the " + ctx->color("result") + " datatype is expected to be of " +
 				               ctx->color("bool") + " type. Got an expression of type " +
 				               ctx->color(packExp->get_ir_type()->to_string()),
@@ -50,16 +50,16 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	if (usableType) {
 		if (usableType->is_result()) {
 			auto* resTy = usableType->as_result();
-			if (isPacked.has_value() && (resTy->isTypePacked() != packValue)) {
+			if (isPacked.has_value() && (resTy->is_packed() != packValue)) {
 				ctx->Error(
-				    ctx->color(resTy->to_string()) + (resTy->isTypePacked() ? " is" : " is not") +
+				    ctx->color(resTy->to_string()) + (resTy->is_packed() ? " is" : " is not") +
 				        " a packed datatype, which does not match with the provided condition, which evaluates to " +
 				        ctx->color(packValue ? "true" : "false"),
 				    isPacked.value().first);
 			}
-			auto* errTy = resTy->getErrorType();
-			if (!errorValue) {
-				if (!errTy->is_void()) {
+			auto* errTy = resTy->get_error_type();
+			if (not errorValue) {
+				if (not errTy->is_void()) {
 					ctx->Error("The inferred " + ctx->color("result") + " type for this expression is " +
 					               ctx->color(resTy->to_string()) +
 					               ", so expected an expression that is compatible with the error type " +
@@ -73,11 +73,10 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 			if (isLocalDecl()) {
 				newAlloc = localValue->get_llvm();
 			} else if (canCreateIn()) {
-				if (createIn->is_reference() || createIn->is_ghost_reference()) {
-					auto expTy = createIn->is_ghost_reference()
-					                 ? createIn->get_ir_type()
-					                 : createIn->get_ir_type()->as_reference()->get_subtype();
-					if (!expTy->is_same(usableType)) {
+				if (createIn->is_ref() || createIn->is_ghost_ref()) {
+					auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+					                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+					if (not expTy->is_same(usableType)) {
 						ctx->Error(
 						    "Tried to optimise the " + ctx->color("error") +
 						        " expression by creating in-place, but the inferred type is " +
@@ -96,12 +95,12 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 			} else if (irName.has_value()) {
 				newAlloc = ctx->get_fn()
 				               ->get_block()
-				               ->new_value(irName.value().value, resTy, isVar, irName.value().range)
+				               ->new_local(irName.value().value, resTy, isVar, irName.value().range)
 				               ->get_llvm();
 			} else {
 				newAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, resTy->get_llvm_type());
 			}
-			const auto shouldCreateIn = !errTy->is_void() && errorValue && errorValue->isInPlaceCreatable();
+			const auto shouldCreateIn = not errTy->is_void() && errorValue && errorValue->isInPlaceCreatable();
 			if (shouldCreateIn) {
 				// TODO - Check if the reference type below can have variation. It should be in almost all cases,
 				// since the reference is supposed to facilitate in-place creation
@@ -109,11 +108,11 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 				    ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
 				                       ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
 				                       errTy->get_llvm_type()->getPointerTo(0u)),
-				                   ir::ReferenceType::get(true, errTy, ctx->irCtx), false));
+				                   ir::RefType::get(true, errTy, ctx->irCtx), false));
 			}
 			auto* errVal = errorValue ? errorValue->emit(ctx) : nullptr;
 			if (errTy->is_void()) {
-				if (errVal && !errVal->get_ir_type()->is_void()) {
+				if (errVal && not errVal->get_ir_type()->is_void()) {
 					ctx->Error("Type of this expression is " + ctx->color(errVal->get_ir_type()->to_string()) +
 					               " which does not match with the error type of " + ctx->color(resTy->to_string()) +
 					               ", which is " + ctx->color(errTy->to_string()),

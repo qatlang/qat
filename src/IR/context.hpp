@@ -6,9 +6,10 @@
 #include "../utils/file_range.hpp"
 #include "./qat_module.hpp"
 #include "function.hpp"
-#include "clang/Basic/TargetInfo.h"
 
 #include <chrono>
+#include <clang/Basic/Diagnostic.h>
+#include <clang/Basic/TargetInfo.h>
 #include <llvm/IR/ConstantFolder.h>
 #include <llvm/IR/DataLayout.h>
 #include <llvm/IR/IRBuilder.h>
@@ -126,11 +127,12 @@ class Ctx {
 		return instance;
 	}
 
-	llvm::LLVMContext       llctx;
-	clang::TargetInfo*      clangTargetInfo;
-	Maybe<llvm::DataLayout> dataLayout;
-	IRBuilderTy             builder;
-	Vec<fs::path>           executablePaths;
+	llvm::LLVMContext        llctx;
+	clang::DiagnosticsEngine diagnosticsEngine;
+	clang::TargetInfo*       clangTargetInfo;
+	llvm::DataLayout         dataLayout;
+	IRBuilderTy              builder;
+	Vec<fs::path>            executablePaths;
 
 	// META
 	bool                             hasMain;
@@ -145,10 +147,12 @@ class Ctx {
 	mutable Maybe<u64>               qatCompileTimeInMs;
 	mutable Maybe<u64>               clangAndLinkTimeInMs;
 
-	useit bool                 has_active_generic() const { return !allActiveGenerics.empty(); }
+	useit bool has_active_generic() const { return not allActiveGenerics.empty(); }
+
 	useit GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
-	useit bool                 has_generic_parameter_in_entity(String const& name) const;
-	useit GenericArgument*     get_generic_parameter_from_entity(String const& name) const;
+
+	useit bool             has_generic_parameter_in_entity(String const& name) const;
+	useit GenericArgument* get_generic_parameter_from_entity(String const& name) const;
 
 	void add_active_generic(GenericEntityMarker marker, bool main) {
 		if (main) {
@@ -158,7 +162,7 @@ class Ctx {
 	}
 
 	void remove_active_generic() {
-		if ((!lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
+		if ((not lastMainActiveGeneric.empty()) && (allActiveGenerics.size() - 1 == lastMainActiveGeneric.back())) {
 			lastMainActiveGeneric.pop_back();
 		}
 		allActiveGenerics.pop_back();
@@ -176,18 +180,15 @@ class Ctx {
 	}
 
 	useit clang::LangAS get_language_address_space() const {
-		if (dataLayout) {
-			return clang::getLangASFromTargetAS(dataLayout->getProgramAddressSpace());
-		} else {
-			return clang::LangAS::Default;
-		}
+		return clang::getLangASFromTargetAS(dataLayout.getProgramAddressSpace());
 	}
 
 	useit String get_global_string_name() const {
-		auto res = "qat'str'" + std::to_string(stringCount);
+		auto res = "qat'text'" + std::to_string(stringCount);
 		stringCount++;
 		return res;
 	}
+
 	useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
 
 	void add_exe_path(fs::path path);
@@ -209,6 +210,7 @@ class Ctx {
 		return (cfg->is_no_color_mode() ? "`" : String(colors::bold) + cli::get_color(cli::Color::yellow)) + message +
 		       (cfg->is_no_color_mode() ? "`" : String(colors::reset) + cli::get_color(cli::Color::white));
 	}
+
 	static String highlightWarning(const String& message);
 	~Ctx() = default;
 };

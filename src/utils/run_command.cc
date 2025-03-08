@@ -39,7 +39,7 @@ Pair<int, String> run_command_get_stderr(String command, Vec<String> args) {
 	boost::process::child    childProcess(command, args, boost::process::std_err > errorStream);
 	childProcess.wait();
 	String errorOutput;
-	for (String line; !std::getline(errorStream, line).eof();) {
+	for (String line; not std::getline(errorStream, line).eof();) {
 		errorOutput += line + "\n";
 	}
 	return Pair<int, String>(childProcess.exit_code(), errorOutput);

@@ -16,7 +16,10 @@ int main(int count, const char** args) {
 	auto* sitter = QatSitter::get();
 	sitter->initialise();
 	delete sitter;
+	SHOW("Destroyed sitter")
 	delete cli;
+	SHOW("Destroyed cli")
 	QatRegion::destroyAllBlocks();
+	SHOW("Destroyed region blocks")
 	return 0;
 }

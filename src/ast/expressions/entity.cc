@@ -204,7 +204,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 	if (mod->has_function(entityName.value, reqInfo) || mod->has_brought_function(entityName.value, reqInfo) ||
 	    mod->has_function_in_imports(entityName.value, reqInfo).first) {
 		auto* fun = mod->get_function(entityName.value, reqInfo);
-		if (!fun->is_accessible(reqInfo)) {
+		if (not fun->is_accessible(reqInfo)) {
 			ctx->Error("Function " + ctx->color(fun->get_full_name()) + " is not accessible here", fileRange);
 		}
 		fun->add_mention(entityName.range);

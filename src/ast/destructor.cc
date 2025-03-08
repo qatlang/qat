@@ -39,12 +39,12 @@ ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
 	auto  argIRTypes  = memberFn->get_ir_type()->as_function()->get_argument_types();
-	auto* parentRefTy = argIRTypes.at(0)->get_type()->as_reference();
-	auto* self        = block->new_value("''", parentRefTy, true, state.parent->get_type_range());
+	auto* parentRefTy = argIRTypes.at(0)->get_type()->as_ref();
+	auto* self        = block->new_local("''", parentRefTy, true, state.parent->get_type_range());
 	SHOW("Storing self")
 	irCtx->builder.CreateStore(memberFn->get_llvm_function()->getArg(0u), self->get_llvm());
 	SHOW("Loading self")
-	self->load_ghost_reference(irCtx->builder);
+	self->load_ghost_ref(irCtx->builder);
 	SHOW("Emitting sentences")
 	emit_sentences(
 	    sentences,

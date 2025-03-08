@@ -14,7 +14,6 @@ namespace qat::ir {
 enum class ArgumentKind : u8 { NORMAL, MEMBER, VARIADIC };
 
 class ArgumentType {
-  private:
 	Maybe<String> name;
 	Type*         type;
 	bool          variability;
@@ -94,13 +93,14 @@ class ArgumentType {
 };
 
 class ReturnType {
-  private:
 	Type* retTy;
 	bool  isReturnSelfRef;
 
   public:
 	ReturnType(Type* _retTy, bool _isReturnSelfRef);
+
 	useit static ReturnType* get(Type* _retTy) { return std::construct_at(OwnNormal(ReturnType), _retTy, false); }
+
 	useit static ReturnType* get(Type* _retTy, bool _isRetSelf) {
 		return std::construct_at(OwnNormal(ReturnType), _retTy, _isRetSelf);
 	}
@@ -134,7 +134,7 @@ class FunctionType final : public Type {
 
 	useit bool is_variadic() const { return isVariadicArgs; }
 
-	useit TypeKind type_kind() const final { return TypeKind::function; }
+	useit TypeKind type_kind() const final { return TypeKind::FUNCTION; }
 
 	useit String to_string() const final;
 };

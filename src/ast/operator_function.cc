@@ -64,7 +64,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		}
 	}
 	if (is_unary_operator(opr)) {
-		if (!arguments.empty()) {
+		if (not arguments.empty()) {
 			irCtx->Error("Unary operators should have no arguments. Invalid definition "
 			             "of unary operator " +
 			                 irCtx->color(operator_to_string(opr)),
@@ -141,7 +141,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	bool isSelfReturn = false;
 	if (returnType->type_kind() == AstTypeKind::SELF_TYPE) {
 		auto* selfRet = ((SelfType*)returnType);
-		if (!selfRet->isJustType) {
+		if (not selfRet->isJustType) {
 			selfRet->isVarRef          = isVariationFn;
 			selfRet->canBeSelfInstance = true;
 			isSelfReturn               = true;
@@ -151,7 +151,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("Operator " + operator_to_string(opr) + " isVar: " << isVariationFn << " return type is "
 	                                                        << retTy->to_string())
 	state.result = ir::Method::CreateOperator(
-	    state.parent, nameRange, !is_unary_operator(opr), isVariationFn, operator_to_string(opr),
+	    state.parent, nameRange, not is_unary_operator(opr), isVariationFn, operator_to_string(opr),
 	    state.metaInfo.has_value() && state.metaInfo->get_inline(), ir::ReturnType::get(retTy, isSelfReturn), args,
 	    fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
 	SHOW("Created IR operator")
@@ -189,21 +189,21 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
 	auto  argIRTypes = fnEmit->get_ir_type()->as_function()->get_argument_types();
-	auto* coreRefTy  = argIRTypes.at(0)->get_type()->as_reference();
-	auto* self       = block->new_value("''", coreRefTy, prototype->isVariationFn,
+	auto* coreRefTy  = argIRTypes.at(0)->get_type()->as_ref();
+	auto* self       = block->new_local("''", coreRefTy, prototype->isVariationFn,
 	                                    coreRefTy->get_subtype()->as_struct()->get_name().range);
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
-	self->load_ghost_reference(irCtx->builder);
+	self->load_ghost_ref(irCtx->builder);
 	if ((prototype->opr == Op::copyAssignment) || (prototype->opr == Op::moveAssignment)) {
-		auto* argVal = block->new_value(
-		    prototype->argName->value,
-		    ir::ReferenceType::get(prototype->opr == Op::moveAssignment, coreRefTy->get_subtype(), irCtx), false,
-		    prototype->argName->range);
+		auto* argVal =
+		    block->new_local(prototype->argName->value,
+		                     ir::RefType::get(prototype->opr == Op::moveAssignment, coreRefTy->get_subtype(), irCtx),
+		                     false, prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1u), argVal->get_llvm());
 	} else {
 		for (usize i = 1; i < argIRTypes.size(); i++) {
 			SHOW("Argument type is " << argIRTypes.at(i)->get_type()->to_string())
-			auto* argVal = block->new_value(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(), true,
+			auto* argVal = block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(), true,
 			                                prototype->arguments.at(i - 1)->get_name().range);
 			SHOW("Created local value for the argument")
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);

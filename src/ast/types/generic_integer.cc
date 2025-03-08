@@ -29,8 +29,7 @@ ir::Type* GenericIntegerType::emit(EmitCtx* ctx) {
 		bitValue->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32, ctx->irCtx));
 	}
 	auto bitsExp = bitValue->emit(ctx);
-	if (!bitsExp->get_ir_type()->is_unsigned_integer() ||
-	    !bitsExp->get_ir_type()->as_unsigned_integer()->is_bitWidth(32)) {
+	if (not bitsExp->get_ir_type()->is_unsigned() || not bitsExp->get_ir_type()->as_unsigned()->is_bitwidth(32)) {
 		ctx->Error("This expression is expected to be of " + ctx->color("u32") + " type", bitValue->fileRange);
 	}
 	auto typeBits = *llvm::cast<llvm::ConstantInt>(bitsExp->get_llvm())->getValue().getRawData();

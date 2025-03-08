@@ -40,26 +40,26 @@ void DefineMixType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	opaquedType = ir::OpaqueType::get(
-	    name, {}, None, ir::OpaqueSubtypeKind::mix, mod,
-	    foundSizeForAssociation ? Maybe<usize>(irCtx->dataLayout->getTypeAllocSizeInBits(
-	                                  llvm::StructType::get(irCtx->llctx,
-	                                                        {llvm::Type::getIntNTy(irCtx->llctx, tagBitwidth),
-	                                                         llvm::Type::getIntNTy(irCtx->llctx, maxSubtypeSize)},
-	                                                        isPacked)))
-	                            : None,
-	    EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, None);
+	opaquedType = ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::mix, mod,
+	                                  foundSizeForAssociation
+	                                      ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(llvm::StructType::get(
+	                                            irCtx->llctx,
+	                                            {llvm::Type::getIntNTy(irCtx->llctx, tagBitwidth),
+	                                             llvm::Type::getIntNTy(irCtx->llctx, maxSubtypeSize)},
+	                                            isPacked)))
+	                                      : None,
+	                                  EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, None);
 }
 
 void DefineMixType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, mod);
-	if (checkResult.has_value() && !checkResult.value()) {
+	if (checkResult.has_value() && not checkResult.value()) {
 		return;
 	} else if (defineChecker) {
 		auto checkRes = defineChecker->emit(ctx);
 		if (checkRes->get_ir_type()->is_bool()) {
 			checkResult = llvm::cast<llvm::ConstantInt>(checkRes->get_llvm_constant())->getValue().getBoolValue();
-			if (!checkResult.value()) {
+			if (not checkResult.value()) {
 				return;
 			}
 		} else {
@@ -85,7 +85,7 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 				             fRanges.at(j));
 			}
 		}
-		if (!hasAssociatedType && subtypes.at(i).second.has_value()) {
+		if (not hasAssociatedType && subtypes.at(i).second.has_value()) {
 			hasAssociatedType = true;
 		}
 		if (defaultVal.has_value()) {
@@ -102,7 +102,8 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 			emitCtx->with_opaque_parent(opaquedType);
 		}
 		auto subTypeTy = subtypes.at(i).second.has_value() ? subtypes.at(i).second.value()->emit(emitCtx) : nullptr;
-		if (subtypes.at(i).second.has_value() && subTypeTy->is_opaque() && !subTypeTy->as_opaque()->is_type_sized()) {
+		if (subtypes.at(i).second.has_value() && subTypeTy->is_opaque() &&
+		    not subTypeTy->as_opaque()->is_type_sized()) {
 			if (opaquedType && subTypeTy->as_opaque()->is_same(opaquedType)) {
 				irCtx->Error(
 				    "Type nesting found. The variant " + irCtx->color(subtypes.at(i).first.value) + " of mix type " +
@@ -119,7 +120,7 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 		subTypesIR.push_back(Pair<Identifier, Maybe<ir::Type*>>(
 		    subtypes.at(i).first, subtypes.at(i).second.has_value() ? Maybe<ir::Type*>(subTypeTy) : None));
 	}
-	if (!hasAssociatedType) {
+	if (not hasAssociatedType) {
 		irCtx->Error("No types associated to any of the subfields of the mix type. "
 		             "Please change this type to a choice type",
 		             fileRange);

@@ -18,10 +18,10 @@ UnsignedType::UnsignedType(u64 _bitWidth, ir::Ctx* _ctx, bool _isBool)
 
 UnsignedType* UnsignedType::create(u64 bits, ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
-		if (typ->is_unsigned_integer()) {
-			auto candidate = typ->as_unsigned_integer();
-			if (candidate->is_bitWidth(bits) && !candidate->isTypeBool) {
-				return typ->as_unsigned_integer();
+		if (typ->is_unsigned()) {
+			auto candidate = typ->as_unsigned();
+			if (candidate->is_bitwidth(bits) && not candidate->isTypeBool) {
+				return typ->as_unsigned();
 			}
 		}
 	}
@@ -30,9 +30,9 @@ UnsignedType* UnsignedType::create(u64 bits, ir::Ctx* irCtx) {
 
 UnsignedType* UnsignedType::create_bool(ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
-		if (typ->is_unsigned_integer()) {
-			if (typ->as_unsigned_integer()->isTypeBool) {
-				return typ->as_unsigned_integer();
+		if (typ->is_unsigned()) {
+			if (typ->as_unsigned()->isTypeBool) {
+				return typ->as_unsigned();
 			}
 		}
 	}
@@ -54,29 +54,26 @@ Maybe<String> UnsignedType::to_prerun_generic_string(ir::PrerunValue* val) const
 	           ->getValue()
 	           .getBoolValue()) {
 		len         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-            llvm::ConstantExpr::getAdd(len, llvm::ConstantInt::get(len->getType(), 1u, false)),
-            irCtx->dataLayout.value()));
+            llvm::ConstantExpr::getAdd(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout));
 		auto* radix = llvm::ConstantInt::get(temp->getType(), 10u, false);
 		temp        = llvm::ConstantFoldBinaryOpOperands(
             llvm::Instruction::BinaryOps::UDiv,
-            llvm::ConstantExpr::getSub(temp,
-		                                      llvm::ConstantFoldBinaryOpOperands(llvm::Instruction::BinaryOps::URem, temp,
-		                                                                         radix, irCtx->dataLayout.value())),
-            radix, irCtx->dataLayout.value());
+            llvm::ConstantExpr::getSub(temp, llvm::ConstantFoldBinaryOpOperands(llvm::Instruction::BinaryOps::URem,
+		                                                                               temp, radix, irCtx->dataLayout)),
+            radix, irCtx->dataLayout);
 	}
 	Vec<llvm::ConstantInt*> resultDigits(*len->getValue().getRawData(), nullptr);
 	do {
 		digit                                       = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
             llvm::Instruction::BinaryOps::URem, value, llvm::ConstantInt::get(value->getType(), 10u, false),
-            irCtx->dataLayout.value()));
+            irCtx->dataLayout));
 		len                                         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-            llvm::ConstantExpr::getSub(len, llvm::ConstantInt::get(len->getType(), 1u, false)),
-            irCtx->dataLayout.value()));
-		resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldIntegerCast(
-		    digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout.value()));
-		value                                       = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
-            llvm::Instruction::BinaryOps::UDiv, llvm::ConstantExpr::getSub(value, digit),
-            llvm::ConstantInt::get(value->getType(), 10u, false), irCtx->dataLayout.value()));
+            llvm::ConstantExpr::getSub(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout));
+		resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(
+		    llvm::ConstantFoldIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout));
+		value = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
+		    llvm::Instruction::BinaryOps::UDiv, llvm::ConstantExpr::getSub(value, digit),
+		    llvm::ConstantInt::get(value->getType(), 10u, false), irCtx->dataLayout));
 	} while (llvm::cast<llvm::ConstantInt>(
 	             llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, len,
 	                                                  llvm::ConstantInt::get(len->getType(), 0u, false)))
@@ -95,7 +92,7 @@ Maybe<bool> UnsignedType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir
 		           llvm::ConstantFoldConstant(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ,
 		                                                                           first->get_llvm_constant(),
 		                                                                           second->get_llvm_constant()),
-		                                      irCtx->dataLayout.value()))
+		                                      irCtx->dataLayout))
 		    ->getValue()
 		    .getBoolValue();
 	} else {

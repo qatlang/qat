@@ -121,7 +121,7 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 					               ctx->color(type->to_string()),
 					           name.range);
 				}
-			} else if (type->is_unsigned_integer()) {
+			} else if (type->is_unsigned()) {
 				if (not isLast()) {
 					ctx->Error("Found an expression before this. Expressions do not have children entities",
 					           rangeAfter());
@@ -129,7 +129,7 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 				if (name.value == "max") {
 					return SubEntityResult::get_expression(ir::PrerunValue::get(
 					    llvm::ConstantInt::get(type->get_llvm_type(),
-					                           llvm::APInt::getMaxValue(type->as_unsigned_integer()->get_bitwidth())),
+					                           llvm::APInt::getMaxValue(type->as_unsigned()->get_bitwidth())),
 					    type));
 				} else if (name.value == "min") {
 					return SubEntityResult::get_expression(
@@ -231,16 +231,16 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 			} else if (type->is_result()) {
 				if (name.value == "valid_type") {
 					if (isLast()) {
-						return SubEntityResult::get_type(type->as_result()->getValidType());
+						return SubEntityResult::get_type(type->as_result()->get_valid_type());
 					} else {
-						current = SubEntityParent::of_type(type->as_result()->getValidType(), name.range);
+						current = SubEntityParent::of_type(type->as_result()->get_valid_type(), name.range);
 						continue;
 					}
 				} else if (name.value == "error_type") {
 					if (isLast()) {
-						return SubEntityResult::get_type(type->as_result()->getErrorType());
+						return SubEntityResult::get_type(type->as_result()->get_error_type());
 					} else {
-						current = SubEntityParent::of_type(type->as_result()->getErrorType(), name.range);
+						current = SubEntityParent::of_type(type->as_result()->get_error_type(), name.range);
 						continue;
 					}
 				} else {

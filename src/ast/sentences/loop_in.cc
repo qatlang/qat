@@ -51,19 +51,19 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		                     {"The local value was found here", block->get_value(indexName->value)->get_file_range()})
 		               : None);
 	}
-	auto       candExp    = candidate->emit(ctx);
-	bool       isRefUnder = candExp->get_ir_type()->is_reference() || candExp->is_local_value();
-	bool       candHasVar = false;
-	auto       candType = candExp->get_ir_type()->is_reference() ? candExp->get_ir_type()->as_reference()->get_subtype()
-	                                                             : candExp->get_ir_type();
+	auto candExp    = candidate->emit(ctx);
+	bool isRefUnder = candExp->get_ir_type()->is_ref() || candExp->is_local_value();
+	bool candHasVar = false;
+	auto candType =
+	    candExp->get_ir_type()->is_ref() ? candExp->get_ir_type()->as_ref()->get_subtype() : candExp->get_ir_type();
 	auto const isTyArray    = candType->is_array();
 	auto const isTySlice    = candType->is_mark() && candType->as_mark()->is_slice();
 	auto const isTyCString  = candType->is_native_type() && candType->as_native_type()->is_cstring();
-	auto const isTyStrSlice = candType->is_string_slice();
+	auto const isTyStrSlice = candType->is_text();
 	auto const isTyVec      = candType->is_vector();
-	if (candExp->get_ir_type()->is_reference()) {
-		candExp->load_ghost_reference(ctx->irCtx->builder);
-	} else if (candExp->is_ghost_reference()) {
+	if (candExp->get_ir_type()->is_ref()) {
+		candExp->load_ghost_ref(ctx->irCtx->builder);
+	} else if (candExp->is_ghost_ref()) {
 		isRefUnder = true;
 	}
 	if (isTyArray || isTySlice || isTyCString || isTyStrSlice || isTyVec) {
@@ -84,7 +84,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 			elemTy = candType->as_mark()->get_subtype();
 			if (isRefUnder) {
 				ptrVal = ctx->irCtx->builder.CreateLoad(
-				    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace()),
+				    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()),
 				    ctx->irCtx->builder.CreateStructGEP(candType->get_llvm_type(), candExp->get_llvm(), 0u));
 				lenVal = ctx->irCtx->builder.CreateLoad(
 				    countTy->get_llvm_type(),
@@ -105,7 +105,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 			elemTy = ir::UnsignedType::create(8, ctx->irCtx);
 			if (isRefUnder) {
 				ptrVal = ctx->irCtx->builder.CreateLoad(
-				    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout->getProgramAddressSpace()),
+				    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()),
 				    ctx->irCtx->builder.CreateStructGEP(candType->get_llvm_type(), candExp->get_llvm(), 0u));
 				lenVal = ctx->irCtx->builder.CreateLoad(
 				    countTy->get_llvm_type(),
@@ -146,13 +146,13 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		mainBlock->set_active(ctx->irCtx->builder);
 		auto zeroU8    = llvm::ConstantInt::get(llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx), 0u, false);
 		auto zero64    = llvm::ConstantInt::get(llvm::IntegerType::getInt64Ty(ctx->irCtx->llctx), 0u);
-		auto indexVar  = mainBlock->new_value(indexName.has_value() ? indexName->value : utils::uid_string(), countTy,
+		auto indexVar  = mainBlock->new_local(indexName.has_value() ? indexName->value : utils::uid_string(), countTy,
 		                                     false, indexName.has_value() ? indexName->range : fileRange);
 		auto elemUseTy = elemTy;
 		if (not isTyVec) {
-			elemUseTy = ir::ReferenceType::get(candHasVar, elemTy, ctx->irCtx);
+			elemUseTy = ir::RefType::get(candHasVar, elemTy, ctx->irCtx);
 		}
-		auto itemVar = mainBlock->new_value(itemName.value, elemUseTy, false, itemName.range);
+		auto itemVar = mainBlock->new_local(itemName.value, elemUseTy, false, itemName.range);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),
 		                                indexVar->get_llvm());
 		ctx->irCtx->builder.CreateCondBr(

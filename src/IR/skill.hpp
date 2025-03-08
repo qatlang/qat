@@ -181,15 +181,22 @@ class GenericSkill : public Uniq, public EntityOverview {
 	}
 
 	useit Identifier get_name() const { return name; }
-	useit String     get_full_name() const;
-	useit usize      get_type_count() const { return generics.size(); }
-	useit bool       all_types_have_defaults() const;
-	useit usize      get_variant_count() const { return variants.size(); }
-	useit Mod*       get_module() const { return parent; }
-	useit Skill*     fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+
+	useit String get_full_name() const;
+
+	useit usize get_type_count() const { return generics.size(); }
+
+	useit bool all_types_have_defaults() const;
+
+	useit usize get_variant_count() const { return variants.size(); }
+
+	useit Mod* get_module() const { return parent; }
+
+	useit Skill* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
 
 	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
-	useit VisibilityInfo const&     get_visibility() const { return visibInfo; }
+
+	useit VisibilityInfo const& get_visibility() const { return visibInfo; }
 
 	void update_overview() final;
 };
@@ -236,7 +243,8 @@ class DoneSkill : public Uniq {
 
 	useit DefinitionType* get_definition(String const& name) const;
 
-	useit bool is_generic() const { return !generics.empty(); }
+	useit bool is_generic() const { return not generics.empty(); }
+
 	useit bool has_generic_parameter(String const& name) {
 		for (auto gen : generics) {
 			if (gen->get_name().value == name) {
@@ -245,6 +253,7 @@ class DoneSkill : public Uniq {
 		}
 		return false;
 	}
+
 	useit GenericArgument* get_generic_parameter(String const& name) {
 		for (auto gen : generics) {
 			if (gen->get_name().value == name) {

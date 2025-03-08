@@ -9,19 +9,22 @@ class Expression;
 
 enum class TypeLikeKind { TYPE, PRERUN, EXPRESSION };
 
-struct TypeLike {
+class TypeLike {
 	TypeLikeKind kind;
 	void*        data;
 
-	useit static TypeLike from_type(Type* type) { return TypeLike{.kind = TypeLikeKind::TYPE, .data = (void*)type}; }
+	TypeLike(TypeLikeKind _kind, void* _data) : kind(_kind), data(_data) {}
+
+  public:
+	TypeLike() : kind(TypeLikeKind::TYPE), data(nullptr) {}
+
+	useit static TypeLike from_type(Type* type) { return TypeLike(TypeLikeKind::TYPE, (void*)type); }
 
 	useit static TypeLike from_prerun(PrerunExpression* preExp) {
-		return TypeLike{.kind = TypeLikeKind::PRERUN, .data = (void*)preExp};
+		return TypeLike(TypeLikeKind::PRERUN, (void*)preExp);
 	}
 
-	useit static TypeLike from_expression(Expression* exp) {
-		return TypeLike{.kind = TypeLikeKind::EXPRESSION, .data = (void*)exp};
-	}
+	useit static TypeLike from_expression(Expression* exp) { return TypeLike(TypeLikeKind::EXPRESSION, (void*)exp); }
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
 

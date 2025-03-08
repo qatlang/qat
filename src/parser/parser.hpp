@@ -2,6 +2,7 @@
 #define QAT_PARSER_PARSER_HPP
 
 #include "../ast/meta_info.hpp"
+#include "../ast/type_like.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
 #include "../utils/helpers.hpp"
@@ -161,7 +162,7 @@ class Parser {
 
 	useit Vec<ast::Type*> do_separated_types(ParserContext& prevCtx, usize from, usize upto);
 
-	useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& prevCtx, Maybe<ast::Type*> type, usize from,
+	useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& prevCtx, ast::TypeLike type, usize from,
 	                                                  usize upto);
 };
 

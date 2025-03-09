@@ -29,7 +29,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	if (metaInfo.has_value()) {
 		state.metaInfo = metaInfo.value().toIR(emitCtx);
 	}
-	if (opr == Op::copyAssignment) {
+	if (opr == OperatorKind::COPY_ASSIGNMENT) {
 		if (state.parent->is_done_skill() && state.parent->as_done_skill()->has_copy_assignment()) {
 			irCtx->Error("Copy assignment operator already exists in this implementation " +
 			                 irCtx->color(state.parent->as_done_skill()->to_string()),
@@ -43,7 +43,7 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		                                          state.metaInfo.has_value() && state.metaInfo->get_inline(),
 		                                          argName.value(), fileRange, irCtx);
 		return;
-	} else if (opr == Op::moveAssignment) {
+	} else if (opr == OperatorKind::MOVE_ASSIGNMENT) {
 		if (state.parent->is_expanded() && state.parent->as_expanded()->has_move_assignment()) {
 			irCtx->Error("Move assignment operator already exists for the parent type " +
 			                 irCtx->color(state.parent->as_expanded()->get_full_name()),
@@ -58,9 +58,9 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		                                          argName.value(), fileRange, irCtx);
 		return;
 	}
-	if (opr == Op::subtract) {
+	if (opr == OperatorKind::SUBTRACT) {
 		if (arguments.empty()) {
-			opr = Op::minus;
+			opr = OperatorKind::MINUS;
 		}
 	}
 	if (is_unary_operator(opr)) {
@@ -194,11 +194,11 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	                                    coreRefTy->get_subtype()->as_struct()->get_name().range);
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 	self->load_ghost_ref(irCtx->builder);
-	if ((prototype->opr == Op::copyAssignment) || (prototype->opr == Op::moveAssignment)) {
-		auto* argVal =
-		    block->new_local(prototype->argName->value,
-		                     ir::RefType::get(prototype->opr == Op::moveAssignment, coreRefTy->get_subtype(), irCtx),
-		                     false, prototype->argName->range);
+	if ((prototype->opr == OperatorKind::COPY_ASSIGNMENT) || (prototype->opr == OperatorKind::MOVE_ASSIGNMENT)) {
+		auto* argVal = block->new_local(
+		    prototype->argName->value,
+		    ir::RefType::get(prototype->opr == OperatorKind::MOVE_ASSIGNMENT, coreRefTy->get_subtype(), irCtx), false,
+		    prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1u), argVal->get_llvm());
 	} else {
 		for (usize i = 1; i < argIRTypes.size(); i++) {

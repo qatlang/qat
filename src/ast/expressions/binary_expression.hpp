@@ -9,9 +9,9 @@ namespace qat::ast {
 
 class BinaryExpression final : public Expression {
   private:
-	Op          op;
-	Expression* lhs;
-	Expression* rhs;
+	OperatorKind op;
+	Expression*  lhs;
+	Expression*  rhs;
 
   public:
 	BinaryExpression(Expression* _lhs, const String& _binaryOperator, Expression* _rhs, FileRange _fileRange)
@@ -29,7 +29,8 @@ class BinaryExpression final : public Expression {
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
 	useit Json       to_json() const override;
-	useit NodeType   nodeType() const override { return NodeType::BINARY_EXPRESSION; }
+
+	useit NodeType nodeType() const override { return NodeType::BINARY_EXPRESSION; }
 };
 
 } // namespace qat::ast

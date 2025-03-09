@@ -6,84 +6,84 @@
 
 namespace qat::ast {
 
-enum class Op {
-	add,
-	subtract,
-	multiply,
-	divide,
-	remainder,
-	bitwiseOr,
-	bitwiseAnd,
-	bitwiseXor,
-	bitwiseNot,
-	logicalLeftShift,
-	logicalRightShift,
-	arithmeticRightShift,
-	equalTo,
-	notEqualTo,
-	lessThan,
-	lessThanOrEqualTo,
-	greaterThan,
-	greaterThanEqualTo,
-	And,
-	Or,
-	Index,
-	minus,
-	Not,
-	copyAssignment,
-	moveAssignment,
-	dereference,
+enum class OperatorKind {
+	ADDITION,
+	SUBTRACT,
+	MULTIPLY,
+	DIVIDE,
+	REMAINDER,
+	BITWISE_OR,
+	BITWISE_AND,
+	BITWISE_XOR,
+	BITWISE_NOT,
+	LOGICAL_LEFT_SHIFT,
+	LOGICAL_RIGHT_SHIFT,
+	ARITHMETIC_RIGHT_SHIFT,
+	EQUAL_TO,
+	NOT_EQUAL_TO,
+	LESS_THAN,
+	LESS_THAN_OR_EQUAL_TO,
+	GREATER_THAN,
+	GREATER_THAN_OR_EQUAL_TO,
+	AND,
+	OR,
+	INDEX,
+	MINUS,
+	NOT,
+	COPY_ASSIGNMENT,
+	MOVE_ASSIGNMENT,
+	DEREFERENCE,
 };
 
-useit usize get_precedence_of(Op Operator);
+useit usize get_precedence_of(OperatorKind Operator);
 
-useit inline bool is_unary_operator(Op opr) {
+useit inline bool is_unary_operator(OperatorKind opr) {
 	switch (opr) {
-		case Op::minus:
-		case Op::bitwiseNot:
-		case Op::Not:
-		case Op::dereference:
+		case OperatorKind::MINUS:
+		case OperatorKind::BITWISE_NOT:
+		case OperatorKind::NOT:
+		case OperatorKind::DEREFERENCE:
 			return true;
 		default:
 			return false;
 	}
 }
 
-useit inline bool expect_same_operand_types(Op opr) {
+useit inline bool expect_same_operand_types(OperatorKind opr) {
 	switch (opr) {
-		case Op::add:
-		case Op::subtract:
-		case Op::multiply:
-		case Op::divide:
-		case Op::remainder:
-		case Op::bitwiseOr:
-		case Op::bitwiseAnd:
-		case Op::bitwiseXor:
-		case Op::equalTo:
-		case Op::notEqualTo:
-		case Op::lessThan:
-		case Op::lessThanOrEqualTo:
-		case Op::greaterThan:
-		case Op::greaterThanEqualTo:
+		case OperatorKind::ADDITION:
+		case OperatorKind::SUBTRACT:
+		case OperatorKind::MULTIPLY:
+		case OperatorKind::DIVIDE:
+		case OperatorKind::REMAINDER:
+		case OperatorKind::BITWISE_OR:
+		case OperatorKind::BITWISE_AND:
+		case OperatorKind::BITWISE_XOR:
+		case OperatorKind::EQUAL_TO:
+		case OperatorKind::NOT_EQUAL_TO:
+		case OperatorKind::LESS_THAN:
+		case OperatorKind::LESS_THAN_OR_EQUAL_TO:
+		case OperatorKind::GREATER_THAN:
+		case OperatorKind::GREATER_THAN_OR_EQUAL_TO:
 			return true;
-		case Op::And:
-		case Op::Or:
-		case Op::Index:
-		case Op::minus:
-		case Op::Not:
-		case Op::copyAssignment:
-		case Op::moveAssignment:
-		case Op::dereference:
-		case Op::logicalLeftShift:
-		case Op::logicalRightShift:
-		case Op::arithmeticRightShift:
+		case OperatorKind::AND:
+		case OperatorKind::OR:
+		case OperatorKind::INDEX:
+		case OperatorKind::MINUS:
+		case OperatorKind::NOT:
+		case OperatorKind::COPY_ASSIGNMENT:
+		case OperatorKind::MOVE_ASSIGNMENT:
+		case OperatorKind::DEREFERENCE:
+		case OperatorKind::LOGICAL_LEFT_SHIFT:
+		case OperatorKind::LOGICAL_RIGHT_SHIFT:
+		case OperatorKind::ARITHMETIC_RIGHT_SHIFT:
 			return false;
 	}
 }
 
-useit String operator_to_string(Op opr);
+useit String operator_to_string(OperatorKind opr);
 
-useit Op operator_from_string(const String& str);
+useit OperatorKind operator_from_string(const String& str);
 
 } // namespace qat::ast
 

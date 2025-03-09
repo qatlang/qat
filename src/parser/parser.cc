@@ -702,7 +702,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					auto opr    = ast::operator_from_string(ValueAt(i));
 					auto rhsRes = do_prerun_expression(preCtx, i, upto, true);
 					if (is_next(TokenType::binaryOperator, rhsRes.second) && not returnOnFirstExp) {
-						Deque<ast::Op>                operators{opr};
+						Deque<ast::OperatorKind>      operators{opr};
 						Deque<ast::PrerunExpression*> expressions{consumeCachedExp(), rhsRes.first};
 						i = rhsRes.second;
 						while (is_next(TokenType::binaryOperator, i)) {
@@ -725,7 +725,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						};
 						while (operators.size() > 0) {
 							auto index  = findLowestPrecedence();
-							auto newExp = ast::PrerunBinaryOp::create(
+							auto newExp = ast::PrerunBinaryOperator::create(
 							    expressions[index], operators[index], expressions[index + 1],
 							    {expressions[index]->fileRange, expressions[index + 1]->fileRange});
 							operators.erase(operators.begin() + index);
@@ -736,8 +736,8 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					} else {
 						auto lhs = consumeCachedExp();
 						i        = rhsRes.second;
-						setCachedPreExp(ast::PrerunBinaryOp::create(lhs, opr, rhsRes.first,
-						                                            {lhs->fileRange, rhsRes.first->fileRange}),
+						setCachedPreExp(ast::PrerunBinaryOperator::create(lhs, opr, rhsRes.first,
+						                                                  {lhs->fileRange, rhsRes.first->fileRange}),
 						                i);
 					}
 				} else {
@@ -3235,8 +3235,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 								auto opVisib = getVisibility();
 								memParent->set_copy_assignment(ast::OperatorDefinition::create(
 								    ast::OperatorPrototype::create(
-								        true, ast::Op::copyAssignment, RangeSpan(start, start + 1), {}, nullptr,
-								        getVisibSpec(opVisib), fromVisibRange(opVisib, RangeSpan(start, i)),
+								        true, ast::OperatorKind::COPY_ASSIGNMENT, RangeSpan(start, start + 1), {},
+								        nullptr, getVisibSpec(opVisib), fromVisibRange(opVisib, RangeSpan(start, i)),
 								        std::move(argName), entMeta.defineChecker, std::move(entMeta.metaInfo)),
 								    std::move(snts), RangeSpan(start, bClose)));
 								i = bClose;
@@ -3312,8 +3312,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 								auto opVisib = getVisibility();
 								memParent->set_move_assignment(ast::OperatorDefinition::create(
 								    ast::OperatorPrototype::create(
-								        true, ast::Op::moveAssignment, RangeSpan(start, start + 1), {}, nullptr,
-								        getVisibSpec(opVisib), fromVisibRange(opVisib, RangeSpan(start, i)),
+								        true, ast::OperatorKind::MOVE_ASSIGNMENT, RangeSpan(start, start + 1), {},
+								        nullptr, getVisibSpec(opVisib), fromVisibRange(opVisib, RangeSpan(start, i)),
 								        std::move(argName), entMeta.defineChecker, std::move(entMeta.metaInfo)),
 								    std::move(snts), RangeSpan(start, bClose)));
 								i = bClose;
@@ -3489,7 +3489,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				auto  memVisib  = getVisibility();
 				auto* prototype = ast::OperatorPrototype::create(
 				    getVariation(),
-				    isUnary ? (opr == "-" ? ast::Op::minus : ast::operator_from_string(opr))
+				    isUnary ? (opr == "-" ? ast::OperatorKind::MINUS : ast::operator_from_string(opr))
 				            : ast::operator_from_string(opr),
 				    RangeAt(start), args, returnTy, getVisibSpec(memVisib),
 				    fromVisibRange(memVisib, RangeSpan(start, i)), None, meta.defineChecker, std::move(meta.metaInfo));
@@ -4862,8 +4862,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					}
 					auto rhsRes = do_expression(preCtx, None, i, upto, None, true);
 					if (is_next(TokenType::binaryOperator, rhsRes.second) && not returnAtFirstExp) {
-						Deque<ast::Op>          operators{ast::operator_from_string(token.value)};
-						Deque<ast::Expression*> expressions{lhs, rhsRes.first};
+						Deque<ast::OperatorKind> operators{ast::operator_from_string(token.value)};
+						Deque<ast::Expression*>  expressions{lhs, rhsRes.first};
 						i = rhsRes.second;
 						while (is_next(TokenType::binaryOperator, i)) {
 							auto newOp  = ast::operator_from_string(ValueAt(i + 1));

@@ -98,19 +98,19 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 	}
 	if (lhsValueType->is_bool() && rhsValueType->is_bool()) {
 		referenceHandler();
-		if (op == Op::equalTo) {
+		if (op == OperatorKind::EQUAL_TO) {
 			return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal),
 			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 			    ->with_range(fileRange);
-		} else if (op == Op::notEqualTo) {
+		} else if (op == OperatorKind::NOT_EQUAL_TO) {
 			return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal),
 			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 			    ->with_range(fileRange);
-		} else if (op == Op::And) {
+		} else if (op == OperatorKind::AND) {
 			return ir::Value::get(ctx->irCtx->builder.CreateLogicalAnd(lhsVal, rhsVal),
 			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 			    ->with_range(fileRange);
-		} else if (op == Op::Or) {
+		} else if (op == OperatorKind::OR) {
 			return ir::Value::get(ctx->irCtx->builder.CreateLogicalOr(lhsVal, rhsVal),
 			                      ir::UnsignedType::create_bool(ctx->irCtx), false);
 		} else {
@@ -128,77 +128,77 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			ir::Type*    resType = lhsType;
 			// NOLINTNEXTLINE(clang-diagnostic-switch)
 			switch (op) {
-				case Op::add: {
+				case OperatorKind::ADDITION: {
 					llRes = ctx->irCtx->builder.CreateAdd(lhsVal, rhsVal);
 					break;
 				}
-				case Op::subtract: {
+				case OperatorKind::SUBTRACT: {
 					llRes = ctx->irCtx->builder.CreateSub(lhsVal, rhsVal);
 					break;
 				}
-				case Op::multiply: {
+				case OperatorKind::MULTIPLY: {
 					llRes = ctx->irCtx->builder.CreateMul(lhsVal, rhsVal);
 					break;
 				}
-				case Op::divide: {
+				case OperatorKind::DIVIDE: {
 					llRes = ctx->irCtx->builder.CreateSDiv(lhsVal, rhsVal);
 					break;
 				}
-				case Op::remainder: {
+				case OperatorKind::REMAINDER: {
 					llRes = ctx->irCtx->builder.CreateSRem(lhsVal, rhsVal);
 					break;
 				}
-				case Op::equalTo: {
+				case OperatorKind::EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::notEqualTo: {
+				case OperatorKind::NOT_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::lessThan: {
+				case OperatorKind::LESS_THAN: {
 					llRes   = ctx->irCtx->builder.CreateICmpSLT(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::greaterThan: {
+				case OperatorKind::GREATER_THAN: {
 					llRes   = ctx->irCtx->builder.CreateICmpSGT(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::lessThanOrEqualTo: {
+				case OperatorKind::LESS_THAN_OR_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpSLE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::greaterThanEqualTo: {
+				case OperatorKind::GREATER_THAN_OR_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpSGE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::bitwiseAnd: {
+				case OperatorKind::BITWISE_AND: {
 					llRes = ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal);
 					break;
 				}
-				case Op::bitwiseOr: {
+				case OperatorKind::BITWISE_OR: {
 					llRes = ctx->irCtx->builder.CreateOr(lhsVal, rhsVal);
 					break;
 				}
-				case Op::bitwiseXor: {
+				case OperatorKind::BITWISE_XOR: {
 					llRes = ctx->irCtx->builder.CreateXor(lhsVal, rhsVal);
 					break;
 				}
-				case Op::logicalLeftShift: {
+				case OperatorKind::LOGICAL_LEFT_SHIFT: {
 					llRes = ctx->irCtx->builder.CreateShl(lhsVal, rhsVal);
 					break;
 				}
-				case Op::logicalRightShift: {
+				case OperatorKind::LOGICAL_RIGHT_SHIFT: {
 					llRes = ctx->irCtx->builder.CreateLShr(lhsVal, rhsVal);
 					break;
 				}
-				case Op::arithmeticRightShift: {
+				case OperatorKind::ARITHMETIC_RIGHT_SHIFT: {
 					llRes = ctx->irCtx->builder.CreateAShr(lhsVal, rhsVal);
 					break;
 				}
@@ -246,77 +246,77 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			ir::Type*    resType = lhsType;
 			// NOLINTNEXTLINE(clang-diagnostic-switch)
 			switch (op) {
-				case Op::add: {
+				case OperatorKind::ADDITION: {
 					llRes = ctx->irCtx->builder.CreateAdd(lhsVal, rhsVal);
 					break;
 				}
-				case Op::subtract: {
+				case OperatorKind::SUBTRACT: {
 					llRes = ctx->irCtx->builder.CreateSub(lhsVal, rhsVal);
 					break;
 				}
-				case Op::multiply: {
+				case OperatorKind::MULTIPLY: {
 					llRes = ctx->irCtx->builder.CreateMul(lhsVal, rhsVal);
 					break;
 				}
-				case Op::divide: {
+				case OperatorKind::DIVIDE: {
 					llRes = ctx->irCtx->builder.CreateUDiv(lhsVal, rhsVal);
 					break;
 				}
-				case Op::remainder: {
+				case OperatorKind::REMAINDER: {
 					llRes = ctx->irCtx->builder.CreateURem(lhsVal, rhsVal);
 					break;
 				}
-				case Op::equalTo: {
+				case OperatorKind::EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::notEqualTo: {
+				case OperatorKind::NOT_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::lessThan: {
+				case OperatorKind::LESS_THAN: {
 					llRes   = ctx->irCtx->builder.CreateICmpULT(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::greaterThan: {
+				case OperatorKind::GREATER_THAN: {
 					llRes   = ctx->irCtx->builder.CreateICmpUGT(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::lessThanOrEqualTo: {
+				case OperatorKind::LESS_THAN_OR_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpULE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::greaterThanEqualTo: {
+				case OperatorKind::GREATER_THAN_OR_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateICmpUGE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::bitwiseAnd: {
+				case OperatorKind::BITWISE_AND: {
 					llRes = ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal);
 					break;
 				}
-				case Op::bitwiseOr: {
+				case OperatorKind::BITWISE_OR: {
 					llRes = ctx->irCtx->builder.CreateOr(lhsVal, rhsVal);
 					break;
 				}
-				case Op::bitwiseXor: {
+				case OperatorKind::BITWISE_XOR: {
 					llRes = ctx->irCtx->builder.CreateXor(lhsVal, rhsVal);
 					break;
 				}
-				case Op::logicalLeftShift: {
+				case OperatorKind::LOGICAL_LEFT_SHIFT: {
 					llRes = ctx->irCtx->builder.CreateShl(lhsVal, rhsVal);
 					break;
 				}
-				case Op::logicalRightShift: {
+				case OperatorKind::LOGICAL_RIGHT_SHIFT: {
 					llRes = ctx->irCtx->builder.CreateLShr(lhsVal, rhsVal);
 					break;
 				}
-				case Op::arithmeticRightShift: {
+				case OperatorKind::ARITHMETIC_RIGHT_SHIFT: {
 					llRes = ctx->irCtx->builder.CreateAShr(lhsVal, rhsVal);
 					break;
 				}
@@ -363,58 +363,58 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			ir::Type*    resType = lhsType;
 			// NOLINTNEXTLINE(clang-diagnostic-switch)
 			switch (op) {
-				case Op::add: {
+				case OperatorKind::ADDITION: {
 					llRes = ctx->irCtx->builder.CreateFAdd(lhsVal, rhsVal);
 					break;
 				}
-				case Op::subtract: {
+				case OperatorKind::SUBTRACT: {
 					llRes = ctx->irCtx->builder.CreateFSub(lhsVal, rhsVal);
 					break;
 				}
-				case Op::multiply: {
+				case OperatorKind::MULTIPLY: {
 					llRes = ctx->irCtx->builder.CreateFMul(lhsVal, rhsVal);
 					break;
 				}
-				case Op::divide: {
+				case OperatorKind::DIVIDE: {
 					llRes = ctx->irCtx->builder.CreateFDiv(lhsVal, rhsVal);
 					if (llvm::Triple(cli::Config::get()->get_target_triple()).isOSLinux()) {
 						ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
 					}
 					break;
 				}
-				case Op::remainder: {
+				case OperatorKind::REMAINDER: {
 					llRes = ctx->irCtx->builder.CreateFRem(lhsVal, rhsVal);
 					if (llvm::Triple(cli::Config::get()->get_target_triple()).isOSLinux()) {
 						ctx->mod->nativeLibsToLink.push_back(ir::LibToLink::fromName({"m", fileRange}, fileRange));
 					}
 					break;
 				}
-				case Op::equalTo: {
+				case OperatorKind::EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateFCmpOEQ(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::notEqualTo: {
+				case OperatorKind::NOT_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateFCmpONE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::lessThan: {
+				case OperatorKind::LESS_THAN: {
 					llRes   = ctx->irCtx->builder.CreateFCmpOLT(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::greaterThan: {
+				case OperatorKind::GREATER_THAN: {
 					llRes   = ctx->irCtx->builder.CreateFCmpOGT(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::lessThanOrEqualTo: {
+				case OperatorKind::LESS_THAN_OR_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateFCmpOLE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
 				}
-				case Op::greaterThanEqualTo: {
+				case OperatorKind::GREATER_THAN_OR_EQUAL_TO: {
 					llRes   = ctx->irCtx->builder.CreateFCmpOGE(lhsVal, rhsVal);
 					resType = ir::UnsignedType::create_bool(ctx->irCtx);
 					break;
@@ -553,7 +553,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			}
 			SHOW("LHS type is: " << lhsType->to_string() << " and RHS type is: " << rhsType->to_string())
 			auto ptrTy = lhsValueType->as_mark();
-			if (op == Op::equalTo) {
+			if (op == OperatorKind::EQUAL_TO) {
 				SHOW("Pointer is normal")
 				return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(
 				                          ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
@@ -561,7 +561,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				                          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
-			} else if (op == Op::notEqualTo) {
+			} else if (op == OperatorKind::NOT_EQUAL_TO) {
 				SHOW("Pointer is normal")
 				return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(
 				                          ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
@@ -584,15 +584,15 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 	} else if (lhsValueType->is_choice() && rhsValueType->is_same(lhsValueType)) {
 		referenceHandler();
 		auto chTy = lhsValueType->as_choice();
-		if (op == Op::equalTo) {
+		if (op == OperatorKind::EQUAL_TO) {
 			return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(lhsVal, rhsVal),
 			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 			    ->with_range(fileRange);
-		} else if (op == Op::notEqualTo) {
+		} else if (op == OperatorKind::NOT_EQUAL_TO) {
 			return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(lhsVal, rhsVal),
 			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 			    ->with_range(fileRange);
-		} else if (op == Op::lessThan) {
+		} else if (op == OperatorKind::LESS_THAN) {
 			if (chTy->has_negative_values()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateICmpSLT(lhsVal, rhsVal),
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
@@ -602,7 +602,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
 			}
-		} else if (op == Op::lessThanOrEqualTo) {
+		} else if (op == OperatorKind::LESS_THAN_OR_EQUAL_TO) {
 			if (chTy->has_negative_values()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateICmpSLE(lhsVal, rhsVal),
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
@@ -612,7 +612,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
 			}
-		} else if (op == Op::greaterThan) {
+		} else if (op == OperatorKind::GREATER_THAN) {
 			if (chTy->has_negative_values()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateICmpSGT(lhsVal, rhsVal),
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
@@ -622,7 +622,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
 			}
-		} else if (op == Op::greaterThanEqualTo) {
+		} else if (op == OperatorKind::GREATER_THAN_OR_EQUAL_TO) {
 			if (chTy->has_negative_values()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateICmpSGE(lhsVal, rhsVal),
 				                      ir::UnsignedType::create_bool(ctx->irCtx), false)

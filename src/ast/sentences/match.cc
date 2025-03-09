@@ -361,10 +361,10 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					if (irStr->is_prerun_value()) {
 						auto* irStrConst = irStr->get_llvm_constant();
 						SHOW("Comparing constant string in match block")
-						if (ir::Logic::compareConstantStrings(llvm::cast<llvm::Constant>(strBuff),
-						                                      llvm::cast<llvm::Constant>(strCount),
-						                                      irStrConst->getAggregateElement(0u),
-						                                      irStrConst->getAggregateElement(1u), ctx->irCtx->llctx)) {
+						if (ir::Logic::compare_prerun_text(llvm::cast<llvm::Constant>(strBuff),
+						                                   llvm::cast<llvm::Constant>(strCount),
+						                                   irStrConst->getAggregateElement(0u),
+						                                   irStrConst->getAggregateElement(1u), ctx->irCtx->llctx)) {
 							caseRes = true;
 							break;
 						}

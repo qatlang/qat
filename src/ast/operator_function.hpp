@@ -17,7 +17,7 @@ class OperatorPrototype {
 
   private:
 	bool                  isVariationFn;
-	Op                    opr;
+	OperatorKind          opr;
 	Vec<Argument*>        arguments;
 	Type*                 returnType;
 	Maybe<VisibilitySpec> visibSpec;
@@ -29,17 +29,18 @@ class OperatorPrototype {
 	Maybe<MetaInfo>   metaInfo;
 
   public:
-	OperatorPrototype(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments, Type* _returnType,
-	                  Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange, Maybe<Identifier> _argName,
-	                  PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo)
+	OperatorPrototype(bool _isVariationFn, OperatorKind _op, FileRange _nameRange, Vec<Argument*> _arguments,
+	                  Type* _returnType, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	                  Maybe<Identifier> _argName, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo)
 	    : isVariationFn(_isVariationFn), opr(_op), arguments(_arguments), returnType(_returnType),
 	      visibSpec(_visibSpec), argName(_argName), nameRange(_nameRange), fileRange(_fileRange),
 	      defineChecker(_defineChecker), metaInfo(std::move(_metaInfo)) {}
 
-	useit static OperatorPrototype* create(bool _isVariationFn, Op _op, FileRange _nameRange, Vec<Argument*> _arguments,
-	                                       Type* _returnType, Maybe<VisibilitySpec> _visibSpec,
-	                                       const FileRange& _fileRange, Maybe<Identifier> _argName,
-	                                       PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo) {
+	useit static OperatorPrototype* create(bool _isVariationFn, OperatorKind _op, FileRange _nameRange,
+	                                       Vec<Argument*> _arguments, Type* _returnType,
+	                                       Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	                                       Maybe<Identifier> _argName, PrerunExpression* _defineChecker,
+	                                       Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(OperatorPrototype), _isVariationFn, _op, _nameRange, _arguments, _returnType,
 		                         _visibSpec, _fileRange, _argName, _defineChecker, std::move(_metaInfo));
 	}

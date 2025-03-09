@@ -2,148 +2,148 @@
 
 namespace qat::ast {
 
-usize get_precedence_of(Op Operator) {
+usize get_precedence_of(OperatorKind Operator) {
 	switch (Operator) {
-		case Op::multiply:
-		case Op::divide:
-		case Op::remainder: {
+		case OperatorKind::MULTIPLY:
+		case OperatorKind::DIVIDE:
+		case OperatorKind::REMAINDER: {
 			return 10;
 		}
-		case Op::add:
-		case Op::subtract: {
+		case OperatorKind::ADDITION:
+		case OperatorKind::SUBTRACT: {
 			return 20;
 		}
-		case Op::logicalLeftShift:
-		case Op::logicalRightShift:
-		case Op::arithmeticRightShift: {
+		case OperatorKind::LOGICAL_LEFT_SHIFT:
+		case OperatorKind::LOGICAL_RIGHT_SHIFT:
+		case OperatorKind::ARITHMETIC_RIGHT_SHIFT: {
 			return 30;
 		}
-		case Op::greaterThan:
-		case Op::greaterThanEqualTo:
-		case Op::lessThan:
-		case Op::lessThanOrEqualTo: {
+		case OperatorKind::GREATER_THAN:
+		case OperatorKind::GREATER_THAN_OR_EQUAL_TO:
+		case OperatorKind::LESS_THAN:
+		case OperatorKind::LESS_THAN_OR_EQUAL_TO: {
 			return 40;
 		}
-		case Op::equalTo:
-		case Op::notEqualTo:
+		case OperatorKind::EQUAL_TO:
+		case OperatorKind::NOT_EQUAL_TO:
 			return 50;
-		case Op::bitwiseAnd:
+		case OperatorKind::BITWISE_AND:
 			return 50;
-		case Op::bitwiseXor:
+		case OperatorKind::BITWISE_XOR:
 			return 60;
-		case Op::bitwiseOr:
+		case OperatorKind::BITWISE_OR:
 			return 70;
-		case Op::And:
+		case OperatorKind::AND:
 			return 80;
-		case Op::Or:
+		case OperatorKind::OR:
 			return 90;
 		default:
 			return 500;
 	}
 }
 
-Op operator_from_string(const String& str) {
+OperatorKind operator_from_string(const String& str) {
 	if (str == "+") {
-		return Op::add;
+		return OperatorKind::ADDITION;
 	} else if (str == "-") {
-		return Op::subtract;
+		return OperatorKind::SUBTRACT;
 	} else if (str == "*") {
-		return Op::multiply;
+		return OperatorKind::MULTIPLY;
 	} else if (str == "/") {
-		return Op::divide;
+		return OperatorKind::DIVIDE;
 	} else if (str == "%") {
-		return Op::remainder;
+		return OperatorKind::REMAINDER;
 	} else if (str == "|") {
-		return Op::bitwiseOr;
+		return OperatorKind::BITWISE_OR;
 	} else if (str == "&") {
-		return Op::bitwiseAnd;
+		return OperatorKind::BITWISE_AND;
 	} else if (str == "^") {
-		return Op::bitwiseXor;
+		return OperatorKind::BITWISE_XOR;
 	} else if (str == "<<") {
-		return Op::logicalLeftShift;
+		return OperatorKind::LOGICAL_LEFT_SHIFT;
 	} else if (str == ">>") {
-		return Op::logicalRightShift;
+		return OperatorKind::LOGICAL_RIGHT_SHIFT;
 	} else if (str == ">>>") {
-		return Op::arithmeticRightShift;
+		return OperatorKind::ARITHMETIC_RIGHT_SHIFT;
 	} else if (str == "==") {
-		return Op::equalTo;
+		return OperatorKind::EQUAL_TO;
 	} else if (str == "!=") {
-		return Op::notEqualTo;
+		return OperatorKind::NOT_EQUAL_TO;
 	} else if (str == "<") {
-		return Op::lessThan;
+		return OperatorKind::LESS_THAN;
 	} else if (str == "<=") {
-		return Op::lessThanOrEqualTo;
+		return OperatorKind::LESS_THAN_OR_EQUAL_TO;
 	} else if (str == ">") {
-		return Op::greaterThan;
+		return OperatorKind::GREATER_THAN;
 	} else if (str == ">=") {
-		return Op::greaterThanEqualTo;
+		return OperatorKind::GREATER_THAN_OR_EQUAL_TO;
 	} else if (str == "&&") {
-		return Op::And;
+		return OperatorKind::AND;
 	} else if (str == "||") {
-		return Op::Or;
+		return OperatorKind::OR;
 	} else if (str == "[]") {
-		return Op::Index;
+		return OperatorKind::INDEX;
 	} else if (str == "!") {
-		return Op::Not;
+		return OperatorKind::NOT;
 	} else if (str == "@") {
-		return Op::dereference;
+		return OperatorKind::DEREFERENCE;
 	} else if (str == "~") {
-		return Op::bitwiseNot;
+		return OperatorKind::BITWISE_NOT;
 	}
 } // NOLINT(clang-diagnostic-return-type)
 
-String operator_to_string(Op opr) {
+String operator_to_string(OperatorKind opr) {
 	switch (opr) {
-		case Op::add:
+		case OperatorKind::ADDITION:
 			return "+";
-		case Op::minus:
-		case Op::subtract:
+		case OperatorKind::MINUS:
+		case OperatorKind::SUBTRACT:
 			return "-";
-		case Op::multiply:
+		case OperatorKind::MULTIPLY:
 			return "*";
-		case Op::divide:
+		case OperatorKind::DIVIDE:
 			return "/";
-		case Op::remainder:
+		case OperatorKind::REMAINDER:
 			return "%";
-		case Op::bitwiseOr:
+		case OperatorKind::BITWISE_OR:
 			return "|";
-		case Op::bitwiseAnd:
+		case OperatorKind::BITWISE_AND:
 			return "&";
-		case Op::bitwiseXor:
+		case OperatorKind::BITWISE_XOR:
 			return "^";
-		case Op::logicalLeftShift:
+		case OperatorKind::LOGICAL_LEFT_SHIFT:
 			return "<<";
-		case Op::logicalRightShift:
+		case OperatorKind::LOGICAL_RIGHT_SHIFT:
 			return ">>";
-		case Op::arithmeticRightShift:
+		case OperatorKind::ARITHMETIC_RIGHT_SHIFT:
 			return ">>>";
-		case Op::equalTo:
+		case OperatorKind::EQUAL_TO:
 			return "==";
-		case Op::notEqualTo:
+		case OperatorKind::NOT_EQUAL_TO:
 			return "!=";
-		case Op::lessThan:
+		case OperatorKind::LESS_THAN:
 			return "<";
-		case Op::lessThanOrEqualTo:
+		case OperatorKind::LESS_THAN_OR_EQUAL_TO:
 			return "<=";
-		case Op::greaterThan:
+		case OperatorKind::GREATER_THAN:
 			return ">";
-		case Op::greaterThanEqualTo:
+		case OperatorKind::GREATER_THAN_OR_EQUAL_TO:
 			return ">=";
-		case Op::And:
+		case OperatorKind::AND:
 			return "&&";
-		case Op::Or:
+		case OperatorKind::OR:
 			return "||";
-		case Op::Index:
+		case OperatorKind::INDEX:
 			return "[]";
-		case Op::Not:
+		case OperatorKind::NOT:
 			return "!";
-		case Op::copyAssignment:
+		case OperatorKind::COPY_ASSIGNMENT:
 			return "copy =";
-		case Op::moveAssignment:
+		case OperatorKind::MOVE_ASSIGNMENT:
 			return "move =";
-		case Op::dereference:
+		case OperatorKind::DEREFERENCE:
 			return "@";
-		case Op::bitwiseNot:
+		case OperatorKind::BITWISE_NOT:
 			return "~";
 	}
 }

@@ -451,135 +451,25 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			}
 		}
 	} else if (lhsValueType->is_text() && rhsValueType->is_text()) {
-		if (op == Op::equalTo || op == Op::notEqualTo) {
-			// NOLINTBEGIN(readability-isolate-declaration)
-			llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
-			bool         isConstantLHS = false, isConstantRHS = false;
-			// NOLINTEND(readability-isolate-declaration)
-			auto* Ty64Int = llvm::Type::getInt64Ty(ctx->irCtx->llctx);
+		if (op == OperatorKind::EQUAL_TO || op == OperatorKind::NOT_EQUAL_TO) {
+			return ir::Logic::compare_text(op == OperatorKind::EQUAL_TO, lhsEmit, rhsEmit, lhs->fileRange,
+			                               rhs->fileRange, fileRange, ctx);
+		} else {
+			ctx->Error(ctx->color("text") + " type does not support the " + ctx->color(operator_to_string(op)) +
+			               " operator",
+			           fileRange);
+		}
 			if (lhsEmit->is_llvm_constant()) {
-				lhsBuff       = lhsEmit->get_llvm_constant()->getAggregateElement(0u);
-				lhsCount      = lhsEmit->get_llvm_constant()->getAggregateElement(1u);
-				isConstantLHS = true;
 			} else {
-				if (lhsType->is_ref()) {
-					lhsEmit->load_ghost_ref(ctx->irCtx->builder);
-				} else if (not lhsEmit->is_ghost_ref()) {
-					lhsEmit = lhsEmit->make_local(ctx, None, lhs->fileRange);
-				}
-				lhsBuff = ctx->irCtx->builder.CreateLoad(
-				    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-				        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
-				    ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
-				                                        lhsEmit->get_llvm(), 0u));
-				lhsCount = ctx->irCtx->builder.CreateLoad(
-				    Ty64Int, ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
-				                                                 lhsEmit->get_llvm(), 1u));
 			}
 			if (rhsEmit->is_llvm_constant()) {
-				rhsBuff       = rhsEmit->get_llvm_constant()->getAggregateElement(0u);
-				rhsCount      = rhsEmit->get_llvm_constant()->getAggregateElement(1u);
-				isConstantRHS = true;
 			} else {
-				if (rhsType->is_ref()) {
-					rhsEmit->load_ghost_ref(ctx->irCtx->builder);
-				} else if (not rhsEmit->is_ghost_ref()) {
-					rhsEmit = rhsEmit->make_local(ctx, None, rhs->fileRange);
-				}
-				rhsBuff = ctx->irCtx->builder.CreateLoad(
-				    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-				        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
-				    ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
-				                                        rhsEmit->get_llvm(), 0u));
-				rhsCount = ctx->irCtx->builder.CreateLoad(
-				    Ty64Int, ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
-				                                                 rhsEmit->get_llvm(), 1u));
 			}
-			if (isConstantLHS && isConstantRHS) {
-				SHOW("Both string slices are constant")
-				auto strCmpRes = ir::Logic::compareConstantStrings(
-				    llvm::cast<llvm::Constant>(lhsBuff), llvm::cast<llvm::Constant>(lhsCount),
-				    llvm::cast<llvm::Constant>(rhsBuff), llvm::cast<llvm::Constant>(rhsCount), ctx->irCtx->llctx);
-				return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-				                                                   (op == Op::equalTo) ? strCmpRes : not strCmpRes),
-				                            ir::UnsignedType::create_bool(ctx->irCtx))
-				    ->with_range(fileRange);
-			}
-			auto* curr              = ctx->get_fn()->get_block();
-			auto* lenCheckTrueBlock = ir::Block::create(ctx->get_fn(), curr);
-			auto* strCmpTrueBlock   = ir::Block::create(ctx->get_fn(), curr);
-			auto* strCmpFalseBlock  = ir::Block::create(ctx->get_fn(), curr);
-			auto* iterCondBlock     = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
-			auto* iterTrueBlock     = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
-			auto* iterIncrBlock     = ir::Block::create(ctx->get_fn(), iterTrueBlock);
-			auto* iterFalseBlock    = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
-			auto* restBlock         = ir::Block::create(ctx->get_fn(), curr->get_parent());
-			restBlock->link_previous_block(curr);
-			auto* Ty8Int         = llvm::Type::getInt8Ty(ctx->irCtx->llctx);
-			auto* qatStrCmpIndex = ctx->get_fn()->get_str_comparison_index();
-			// NOTE - Length equality check
-			ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpEQ(lhsCount, rhsCount),
-			                                 lenCheckTrueBlock->get_bb(), strCmpFalseBlock->get_bb());
-			//
-			// NOTE - Length matches
-			lenCheckTrueBlock->set_active(ctx->irCtx->builder);
-			ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u),
-			                                qatStrCmpIndex->get_llvm());
-			(void)ir::add_branch(ctx->irCtx->builder, iterCondBlock->get_bb());
-			//
-			// NOTE - Checking the iteration count
-			iterCondBlock->set_active(ctx->irCtx->builder);
-			ctx->irCtx->builder.CreateCondBr(
-			    ctx->irCtx->builder.CreateICmpULT(ctx->irCtx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->get_llvm()),
-			                                      lhsCount),
-			    iterTrueBlock->get_bb(), iterFalseBlock->get_bb());
-			//
-			// NOTE - Iteration check is true
-			iterTrueBlock->set_active(ctx->irCtx->builder);
-			ctx->irCtx->builder.CreateCondBr(
-			    ctx->irCtx->builder.CreateICmpEQ(
-			        ctx->irCtx->builder.CreateLoad(
-			            Ty8Int,
-			            ctx->irCtx->builder.CreateInBoundsGEP(
-			                Ty8Int, lhsBuff, {ctx->irCtx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->get_llvm())})),
-			        ctx->irCtx->builder.CreateLoad(
-			            Ty8Int,
-			            ctx->irCtx->builder.CreateInBoundsGEP(
-			                Ty8Int, rhsBuff, {ctx->irCtx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->get_llvm())}))),
-			    iterIncrBlock->get_bb(), iterFalseBlock->get_bb());
-			//
-			// NOTE - Increment string slice iteration count
-			iterIncrBlock->set_active(ctx->irCtx->builder);
-			ctx->irCtx->builder.CreateStore(
-			    ctx->irCtx->builder.CreateAdd(ctx->irCtx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->get_llvm()),
-			                                  llvm::ConstantInt::get(Ty64Int, 1u)),
-			    qatStrCmpIndex->get_llvm());
-			(void)ir::add_branch(ctx->irCtx->builder, iterCondBlock->get_bb());
-			//
-			// NOTE - Iteration check is false, time to check if the count matches
-			iterFalseBlock->set_active(ctx->irCtx->builder);
-			ctx->irCtx->builder.CreateCondBr(
-			    ctx->irCtx->builder.CreateICmpEQ(lhsCount,
-			                                     ctx->irCtx->builder.CreateLoad(Ty64Int, qatStrCmpIndex->get_llvm())),
-			    strCmpTrueBlock->get_bb(), strCmpFalseBlock->get_bb());
-			//
-			// NOTE - Merging branches to the resume block
-			strCmpTrueBlock->set_active(ctx->irCtx->builder);
-			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
-			strCmpFalseBlock->set_active(ctx->irCtx->builder);
-			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
-			//
-			// NOTE - Control flow resumes
-			restBlock->set_active(ctx->irCtx->builder);
-			auto* Ty1Int    = llvm::Type::getInt1Ty(ctx->irCtx->llctx);
-			auto* strCmpRes = ctx->irCtx->builder.CreatePHI(Ty1Int, 2);
-			strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 1u : 0u),
-			                       strCmpTrueBlock->get_bb());
-			strCmpRes->addIncoming(llvm::ConstantInt::get(Ty1Int, (op == Op::equalTo) ? 0u : 1u),
-			                       strCmpFalseBlock->get_bb());
-			return ir::Value::get(strCmpRes, ir::UnsignedType::create_bool(ctx->irCtx), false)->with_range(fileRange);
+			return ir::Logic::compare_text(op == OperatorKind::EQUAL_TO, lhsStr, rhsStr, lhs->fileRange, rhs->fileRange,
+			                               fileRange, ctx);
 		} else {
-			ctx->Error("String slices do not support the " + ctx->color(operator_to_string(op)) + " operator",
+			ctx->Error("The only supported operators for comparing Type IDs are " + ctx->color("==") + " and " +
+			               ctx->color("!="),
 			           fileRange);
 		}
 	} else if (lhsValueType->is_mark() && rhsValueType->is_mark()) {

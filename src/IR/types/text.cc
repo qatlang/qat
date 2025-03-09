@@ -76,10 +76,10 @@ Maybe<String> TextType::to_prerun_generic_string(ir::PrerunValue* val) const {
 }
 
 Maybe<bool> TextType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
-	return ir::Logic::compareConstantStrings(first->get_llvm_constant()->getAggregateElement(0u),
-	                                         first->get_llvm_constant()->getAggregateElement(1u),
-	                                         second->get_llvm_constant()->getAggregateElement(0u),
-	                                         second->get_llvm_constant()->getAggregateElement(1u), irCtx->llctx);
+	return ir::Logic::compare_prerun_text(first->get_llvm_constant()->getAggregateElement(0u),
+	                                      first->get_llvm_constant()->getAggregateElement(1u),
+	                                      second->get_llvm_constant()->getAggregateElement(0u),
+	                                      second->get_llvm_constant()->getAggregateElement(1u), irCtx->llctx);
 }
 
 TypeKind TextType::type_kind() const { return TypeKind::TEXT; }

@@ -8,6 +8,7 @@
 
 namespace llvm {
 class Constant;
+class ConstantStruct;
 class Type;
 class StructType;
 class GlobalVariable;
@@ -46,7 +47,10 @@ struct TypeInfo {
 
 	static Vec<ModTypeInfo*> modules;
 
-	TypeInfo(llvm::Constant* _id, Type* _type, Mod* _mod) : id(_id), type(_type), mod(_mod) { idMapping[id] = this; }
+	TypeInfo(llvm::Constant* _id, llvm::ConstantStruct* _typeInfo, Type* _type, Mod* _mod)
+	    : id(_id), typeInfo(_typeInfo), type(_type), mod(_mod) {
+		idMapping[id] = this;
+	}
 
 	useit static TypeInfo* get_for(llvm::Constant* id);
 
@@ -54,9 +58,10 @@ struct TypeInfo {
 
 	static void finalise_type_infos(ir::Ctx* ctx);
 
-	llvm::Constant* id;
-	Type*           type;
-	Mod*            mod;
+	llvm::Constant*       id;
+	llvm::ConstantStruct* typeInfo;
+	Type*                 type;
+	Mod*                  mod;
 };
 
 } // namespace qat::ir

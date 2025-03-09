@@ -33,9 +33,10 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 		correctGlobalName =
 		    type->typeInfo->mod->get_link_names().newWith(LinkNameUnit("info", LinkUnitType::global), None).toName();
 	} else {
-		bool isPrimitive   = not(type->is_choice() || type->is_flag() || type->is_type_definition() || type->is_mix() ||
-                               type->is_struct() || type->is_region());
-		llvm::Constant* id = nullptr;
+		bool isPrimitive = not(type->is_choice() || type->is_flag() || type->is_type_definition() || type->is_mix() ||
+		                       type->is_struct() || type->is_region());
+		llvm::Constant*       id;
+		llvm::ConstantStruct* info;
 		if (not typeInfoType) {
 			typeInfoType =
 			    llvm::StructType::create({ir::TextType::get(ctx, false)->get_llvm_type()}, "qat.typeid", false);
@@ -44,7 +45,6 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 			if (not builtinModule) {
 				builtinModule =
 				    Mod::create({"type", FileRange("")}, "", "", ModuleType::lib, VisibilityInfo::pub(), ctx);
-				SHOW("Builtin module is " << builtinModule)
 				builtinGlobal = new llvm::GlobalVariable(
 				    *builtinModule->get_llvm_module(), llvm::ArrayType::get(typeInfoType, UINT64_MAX), true,
 				    llvm::GlobalVariable::ExternalLinkage, nullptr,
@@ -53,15 +53,16 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 				        .toName(),
 				    nullptr, llvm::GlobalValue::NotThreadLocal, ctx->dataLayout.getDefaultGlobalsAddressSpace(), false);
 			}
-			builtinTypeInfos.push_back(llvm::ConstantStruct::get(
-			    typeInfoType, {TextType::create_value(ctx, builtinModule, type->to_string())->get_llvm_constant()}));
+			info = (llvm::ConstantStruct*)llvm::ConstantStruct::get(
+			    typeInfoType, {TextType::create_value(ctx, builtinModule, type->to_string())->get_llvm_constant()});
+			builtinTypeInfos.push_back(info);
 			id = llvm::ConstantExpr::getGetElementPtr(
 			    llvm::ArrayType::get(typeInfoType, builtinTypeInfos.size()), builtinGlobal,
 			    llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->llctx), builtinTypeInfos.size() - 1, false));
 			correctGlobalName =
 			    builtinModule->get_link_names().newWith(LinkNameUnit("info", LinkUnitType::global), None).toName();
 			mod->add_dependency(builtinModule);
-			type->typeInfo = std::construct_at(OwnNormal(TypeInfo), id, type, builtinModule);
+			type->typeInfo = std::construct_at(OwnNormal(TypeInfo), id, info, type, builtinModule);
 		} else {
 			Mod* typeMod = nullptr;
 			if (type->is_choice()) {
@@ -91,13 +92,14 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 				typeMod->typeInfoDetail = ModTypeInfo::create(typeMod, infoMod, infoList);
 				modules.push_back(typeMod->typeInfoDetail);
 			}
-			typeMod->typeInfoDetail->typeInfos.push_back(llvm::ConstantStruct::get(
+			info = (llvm::ConstantStruct*)llvm::ConstantStruct::get(
 			    typeInfoType,
 			    {TextType::create_value(ctx, typeMod->typeInfoDetail->infoMod,
 			                            type->is_type_definition()
 			                                ? type->as_type_definition()->get_non_definition_subtype()->to_string()
 			                                : type->to_string())
-			         ->get_llvm_constant()}));
+			         ->get_llvm_constant()});
+			typeMod->typeInfoDetail->typeInfos.push_back(info);
 			id = llvm::ConstantExpr::getGetElementPtr(
 			    llvm::ArrayType::get(typeInfoType, typeMod->typeInfoDetail->typeInfos.size()),
 			    typeMod->typeInfoDetail->infoList,
@@ -107,7 +109,7 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 			                        .newWith(LinkNameUnit("info", LinkUnitType::global), None)
 			                        .toName();
 			mod->add_dependency(typeMod->typeInfoDetail->infoMod);
-			type->typeInfo = std::construct_at(OwnNormal(TypeInfo), id, type, typeMod->typeInfoDetail->infoMod);
+			type->typeInfo = std::construct_at(OwnNormal(TypeInfo), id, info, type, typeMod->typeInfoDetail->infoMod);
 		}
 	}
 	if (not mod->get_llvm_module()->getGlobalVariable(correctGlobalName)) {

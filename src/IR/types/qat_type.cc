@@ -3,6 +3,7 @@
 #include "./array.hpp"
 #include "./choice.hpp"
 #include "./definition.hpp"
+#include "./flag.hpp"
 #include "./float.hpp"
 #include "./function.hpp"
 #include "./future.hpp"
@@ -216,22 +217,27 @@ bool Type::is_same(Type* other) {
 			case TypeKind::STRUCT: {
 				auto* thisVal  = (StructType*)this;
 				auto* otherVal = (StructType*)other;
-				return (thisVal->get_id() == otherVal->get_id());
+				return thisVal->get_id() == otherVal->get_id();
 			}
 			case TypeKind::REGION: {
 				auto* thisVal  = (Region*)this;
 				auto* otherVal = (Region*)this;
-				return (thisVal->get_id() == otherVal->get_id());
+				return thisVal->get_id() == otherVal->get_id();
 			}
 			case TypeKind::CHOICE: {
 				auto* thisVal  = (ChoiceType*)this;
 				auto* otherVal = (ChoiceType*)other;
-				return (thisVal->get_id() == otherVal->get_id());
+				return thisVal->get_id() == otherVal->get_id();
 			}
 			case TypeKind::MIX: {
 				auto* thisVal  = (MixType*)this;
 				auto* otherVal = (MixType*)other;
-				return (thisVal->get_id() == otherVal->get_id());
+				return thisVal->get_id() == otherVal->get_id();
+			}
+			case TypeKind::FLAG: {
+				auto* thisVal  = (FlagType*)this;
+				auto* otherVal = (FlagType*)other;
+				return thisVal->get_id() == otherVal->get_id();
 			}
 			case TypeKind::RESULT: {
 				auto* thisVal  = (ResultType*)this;

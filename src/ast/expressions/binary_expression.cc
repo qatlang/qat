@@ -112,7 +112,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			    ->with_range(fileRange);
 		} else if (op == OperatorKind::OR) {
 			return ir::Value::get(ctx->irCtx->builder.CreateLogicalOr(lhsVal, rhsVal),
-			                      ir::UnsignedType::create_bool(ctx->irCtx), false);
+			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
+			    ->with_range(fileRange);
 		} else {
 			ctx->Error("Unsupported operator " + ctx->color(operator_to_string(op)) + " for expressions of type " +
 			               ctx->color(lhsType->to_string()),
@@ -244,7 +245,6 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		    (not lhsType->is_native_type() && not rhsType->is_native_type() && lhsValueType->is_same(rhsValueType))) {
 			llvm::Value* llRes   = nullptr;
 			ir::Type*    resType = lhsType;
-			// NOLINTNEXTLINE(clang-diagnostic-switch)
 			switch (op) {
 				case OperatorKind::ADDITION: {
 					llRes = ctx->irCtx->builder.CreateAdd(lhsVal, rhsVal);
@@ -327,7 +327,6 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 					           fileRange);
 				}
 			}
-			// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
 			return ir::Value::get(llRes, resType, false)->with_range(fileRange);
 		} else {
 			if (rhsValueType->is_unsigned()) {
@@ -453,20 +452,43 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 	} else if (lhsValueType->is_text() && rhsValueType->is_text()) {
 		if (op == OperatorKind::EQUAL_TO || op == OperatorKind::NOT_EQUAL_TO) {
 			return ir::Logic::compare_text(op == OperatorKind::EQUAL_TO, lhsEmit, rhsEmit, lhs->fileRange,
-			                               rhs->fileRange, fileRange, ctx);
+			                               rhs->fileRange, fileRange, ctx)
+			    ->with_range(fileRange);
 		} else {
 			ctx->Error(ctx->color("text") + " type does not support the " + ctx->color(operator_to_string(op)) +
 			               " operator",
 			           fileRange);
 		}
+	} else if (lhsValueType->is_typed() && rhsValueType->is_typed()) {
+		if (op == OperatorKind::EQUAL_TO || op == OperatorKind::NOT_EQUAL_TO) {
+			ir::Value* lhsStr;
+			ir::Value* rhsStr;
+			auto       textTy = ir::TextType::get(ctx->irCtx);
 			if (lhsEmit->is_llvm_constant()) {
+				lhsStr = ir::PrerunValue::get(
+				    ir::TypeInfo::get_for(lhsEmit->get_llvm_constant())->typeInfo->getAggregateElement(0u), textTy);
+			} else if (lhsType->is_ref()) {
+				lhsStr = ir::Value::get(
+				    ctx->irCtx->builder.CreateStructGEP(ir::TypeInfo::typeInfoType, lhsEmit->get_llvm(), 0u),
+				    ir::RefType::get(false, textTy, ctx->irCtx), false);
 			} else {
+				lhsStr =
+				    ir::Value::get(ctx->irCtx->builder.CreateExtractValue(lhsEmit->get_llvm(), {0u}), textTy, false);
 			}
 			if (rhsEmit->is_llvm_constant()) {
+				rhsStr = ir::PrerunValue::get(
+				    ir::TypeInfo::get_for(rhsEmit->get_llvm_constant())->typeInfo->getAggregateElement(0u), textTy);
+			} else if (rhsType->is_ref()) {
+				rhsStr = ir::Value::get(
+				    ctx->irCtx->builder.CreateStructGEP(ir::TypeInfo::typeInfoType, rhsEmit->get_llvm(), 0u),
+				    ir::RefType::get(false, textTy, ctx->irCtx), false);
 			} else {
+				rhsStr =
+				    ir::Value::get(ctx->irCtx->builder.CreateExtractValue(rhsEmit->get_llvm(), {0u}), textTy, false);
 			}
 			return ir::Logic::compare_text(op == OperatorKind::EQUAL_TO, lhsStr, rhsStr, lhs->fileRange, rhs->fileRange,
-			                               fileRange, ctx);
+			                               fileRange, ctx)
+			    ->with_range(fileRange);
 		} else {
 			ctx->Error("The only supported operators for comparing Type IDs are " + ctx->color("==") + " and " +
 			               ctx->color("!="),

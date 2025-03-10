@@ -357,6 +357,21 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		}
+	} else if (lhsValTy->is_typed() && rhsValTy->is_typed()) {
+		if (opr == OperatorKind::EQUAL_TO || opr == OperatorKind::NOT_EQUAL_TO) {
+			return ir::PrerunValue::get(
+			    llvm::ConstantInt::get(
+			        llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			        ir::TypeInfo::get_for(lhsEmit->get_llvm_constant())
+			                ->type->is_same(ir::TypeInfo::get_for(rhsEmit->get_llvm_constant())->type)
+			            ? ((opr == OperatorKind::EQUAL_TO) ? 1u : 0u)
+			            : ((opr == OperatorKind::NOT_EQUAL_TO) ? 1u : 0u)),
+			    ir::UnsignedType::create_bool(ctx->irCtx));
+		} else {
+			ctx->Error("The only operators allowed for comparing Type IDs are " + ctx->color("==") + " and " +
+			               ctx->color("!="),
+			           fileRange);
+		}
 	} else if (lhsValTy->is_bool() && rhsValTy->is_bool()) {
 		auto            lhsConst = lhsEmit->get_llvm_constant();
 		auto            rhsConst = rhsEmit->get_llvm_constant();
@@ -492,7 +507,7 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			                                                   lhsEmit->is_equal_to(ctx->irCtx, rhsEmit) ? 0u : 1u),
 			                            ir::UnsignedType::create_bool(ctx->irCtx));
 		} else {
-			ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) + " for operands of type " +
+			ctx->Error("Unsupported binary operator " + ctx->color(operator_to_string(opr)) + " for operands of type " +
 			               ctx->color(lhsType->to_string()),
 			           fileRange);
 		}

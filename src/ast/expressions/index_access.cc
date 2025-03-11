@@ -297,13 +297,13 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				           ? eTy->get_variation_binary_operator("[]", {None, indType})
 				           : eTy->get_normal_binary_operator("[]", {None, indType});
 				if (ind->is_ghost_ref()) {
-					if (indType->is_trivially_copyable() || indType->is_trivially_movable()) {
+					if (indType->has_simple_copy() || indType->has_simple_move()) {
 						auto indVal = ir::Value::get(
 						    ctx->irCtx->builder.CreateLoad(indType->get_llvm_type(), ind->get_llvm()), indType, false);
-						if (not indType->is_trivially_copyable()) {
+						if (not indType->has_simple_copy()) {
 							if (not ind->is_variable()) {
 								ctx->Error(
-								    "This expression does not have variability and hence cannot be trivially moved from",
+								    "This expression does not have variability and hence simple-move is not possible",
 								    index->fileRange);
 							}
 							ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(indType->get_llvm_type()),
@@ -312,7 +312,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 						ind = indVal;
 					} else {
 						ctx->Error("This expression is of type " + ctx->color(indType->to_string()) +
-						               " which cannot be trivially copied and trivially moved from",
+						               " which does not have simple-copy and simple-move",
 						           index->fileRange);
 					}
 				}
@@ -334,13 +334,13 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			           : eTy->get_normal_binary_operator("[]", {None, indType->as_ref()->get_subtype()});
 			ind->load_ghost_ref(ctx->irCtx->builder);
 			auto* indSubType = indType->as_ref()->get_subtype();
-			if (indSubType->is_trivially_copyable() || indSubType->is_trivially_movable()) {
+			if (indSubType->has_simple_copy() || indSubType->has_simple_move()) {
 				auto indVal = ir::Value::get(
 				    ctx->irCtx->builder.CreateLoad(indSubType->get_llvm_type(), ind->get_llvm()), indSubType, false);
-				if (not indType->is_trivially_copyable()) {
+				if (not indType->has_simple_copy()) {
 					if (not indType->as_ref()->has_variability()) {
 						ctx->Error(
-						    "This expression is a reference without variability and hence cannot be trivially moved from",
+						    "This expression is a reference without variability and hence simple-move is not possible",
 						    index->fileRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(indSubType->get_llvm_type()),
@@ -349,8 +349,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				ind = indVal;
 			} else {
 				ctx->Error("This expression is a reference to type " + ctx->color(indSubType->to_string()) +
-				               " which cannot be trivially copied or trivially moved. Please use " +
-				               ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
+				               " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") +
+				               " or " + ctx->color("'move") + " accordingly",
 				           index->fileRange);
 			}
 			operand = ind;

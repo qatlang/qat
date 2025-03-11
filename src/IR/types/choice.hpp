@@ -85,9 +85,9 @@ class ChoiceType : public Type, public EntityOverview {
 
 	useit bool is_type_sized() const final;
 
-	useit bool is_trivially_copyable() const final { return true; }
+	useit bool has_simple_copy() const final { return true; }
 
-	useit bool is_trivially_movable() const final { return true; }
+	useit bool has_simple_move() const final { return true; }
 
 	useit bool can_be_prerun() const final { return true; }
 

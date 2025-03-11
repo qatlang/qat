@@ -30,11 +30,11 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 	if (expectedType->is_same(value->get_ir_type())) {
 		if (value->is_ghost_ref()) {
 			auto valueType = value->get_ir_type();
-			if (valueType->is_trivially_copyable() || valueType->is_trivially_movable()) {
+			if (valueType->has_simple_copy() || valueType->has_simple_move()) {
 				auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
-				if (not valueType->is_trivially_copyable()) {
+				if (not valueType->has_simple_copy()) {
 					if (not value->is_variable()) {
-						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           valueRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(valueType->get_llvm_type()),
@@ -43,7 +43,7 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 				return ir::Value::get(loadRes, valueType, false);
 			} else {
 				ctx->Error("This expression is of type " + ctx->color(valueType->to_string()) +
-				               " which is not trivially copyable or movable. Please use " + ctx->color("'copy") +
+				               " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") +
 				               " or " + ctx->color("'move") + " accordingly",
 				           valueRange);
 			}
@@ -63,20 +63,20 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 	} else if (value->is_ref() && value->get_ir_type()->as_ref()->get_subtype()->is_same(expectedType)) {
 		value->load_ghost_ref(ctx->irCtx->builder);
 		auto memType = value->get_ir_type()->as_ref()->get_subtype();
-		if (memType->is_trivially_copyable() || memType->is_trivially_movable()) {
+		if (memType->has_simple_copy() || memType->has_simple_move()) {
 			auto* loadRes = ctx->irCtx->builder.CreateLoad(memType->get_llvm_type(), value->get_llvm());
-			if (not memType->is_trivially_copyable()) {
+			if (not memType->has_simple_copy()) {
 				if (not value->get_ir_type()->as_ref()->has_variability()) {
 					ctx->Error("This expression is of type " + ctx->color(value->get_ir_type()->to_string()) +
-					               " which is a reference without variability and hence cannot be trivially moved from",
+					               " which is a reference without variability and hence simple-move is not possible",
 					           valueRange);
 				}
 			}
 			return ir::Value::get(loadRes, memType, false);
 		} else {
 			ctx->Error("This expression is a reference of type " + ctx->color(memType->to_string()) +
-			               " which is not trivially copyable or movable. Please use " + ctx->color("'copy") + " or " +
-			               ctx->color("'move") + " accordingly",
+			               " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") +
+			               " or " + ctx->color("'move") + " accordingly",
 			           valueRange);
 		}
 	} else {

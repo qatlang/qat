@@ -30,12 +30,12 @@ class ResultType : public Type {
 
 	useit bool is_type_sized() const final { return true; }
 
-	useit bool is_trivially_copyable() const final {
-		return is_identical_to_bool() || (validType->is_trivially_copyable() && errorType->is_trivially_copyable());
+	useit bool has_simple_copy() const final {
+		return is_identical_to_bool() || (validType->has_simple_copy() && errorType->has_simple_copy());
 	}
 
-	useit bool is_trivially_movable() const final {
-		return is_identical_to_bool() || (validType->is_trivially_movable() && errorType->is_trivially_movable());
+	useit bool has_simple_move() const final {
+		return is_identical_to_bool() || (validType->has_simple_move() && errorType->has_simple_move());
 	}
 
 	void handle_tag_store(llvm::Value* resValue, bool tag, ir::Ctx* irCtx);

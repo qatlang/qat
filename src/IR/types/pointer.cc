@@ -137,9 +137,9 @@ PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
 	}
 }
 
-bool MarkType::is_trivially_copyable() const { return true; }
+bool MarkType::has_simple_copy() const { return true; }
 
-bool MarkType::is_trivially_movable() const { return not nonNullable; }
+bool MarkType::has_simple_move() const { return not nonNullable; }
 
 bool MarkType::is_slice() const { return hasMulti; }
 

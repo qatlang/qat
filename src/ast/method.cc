@@ -289,8 +289,8 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		                             retTy, args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
 	} else if (fnTy == MethodType::valued) {
 		SHOW("MemberFn :: " << name.value << " Valued Method")
-		if (not parentType->is_trivially_copyable()) {
-			irCtx->Error("The parent type is not trivially copyable and hence cannot have value methods", fileRange);
+		if (not parentType->has_simple_copy()) {
+			irCtx->Error("The parent type does not have simple-copy and hence cannot have value methods", fileRange);
 		}
 		state.result =
 		    ir::Method::CreateValued(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(),
@@ -356,7 +356,7 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			}
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr, false);
 		} else if (not argIRTypes.at(i)->is_variadic_argument()) {
-			if (not argIRTypes.at(i)->get_type()->is_trivially_copyable() || argIRTypes.at(i)->is_variable()) {
+			if (not argIRTypes.at(i)->get_type()->has_simple_copy() || argIRTypes.at(i)->is_variable()) {
 				auto* argVal =
 				    block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
 				                     argIRTypes.at(i)->is_variable(), prototype->arguments.at(i - 1)->get_name().range);

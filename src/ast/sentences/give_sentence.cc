@@ -24,12 +24,12 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 				return ir::Value::get(ctx->irCtx->builder.CreateRetVoid(), retType, false);
 			} else {
 				if (retVal->is_ghost_ref()) {
-					if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
+					if (retType->has_simple_copy() || retType->has_simple_move()) {
 						auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
-						if (not retType->is_trivially_copyable()) {
+						if (not retType->has_simple_copy()) {
 							if (not retVal->is_variable()) {
 								ctx->Error(
-								    "This expression does not have variability, and hence cannot be trivially moved from",
+								    "This expression does not have variability, and hence simple-move is not possible",
 								    give_expr.value()->fileRange);
 							}
 							ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(retType->get_llvm_type()),
@@ -41,7 +41,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 					} else {
 						ctx->Error(
 						    "This expression is of type " + ctx->color(retType->to_string()) +
-						        " which is not trivially copyable or movable. To convert the expression to a value, please use " +
+						        " which does not have simple-copy and simple-move. To convert the expression to a value, please use " +
 						        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
 						    fileRange);
 					}
@@ -73,14 +73,14 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 			return ir::Value::get(ctx->irCtx->builder.CreateRet(retVal->get_llvm()), retType, false);
 		} else if (retVal->get_ir_type()->is_ref() &&
 		           retVal->get_ir_type()->as_ref()->get_subtype()->is_same(retType)) {
-			if (retType->is_trivially_copyable() || retType->is_trivially_movable()) {
+			if (retType->has_simple_copy() || retType->has_simple_move()) {
 				retVal->load_ghost_ref(ctx->irCtx->builder);
 				auto* loadRes = ctx->irCtx->builder.CreateLoad(retType->get_llvm_type(), retVal->get_llvm());
-				if (not retType->is_trivially_copyable()) {
+				if (not retType->has_simple_copy()) {
 					if (not retVal->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error(
 						    "The expression is of type " + ctx->irCtx->color(retVal->get_ir_type()->to_string()) +
-						        " which is a reference without variability, and hence cannot be trivially moved from",
+						        " which is a reference without variability, and hence simple-move is not possible",
 						    give_expr.value()->fileRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(retType->get_llvm_type()),
@@ -92,7 +92,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 			} else {
 				ctx->Error(
 				    "This expression is of type " + ctx->color(retType->to_string()) +
-				        " which is not trivially copyable or movable. To convert the expression to a value, please use " +
+				        " which does not have simple-copy and simple-move. To convert the expression to a value, please use " +
 				        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
 				    fileRange);
 			}

@@ -18,9 +18,9 @@ class FloatType : public Type {
 
 	useit static FloatType* get(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 
-	useit bool is_trivially_copyable() const final { return true; }
+	useit bool has_simple_copy() const final { return true; }
 
-	useit bool is_trivially_movable() const final { return true; }
+	useit bool has_simple_move() const final { return true; }
 
 	useit bool is_type_sized() const final;
 

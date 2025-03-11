@@ -206,8 +206,8 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 		genericStructType->variants.push_back(ir::GenericVariant<ir::StructType>(resultType, genericsToFill));
 	}
 	SHOW("StructType ID: " << resultType->get_id())
-	resultType->explicitTrivialCopy = trivialCopy.has_value();
-	resultType->explicitTrivialMove = trivialMove.has_value();
+	resultType->explicitSimpleCopy = simpleCopy.has_value();
+	resultType->explicitSimpleMove = simpleMove.has_value();
 	if (genericStructType) {
 		for (auto item = genericStructType->opaqueVariants.begin(); item != genericStructType->opaqueVariants.end();
 		     item++) {

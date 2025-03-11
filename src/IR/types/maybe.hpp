@@ -20,9 +20,9 @@ class MaybeType : public Type {
 	useit Type* get_subtype() const;
 	useit bool  is_type_sized() const final;
 
-	useit bool is_trivially_copyable() const final { return subTy->is_trivially_copyable(); }
+	useit bool has_simple_copy() const final { return subTy->has_simple_copy(); }
 
-	useit bool is_trivially_movable() const final { return subTy->is_trivially_movable(); }
+	useit bool has_simple_move() const final { return subTy->has_simple_move(); }
 
 	useit bool is_type_packed() const;
 

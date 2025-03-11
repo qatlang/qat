@@ -107,9 +107,9 @@ Type* DefinitionType::get_non_definition_subtype() {
 
 bool DefinitionType::is_type_sized() const { return subType->is_type_sized(); }
 
-bool DefinitionType::is_trivially_copyable() const { return subType->is_trivially_copyable(); }
+bool DefinitionType::has_simple_copy() const { return subType->has_simple_copy(); }
 
-bool DefinitionType::is_trivially_movable() const { return subType->is_trivially_movable(); }
+bool DefinitionType::has_simple_move() const { return subType->has_simple_move(); }
 
 void DefinitionType::update_overview() {
 	Vec<JsonValue> genJson;

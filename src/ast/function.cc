@@ -375,7 +375,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 		SHOW("Iteration run for function is: " << fnEmit->get_name().value)
 		for (usize i = 0; i < argIRTypes.size(); i++) {
 			auto argType = argIRTypes[i]->get_type();
-			if (not argType->is_trivially_copyable() || argIRTypes[i]->is_variable()) {
+			if (not argType->has_simple_copy() || argIRTypes[i]->is_variable()) {
 				SHOW("Argument name is " << argIRTypes[i]->get_name())
 				SHOW("Argument type is " << argType->to_string())
 				auto* argVal = block->new_local(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(),

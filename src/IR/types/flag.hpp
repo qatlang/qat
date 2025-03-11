@@ -49,9 +49,9 @@ class FlagType final : public EntityOverview, public Type {
 
 	useit bool can_be_prerun_generic() const final { return true; }
 
-	useit bool is_trivially_copyable() const final { return true; }
+	useit bool has_simple_copy() const final { return true; }
 
-	useit bool is_trivially_movable() const final { return true; }
+	useit bool has_simple_move() const final { return true; }
 
 	useit bool has_prerun_default_value() const final { return true; }
 

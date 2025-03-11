@@ -12,17 +12,17 @@ ir::Value* Cast::emit(EmitCtx* ctx) {
 			if (inst->is_ref()) {
 				inst->load_ghost_ref(ctx->irCtx->builder);
 			}
-			if (srcTy->is_trivially_copyable() || srcTy->is_trivially_movable()) {
+			if (srcTy->has_simple_copy() || srcTy->has_simple_move()) {
 				auto instllvm = inst->get_llvm();
 				inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(srcTy->get_llvm_type(), inst->get_llvm()), srcTy,
 				                      false);
-				if (not srcTy->is_trivially_copyable()) {
+				if (not srcTy->has_simple_copy()) {
 					if (inst->is_ref() && not inst->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error(
-						    "This expression is a reference without variability and hence cannot be trivially moved from",
+						    "This expression is a reference without variability and hence simple-move is not possible",
 						    instance->fileRange);
 					} else if (not inst->is_variable()) {
-						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           fileRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(srcTy->get_llvm_type()), instllvm);
@@ -30,7 +30,7 @@ ir::Value* Cast::emit(EmitCtx* ctx) {
 			} else {
 				ctx->Error(
 				    "The type of the expression is " + ctx->color(srcTy->to_string()) +
-				        " which is not trivially copyable or trivially movable, and hence casting cannot be performed. Try using " +
+				        " which does not have simple-copy and simple-move, and hence casting cannot be performed. Try using " +
 				        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
 				    instance->fileRange);
 			}

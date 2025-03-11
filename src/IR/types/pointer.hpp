@@ -32,18 +32,28 @@ class MarkOwner {
 	useit static MarkOwner of_region(Region* region);
 	useit static MarkOwner of_any_region();
 
-	useit Type*     owner_as_type() const { return (Type*)owner; }
-	useit Region*   owner_as_region() const { return ((Type*)owner)->as_region(); }
+	useit Type* owner_as_type() const { return (Type*)owner; }
+
+	useit Region* owner_as_region() const { return ((Type*)owner)->as_region(); }
+
 	useit Function* owner_as_parent_function() const { return (Function*)owner; }
-	useit Type*     owner_as_parent_type() const { return (Type*)owner; }
+
+	useit Type* owner_as_parent_type() const { return (Type*)owner; }
 
 	useit bool is_of_type() const { return ownerTy == PointerOwnerType::type; }
+
 	useit bool is_of_anonymous() const { return ownerTy == PointerOwnerType::anonymous; }
+
 	useit bool is_of_any_region() const { return ownerTy == PointerOwnerType::anyRegion; }
+
 	useit bool is_of_region() const { return ownerTy == PointerOwnerType::region; }
+
 	useit bool is_of_heap() const { return ownerTy == PointerOwnerType::heap; }
+
 	useit bool is_of_parent_function() const { return ownerTy == PointerOwnerType::parentFunction; }
+
 	useit bool is_of_parent_instance() const { return ownerTy == PointerOwnerType::parentInstance; }
+
 	useit bool is_of_static() const { return ownerTy == PointerOwnerType::Static; }
 
 	useit bool is_same(const MarkOwner& other) const;
@@ -72,11 +82,13 @@ class MarkType : public Type {
 	useit bool is_slice() const;
 	useit bool is_nullable() const;
 	useit bool is_non_nullable() const;
+
 	useit bool can_be_prerun() const final { return subType->is_function(); }
+
 	useit bool is_type_sized() const final;
 	useit bool has_prerun_default_value() const final;
-	useit bool is_trivially_copyable() const final;
-	useit bool is_trivially_movable() const final;
+	useit bool has_simple_copy() const final;
+	useit bool has_simple_move() const final;
 
 	useit PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 

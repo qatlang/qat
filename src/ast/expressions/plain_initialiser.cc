@@ -159,19 +159,19 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				auto  irVal  = irVals.at(i);
 				auto  memTy  = cTy->get_field_at(indices.at(i))->type;
 				if (irVal->is_ghost_ref() || irVal->is_ref()) {
-					if (memTy->is_trivially_copyable() || memTy->is_trivially_movable()) {
+					if (memTy->has_simple_copy() || memTy->has_simple_move()) {
 						if (irVal->is_ref()) {
 							irVal->load_ghost_ref(ctx->irCtx->builder);
 						}
 						auto* irOrigVal = ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm());
-						if (not memTy->is_trivially_copyable()) {
+						if (not memTy->has_simple_copy()) {
 							if (irVal->is_ref() && not irVal->get_ir_type()->as_ref()->has_variability()) {
 								ctx->Error(
-								    "This is a reference without variability and hence cannot be trivially moved from",
+								    "This is a reference without variability and hence simple-move is not possible",
 								    fieldValues.at(i)->fileRange);
 							} else if (not irVal->is_ref() && not irVal->is_variable()) {
 								ctx->Error(
-								    "This is an expression without variability and hence cannot be trivially moved from",
+								    "This is an expression without variability and hence simple-move is not possible",
 								    fieldValues.at(i)->fileRange);
 							}
 							ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(memTy->get_llvm_type()),
@@ -182,11 +182,11 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 						}
 						ctx->irCtx->builder.CreateStore(irOrigVal, memPtr);
 					} else {
-						ctx->Error(
-						    "The member field " + ctx->color(cTy->get_field_name_at(indices.at(i))) +
-						        " expects an expression of type which is not trivially copyable and trivially movable. Please use " +
-						        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
-						    fieldValues.at(i)->fileRange);
+						ctx->Error("The member field " + ctx->color(cTy->get_field_name_at(indices.at(i))) +
+						               " expects an expression of type " + ctx->color(memTy->to_string()) +
+						               " which does not have simple-copy and simple-move. Please use " +
+						               ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
+						           fieldValues.at(i)->fileRange);
 					}
 				} else {
 					ctx->irCtx->builder.CreateStore(irVal->get_llvm(), memPtr);

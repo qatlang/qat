@@ -33,9 +33,9 @@ class ToggleType : public ExpandedType {
 
 	useit LinkNames get_link_names() const final;
 
-	useit bool is_trivially_copyable() const final { return true; }
+	useit bool has_simple_copy() const final { return true; }
 
-	useit bool is_trivially_movable() const final { return true; }
+	useit bool has_simple_move() const final { return true; }
 
 	useit TypeKind type_kind() const final { return TypeKind::TOGGLE; }
 

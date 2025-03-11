@@ -35,9 +35,9 @@ class ArrayType : public Type {
 
 	useit bool is_type_sized() const final;
 
-	useit bool is_trivially_copyable() const final { return elementType->is_trivially_copyable(); }
+	useit bool has_simple_copy() const final { return elementType->has_simple_copy(); }
 
-	useit bool is_trivially_movable() const final { return elementType->is_trivially_movable(); }
+	useit bool has_simple_move() const final { return elementType->has_simple_move(); }
 
 	useit bool has_prerun_default_value() const final { return elementType->has_prerun_default_value(); }
 

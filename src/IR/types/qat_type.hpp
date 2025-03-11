@@ -86,8 +86,8 @@ class Type : public Uniq {
 	useit virtual bool is_move_constructible() const;
 	useit virtual bool is_move_assignable() const;
 	useit virtual bool is_destructible() const;
-	useit virtual bool is_trivially_copyable() const;
-	useit virtual bool is_trivially_movable() const;
+	useit virtual bool has_simple_copy() const;
+	useit virtual bool has_simple_move() const;
 
 	virtual ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx);
 

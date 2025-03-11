@@ -33,18 +33,18 @@ class TupleType : public Type {
 
 	useit bool is_type_sized() const;
 
-	useit bool is_trivially_copyable() const final {
+	useit bool has_simple_copy() const final {
 		for (auto* sub : subTypes) {
-			if (not sub->is_trivially_copyable()) {
+			if (not sub->has_simple_copy()) {
 				return false;
 			}
 		}
 		return true;
 	}
 
-	useit bool is_trivially_movable() const final {
+	useit bool has_simple_move() const final {
 		for (auto* sub : subTypes) {
-			if (not sub->is_trivially_movable()) {
+			if (not sub->has_simple_move()) {
 				return false;
 			}
 		}

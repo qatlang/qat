@@ -29,11 +29,11 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
 	for (const auto& sub : subtypes) {
 		if (sub.second.has_value()) {
 			auto* typ = sub.second.value();
-			if (not typ->is_trivially_copyable()) {
-				isTrivialCopy = false;
+			if (not typ->has_simple_copy()) {
+				isSimpleCopy = false;
 			}
-			if (not typ->is_trivially_movable()) {
-				isTrivialMove = false;
+			if (not typ->has_simple_move()) {
+				isSimpleMove = false;
 			}
 			SHOW("Getting size of the subtype in SUM TYPE")
 			usize size =
@@ -185,9 +185,9 @@ FileRange MixType::get_file_range() const { return fileRange; }
 
 bool MixType::is_type_sized() const { return true; }
 
-bool MixType::is_trivially_copyable() const { return isTrivialCopy; }
+bool MixType::has_simple_copy() const { return isSimpleCopy; }
 
-bool MixType::is_trivially_movable() const { return isTrivialMove; }
+bool MixType::has_simple_move() const { return isSimpleMove; }
 
 bool MixType::is_copy_constructible() const {
 	for (auto sub : subtypes) {

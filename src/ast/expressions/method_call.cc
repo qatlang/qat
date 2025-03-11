@@ -185,19 +185,19 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			inst = inst->make_local(ctx, None, instance->fileRange);
 		} else if ((memFn->get_method_type() == ir::MethodType::valueMethod) &&
 		           (inst->is_ghost_ref() || inst->is_ref())) {
-			if (instType->is_trivially_copyable() || instType->is_trivially_movable()) {
+			if (instType->has_simple_copy() || instType->has_simple_move()) {
 				if (inst->is_ref()) {
 					inst->load_ghost_ref(ctx->irCtx->builder);
 				}
 				auto origInst = inst;
 				inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()),
 				                      instType, true);
-				if (not instType->is_trivially_copyable()) {
+				if (not instType->has_simple_copy()) {
 					if (inst->is_ref() && not inst->get_ir_type()->as_ref()->has_variability()) {
-						ctx->Error("This is a reference without variability and hence cannot be trivially moved from",
+						ctx->Error("This is a reference without variability and hence simple-move is not possible",
 						           instance->fileRange);
 					} else if (inst->is_ghost_ref() && not inst->is_variable()) {
-						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           instance->fileRange);
 					}
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(instType->get_llvm_type()),
@@ -206,8 +206,9 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			} else {
 				ctx->Error(
 				    "The method to be called is a value method, so it requires a value of the parent type. The parent type is " +
-				        ctx->color(instType->to_string()) + " which is not trivially copyable or movable. Please use " +
-				        ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
+				        ctx->color(instType->to_string()) +
+				        " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") + " or " +
+				        ctx->color("'move") + " accordingly",
 				    fileRange);
 			}
 		}
@@ -287,19 +288,19 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 				auto* argValTy = currArg->get_ir_type();
 				auto  isRefVar =
                     currArg->is_ref() ? currArg->get_ir_type()->as_ref()->has_variability() : currArg->is_variable();
-				if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
+				if (argTy->has_simple_copy() || argTy->has_simple_move()) {
 					auto* argEmitLLVMValue = currArg->get_llvm();
 					argsEmit[i - 1]        = ir::Value::get(
                         ctx->irCtx->builder.CreateLoad(argTy->get_llvm_type(), currArg->get_llvm()), argTy, false);
-					if (not argTy->is_trivially_copyable()) {
+					if (not argTy->has_simple_copy()) {
 						if (not isRefVar) {
 							if (argValTy->is_ref()) {
 								ctx->Error(
-								    "This expression is a reference without variability and hence cannot be trivially moved from",
+								    "This expression is a reference without variability and hence simple-move is not possible",
 								    arguments[i - 1]->fileRange);
 							} else {
 								ctx->Error(
-								    "This expression does not have variability and hence cannot be trivially moved from",
+								    "This expression does not have variability and hence simple-move is not possible",
 								    arguments[i - 1]->fileRange);
 							}
 						}
@@ -308,7 +309,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 					}
 				} else {
 					ctx->Error("This expression is not a value and is of type " + ctx->color(argTy->to_string()) +
-					               " which is not trivially copyable or trivially movable. Please use " +
+					               " which does not have simple-copy and simple-move. Please use " +
 					               ctx->color("'copy") + " or " + ctx->color("'move") + " instead",
 					           arguments[i - 1]->fileRange);
 				}
@@ -332,17 +333,17 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 					if (currArg->get_ir_type()->is_ref()) {
 						currArg->load_ghost_ref(ctx->irCtx->builder);
 					}
-					if (argTy->is_trivially_copyable() || argTy->is_trivially_movable()) {
+					if (argTy->has_simple_copy() || argTy->has_simple_move()) {
 						auto* argLLVMVal = currArg->get_llvm();
 						argsEmit[i]      = ir::Value::get(
                             ctx->irCtx->builder.CreateLoad(argTy->get_llvm_type(), currArg->get_llvm()), argTy, false);
-						if (not argTy->is_trivially_copyable()) {
+						if (not argTy->has_simple_copy()) {
 							if (not isRefVar) {
 								ctx->Error("This expression " +
 								               String(currArg->get_ir_type()->is_ref()
 								                          ? "is a reference without variability"
 								                          : "does not have variability") +
-								               " and hence cannot be trivially moved from",
+								               " and hence simple-move is not possible",
 								           arguments[i]->fileRange);
 							}
 							ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(argTy->get_llvm_type()),
@@ -351,7 +352,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 					} else {
 						ctx->Error(
 						    "This expression is of type " + ctx->color(currArg->get_ir_type()->to_string()) +
-						        " which is not trivially copyable or movable. It cannot be passed as a variadic argument",
+						        " which does not have simple-copy and simple-move. It cannot be passed as a variadic argument",
 						    arguments[i]->fileRange);
 					}
 				}

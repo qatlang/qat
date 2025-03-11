@@ -141,7 +141,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			           name.range);
 		}
 	} else if (instType->is_maybe()) {
-		if (inst->is_value() && not instType->is_trivially_movable()) {
+		if (inst->is_value() && not instType->has_simple_move()) {
 			inst = inst->make_local(ctx, None, instance->fileRange);
 		}
 		if (name.value == "hasValue") {
@@ -233,7 +233,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				               " is not accessible here",
 				           fileRange);
 			}
-			if (inst->is_value() && not instType->is_trivially_movable()) {
+			if (inst->is_value() && not instType->has_simple_move()) {
 				inst = inst->make_local(ctx, None, instance->fileRange);
 			}
 			if (inst->is_prerun_value()) {

@@ -158,9 +158,9 @@ Maybe<String> OpaqueType::to_prerun_generic_string(ir::PrerunValue* preVal) cons
 
 bool OpaqueType::is_type_sized() const { return subTy ? subTy->is_type_sized() : size.has_value(); }
 
-bool OpaqueType::is_trivially_copyable() const { return subTy && subTy->is_trivially_copyable(); }
+bool OpaqueType::has_simple_copy() const { return subTy && subTy->has_simple_copy(); }
 
-bool OpaqueType::is_trivially_movable() const { return subTy && subTy->is_trivially_movable(); }
+bool OpaqueType::has_simple_move() const { return subTy && subTy->has_simple_move(); }
 
 Maybe<bool> OpaqueType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	if (subTy) {

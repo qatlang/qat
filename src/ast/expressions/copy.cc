@@ -76,7 +76,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 				} else {
 					return createIn;
 				}
-			} else if (candTy->is_trivially_copyable()) {
+			} else if (candTy->has_simple_copy()) {
 				if (isLocalDecl()) {
 					if (not candTy->is_same(localValue->get_ir_type())) {
 						ctx->Error(
@@ -115,9 +115,9 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 					                      candTy, true);
 				}
 			} else {
-				ctx->Error((candTy->is_struct() ? "Core type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
+				ctx->Error((candTy->is_struct() ? "Struct type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
 				               ctx->color(candTy->to_string()) +
-				               " does not have a copy constructor and is also not trivially copyable",
+				               " does not have a copy constructor and does not have simple-copy",
 				           fileRange);
 			}
 		} else {
@@ -127,7 +127,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 				if (expEmit->is_ref()) {
 					expEmit->load_ghost_ref(ctx->irCtx->builder);
 				}
-				if (candTy->is_trivially_copyable()) {
+				if (candTy->has_simple_copy()) {
 					ctx->irCtx->builder.CreateStore(
 					    ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),
 					    createIn->get_llvm());
@@ -136,9 +136,9 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 					(void)candTy->copy_assign_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
 					return createIn;
 				} else {
-					ctx->Error((candTy->is_struct() ? "Core type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
+					ctx->Error((candTy->is_struct() ? "Struct type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
 					               ctx->color(candTy->to_string()) +
-					               " does not have a copy assignment operator and is also not trivially copyable",
+					               " does not have a copy assignment operator and does not have simple-copy",
 					           fileRange);
 				}
 			} else {

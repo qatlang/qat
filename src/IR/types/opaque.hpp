@@ -70,8 +70,8 @@ class OpaqueType : public Type, public EntityOverview {
 	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* preVal) const final;
 	useit bool          is_type_sized() const final;
 	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
-	useit bool        is_trivially_copyable() const final;
-	useit bool        is_trivially_movable() const final;
+	useit bool        has_simple_copy() const final;
+	useit bool        has_simple_move() const final;
 
 	useit bool is_copy_constructible() const final;
 	useit bool is_copy_assignable() const final;

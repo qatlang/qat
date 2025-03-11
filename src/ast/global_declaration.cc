@@ -100,17 +100,17 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 				if (val->is_value()) {
 					irCtx->builder.CreateStore(val->get_llvm(), gvar);
 				} else {
-					if (typ->is_trivially_copyable() || typ->is_trivially_movable()) {
+					if (typ->has_simple_copy() || typ->has_simple_move()) {
 						if (val->is_ref()) {
 							val->load_ghost_ref(irCtx->builder);
 						}
 						auto origVal = val;
 						auto result  = irCtx->builder.CreateLoad(typ->get_llvm_type(), val->get_llvm());
-						if (not typ->is_trivially_copyable()) {
+						if (not typ->has_simple_copy()) {
 							if (origVal->is_ref() ? origVal->get_ir_type()->as_ref()->has_variability()
 							                      : origVal->is_variable()) {
 								irCtx->Error(
-								    "This expression does not have variability and hence cannot be trivially moved from",
+								    "This expression does not have variability and hence simple-move is not possible",
 								    value.value()->fileRange);
 							}
 							irCtx->builder.CreateStore(llvm::Constant::getNullValue(typ->get_llvm_type()),
@@ -119,7 +119,7 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 						irCtx->builder.CreateStore(result, gvar);
 					} else {
 						irCtx->Error("This expression is a reference to the type " + irCtx->color(typ->to_string()) +
-						                 " which is not trivially copyable or movable. Please use " +
+						                 " which does not have simple-copy or simple-move. Please use " +
 						                 irCtx->color("'copy") + " or " + irCtx->color("'move") + " accordingly",
 						             fileRange);
 					}

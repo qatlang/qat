@@ -199,15 +199,15 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
 		                           (subTy->is_mark() && subTy->as_mark()->is_slice()) ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
-	} else if (memberName.value == "is_trivially_copyable") {
+	} else if (memberName.value == "has_simple_copy") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_trivially_copyable() ? 1u : 0u),
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->has_simple_copy() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
-	} else if (memberName.value == "is_trivially_movable") {
+	} else if (memberName.value == "has_simple_move") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_trivially_movable() ? 1u : 0u),
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->has_simple_move() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_copy_constructible") {
 		zeroArgCheck();
@@ -232,20 +232,18 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 	} else if (memberName.value == "has_copy") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-		                           (subTy->is_trivially_copyable()) ||
-		                                   (subTy->is_copy_constructible() && subTy->is_copy_assignable())
-		                               ? 1u
-		                               : 0u),
+		    llvm::ConstantInt::get(
+		        llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+		        (subTy->has_simple_copy()) || (subTy->is_copy_constructible() && subTy->is_copy_assignable()) ? 1u
+		                                                                                                      : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "has_move") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-		                           (subTy->is_trivially_movable()) ||
-		                                   (subTy->is_move_constructible() && subTy->is_move_assignable())
-		                               ? 1u
-		                               : 0u),
+		    llvm::ConstantInt::get(
+		        llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+		        (subTy->has_simple_move()) || (subTy->is_move_constructible() && subTy->is_move_assignable()) ? 1u
+		                                                                                                      : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "is_default_constructible") {
 		zeroArgCheck();

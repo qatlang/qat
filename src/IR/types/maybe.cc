@@ -42,10 +42,10 @@ Type* MaybeType::get_subtype() const { return subTy; }
 
 String MaybeType::to_string() const { return "maybe:[" + String(isPacked ? "pack, " : "") + subTy->to_string() + "]"; }
 
-bool MaybeType::is_copy_constructible() const { return is_trivially_copyable() || subTy->is_copy_constructible(); }
+bool MaybeType::is_copy_constructible() const { return has_simple_copy() || subTy->is_copy_constructible(); }
 
 void MaybeType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 	} else {
 		if (is_copy_constructible()) {
@@ -80,10 +80,10 @@ void MaybeType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 	}
 }
 
-bool MaybeType::is_copy_assignable() const { return is_trivially_copyable() || subTy->is_copy_assignable(); }
+bool MaybeType::is_copy_assignable() const { return has_simple_copy() || subTy->is_copy_assignable(); }
 
 void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 	} else {
 		if (is_copy_assignable()) {
@@ -148,10 +148,10 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 	}
 }
 
-bool MaybeType::is_move_constructible() const { return is_trivially_movable() || subTy->is_move_constructible(); }
+bool MaybeType::is_move_constructible() const { return has_simple_move() || subTy->is_move_constructible(); }
 
 void MaybeType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else {
@@ -189,10 +189,10 @@ void MaybeType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 	}
 }
 
-bool MaybeType::is_move_assignable() const { return is_trivially_movable() || subTy->is_move_assignable(); }
+bool MaybeType::is_move_assignable() const { return has_simple_move() || subTy->is_move_assignable(); }
 
 void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else {

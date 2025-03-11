@@ -109,8 +109,8 @@ void StructType::update_overview() {
 	             ._("memberFunctions", memFnJson)
 	             ._("isDefaultConstructible", is_default_constructible())
 	             ._("isDestructible", is_destructible())
-	             ._("isTriviallyCopyable", is_trivially_copyable())
-	             ._("isTriviallyMovable", is_trivially_movable())
+	             ._("hasSimpleCopy", has_simple_copy())
+	             ._("hasSimpleMove", has_simple_move())
 	             ._("isCopyConstructible", is_copy_constructible())
 	             ._("isMoveConstructible", is_move_constructible())
 	             ._("isCopyAssignable", is_copy_assignable())
@@ -200,15 +200,15 @@ StaticMember* StructType::get_static_field(String const& name) const {
 
 bool StructType::is_type_sized() const { return not members.empty(); }
 
-bool StructType::is_trivially_copyable() const {
-	if (explicitTrivialCopy) {
+bool StructType::has_simple_copy() const {
+	if (explicitSimpleCopy) {
 		return true;
 	} else if (has_copy_constructor() || has_copy_assignment()) {
 		return false;
 	} else {
 		auto result = true;
 		for (auto mem : members) {
-			if (not mem->type->is_trivially_copyable()) {
+			if (not mem->type->has_simple_copy()) {
 				result = false;
 				break;
 			}
@@ -217,14 +217,14 @@ bool StructType::is_trivially_copyable() const {
 	}
 }
 
-bool StructType::is_trivially_movable() const {
-	if (explicitTrivialMove) {
+bool StructType::has_simple_move() const {
+	if (explicitSimpleMove) {
 		return true;
 	} else if (has_move_constructor() || has_move_assignment()) {
 		return false;
 	} else {
 		for (auto mem : members) {
-			if (not mem->type->is_trivially_movable()) {
+			if (not mem->type->has_simple_move()) {
 				return false;
 			}
 		}
@@ -233,7 +233,7 @@ bool StructType::is_trivially_movable() const {
 }
 
 bool StructType::is_copy_constructible() const {
-	if (is_trivially_copyable() || has_copy_constructor()) {
+	if (has_simple_copy() || has_copy_constructor()) {
 		return true;
 	} else {
 		bool allMemsRes = true;
@@ -248,7 +248,7 @@ bool StructType::is_copy_constructible() const {
 }
 
 bool StructType::is_copy_assignable() const {
-	if (is_trivially_copyable() || has_copy_assignment()) {
+	if (has_simple_copy() || has_copy_assignment()) {
 		return true;
 	} else {
 		bool allMemsRes = true;
@@ -263,7 +263,7 @@ bool StructType::is_copy_assignable() const {
 }
 
 bool StructType::is_move_constructible() const {
-	if (is_trivially_movable() || has_move_constructor()) {
+	if (has_simple_move() || has_move_constructor()) {
 		return true;
 	} else {
 		bool allMemsRes = true;
@@ -278,7 +278,7 @@ bool StructType::is_move_constructible() const {
 }
 
 bool StructType::is_move_assignable() const {
-	if (is_trivially_movable() || has_move_assignment()) {
+	if (has_simple_move() || has_move_assignment()) {
 		return true;
 	} else {
 		bool allMemsRes = true;
@@ -293,7 +293,7 @@ bool StructType::is_move_assignable() const {
 }
 
 bool StructType::is_destructible() const {
-	if (is_trivially_movable() || has_destructor()) {
+	if (has_simple_move() || has_destructor()) {
 		return true;
 	} else {
 		bool allMemsRes = true;
@@ -311,7 +311,7 @@ void StructType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Valu
 	if (not is_copy_constructible()) {
 		irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()), None);
 	}
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 	} else if (has_copy_constructor()) {
 		(void)get_copy_constructor()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
@@ -332,7 +332,7 @@ void StructType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 	if (not is_copy_assignable()) {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()), None);
 	}
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 	} else if (has_copy_assignment()) {
 		(void)get_copy_assignment()->call(irCtx, {first->get_llvm(), second->get_llvm()}, None, fun->get_module());
@@ -353,7 +353,7 @@ void StructType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Valu
 	if (not is_move_constructible()) {
 		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()), None);
 	}
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else if (has_move_constructor()) {
@@ -375,7 +375,7 @@ void StructType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 	if (not is_move_assignable()) {
 		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
 	}
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else if (has_move_assignment()) {
@@ -399,7 +399,7 @@ void StructType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
 	}
 	if (has_destructor()) {
 		(void)get_destructor()->call(irCtx, {instance->get_llvm()}, None, fun->get_module());
-	} else if (is_trivially_movable()) {
+	} else if (has_simple_move()) {
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), instance->get_llvm());
 	} else {
 		for (usize i = 0; i < members.size(); i++) {

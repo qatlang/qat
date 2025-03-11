@@ -228,14 +228,14 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					    EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent));
 					if (memVal->get_ir_type()->is_same(mem->type)) {
 						if (memVal->is_ghost_ref()) {
-							if (mem->type->is_trivially_copyable() || mem->type->is_trivially_movable()) {
+							if (mem->type->has_simple_copy() || mem->type->has_simple_move()) {
 								irCtx->builder.CreateStore(
 								    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
 								    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
-								if (not mem->type->is_trivially_copyable()) {
+								if (not mem->type->has_simple_copy()) {
 									if (not memVal->is_variable()) {
 										irCtx->Error(
-										    "This expression does not have variability and hence cannot be trivially moved from",
+										    "This expression does not have variability and hence simple-move is not possible",
 										    mem->defaultValue.value()->fileRange);
 									}
 									irCtx->builder.CreateStore(llvm::Constant::getNullValue(mem->type->get_llvm_type()),
@@ -244,7 +244,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 							} else {
 								irCtx->Error(
 								    "This expression is of type " + irCtx->color(memVal->get_ir_type()->to_string()) +
-								        " which is not trivially copyable or trivially movable. Please use " +
+								        " which does not have simple-copy and simple-move. Please use " +
 								        irCtx->color("'copy") + " or " + irCtx->color("'move") + " accordingly",
 								    mem->defaultValue.value()->fileRange);
 							}
@@ -254,14 +254,14 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
 						}
 					} else if (memVal->is_ref() && memVal->get_ir_type()->as_ref()->get_subtype()->is_same(mem->type)) {
-						if (mem->type->is_trivially_copyable() || mem->type->is_trivially_movable()) {
+						if (mem->type->has_simple_copy() || mem->type->has_simple_move()) {
 							irCtx->builder.CreateStore(
 							    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
 							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
-							if (not mem->type->is_trivially_copyable()) {
+							if (not mem->type->has_simple_copy()) {
 								if (not memVal->get_ir_type()->as_ref()->has_variability()) {
 									irCtx->Error(
-									    "This expression is a reference without variability and hence cannot be trivially moved from",
+									    "This expression is a reference without variability and hence simple-move is not possible",
 									    mem->defaultValue.value()->fileRange);
 								}
 								irCtx->builder.CreateStore(llvm::Constant::getNullValue(mem->type->get_llvm_type()),
@@ -270,7 +270,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						} else {
 							irCtx->Error("This expression is a reference to type " +
 							                 irCtx->color(mem->type->to_string()) +
-							                 " which is not trivially copyable or trivially movable. Please use " +
+							                 " which does not have simple-copy and simple-move. Please use " +
 							                 irCtx->color("'copy") + " or " + irCtx->color("'move") + " accordingly",
 							             mem->defaultValue.value()->fileRange);
 						}

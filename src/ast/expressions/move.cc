@@ -79,7 +79,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 				} else {
 					return createIn;
 				}
-			} else if (candTy->is_trivially_movable()) {
+			} else if (candTy->has_simple_move()) {
 				if (isLocalDecl()) {
 					if (not candTy->is_same(localValue->get_ir_type())) {
 						ctx->Error(
@@ -122,9 +122,9 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					return ir::Value::get(loadRes, candTy, true);
 				}
 			} else {
-				ctx->Error((candTy->is_struct() ? "Core type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
+				ctx->Error((candTy->is_struct() ? "Struct type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
 				               ctx->color(candTy->to_string()) +
-				               " does not have a move constructor and is also not trivially movable",
+				               " does not have a move constructor and does not have simple-move",
 				           fileRange);
 			}
 		} else {
@@ -134,7 +134,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 				if (expEmit->is_ref()) {
 					expEmit->load_ghost_ref(ctx->irCtx->builder);
 				}
-				if (candTy->is_trivially_movable()) {
+				if (candTy->has_simple_move()) {
 					ctx->irCtx->builder.CreateStore(
 					    ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),
 					    createIn->get_llvm());
@@ -151,9 +151,9 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					}
 					return createIn;
 				} else {
-					ctx->Error((candTy->is_struct() ? "Core type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
+					ctx->Error((candTy->is_struct() ? "Struct type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
 					               ctx->color(candTy->to_string()) +
-					               " does not have a move assignment operator and is also not trivially movable",
+					               " does not have a move assignment operator and does not have simple-move",
 					           fileRange);
 				}
 			} else {

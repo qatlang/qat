@@ -63,7 +63,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	} else {
 		if (type) {
 			declType = type->emit(ctx);
-			if (declType->is_trivially_movable()) {
+			if (declType->has_simple_move()) {
 				auto result = ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range);
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(declType->get_llvm_type()),
 				                                result->get_llvm());
@@ -71,7 +71,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 			} else {
 				ctx->Error(
 				    "The type of the local declaration is " + ctx->color(declType->to_string()) +
-				        " which is not trivially movable. Expression to be assigned can only be skipped if the value is trivially movable",
+				        " which does not have simple-move. Expression to be assigned can only be skipped if the type supports simple-move",
 				    fileRange);
 			}
 		}
@@ -139,22 +139,22 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 				               ctx->color(declType->to_string()),
 				           value.value()->fileRange);
 			}
-			if (expValTy->is_trivially_copyable() || expValTy->is_trivially_movable()) {
+			if (expValTy->has_simple_copy() || expValTy->has_simple_move()) {
 				ctx->irCtx->builder.CreateStore(
 				    ctx->irCtx->builder.CreateLoad(expValTy->get_llvm_type(), expVal->get_llvm()),
 				    new_value->get_llvm());
-				if (not expValTy->is_trivially_copyable()) {
+				if (not expValTy->has_simple_copy()) {
 					if (expVal->is_ref() && not expVal->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error(
 						    "This expression is of type " + ctx->color(expVal->get_ir_type()->to_string()) +
-						        " which is a reference without variability and hence cannot be trivially moved from",
+						        " which is a reference without variability and hence simple-move is not possible",
 						    value.value()->fileRange);
 					} else if (not expVal->is_variable()) {
-						ctx->Error("This expression does not have variability and hence cannot be trivially moved from",
+						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           value.value()->fileRange);
 					}
 					// MOVE WARNING
-					ctx->irCtx->Warning("There is a trivial move occuring here. Do you want to use " +
+					ctx->irCtx->Warning("There is a simple-move occuring here. Do you want to use " +
 					                        ctx->color("'move") + " to make it explicit and clear?",
 					                    value.value()->fileRange);
 					ctx->irCtx->builder.CreateStore(llvm::ConstantExpr::getNullValue(expValTy->get_llvm_type()),
@@ -166,8 +166,8 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 			} else {
 				// NON-TRIVIAL COPY & MOVE ERROR
 				ctx->Error("The expression provided is of type " + ctx->color(expValTy->to_string()) +
-				               " which cannot be trivially copied or moved. Please do " + ctx->color("'copy") + " or " +
-				               ctx->color("'move") + " accordingly",
+				               " which does not have simple-copy and simple-move. Please do " + ctx->color("'copy") +
+				               " or " + ctx->color("'move") + " accordingly",
 				           value.value()->fileRange);
 			}
 		} else {

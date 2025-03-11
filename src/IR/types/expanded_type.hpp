@@ -43,8 +43,8 @@ class ExpandedType : public Type {
 	Method*      copyAssignment  = nullptr; // Copy assignment operator
 	Method*      moveAssignment  = nullptr; // Move assignment operator
 
-	bool explicitTrivialCopy     = false;
-	bool explicitTrivialMove     = false;
+	bool explicitSimpleCopy      = false;
+	bool explicitSimpleMove      = false;
 	bool needsImplicitDestructor = false;
 	bool hasDefinedDestructor    = false;
 

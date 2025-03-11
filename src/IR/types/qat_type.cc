@@ -300,9 +300,9 @@ OpaqueType* Type::as_opaque() const {
 	                                             : (OpaqueType*)this;
 }
 
-bool Type::is_trivially_copyable() const { return false; }
+bool Type::has_simple_copy() const { return false; }
 
-bool Type::is_trivially_movable() const { return false; }
+bool Type::has_simple_move() const { return false; }
 
 bool Type::has_prerun_default_value() const { return false; }
 
@@ -319,64 +319,62 @@ void Type::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Func
 	}
 }
 
-bool Type::is_copy_constructible() const { return is_trivially_copyable(); }
+bool Type::is_copy_constructible() const { return has_simple_copy(); }
 
 void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
-		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
-	} else {
+	if (not has_simple_copy()) {
 		irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()) +
-		                 " as it is not trivially copyable",
+		                 " as it does not support simple-copy",
 		             None);
 	}
+	irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 }
 
-bool Type::is_copy_assignable() const { return is_trivially_copyable(); }
+bool Type::is_copy_assignable() const { return has_simple_copy(); }
 
 void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
-		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
-	} else {
+	if (not has_simple_copy()) {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()) +
-		                 " as it is not trivially copyable",
+		                 " as it does not support simple-copy",
 		             None);
 	}
+	irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 }
 
-bool Type::is_move_constructible() const { return is_trivially_movable(); }
+bool Type::is_move_constructible() const { return has_simple_move(); }
 
 void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else {
 		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()) +
-		                 " as it is not trivially movable",
+		                 " as it does not support simple-move",
 		             None);
 	}
 }
 
-bool Type::is_move_assignable() const { return is_trivially_movable(); }
+bool Type::is_move_assignable() const { return has_simple_move(); }
 
 void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else {
 		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()) +
-		                 " as it is not trivially movable",
+		                 " as it does not support simple-move",
 		             None);
 	}
 }
 
-bool Type::is_destructible() const { return is_trivially_movable(); }
+bool Type::is_destructible() const { return has_simple_move(); }
 
 void Type::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), instance->get_llvm());
 	} else {
 		irCtx->Error("Could not destroy an instance of type " + irCtx->color(to_string()) +
-		                 " as it is not trivially movable",
+		                 " as it does not support simple-move",
 		             None);
 	}
 }

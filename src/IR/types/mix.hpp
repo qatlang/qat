@@ -19,10 +19,10 @@ class MixType : public ExpandedType, public EntityOverview {
   private:
 	Vec<Pair<Identifier, Maybe<Type*>>> subtypes;
 
-	u64  maxSize       = 8u;
-	bool isPack        = false;
-	bool isTrivialCopy = true;
-	bool isTrivialMove = true;
+	u64  maxSize      = 8u;
+	bool isPack       = false;
+	bool isSimpleCopy = true;
+	bool isSimpleMove = true;
 
 	usize           tagBitWidth = 1;
 	Maybe<usize>    defaultVal;
@@ -73,8 +73,8 @@ class MixType : public ExpandedType, public EntityOverview {
 		return true;
 	}
 
-	useit bool is_trivially_copyable() const final;
-	useit bool is_trivially_movable() const final;
+	useit bool has_simple_copy() const final;
+	useit bool has_simple_move() const final;
 	useit bool is_copy_constructible() const final;
 	useit bool is_copy_assignable() const final;
 	useit bool is_move_constructible() const final;

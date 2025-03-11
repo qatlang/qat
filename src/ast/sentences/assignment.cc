@@ -59,20 +59,20 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 						     << expTy->as_reference()->get_subtype()->to_string())
 						expTy = expTy->as_ref()->get_subtype();
 					}
-					if (expTy->is_trivially_copyable() || expTy->is_trivially_movable()) {
+					if (expTy->has_simple_copy() || expTy->has_simple_move()) {
 						auto prevRef = expVal->get_llvm();
 						expVal =
 						    ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), expVal->get_llvm()),
 						                   expVal->get_ir_type(), expVal->is_variable());
-						if (not expTy->is_trivially_copyable()) {
+						if (not expTy->has_simple_copy()) {
 							if (expTy->is_ref() && not expTy->as_ref()->has_variability()) {
 								ctx->Error(
 								    "This expression is of type " + ctx->color(expTy->to_string()) +
-								        " which is a reference without variability and hence cannot be trivially moved from",
+								        " which is a reference without variability and hence simple-move is not possible",
 								    value->fileRange);
 							} else if (not expVal->is_variable()) {
 								ctx->Error(
-								    "This expression does not have variability and hence cannot be trivially moved from",
+								    "This expression does not have variability and hence simple-move is not possible",
 								    fileRange);
 							}
 							// FIXME - Use zero/default value
@@ -85,7 +85,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 					} else {
 						ctx->Error("The expression on the right hand side is of type " +
 						               ctx->color(expTy->to_string()) +
-						               " which is not trivially copyable or trivially movable. Please use " +
+						               " which does not have simple-copy and simple-move. Please use " +
 						               ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
 						           value->fileRange);
 					}

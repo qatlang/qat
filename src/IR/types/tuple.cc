@@ -70,7 +70,7 @@ bool TupleType::is_destructible() const {
 }
 
 void TupleType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvmType, second->get_llvm()), first->get_llvm());
 	} else {
 		if (is_copy_constructible()) {
@@ -91,7 +91,7 @@ void TupleType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 }
 
 void TupleType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_copyable()) {
+	if (has_simple_copy()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvmType, second->get_llvm()), first->get_llvm());
 	} else {
 		if (is_copy_assignable()) {
@@ -111,7 +111,7 @@ void TupleType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 }
 
 void TupleType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvmType, second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), second->get_llvm());
 	} else {
@@ -133,7 +133,7 @@ void TupleType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 }
 
 void TupleType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvmType, second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), second->get_llvm());
 	} else {
@@ -154,7 +154,7 @@ void TupleType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 }
 
 void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
-	if (is_trivially_movable()) {
+	if (has_simple_move()) {
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), instance->get_llvm());
 	} else {
 		if (is_destructible()) {

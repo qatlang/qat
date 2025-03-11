@@ -98,9 +98,9 @@ class DefinitionType : public ExpandedType, public EntityOverview {
 
 	useit bool is_type_sized() const final;
 
-	useit bool is_trivially_copyable() const final;
+	useit bool has_simple_copy() const final;
 
-	useit bool is_trivially_movable() const final;
+	useit bool has_simple_move() const final;
 
 	useit bool is_copy_constructible() const final;
 

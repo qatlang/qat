@@ -434,7 +434,7 @@ void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& funct
 		for (auto* fun : genericFunctions) {
 			genericFunctionsJson.push_back(fun->overviewToJson());
 		}
-		for (auto* cTy : coreTypes) {
+		for (auto* cTy : structTypes) {
 			structTypesJson.push_back(cTy->overviewToJson());
 		}
 		for (auto* cTy : genericStructTypes) {
@@ -756,9 +756,9 @@ void Mod::bring_module(Mod* other, const VisibilityInfo& _visibility, Maybe<Iden
 
 void Mod::bring_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
-		broughtCoreTypes.push_back(Brought<StructType>(bName.value(), cTy, visib));
+		broughtStructTypes.push_back(Brought<StructType>(bName.value(), cTy, visib));
 	} else {
-		broughtCoreTypes.push_back(Brought<StructType>(cTy, visib));
+		broughtStructTypes.push_back(Brought<StructType>(cTy, visib));
 	}
 }
 
@@ -1450,10 +1450,10 @@ OpaqueType* Mod::get_opaque_type(const String& name, const AccessInfo& reqInfo) 
 	return nullptr;
 }
 
-// CORE TYPE
+// STRUCT TYPE
 
 bool Mod::has_struct_type(const String& name, AccessInfo reqInfo) const {
-	for (auto* typ : coreTypes) {
+	for (auto* typ : structTypes) {
 		if ((typ->get_name().value == name) && typ->is_accessible(reqInfo)) {
 			return true;
 		}
@@ -1471,7 +1471,7 @@ bool Mod::has_struct_type(const String& name, AccessInfo reqInfo) const {
 
 bool Mod::has_brought_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	SHOW("")
-	for (const auto& brought : broughtCoreTypes) {
+	for (const auto& brought : broughtStructTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
 		}
@@ -1497,9 +1497,9 @@ Pair<bool, String> Mod::has_struct_type_in_imports(const String& name, const Acc
 }
 
 StructType* Mod::get_struct_type(const String& name, const AccessInfo& reqInfo) const {
-	for (auto* coreType : coreTypes) {
-		if ((coreType->get_name().value == name) && coreType->is_accessible(reqInfo)) {
-			return coreType;
+	for (auto* structTy : structTypes) {
+		if ((structTy->get_name().value == name) && structTy->is_accessible(reqInfo)) {
+			return structTy;
 		}
 	}
 	for (auto sub : submodules) {
@@ -1510,7 +1510,7 @@ StructType* Mod::get_struct_type(const String& name, const AccessInfo& reqInfo) 
 			}
 		}
 	}
-	for (const auto& brought : broughtCoreTypes) {
+	for (const auto& brought : broughtStructTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return brought.get();
 		}
@@ -1770,13 +1770,13 @@ FlagType* Mod::get_flag_type(const String& name, const AccessInfo& reqInfo) cons
 	return nullptr;
 }
 
-// GENERIC CORE TYPE
+// GENERIC STRUCT TYPE
 
 bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const {
 	for (auto* tempCTy : genericStructTypes) {
-		SHOW("Generic core type: " << tempCTy->get_name().value)
+		SHOW("Generic struct type: " << tempCTy->get_name().value)
 		if ((tempCTy->get_name().value == name) && tempCTy->get_visibility().is_accessible(reqInfo)) {
-			SHOW("Found generic core type")
+			SHOW("Found generic struct type")
 			return true;
 		}
 	}
@@ -1788,7 +1788,7 @@ bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const 
 			}
 		}
 	}
-	SHOW("No generic core types named " + name + " found")
+	SHOW("No generic struct types named " + name + " found")
 	return false;
 }
 
@@ -1820,9 +1820,9 @@ Pair<bool, String> Mod::has_generic_struct_type_in_imports(const String& name, c
 }
 
 GenericStructType* Mod::get_generic_struct_type(const String& name, const AccessInfo& reqInfo) {
-	for (auto* tempCore : genericStructTypes) {
-		if ((tempCore->get_name().value == name) && tempCore->get_visibility().is_accessible(reqInfo)) {
-			return tempCore;
+	for (auto* structTy : genericStructTypes) {
+		if ((structTy->get_name().value == name) && structTy->get_visibility().is_accessible(reqInfo)) {
+			return structTy;
 		}
 	}
 	for (auto sub : submodules) {
@@ -2485,7 +2485,7 @@ std::set<String> Mod::get_all_object_files() const {
 	for (auto& bMod : broughtModules) {
 		moduleHandler(bMod.get());
 	}
-	for (auto& bTy : broughtCoreTypes) {
+	for (auto& bTy : broughtStructTypes) {
 		moduleHandler(bTy.get()->get_module());
 	}
 	for (auto& bTy : broughtGenericStructTypes) {
@@ -2560,7 +2560,7 @@ std::set<String> Mod::get_all_linkable_libs() const {
 	for (auto& bMod : broughtModules) {
 		moduleHandler(bMod.get());
 	}
-	for (auto& bTy : broughtCoreTypes) {
+	for (auto& bTy : broughtStructTypes) {
 		moduleHandler(bTy.get()->get_module());
 	}
 	for (auto& bTy : broughtGenericStructTypes) {

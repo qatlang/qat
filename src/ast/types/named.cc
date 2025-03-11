@@ -165,13 +165,13 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		auto* oTy = mod->get_opaque_type(entityName.value, reqInfo);
 		if (oTy->is_generic()) {
 			ctx->Error(oTy->is_subtype_struct()
-			               ? "Core type "
+			               ? "Struct type "
 			               : (oTy->is_subtype_mix() ? "Mix type " : "Type ") + ctx->color(oTy->to_string()) +
 			                     " is a generic type and hence cannot be used as a normal type",
 			           fileRange);
 		}
 		if (not oTy->get_visibility().is_accessible(reqInfo)) {
-			ctx->Error((oTy->is_subtype_struct() ? "Core type "
+			ctx->Error((oTy->is_subtype_struct() ? "Struct type "
 			                                     : (oTy->is_subtype_mix() ? "Mix type " : "Incomplete opaque type ")) +
 			               ctx->color(oTy->get_full_name()) + " inside module " +
 			               ctx->color(mod->get_referrable_name()) + " is not accessible here",

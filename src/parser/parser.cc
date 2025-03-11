@@ -5,13 +5,13 @@
 #include "../ast/constructor.hpp"
 #include "../ast/convertor.hpp"
 #include "../ast/define_choice_type.hpp"
-#include "../ast/define_core_type.hpp"
 #include "../ast/define_flag_type.hpp"
 #include "../ast/define_mix_type.hpp"
 #include "../ast/define_opaque_type.hpp"
 #include "../ast/define_prerun_function.hpp"
 #include "../ast/define_region.hpp"
 #include "../ast/define_skill.hpp"
+#include "../ast/define_struct_type.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/do_skill.hpp"
 #include "../ast/expressions/address_of.hpp"
@@ -3075,7 +3075,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				break;
 			}
 			case TokenType::identifier: {
-				SHOW("Identifier inside core type: " << token.value)
+				SHOW("Identifier inside struct type: " << token.value)
 				auto start = i;
 				if (is_next(TokenType::givenTypeSeparator, i) || is_next(TokenType::parenthesisOpen, i)) {
 					if (foundFirstMember && not finishedMemberList) {
@@ -3130,7 +3130,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 						add_error("Expected [ to start the function body", RangeSpan(start, i));
 					}
 				} else if (is_next(TokenType::typeSeparator, i)) {
-					if (not memParent->is_define_core_type()) {
+					if (not memParent->is_define_struct_type()) {
 						add_error("Member fields are only allowed for struct types", RangeSpan(start, i + 1));
 					}
 					if (finishedMemberList) {
@@ -3169,11 +3169,11 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 						          RangeSpan(start, i));
 					}
 					SHOW("Adding member")
-					memParent->as_define_core_type()->addMember(
+					memParent->as_define_struct_type()->addMember(
 					    ast::DefineStructType::Member::create(memType, memName, memVar, getVisibSpec(memVisib),
 					                                          memValue, fromVisibRange(memVisib, RangeSpan(start, i))));
 				} else {
-					add_error("Unexpected identifier found inside core type", RangeAt(i));
+					add_error("Unexpected identifier found inside struct type", RangeAt(i));
 				}
 				break;
 			}
@@ -3186,7 +3186,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				haveNonMemberEntities = true;
 				auto start            = i;
 				if (memParent->has_default_constructor()) {
-					add_error("A default destructor is already defined for the core type", RangeAt(i));
+					add_error("A default destructor is already defined for the struct type", RangeAt(i));
 				}
 				auto entMeta = do_entity_metadata(preCtx, i, "default constructor", 0);
 				i            = entMeta.lastIndex;
@@ -3429,7 +3429,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				ast::Type*          returnTy = ast::VoidType::create(FileRange{"", {0u, 0u}, {0u, 0u}});
 				Vec<ast::Argument*> args;
 				if (is_next(TokenType::binaryOperator, i)) {
-					SHOW("Binary operator for core type: " << ValueAt(i + 1))
+					SHOW("Binary operator for struct type: " << ValueAt(i + 1))
 					if (ValueAt(i + 1) == "-") {
 						if (is_next(TokenType::parenthesisOpen, i) && is_next(TokenType::parenthesisClose, i + 1)) {
 							isUnary = true;
@@ -4032,7 +4032,7 @@ ast::PlainInitialiser* Parser::do_plain_initialiser(ParserContext& preCtx, ast::
 				}
 			} else {
 				add_error("Expected an identifier for the name of the member "
-				          "of the core type",
+				          "of the struct type",
 				          RangeAt(j));
 			}
 		}

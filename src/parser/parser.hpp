@@ -69,7 +69,7 @@ class Parser {
 
 	void set_tokens(Vec<lexer::Token>* tokens);
 
-	void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* coreTy);
+	void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* memberParent);
 
 	void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef,
 	                    Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);

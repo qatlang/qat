@@ -120,7 +120,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 					}
 				} else {
 					ctx->Error("Cannot use member initialisation for type " + ctx->color(parentTy->to_string()) +
-					               ". It is only allowed for core & mix types",
+					               ". It is only allowed for struct & mix types",
 					           fileRange);
 				}
 				if (value->has_type_inferrance()) {

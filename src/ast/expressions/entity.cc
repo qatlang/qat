@@ -233,9 +233,9 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		} else if (mod->has_struct_type(entityName.value, reqInfo) ||
 		           mod->has_brought_struct_type(entityName.value, reqInfo) ||
 		           mod->has_struct_type_in_imports(entityName.value, reqInfo).first) {
-			auto resCoreType = mod->get_struct_type(entityName.value, reqInfo);
-			resCoreType->add_mention(entityName.range);
-			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resCoreType, mod)->id,
+			auto resStructType = mod->get_struct_type(entityName.value, reqInfo);
+			resStructType->add_mention(entityName.range);
+			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resStructType, mod)->id,
 			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_mix_type(entityName.value, reqInfo) ||
 		           mod->has_brought_mix_type(entityName.value, reqInfo) ||

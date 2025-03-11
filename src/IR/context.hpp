@@ -34,7 +34,7 @@ namespace qat::ir {
 enum class GenericEntityType {
 	function,
 	method,
-	coreType,
+	structType,
 	mixType,
 	typeDefinition,
 	skill,

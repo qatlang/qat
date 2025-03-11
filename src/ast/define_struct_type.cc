@@ -1,4 +1,4 @@
-#include "./define_core_type.hpp"
+#include "./define_struct_type.hpp"
 #include "../IR/generics.hpp"
 #include "../IR/types/struct_type.hpp"
 #include "../utils/identifier.hpp"
@@ -16,7 +16,7 @@ namespace qat::ast {
 
 Json DefineStructType::Member::to_json() const {
 	return Json()
-	    ._("nodeType", "coreTypeMember")
+	    ._("nodeType", "structTypeMember")
 	    ._("name", name)
 	    ._("type", type->to_json())
 	    ._("variability", variability)
@@ -27,7 +27,7 @@ Json DefineStructType::Member::to_json() const {
 
 Json DefineStructType::StaticMember::to_json() const {
 	return Json()
-	    ._("nodeType", "coreTypeMember")
+	    ._("nodeType", "structTypeStaticMember")
 	    ._("name", name)
 	    ._("type", type->to_json())
 	    ._("variability", variability)
@@ -92,7 +92,7 @@ void DefineStructType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 		auto eqStructTy =
 		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
 		setOpaque(ir::OpaqueType::get(
-		    name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::core, mod,
+		    name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::STRUCT, mod,
 		    eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
 		    EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, irMeta));
 	}
@@ -161,11 +161,11 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 		}
 		auto eqStructTy =
 		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
-		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericCoreType is "
+		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericStructType is "
 		                                       << genericStructType)
 		setOpaque(
 		    ir::OpaqueType::get(cTyName, genericsIR, is_generic() ? Maybe<u64>(genericStructType->get_id()) : None,
-		                        ir::OpaqueSubtypeKind::core, mod,
+		                        ir::OpaqueSubtypeKind::STRUCT, mod,
 		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
 		                        mainVisibility, irCtx->llctx, irMeta));
 	}
@@ -174,9 +174,9 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 		genericStructType->opaqueVariants.push_back(ir::GenericVariant<ir::OpaqueType>(get_opaque(), genericsToFill));
 	}
 	auto typeEmitCtx = EmitCtx::get(irCtx, mod)->with_opaque_parent(get_opaque());
-	SHOW("Created opaque for core type")
+	SHOW("Created opaque for struct type")
 	Vec<ir::StructField*> mems;
-	SHOW("Generating core type members")
+	SHOW("Generating struct type members")
 	for (auto* mem : members) {
 		auto* memTy = mem->type->emit(typeEmitCtx);
 		if (memTy->is_opaque() && not memTy->as_opaque()->has_subtype()) {
@@ -199,7 +199,7 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 		mems.push_back(ir::StructField::create(mem->name, memTy, mem->variability, mem->expression,
 		                                       typeEmitCtx->get_visibility_info(mem->visibSpec)));
 	}
-	SHOW("Creating core type: " << cTyName.value)
+	SHOW("Creating struct type: " << cTyName.value)
 	auto resultType = ir::StructType::create(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx,
 	                                         None, isPackedStruct.value_or(false));
 	if (genericStructType) {
@@ -506,7 +506,7 @@ Json DefineStructType::to_json() const {
 		staticMembersJsonValue.emplace_back(mem->to_json());
 	}
 	return Json()
-	    ._("nodeType", "defineCoreType")
+	    ._("nodeType", "defineStructType")
 	    ._("members", membersJsonValue)
 	    ._("staticMembers", staticMembersJsonValue)
 	    ._("hasVisibility", visibSpec.has_value())

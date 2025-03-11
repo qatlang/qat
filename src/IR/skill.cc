@@ -194,7 +194,7 @@ bool GenericSkill::all_types_have_defaults() const {
 
 Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
 	for (auto& var : variants) {
-		SHOW("Core type variant: " << var.get()->get_full_name())
+		SHOW("Struct type variant: " << var.get()->get_full_name())
 		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
 			return var.get();
 		}

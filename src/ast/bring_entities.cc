@@ -335,7 +335,8 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 				SHOW("Bring entity is struct")
 				auto* cTy = mod->get_struct_type(entName.value, reqInfo);
 				if (not cTy->is_accessible(reqInfo)) {
-					irCtx->Error("Core type " + irCtx->color(entName.value) + " is not accessible in the current scope",
+					irCtx->Error("Struct type " + irCtx->color(entName.value) +
+					                 " is not accessible in the current scope",
 					             entName.range);
 				}
 				currentMod->bring_struct_type(cTy, emitCtx->get_visibility_info(visibSpec), ent->alias);

@@ -10,7 +10,6 @@
 namespace qat::ast {
 
 ir::Value* MemberAccess::emit(EmitCtx* ctx) {
-	// NOLINTBEGIN(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
 	if (isExpSelf) {
 		if (ctx->get_fn()->is_method()) {
 			auto* memFn = (ir::Method*)ctx->get_fn();
@@ -191,7 +190,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 		    ((isVariationAccess.has_value() && isVariationAccess.value())
 		         ? not instType->as_expanded()->has_variation(name.value)
 		         : not instType->as_expanded()->has_normal_method(name.value))) {
-			ctx->Error("Core type " + ctx->color(instType->as_struct()->to_string()) +
+			ctx->Error("Struct type " + ctx->color(instType->as_struct()->to_string()) +
 			               " does not have a member field, member function or variation function named " +
 			               ctx->color(name.value) + ". Please check the logic",
 			           name.range);
@@ -229,7 +228,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				}
 			}
 			if (not mem->visibility.is_accessible(ctx->get_access_info())) {
-				ctx->Error("Member " + ctx->color(name.value) + " of core type " + ctx->color(eTy->get_full_name()) +
+				ctx->Error("Member " + ctx->color(name.value) + " of struct type " + ctx->color(eTy->get_full_name()) +
 				               " is not accessible here",
 				           fileRange);
 			}
@@ -290,7 +289,6 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 		           fileRange);
 	}
 	return nullptr;
-	// NOLINTEND(readability-magic-numbers, clang-analyzer-core.CallAndMessage)
 }
 
 Json MemberAccess::to_json() const {

@@ -40,7 +40,7 @@ void DefineMixType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	opaquedType = ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::mix, mod,
+	opaquedType = ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::MIX, mod,
 	                                  foundSizeForAssociation
 	                                      ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(llvm::StructType::get(
 	                                            irCtx->llctx,

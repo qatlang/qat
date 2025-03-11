@@ -149,15 +149,15 @@ class GenericDefinitionType : public Uniq, public EntityOverview {
 
   public:
 	GenericDefinitionType(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                      Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineCoreType, Mod* parent,
+	                      Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineStructType, Mod* parent,
 	                      const VisibilityInfo& visibInfo);
 
 	useit static GenericDefinitionType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
 	                                           Maybe<ast::PrerunExpression*> constraint,
-	                                           ast::TypeDefinition* defineCoreType, Mod* parent,
+	                                           ast::TypeDefinition* defineStructType, Mod* parent,
 	                                           const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericDefinitionType), std::move(name), std::move(generics), constraint,
-		                         defineCoreType, parent, visibInfo);
+		                         defineStructType, parent, visibInfo);
 	}
 
 	~GenericDefinitionType() {

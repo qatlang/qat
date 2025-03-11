@@ -489,8 +489,8 @@ class Mod final : public Uniq, public EntityOverview {
 	Vec<Brought<OpaqueType>> broughtOpaqueTypes;
 	Vec<Brought<OpaqueType>> broughtGenericOpaqueTypes;
 
-	Vec<StructType*>         coreTypes;
-	Vec<Brought<StructType>> broughtCoreTypes;
+	Vec<StructType*>         structTypes;
+	Vec<Brought<StructType>> broughtStructTypes;
 
 	Vec<ChoiceType*>         choiceTypes;
 	Vec<Brought<ChoiceType>> broughtChoiceTypes;
@@ -734,7 +734,7 @@ class Mod final : public Uniq, public EntityOverview {
 	void update_overview() final;
 	void output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
 	                         Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
-	                         Vec<JsonValue>& genericCoreTypesJson, Vec<JsonValue>& coreTypesJson,
+	                         Vec<JsonValue>& genericStructTypesJSON, Vec<JsonValue>& structTypesJson,
 	                         Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
 	                         Vec<JsonValue>& defsJson, Vec<JsonValue>& genericTypeDefsJSON, Vec<JsonValue>& skillsJSON,
 	                         Vec<JsonValue>& genericSkillsJSON);
@@ -785,7 +785,7 @@ class Mod final : public Uniq, public EntityOverview {
 	useit Pair<bool, String> has_opaque_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit OpaqueType*        get_opaque_type(const String& name, const AccessInfo& reqInfo) const;
 
-	// CORE TYPE
+	// STRUCT TYPE
 
 	useit bool has_struct_type(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;

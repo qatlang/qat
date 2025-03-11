@@ -20,7 +20,7 @@ namespace qat::ir {
 class Mod;
 class Method;
 
-enum class OpaqueSubtypeKind { core, mix, Union, unknown };
+enum class OpaqueSubtypeKind { STRUCT, MIX, Union, unknown };
 
 class OpaqueType : public Type, public EntityOverview {
 	friend class ast::DefineStructType;

@@ -1,5 +1,5 @@
-#ifndef QAT_AST_DEFINE_CORE_HPP
-#define QAT_AST_DEFINE_CORE_HPP
+#ifndef QAT_AST_DEFINE_STRUCT_HPP
+#define QAT_AST_DEFINE_STRUCT_HPP
 
 #include "./expression.hpp"
 #include "./types/qat_type.hpp"
@@ -130,9 +130,9 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	useit bool has_copy_assignment() const;
 	useit bool has_move_assignment() const;
 
-	useit bool is_define_core_type() const final { return true; }
+	useit bool is_define_struct_type() const final { return true; }
 
-	useit DefineStructType* as_define_core_type() final { return this; }
+	useit DefineStructType* as_define_struct_type() final { return this; }
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
@@ -140,7 +140,7 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 
 	useit Json to_json() const final;
 
-	useit NodeType nodeType() const final { return NodeType::DEFINE_CORE_TYPE; }
+	useit NodeType nodeType() const final { return NodeType::DEFINE_STRUCT_TYPE; }
 
 	~DefineStructType() final;
 };

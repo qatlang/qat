@@ -696,7 +696,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 
 void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange& fileRange) {
 	SHOW("Starting function return handle for: " << fun->get_full_name())
-	// FIXME - Support destructors for types besides core types
+	// FIXME - Support destructors for types besides struct types
 	auto* block = fun->get_block();
 	if (block->has_todo()) {
 		return;

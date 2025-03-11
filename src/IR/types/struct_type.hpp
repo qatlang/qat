@@ -26,7 +26,7 @@ class StructField final : public EntityOverview, public Uniq {
   public:
 	StructField(Identifier _name, Type* _type, bool _variability, Maybe<ast::Expression*> _defVal,
 	            const VisibilityInfo& _visibility)
-	    : EntityOverview("coreTypeMember",
+	    : EntityOverview("structField",
 	                     Json()
 	                         ._("name", _name.value)
 	                         ._("type", _type->to_string())
@@ -195,10 +195,10 @@ class GenericStructType : public Uniq, public EntityOverview {
 	                  ast::DefineStructType* defineStructType, Mod* parent, VisibilityInfo const& visibInfo);
 
 	useit static GenericStructType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                                       ast::PrerunExpression* _constraint, ast::DefineStructType* defineCoreType,
+	                                       ast::PrerunExpression* _constraint, ast::DefineStructType* defineStructType,
 	                                       Mod* parent, const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericStructType), std::move(name), std::move(generics), _constraint,
-		                         defineCoreType, parent, visibInfo);
+		                         defineStructType, parent, visibInfo);
 	}
 
 	~GenericStructType() {

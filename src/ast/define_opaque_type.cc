@@ -38,7 +38,7 @@ void DefineOpaqueType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* i
 	if (metaInfo.has_value()) {
 		irMeta = metaInfo.value().toIR(emitCtx);
 	}
-	(void)ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::core, parent, None,
+	(void)ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::STRUCT, parent, None,
 	                          emitCtx->get_visibility_info(visibSpec), irCtx->llctx, irMeta);
 }
 

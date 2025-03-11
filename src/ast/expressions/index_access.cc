@@ -135,7 +135,6 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				}
 				if (llvm::isa<llvm::ConstantInt>(ind->get_llvm())) {
 					SHOW("Index Access : Index is a constant")
-					// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
 					if (llvm::cast<llvm::ConstantInt>(ind->get_llvm())->isZero()) {
 						SHOW("Returning the first element from inbounds")
 						return ir::Value::get(ctx->irCtx->builder.CreateInBoundsGEP(instType->get_llvm_type(),

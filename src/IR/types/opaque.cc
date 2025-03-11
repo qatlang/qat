@@ -12,9 +12,9 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
                        VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
     : EntityOverview(
           _subtypeKind.has_value()
-              ? (_subtypeKind.value() == OpaqueSubtypeKind::core
-                     ? "coreType"
-                     : (_subtypeKind.value() == OpaqueSubtypeKind::mix
+              ? (_subtypeKind.value() == OpaqueSubtypeKind::STRUCT
+                     ? "structType"
+                     : (_subtypeKind.value() == OpaqueSubtypeKind::MIX
                             ? "mixType"
                             : (_subtypeKind.value() == OpaqueSubtypeKind::Union ? "unionType" : "opaqueType")))
               : "opaqueType",
@@ -31,7 +31,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 		foreignID = parent->get_relevant_foreign_id();
 	}
 	auto linkNames = parent->get_link_names().newWith(
-	    LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::mix)
+	    LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::MIX)
 	                                 ? LinkUnitType::mix
 	                                 : (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::Union
 	                                        ? LinkUnitType::toggle
@@ -114,9 +114,9 @@ GenericArgument* OpaqueType::get_generic_parameter(const String& name) const {
 
 VisibilityInfo const& OpaqueType::get_visibility() const { return visibility; }
 
-bool OpaqueType::is_subtype_struct() const { return subtypeKind == OpaqueSubtypeKind::core; }
+bool OpaqueType::is_subtype_struct() const { return subtypeKind == OpaqueSubtypeKind::STRUCT; }
 
-bool OpaqueType::is_subtype_mix() const { return subtypeKind == OpaqueSubtypeKind::mix; }
+bool OpaqueType::is_subtype_mix() const { return subtypeKind == OpaqueSubtypeKind::MIX; }
 
 bool OpaqueType::is_subtype_unknown() const { return subtypeKind == OpaqueSubtypeKind::unknown; }
 

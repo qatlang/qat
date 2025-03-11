@@ -73,7 +73,6 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 			}
 		}
 		SHOW("Found convertor/constructor")
-		// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
 		auto argTys = cons->get_ir_type()->as_function()->get_argument_types();
 		for (usize i = 1; i < argTys.size(); i++) {
 			if (argTys.at(i)->get_type()->is_ref()) {

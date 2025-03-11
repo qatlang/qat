@@ -188,16 +188,16 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
-	auto  argIRTypes = fnEmit->get_ir_type()->as_function()->get_argument_types();
-	auto* coreRefTy  = argIRTypes.at(0)->get_type()->as_ref();
-	auto* self       = block->new_local("''", coreRefTy, prototype->isVariationFn,
-	                                    coreRefTy->get_subtype()->as_struct()->get_name().range);
+	auto  argIRTypes  = fnEmit->get_ir_type()->as_function()->get_argument_types();
+	auto* structRefTy = argIRTypes.at(0)->get_type()->as_ref();
+	auto* self        = block->new_local("''", structRefTy, prototype->isVariationFn,
+	                                     structRefTy->get_subtype()->as_struct()->get_name().range);
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 	self->load_ghost_ref(irCtx->builder);
 	if ((prototype->opr == OperatorKind::COPY_ASSIGNMENT) || (prototype->opr == OperatorKind::MOVE_ASSIGNMENT)) {
 		auto* argVal = block->new_local(
 		    prototype->argName->value,
-		    ir::RefType::get(prototype->opr == OperatorKind::MOVE_ASSIGNMENT, coreRefTy->get_subtype(), irCtx), false,
+		    ir::RefType::get(prototype->opr == OperatorKind::MOVE_ASSIGNMENT, structRefTy->get_subtype(), irCtx), false,
 		    prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1u), argVal->get_llvm());
 	} else {

@@ -53,28 +53,28 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 	if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
 	    mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
 	    mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {
-		auto* genericCoreTy = mod->get_generic_struct_type(entityName.value, reqInfo);
-		if (not genericCoreTy->get_visibility().is_accessible(reqInfo)) {
+		auto* genericStructTy = mod->get_generic_struct_type(entityName.value, reqInfo);
+		if (not genericStructTy->get_visibility().is_accessible(reqInfo)) {
 			auto fullName = Identifier::fullName(names);
-			ctx->Error("Generic core type " + ctx->color(fullName.value) + " is not accessible here", fullName.range);
+			ctx->Error("Generic struct type " + ctx->color(fullName.value) + " is not accessible here", fullName.range);
 		}
 		SHOW("Added mention for generic")
-		genericCoreTy->add_mention(entityName.range);
+		genericStructTy->add_mention(entityName.range);
 		Vec<ir::GenericToFill*> types;
 		if (genericTypes.empty()) {
 			SHOW("Checking if all generic abstracts have defaults")
-			if (not genericCoreTy->all_parameters_have_default()) {
+			if (not genericStructTy->all_parameters_have_default()) {
 				ctx->Error(
 				    "Not all generic parameters in this type have a default value associated with it, and hence the type parameter list cannot be empty. Use " +
 				        ctx->color("default") + " to use the default type or value of the generic parameter.",
 				    fileRange);
 			}
 			SHOW("Check complete")
-		} else if (genericCoreTy->get_parameter_count() != genericTypes.size()) {
+		} else if (genericStructTy->get_parameter_count() != genericTypes.size()) {
 			ctx->Error(
-			    "Generic core type " + ctx->color(genericCoreTy->get_name().value) + " has " +
-			        ctx->color(std::to_string(genericCoreTy->get_parameter_count())) + " generic parameters. But " +
-			        ((genericCoreTy->get_parameter_count() > genericTypes.size()) ? "only " : "") +
+			    "Generic struct type " + ctx->color(genericStructTy->get_name().value) + " has " +
+			        ctx->color(std::to_string(genericStructTy->get_parameter_count())) + " generic parameters. But " +
+			        ((genericStructTy->get_parameter_count() > genericTypes.size()) ? "only " : "") +
 			        ctx->color(std::to_string(genericTypes.size())) +
 			        " values were provided. Not all generic parameters have default values, and hence the number of values provided must match. Use " +
 			        ctx->color("default") + " to use the default type or value of the generic parameter.",
@@ -84,12 +84,12 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 				if (genericTypes.at(i)->is_prerun()) {
 					auto* gen = genericTypes.at(i);
 					if (gen->is_prerun() && (gen->as_prerun()->nodeType() == NodeType::PRERUN_DEFAULT)) {
-						((ast::PrerunDefault*)(gen->as_prerun()))->setGenericAbstract(genericCoreTy->getGenericAt(i));
-					} else if (genericCoreTy->getGenericAt(i)->as_typed() &&
-					           (genericCoreTy->getGenericAt(i)->as_prerun()->getType() != nullptr)) {
+						((ast::PrerunDefault*)(gen->as_prerun()))->setGenericAbstract(genericStructTy->getGenericAt(i));
+					} else if (genericStructTy->getGenericAt(i)->as_typed() &&
+					           (genericStructTy->getGenericAt(i)->as_prerun()->getType() != nullptr)) {
 						if (gen->as_prerun()->has_type_inferrance()) {
 							gen->as_prerun()->as_type_inferrable()->set_inference_type(
-							    genericCoreTy->getGenericAt(i)->as_prerun()->getType());
+							    genericStructTy->getGenericAt(i)->as_prerun()->getType());
 						}
 					}
 				}
@@ -97,7 +97,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 			}
 		}
 		SHOW("Filling generics")
-		auto* tyRes = genericCoreTy->fill_generics(types, ctx->irCtx, fileRange);
+		auto* tyRes = genericStructTy->fill_generics(types, ctx->irCtx, fileRange);
 		SHOW("Filled generics: " << tyRes->is_struct())
 		SHOW("Generic filled: " << tyRes->to_string())
 		SHOW("  with llvm type: " << (tyRes->get_llvm_type()->isStructTy()

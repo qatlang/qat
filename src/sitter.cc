@@ -221,13 +221,14 @@ void QatSitter::initialise() {
 		auto* cfg               = cli::Config::get();
 		if (cfg->export_code_metadata()) {
 			log->say("Exporting code metadata");
-			Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON, genericCoreTypesJSON,
-			    structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON, genericTypeDefsJSON,
-			    skillsJSON, genericSkillsJSON;
+			Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
+			    genericStructTypesJSON, structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON,
+			    genericTypeDefsJSON, skillsJSON, genericSkillsJSON;
 			for (auto* entity : fileEntities) {
 				entity->output_all_overview(modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
-				                            genericCoreTypesJSON, structTypesJSON, mixTypesJSON, regionJSON, choiceJSON,
-				                            typeDefinitionsJSON, genericTypeDefsJSON, skillsJSON, genericSkillsJSON);
+				                            genericStructTypesJSON, structTypesJSON, mixTypesJSON, regionJSON,
+				                            choiceJSON, typeDefinitionsJSON, genericTypeDefsJSON, skillsJSON,
+				                            genericSkillsJSON);
 			}
 			Vec<JsonValue> expressionUnits;
 			for (auto* exp : ir::Value::allValues) {
@@ -264,7 +265,7 @@ void QatSitter::initialise() {
 			               ._("prerunFunctions", prerunFunctionsJSON)
 			               ._("genericFunctions", genericFunctionsJSON)
 			               ._("structTypes", structTypesJSON)
-			               ._("genericStructTypes", genericCoreTypesJSON)
+			               ._("genericStructTypes", genericStructTypesJSON)
 			               ._("mixTypes", mixTypesJSON)
 			               ._("regions", regionJSON)
 			               ._("choiceTypes", choiceJSON)

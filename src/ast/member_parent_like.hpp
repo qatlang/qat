@@ -136,11 +136,11 @@ class MemberParentLike {
 
 	useit bool has_move_assignment() const { return moveAssignment != nullptr; }
 
-	useit virtual bool is_define_core_type() const { return false; }
+	useit virtual bool is_define_struct_type() const { return false; }
 
 	useit virtual bool is_done_skill() const { return false; }
 
-	useit virtual DefineStructType* as_define_core_type() { return nullptr; }
+	useit virtual DefineStructType* as_define_struct_type() { return nullptr; }
 
 	useit virtual DoSkill* as_done_skill() { return nullptr; }
 };

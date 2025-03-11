@@ -262,7 +262,6 @@ JsonValue::JsonValue(JsonValue const& other) : data(nullptr), type(JsonValueType
 JsonValue& JsonValue::operator=(JsonValue const& other) {
 	clear();
 	type = other.type;
-	// NOLINTBEGIN(clang-analyzer-core.NullDereference, clang-analyzer-core.NonNullParamChecker)
 	switch (type) {
 		case JsonValueType::integer: {
 			data = new int64_t(*((int64_t*)other.data));
@@ -294,7 +293,6 @@ JsonValue& JsonValue::operator=(JsonValue const& other) {
 			break;
 		}
 	}
-	// NOLINTEND(clang-analyzer-core.NullDereference, clang-analyzer-core.NonNullParamChecker)
 	return *this;
 }
 

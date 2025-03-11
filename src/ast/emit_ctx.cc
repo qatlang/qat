@@ -68,7 +68,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		}
 		String tyDesc;
 		if (opq->is_subtype_struct()) {
-			tyDesc = opq->is_generic() ? "generic core type" : "core type";
+			tyDesc = opq->is_generic() ? "generic struct type" : "struct type";
 		} else if (opq->is_subtype_mix()) {
 			tyDesc = opq->is_generic() ? "generic mix type" : "mix type";
 		} else {
@@ -78,15 +78,15 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
 	} else if (mod->has_struct_type(name.value, reqInfo)) {
-		Error("A core type named " + color(name.value) + " exists in this module. Please change name of this " +
+		Error("A struct type named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
 	} else if (mod->has_brought_struct_type(name.value, None)) {
-		Error("A core type named " + color(name.value) + " is brought into this module. Please change name of this " +
+		Error("A struct type named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
 	} else if (mod->has_struct_type_in_imports(name.value, reqInfo).first) {
-		Error("A core type named " + color(name.value) + " is present inside the module " +
+		Error("A struct type named " + color(name.value) + " is present inside the module " +
 		          color(mod->has_struct_type_in_imports(name.value, reqInfo).second) +
 		          " which is brought into the current module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
@@ -96,20 +96,21 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		    mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
-		Error("A generic core type named " + color(name.value) + " exists in this module. Please change name of this " +
-		          entityType + " or check the codebase for inconsistencies",
+		Error("A generic struct type named " + color(name.value) +
+		          " exists in this module. Please change name of this " + entityType +
+		          " or check the codebase for inconsistencies",
 		      name.range);
 	} else if (mod->has_brought_generic_struct_type(name.value, None)) {
 		if (genericID.has_value() &&
 		    mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
 		}
-		Error("A generic core type named " + color(name.value) +
+		Error("A generic struct type named " + color(name.value) +
 		          " is brought into this module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
 		      name.range);
 	} else if (mod->has_generic_struct_type_in_imports(name.value, reqInfo).first) {
-		Error("A generic core type named " + color(name.value) + " is present inside the module " +
+		Error("A generic struct type named " + color(name.value) + " is present inside the module " +
 		          color(mod->has_generic_struct_type_in_imports(name.value, reqInfo).second) +
 		          " which is brought into the current module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",

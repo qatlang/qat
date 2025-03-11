@@ -333,12 +333,12 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
-	auto            argIRTypes = fnEmit->get_ir_type()->as_function()->get_argument_types();
-	ir::RefType*    coreRefTy  = nullptr;
-	ir::LocalValue* self       = nullptr;
+	auto            argIRTypes  = fnEmit->get_ir_type()->as_function()->get_argument_types();
+	ir::RefType*    structRefTy = nullptr;
+	ir::LocalValue* self        = nullptr;
 	if (prototype->fnTy != MethodType::Static && prototype->fnTy != MethodType::valued) {
-		coreRefTy = argIRTypes.at(0)->get_type()->as_ref();
-		self      = block->new_local("''", coreRefTy, false, coreRefTy->get_subtype()->as_struct()->get_name().range);
+		structRefTy = argIRTypes.at(0)->get_type()->as_ref();
+		self = block->new_local("''", structRefTy, false, structRefTy->get_subtype()->as_struct()->get_name().range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 		self->load_ghost_ref(irCtx->builder);
 	}
@@ -348,9 +348,9 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 		SHOW("Argument type in member function is " << argIRTypes.at(i)->get_type()->to_string())
 		if (argIRTypes.at(i)->is_member_argument()) {
 			auto* memPtr = irCtx->builder.CreateStructGEP(
-			    coreRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),
-			    coreRefTy->get_subtype()->as_struct()->get_index_of(argIRTypes.at(i)->get_name()).value());
-			auto* memTy = coreRefTy->get_subtype()->as_struct()->get_type_of_field(argIRTypes.at(i)->get_name());
+			    structRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),
+			    structRefTy->get_subtype()->as_struct()->get_index_of(argIRTypes.at(i)->get_name()).value());
+			auto* memTy = structRefTy->get_subtype()->as_struct()->get_type_of_field(argIRTypes.at(i)->get_name());
 			if (memTy->is_ref()) {
 				memPtr = irCtx->builder.CreateLoad(memTy->as_ref()->get_llvm_type(), memPtr);
 			}

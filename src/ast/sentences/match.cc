@@ -174,7 +174,6 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			trueBlock->destroy_locals(ctx);
 			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 			if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
-				// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
 				falseBlock->set_active(ctx->irCtx->builder);
 			}
 		}
@@ -287,7 +286,6 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			trueBlock->destroy_locals(ctx);
 			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 			if (i == (chain.size() - 1) ? elseCase.has_value() : true) {
-				// NOLINTNEXTLINE(clang-analyzer-core.CallAndMessage)
 				falseBlock->set_active(ctx->irCtx->builder);
 			}
 		}

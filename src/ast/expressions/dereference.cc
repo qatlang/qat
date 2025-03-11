@@ -45,7 +45,7 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 			auto* uFn = expTy->as_expanded()->get_unary_operator("@");
 			return uFn->call(ctx->irCtx, {expEmit->get_llvm()}, localID, ctx->mod);
 		} else {
-			ctx->Error("Core type " + ctx->color(expTy->as_struct()->get_full_name()) +
+			ctx->Error("Struct type " + ctx->color(expTy->as_struct()->get_full_name()) +
 			               " does not have the dereference operator #",
 			           exp->fileRange);
 		}

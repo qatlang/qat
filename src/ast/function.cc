@@ -128,8 +128,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 	for (usize i = 0; i < arguments.size(); i++) {
 		auto arg = arguments[i];
 		if (arg->is_member_arg()) {
-			irCtx->Error("Function is not a member function of a core type and cannot "
-			             "use member argument syntax",
+			irCtx->Error("Function is not a method of a struct type and cannot use member argument syntax",
 			             arg->get_name().range);
 		}
 		if (arg->is_variadic_arg()) {

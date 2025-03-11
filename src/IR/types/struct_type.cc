@@ -1,5 +1,5 @@
 #include "./struct_type.hpp"
-#include "../../ast/define_core_type.hpp"
+#include "../../ast/define_struct_type.hpp"
 #include "../../ast/types/generic_abstract.hpp"
 #include "../../show.hpp"
 #include "../generics.hpp"
@@ -18,9 +18,9 @@ namespace qat::ir {
 StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
                        Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
                        Maybe<MetaInfo> _metaInfo, bool isPacked)
-    : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("coreType", Json(), _name.range),
+    : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("structType", Json(), _name.range),
       opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
-	SHOW("Generating LLVM Type for core type members")
+	SHOW("Generating LLVM Type for struct type members")
 	Vec<llvm::Type*> subtypes;
 	for (auto* mem : members) {
 		subtypes.push_back(mem->type->get_llvm_type());
@@ -31,7 +31,7 @@ StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generi
 	linkingName = opaquedType->get_name_for_linking();
 	llvm::cast<llvm::StructType>(llvmType)->setBody(subtypes, isPacked);
 	if (not is_generic()) {
-		mod->coreTypes.push_back(this);
+		mod->structTypes.push_back(this);
 	}
 	opaquedType->set_sub_type(this);
 	ovInfo            = opaquedType->ovInfo;
@@ -422,9 +422,9 @@ TypeKind StructType::type_kind() const { return TypeKind::STRUCT; }
 String StructType::to_string() const { return get_full_name(); }
 
 GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
-                                     ast::PrerunExpression* _constraint, ast::DefineStructType* _defineCoreType,
+                                     ast::PrerunExpression* _constraint, ast::DefineStructType* _defineStructType,
                                      Mod* _parent, const VisibilityInfo& _visibInfo)
-    : EntityOverview("genericCoreType",
+    : EntityOverview("genericStructType",
                      Json()
                          ._("name", _name.value)
                          ._("fullName", _parent->get_fullname_with_child(_name.value))
@@ -432,7 +432,7 @@ GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractT
                          ._("moduleID", _parent->get_id())
                          ._("visibility", _visibInfo),
                      _name.range),
-      name(std::move(_name)), generics(_generics), defineStructType(_defineCoreType), parent(_parent),
+      name(std::move(_name)), generics(_generics), defineStructType(_defineStructType), parent(_parent),
       visibility(_visibInfo), constraint(_constraint) {
 	parent->genericStructTypes.push_back(this);
 }
@@ -481,7 +481,7 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 		}
 	}
 	for (auto& var : variants) {
-		SHOW("Core type variant: " << var.get()->get_full_name())
+		SHOW("Struct type variant: " << var.get()->get_full_name())
 		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
 			return var.get();
 		}
@@ -512,7 +512,7 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 	irCtx->add_active_generic(
 	    ir::GenericEntityMarker{
 	        variantName,
-	        ir::GenericEntityType::coreType,
+	        ir::GenericEntityType::structType,
 	        range,
 	        0u,
 	        genParams,

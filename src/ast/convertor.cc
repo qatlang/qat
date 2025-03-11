@@ -32,14 +32,14 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	ir::Type* candidate = nullptr;
 	if (isFrom && argName.has_value() && isMemArg) {
 		if (state.parent->get_parent_type()->is_struct()) {
-			auto coreType = state.parent->get_parent_type()->as_struct();
-			if (not coreType->has_field_with_name(argName->value)) {
+			auto structType = state.parent->get_parent_type()->as_struct();
+			if (not structType->has_field_with_name(argName->value)) {
 				irCtx->Error("No member field named " + irCtx->color(argName->value) + " found in struct type " +
-				                 irCtx->color(coreType->get_full_name()),
+				                 irCtx->color(structType->get_full_name()),
 				             fileRange);
 			}
-			coreType->get_field_with_name(argName->value)->add_mention(argName->range);
-			candidate = coreType->get_type_of_field(argName->value);
+			structType->get_field_with_name(argName->value)->add_mention(argName->range);
+			candidate = structType->get_type_of_field(argName->value);
 		} else if (state.parent->get_parent_type()->is_mix()) {
 			auto mixTy  = state.parent->get_parent_type()->as_mix();
 			auto mixRes = mixTy->has_variant_with_name(argName->value);
@@ -56,7 +56,7 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 			candidate = mixTy->get_variant_with_name(argName->value);
 		} else {
 			irCtx->Error(
-			    "The parent type of this from convertor is not a mix or core type, and hence member argument syntax cannot be used here",
+			    "The parent type of this from convertor is not a mix or struct type, and hence member argument syntax cannot be used here",
 			    argName->range);
 		}
 	} else {
@@ -217,9 +217,9 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	if (prototype->isFrom) {
 		if (state.parent->get_parent_type()->is_struct()) {
 			SHOW("Setting default values for fields")
-			auto coreTy = state.parent->get_parent_type()->as_struct();
-			for (usize i = 0; i < coreTy->get_field_count(); i++) {
-				auto mem = coreTy->get_field_at(i);
+			auto structTy = state.parent->get_parent_type()->as_struct();
+			for (usize i = 0; i < structTy->get_field_count(); i++) {
+				auto mem = structTy->get_field_at(i);
 				if (fnEmit->is_member_initted(i)) {
 					continue;
 				}
@@ -231,7 +231,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 							if (mem->type->has_simple_copy() || mem->type->has_simple_move()) {
 								irCtx->builder.CreateStore(
 								    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
-								    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+								    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 								if (not mem->type->has_simple_copy()) {
 									if (not memVal->is_variable()) {
 										irCtx->Error(
@@ -251,13 +251,13 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						} else {
 							irCtx->builder.CreateStore(
 							    memVal->get_llvm(),
-							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+							    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 						}
 					} else if (memVal->is_ref() && memVal->get_ir_type()->as_ref()->get_subtype()->is_same(mem->type)) {
 						if (mem->type->has_simple_copy() || mem->type->has_simple_move()) {
 							irCtx->builder.CreateStore(
 							    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
-							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+							    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 							if (not mem->type->has_simple_copy()) {
 								if (not memVal->get_ir_type()->as_ref()->has_variability()) {
 									irCtx->Error(
@@ -280,7 +280,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					           (mem->type->as_ref()->has_variability() ? memVal->is_variable() : true)) {
 						irCtx->builder.CreateStore(
 						    memVal->get_llvm(),
-						    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+						    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 					} else {
 						irCtx->Error("The expected type of the member field is " +
 						                 irCtx->color(mem->type->to_string()) + " but the value provided is of type " +
@@ -299,7 +299,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						               fileRange);
 						irCtx->builder.CreateStore(
 						    mem->type->get_prerun_default_value(irCtx)->get_llvm(),
-						    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+						    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 					} else {
 						irCtx->Warning("Member field " + irCtx->highlightWarning(mem->name.value) +
 						                   " is default constructed at the end of this convertor. Try using " +
@@ -308,8 +308,9 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						               fileRange);
 						mem->type->default_construct_value(
 						    irCtx,
-						    ir::Value::get(irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i),
-						                   ir::RefType::get(true, mem->type, irCtx), false),
+						    ir::Value::get(
+						        irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i),
+						        ir::RefType::get(true, mem->type, irCtx), false),
 						    fnEmit);
 					}
 					fnEmit->add_init_member({i, fileRange});

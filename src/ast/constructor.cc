@@ -50,22 +50,22 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 					    arg->get_name().range);
 				}
 				if (state.parent->get_parent_type()->is_struct()) {
-					auto* coreType = state.parent->get_parent_type()->as_struct();
-					if (coreType->has_field_with_name(arg->get_name().value)) {
+					auto* structType = state.parent->get_parent_type()->as_struct();
+					if (structType->has_field_with_name(arg->get_name().value)) {
 						for (auto mem : presentMembers) {
 							if (mem->name.value == arg->get_name().value) {
 								irCtx->Error("The member " + irCtx->color(mem->name.value) + " is repeating here",
 								             arg->get_name().range);
 							}
 						}
-						auto* mem = coreType->get_field_with_name(arg->get_name().value);
+						auto* mem = structType->get_field_with_name(arg->get_name().value);
 						mem->add_mention(arg->get_name().range);
-						presentMembers.push_back(coreType->get_field_with_name(arg->get_name().value));
-						SHOW("Getting core type member: " << arg->get_name().value)
+						presentMembers.push_back(structType->get_field_with_name(arg->get_name().value));
+						SHOW("Getting struct type member: " << arg->get_name().value)
 						generatedTypes.push_back({None, mem->type});
 					} else {
-						irCtx->Error("No member field named " + arg->get_name().value + " in the core type " +
-						                 coreType->get_full_name(),
+						irCtx->Error("No member field named " + arg->get_name().value + " in the struct type " +
+						                 structType->get_full_name(),
 						             arg->get_name().range);
 					}
 				} else {
@@ -141,8 +141,8 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 			                                         .range});
 		}
 		if (state.parent->get_parent_type()->is_struct()) {
-			auto  coreType   = state.parent->get_parent_type()->as_struct();
-			auto& allMembers = coreType->get_members();
+			auto  structType = state.parent->get_parent_type()->as_struct();
+			auto& allMembers = structType->get_members();
 			for (auto* mem : allMembers) {
 				bool foundMem = false;
 				for (auto presentMem : presentMembers) {
@@ -275,7 +275,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 				} else {
 					irCtx->Error("Cannot use member argument syntax for the parent type " +
 					                 irCtx->color(parentRefTy->get_subtype()->to_string()) +
-					                 " as it is not a mix or core type",
+					                 " as it is not a mix or struct type",
 					             prototype->arguments[i - 1]->get_name().range);
 				}
 				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr);
@@ -299,9 +299,9 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	    EmitCtx::get(irCtx, state.parent->get_module())->with_member_parent(state.parent)->with_function(fnEmit));
 	if (state.parent->get_parent_type()->is_struct()) {
 		SHOW("Setting default values for fields")
-		auto coreTy = state.parent->get_parent_type()->as_struct();
-		for (usize i = 0; i < coreTy->get_field_count(); i++) {
-			auto mem = coreTy->get_field_at(i);
+		auto structTy = state.parent->get_parent_type()->as_struct();
+		for (usize i = 0; i < structTy->get_field_count(); i++) {
+			auto mem = structTy->get_field_at(i);
 			if (fnEmit->is_member_initted(i)) {
 				continue;
 			}
@@ -316,7 +316,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						if (mem->type->has_simple_copy() || mem->type->has_simple_move()) {
 							irCtx->builder.CreateStore(
 							    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
-							    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+							    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 							if (not mem->type->has_simple_copy()) {
 								if (not memVal->is_variable()) {
 									irCtx->Error(
@@ -336,13 +336,13 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					} else {
 						irCtx->builder.CreateStore(
 						    memVal->get_llvm(),
-						    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+						    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 					}
 				} else if (memVal->is_ref() && memVal->get_ir_type()->as_ref()->get_subtype()->is_same(mem->type)) {
 					if (mem->type->has_simple_copy() || mem->type->has_simple_move()) {
 						irCtx->builder.CreateStore(
 						    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
-						    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+						    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 						if (not mem->type->has_simple_copy()) {
 							if (not memVal->get_ir_type()->as_ref()->has_variability()) {
 								irCtx->Error(
@@ -362,7 +362,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 				           memVal->is_ghost_ref() &&
 				           (mem->type->as_ref()->has_variability() ? memVal->is_variable() : true)) {
 					irCtx->builder.CreateStore(memVal->get_llvm(), irCtx->builder.CreateStructGEP(
-					                                                   coreTy->get_llvm_type(), self->get_llvm(), i));
+					                                                   structTy->get_llvm_type(), self->get_llvm(), i));
 				} else {
 					irCtx->Error("The expected type of the member field is " + irCtx->color(mem->type->to_string()) +
 					                 " but the value provided is of type " +
@@ -381,7 +381,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					               fileRange);
 					irCtx->builder.CreateStore(
 					    mem->type->get_prerun_default_value(irCtx)->get_llvm(),
-					    irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i));
+					    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 				} else {
 					irCtx->Warning("Member field " + irCtx->highlightWarning(mem->name.value) +
 					                   " is default constructed at the end of this constructor. Try using " +
@@ -390,7 +390,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					               fileRange);
 					mem->type->default_construct_value(
 					    irCtx,
-					    ir::Value::get(irCtx->builder.CreateStructGEP(coreTy->get_llvm_type(), self->get_llvm(), i),
+					    ir::Value::get(irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i),
 					                   ir::RefType::get(true, mem->type, irCtx), false),
 					    fnEmit);
 				}

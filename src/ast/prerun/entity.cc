@@ -191,9 +191,9 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		                            ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_struct_type(name.value, reqInfo) || mod->has_brought_struct_type(name.value, reqInfo) ||
 	           mod->has_struct_type_in_imports(name.value, reqInfo).first) {
-		auto resCoreType = mod->get_struct_type(name.value, reqInfo);
-		resCoreType->add_mention(name.range);
-		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resCoreType, mod)->id,
+		auto resStructType = mod->get_struct_type(name.value, reqInfo);
+		resStructType->add_mention(name.range);
+		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resStructType, mod)->id,
 		                            ir::TypedType::get(ctx->irCtx));
 	} else if (mod->has_mix_type(name.value, reqInfo) || mod->has_brought_mix_type(name.value, reqInfo) ||
 	           mod->has_mix_type_in_imports(name.value, reqInfo).first) {
@@ -245,7 +245,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 	           mod->has_brought_generic_struct_type(name.value, reqInfo) ||
 	           mod->has_generic_struct_type_in_imports(name.value, reqInfo).first) {
 		ctx->Error(ctx->color(name.value) +
-		               " is a generic core type and cannot be used as a value or type in prerun expressions",
+		               " is a generic struct type and cannot be used as a value or type in prerun expressions",
 		           name.range);
 	} else if (mod->has_generic_type_def(name.value, reqInfo) ||
 	           mod->has_brought_generic_type_def(name.value, reqInfo) ||

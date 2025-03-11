@@ -1,4 +1,5 @@
 #include "./binary_op.hpp"
+#include "../../IR/logic.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/ConstantFold.h>
@@ -141,44 +142,7 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			}
 			return ir::PrerunValue::get(llvm::ConstantFoldConstant(llRes, ctx->irCtx->dataLayout), resType);
 		} else {
-			if (rhsValTy->is_choice() && (rhsValTy->as_choice()->get_underlying_type()->is_same(lhsValTy))) {
-				if (opr == OperatorKind::BITWISE_AND) {
-					return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And,
-					                                                                lhsEmit->get_llvm(),
-					                                                                rhsEmit->get_llvm()),
-					                            lhsValTy);
-				} else if (opr == OperatorKind::BITWISE_OR) {
-					return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or,
-					                                                                lhsEmit->get_llvm(),
-					                                                                rhsEmit->get_llvm()),
-					                            lhsValTy);
-				} else if (opr == OperatorKind::BITWISE_XOR) {
-					return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor,
-					                                                                lhsEmit->get_llvm(),
-					                                                                rhsEmit->get_llvm()),
-					                            lhsValTy);
-				} else {
-					ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) +
-					               " for left hand side type " + ctx->color(lhsValTy->to_string()) +
-					               " and right hand side type " + ctx->color(rhsValTy->to_string()),
-					           fileRange);
-				}
-			} else if (rhsValTy->is_choice()) {
-				if (rhsValTy->as_choice()->has_negative_values()) {
-					ctx->Error("The bitwidth of the operand on the left is " +
-					               ctx->color(std::to_string(lhsValTy->as_integer()->get_bitwidth())) +
-					               ", but the operand on the right is of the choice type " +
-					               ctx->color(rhsValTy->to_string()) + " whose underlying type is " +
-					               ctx->color(rhsValTy->as_choice()->get_underlying_type()->to_string()),
-					           fileRange);
-				} else {
-					ctx->Error(
-					    "The operand on the left is a signed integer of type " + ctx->color(lhsValTy->to_string()) +
-					        " but the operand on the right is of the choice type " + ctx->color(rhsValTy->to_string()) +
-					        " whose underlying type is an unsigned integer type",
-					    fileRange);
-				}
-			} else if (rhsValTy->is_integer()) {
+			if (rhsValTy->is_integer()) {
 				ctx->Error("Signed integers in this binary operation have different bitwidths."
 				           " It is recommended to convert the operand with smaller bitwidth to the bigger "
 				           "bitwidth to prevent potential loss of data and logical errors",
@@ -296,44 +260,7 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			}
 			return ir::PrerunValue::get(llvm::ConstantFoldConstant(llRes, ctx->irCtx->dataLayout), resType);
 		} else {
-			if (rhsValTy->is_choice() && rhsValTy->as_choice()->get_underlying_type()->is_same(lhsValTy)) {
-				if (opr == OperatorKind::BITWISE_AND) {
-					return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And,
-					                                                                lhsEmit->get_llvm(),
-					                                                                rhsEmit->get_llvm()),
-					                            lhsValTy);
-				} else if (opr == OperatorKind::BITWISE_OR) {
-					return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or,
-					                                                                lhsEmit->get_llvm(),
-					                                                                rhsEmit->get_llvm()),
-					                            lhsValTy);
-				} else if (opr == OperatorKind::BITWISE_XOR) {
-					return ir::PrerunValue::get(llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor,
-					                                                                lhsEmit->get_llvm(),
-					                                                                rhsEmit->get_llvm()),
-					                            lhsValTy);
-				} else {
-					ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) +
-					               " for left hand side type " + ctx->color(lhsType->to_string()) +
-					               " and right hand side type " + ctx->color(rhsType->to_string()),
-					           fileRange);
-				}
-			} else if (rhsValTy->is_choice()) {
-				if (not rhsValTy->as_choice()->has_negative_values()) {
-					ctx->Error("The bitwidth of the operand on the left is " +
-					               ctx->color(std::to_string(lhsValTy->as_unsigned()->get_bitwidth())) +
-					               ", but the operand on the right is of the choice type " +
-					               ctx->color(rhsValTy->to_string()) + " whose underlying type is " +
-					               ctx->color(rhsValTy->as_choice()->get_underlying_type()->to_string()),
-					           fileRange);
-				} else {
-					ctx->Error(
-					    "The operand on the left is an unsigned integer of type " + ctx->color(lhsValTy->to_string()) +
-					        " but the operand on the right is of the choice type " + ctx->color(rhsValTy->to_string()) +
-					        " whose underlying type is a signed integer type",
-					    fileRange);
-				}
-			} else if (rhsValTy->is_unsigned()) {
+			if (rhsValTy->is_unsigned()) {
 				ctx->Error("Unsigned integers in this binary operation have different "
 				           "bitwidths. Cast the operand with smaller bitwidth to the bigger "
 				           "bitwidth to prevent potential loss of data and logical errors",
@@ -604,64 +531,11 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			               " is not supported for expressions of type " + ctx->color(lhsType->to_string()),
 			           fileRange);
 		}
-	} else if (lhsType->is_choice() &&
-	           (lhsType->as_choice()->has_negative_values() ? rhsValTy->is_integer() : rhsValTy->is_unsigned())) {
-		if (lhsType->as_choice()->get_underlying_type()->is_same(rhsValTy)) {
-			auto chTy     = lhsType->as_choice();
-			auto lhsConst = lhsEmit->get_llvm_constant();
-			auto rhsConst = rhsEmit->get_llvm_constant();
-			if (opr == OperatorKind::EQUAL_TO) {
-				return ir::PrerunValue::get(
-				    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ, lhsConst, rhsConst),
-				    ir::UnsignedType::create_bool(ctx->irCtx));
-			} else if (opr == OperatorKind::NOT_EQUAL_TO) {
-				return ir::PrerunValue::get(
-				    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, lhsConst, rhsConst),
-				    ir::UnsignedType::create_bool(ctx->irCtx));
-			} else if (opr == OperatorKind::LESS_THAN) {
-				return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(
-				                                chTy->has_negative_values() ? llvm::CmpInst::Predicate::ICMP_SLT
-				                                                            : llvm::CmpInst::Predicate::ICMP_ULT,
-				                                lhsConst, rhsConst),
-				                            ir::UnsignedType::create_bool(ctx->irCtx));
-			} else if (opr == OperatorKind::LESS_THAN_OR_EQUAL_TO) {
-				return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(
-				                                chTy->has_negative_values() ? llvm::CmpInst::Predicate::ICMP_SLE
-				                                                            : llvm::CmpInst::Predicate::ICMP_ULE,
-				                                lhsConst, rhsConst),
-				                            ir::UnsignedType::create_bool(ctx->irCtx));
-			} else if (opr == OperatorKind::GREATER_THAN) {
-				return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(
-				                                chTy->has_negative_values() ? llvm::CmpInst::Predicate::ICMP_SGT
-				                                                            : llvm::CmpInst::Predicate::ICMP_UGT,
-				                                lhsConst, rhsConst),
-				                            ir::UnsignedType::create_bool(ctx->irCtx));
-			} else if (opr == OperatorKind::GREATER_THAN_OR_EQUAL_TO) {
-				return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction(
-				                                chTy->has_negative_values() ? llvm::CmpInst::Predicate::ICMP_SGE
-				                                                            : llvm::CmpInst::Predicate::ICMP_UGE,
-				                                lhsConst, rhsConst),
-				                            ir::UnsignedType::create_bool(ctx->irCtx));
-			} else {
-				ctx->Error("Left hand side is of choice type " + ctx->color(lhsType->to_string()) +
-				               " and right hand side is of type " + ctx->color(rhsType->to_string()) +
-				               ". Binary operator " + ctx->color(operator_to_string(opr)) +
-				               " is not supported for these operands",
-				           fileRange);
-			}
-		} else {
-			ctx->Error("The underlying type of the choice type " + ctx->color(lhsType->to_string()) +
-			               " on the left hand side is " +
-			               ctx->color(lhsType->as_choice()->get_underlying_type()->to_string()) +
-			               ". This is not compatible with the expression on the right side, which is of type " +
-			               ctx->color(rhsValTy->to_string()),
-			           fileRange);
-		}
 	} else if (lhsValTy->is_mark() && rhsValTy->is_mark()) {
 		if (lhsValTy->as_mark()->get_subtype()->is_same(rhsValTy->as_mark()->get_subtype()) &&
 		    (lhsValTy->as_mark()->is_slice() == rhsValTy->as_mark()->is_slice())) {
 			llvm::Constant* finalCondition = nullptr;
-			if (opr != OperatorKind::EQUAL_TO && opr != Op::notEqualTo) {
+			if (opr != OperatorKind::EQUAL_TO && opr != OperatorKind::NOT_EQUAL_TO) {
 				ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) + " for expressions of type " +
 				               ctx->color(lhsType->to_string()) + " and " + ctx->color(rhsType->to_string()),
 				           fileRange);
@@ -669,15 +543,21 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			finalCondition = llvm::ConstantFoldCompareInstruction(
 			    (opr == OperatorKind::EQUAL_TO) ? llvm::CmpInst::Predicate::ICMP_EQ : llvm::CmpInst::Predicate::ICMP_NE,
 			    llvm::ConstantExpr::getSub(
-			        llvm::ConstantExpr::getPtrToInt(lhsValTy->as_mark()->is_slice()
-			                                            ? lhsEmit->get_llvm()->getAggregateElement(0u)
+			        llvm::ConstantExpr::getPtrToInt(
+			            lhsValTy->as_mark()->is_slice() ? lhsEmit->get_llvm()->getAggregateElement(0u)
 			                                            : lhsEmit->get_llvm(),
-			                                        llvm::Type::getInt64Ty(ctx->irCtx->llctx)),
-			        llvm::ConstantExpr::getPtrToInt(lhsValTy->as_mark()->is_slice()
-			                                            ? rhsEmit->get_llvm()->getAggregateElement(0u)
+			            llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerSizeInBits(
+			                                                         ctx->irCtx->dataLayout.getProgramAddressSpace()))),
+			        llvm::ConstantExpr::getPtrToInt(
+			            lhsValTy->as_mark()->is_slice() ? rhsEmit->get_llvm()->getAggregateElement(0u)
 			                                            : rhsEmit->get_llvm(),
-			                                        llvm::Type::getInt64Ty(ctx->irCtx->llctx))),
-			    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
+			            llvm::Type::getIntNTy(ctx->irCtx->llctx,
+			                                  ctx->irCtx->dataLayout.getPointerSizeInBits(
+			                                      ctx->irCtx->dataLayout.getProgramAddressSpace())))),
+			    llvm::ConstantInt::get(
+			        llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerSizeInBits(
+			                                                     ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			        0u));
 			if (lhsValTy->as_mark()->is_slice()) {
 				finalCondition = llvm::ConstantFoldBinaryInstruction(
 				    (opr == OperatorKind::EQUAL_TO) ? llvm::Instruction::BinaryOps::And

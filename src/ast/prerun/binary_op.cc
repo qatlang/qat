@@ -680,10 +680,12 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
 			if (lhsValTy->as_mark()->is_slice()) {
 				finalCondition = llvm::ConstantFoldBinaryInstruction(
-				    llvm::Instruction::BinaryOps::And,
-				    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ,
-				                                         lhsEmit->get_llvm()->getAggregateElement(1u),
-				                                         rhsEmit->get_llvm()->getAggregateElement(1u)),
+				    (opr == OperatorKind::EQUAL_TO) ? llvm::Instruction::BinaryOps::And
+				                                    : llvm::Instruction::BinaryOps::Or,
+				    llvm::ConstantFoldCompareInstruction(
+				        (opr == OperatorKind::EQUAL_TO) ? llvm::CmpInst::Predicate::ICMP_EQ
+				                                        : llvm::CmpInst::Predicate::ICMP_NE,
+				        lhsEmit->get_llvm()->getAggregateElement(1u), rhsEmit->get_llvm()->getAggregateElement(1u)),
 				    finalCondition);
 			}
 			return ir::PrerunValue::get(llvm::ConstantFoldConstant(finalCondition, ctx->irCtx->dataLayout),

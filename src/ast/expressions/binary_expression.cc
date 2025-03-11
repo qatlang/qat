@@ -527,6 +527,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		SHOW("LHS type is: " << lhsType->to_string() << " and RHS type is: " << rhsType->to_string())
 		if (lhsValueType->as_mark()->get_subtype()->is_same(rhsValueType->as_mark()->get_subtype()) &&
 		    (lhsValueType->as_mark()->is_slice() == rhsValueType->as_mark()->is_slice())) {
+			llvm::Value* lhsCount = nullptr;
+			llvm::Value* rhsCount = nullptr;
 			if (lhsValueType->as_mark()->is_slice()) {
 				bool isLHSRef = false;
 				SHOW("LHS side")
@@ -541,16 +543,21 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
 				                                  ir::MarkOwner::of_anonymous(), false, ctx->irCtx);
 				if (lhsEmit->is_prerun_value()) {
-					lhsEmit = ir::PrerunValue::get(lhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
+					lhsEmit  = ir::PrerunValue::get(lhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
+					lhsCount = lhsEmit->get_llvm_constant()->getAggregateElement(1u);
 				} else if (isLHSRef) {
 					lhsEmit = ir::Value::get(
 					    ctx->irCtx->builder.CreateLoad(
 					        resPtrTy->get_llvm_type(),
 					        ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), lhsEmit->get_llvm(), 0u)),
 					    resPtrTy, false);
+					lhsCount = ctx->irCtx->builder.CreateLoad(
+					    resPtrTy->get_llvm_type(),
+					    ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), lhsEmit->get_llvm(), 1u));
 				} else {
-					lhsEmit = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(lhsEmit->get_llvm(), {0u}),
-					                         resPtrTy, false);
+					lhsEmit  = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(lhsEmit->get_llvm(), {0u}),
+					                          resPtrTy, false);
+					lhsCount = ctx->irCtx->builder.CreateExtractValue(lhsEmit->get_llvm(), {1u});
 				}
 				lhsVal = lhsEmit->get_llvm();
 				SHOW("Set LhsEmit")
@@ -579,16 +586,21 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
 				                                  ir::MarkOwner::of_anonymous(), false, ctx->irCtx);
 				if (rhsEmit->is_prerun_value()) {
-					rhsEmit = ir::PrerunValue::get(rhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
+					rhsEmit  = ir::PrerunValue::get(rhsEmit->get_llvm_constant()->getAggregateElement(0u), resPtrTy);
+					rhsCount = rhsEmit->get_llvm_constant()->getAggregateElement(0u);
 				} else if (isRHSRef) {
 					rhsEmit = ir::Value::get(
 					    ctx->irCtx->builder.CreateLoad(
 					        resPtrTy->get_llvm_type(),
 					        ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), rhsEmit->get_llvm(), 0u)),
 					    resPtrTy, false);
+					rhsCount = ctx->irCtx->builder.CreateLoad(
+					    resPtrTy->get_llvm_type(),
+					    ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), rhsEmit->get_llvm(), 1u));
 				} else {
-					rhsEmit = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(rhsEmit->get_llvm(), {0u}),
-					                         resPtrTy, false);
+					rhsEmit  = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(rhsEmit->get_llvm(), {0u}),
+					                          resPtrTy, false);
+					rhsCount = ctx->irCtx->builder.CreateExtractValue(rhsEmit->get_llvm(), {1u});
 				}
 				rhsVal = rhsEmit->get_llvm();
 				SHOW("Set RhsEmit")
@@ -606,23 +618,29 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			auto ptrTy = lhsValueType->as_mark();
 			if (op == OperatorKind::EQUAL_TO) {
 				SHOW("Pointer is normal")
-				return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(
-				                          ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-				                                                            lhsVal, rhsVal),
-				                          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
-				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
+				auto finalComparison = ctx->irCtx->builder.CreateICmpEQ(
+				    ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
+				    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
+				if (lhsCount && rhsCount) {
+					finalComparison = ctx->irCtx->builder.CreateAnd(
+					    finalComparison, ctx->irCtx->builder.CreateICmpEQ(lhsCount, rhsCount));
+				}
+				return ir::Value::get(finalComparison, ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
 			} else if (op == OperatorKind::NOT_EQUAL_TO) {
 				SHOW("Pointer is normal")
-				return ir::Value::get(ctx->irCtx->builder.CreateICmpNE(
-				                          ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-				                                                            lhsVal, rhsVal),
-				                          llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u)),
-				                      ir::UnsignedType::create_bool(ctx->irCtx), false)
+				auto finalComparison = ctx->irCtx->builder.CreateICmpNE(
+				    ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
+				    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 0u));
+				if (lhsCount && rhsCount) {
+					finalComparison = ctx->irCtx->builder.CreateOr(
+					    finalComparison, ctx->irCtx->builder.CreateICmpNE(lhsCount, rhsCount));
+				}
+				return ir::Value::get(finalComparison, ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
 			} else {
-				ctx->Error("The operands are pointers, and the operation " + ctx->color(operator_to_string(op)) +
-				               " is not supported for pointers",
+				ctx->Error("The operands are of type " + ctx->color("mark") + ", and the operation " +
+				               ctx->color(operator_to_string(op)) + " is not supported for mark values",
 				           fileRange);
 			}
 		} else {

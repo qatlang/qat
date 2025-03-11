@@ -357,6 +357,42 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		}
+	} else if (lhsValTy->is_flag() && rhsValTy->is_flag()) {
+		if (not lhsValTy->is_same(rhsValTy)) {
+			ctx->Error("The flag type on the left hand side is " + ctx->color(lhsValTy->to_string()) +
+			               " which does not match with the flag type on the right hand side, which is " +
+			               ctx->color(rhsValTy->to_string()),
+			           fileRange);
+		}
+		auto lhsConst = lhsEmit->get_llvm_constant();
+		auto rhsConst = lhsEmit->get_llvm_constant();
+		if (opr == OperatorKind::EQUAL_TO || opr == OperatorKind::NOT_EQUAL_TO) {
+			return ir::PrerunValue::get(llvm::ConstantFoldCompareInstruction((opr == OperatorKind::EQUAL_TO)
+			                                                                     ? llvm::CmpInst::ICMP_EQ
+			                                                                     : llvm::CmpInst::ICMP_NE,
+			                                                                 lhsConst, rhsConst),
+			                            ir::UnsignedType::create_bool(ctx->irCtx));
+		} else if (opr == OperatorKind::ADDITION) {
+			return ir::PrerunValue::get(
+			    llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or, lhsConst, rhsConst), lhsValTy);
+		} else if (opr == OperatorKind::SUBTRACT) {
+			return ir::PrerunValue::get(
+			    llvm::ConstantFoldBinaryInstruction(
+			        llvm::Instruction::BinaryOps::Xor,
+			        llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Or, lhsConst, rhsConst),
+			        rhsConst),
+			    lhsValTy);
+		} else if (opr == OperatorKind::BITWISE_XOR) {
+			return ir::PrerunValue::get(
+			    llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::Xor, lhsConst, rhsConst), lhsValTy);
+		} else if (opr == OperatorKind::AND) {
+			return ir::PrerunValue::get(
+			    llvm::ConstantFoldBinaryInstruction(llvm::Instruction::BinaryOps::And, lhsConst, rhsConst), lhsValTy);
+		} else {
+			ctx->Error("The " + String(is_unary_operator(opr) ? "unary" : "binary") + " operator " +
+			               ctx->color(operator_to_string(opr)) + " is not supported for flag types",
+			           fileRange);
+		}
 	} else if (lhsValTy->is_typed() && rhsValTy->is_typed()) {
 		if (opr == OperatorKind::EQUAL_TO || opr == OperatorKind::NOT_EQUAL_TO) {
 			return ir::PrerunValue::get(

@@ -1,6 +1,7 @@
 #include "binary_expression.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/flag.hpp"
 #include "../../IR/types/reference.hpp"
 #include "operator.hpp"
 
@@ -448,6 +449,34 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				               " and right hand side is of type " + rhsType->to_string() + ". Please check the logic.",
 				           fileRange);
 			}
+		}
+	} else if (lhsValueType->is_flag() && rhsValueType->is_flag()) {
+		referenceHandler();
+		if (not lhsType->is_same(rhsValueType)) {
+			ctx->Error("Left hand side of the expression is " + lhsValueType->to_string() +
+			               " which does not match with the type on the right hand side, which is " +
+			               rhsValueType->to_string(),
+			           fileRange);
+		}
+		if (op == OperatorKind::EQUAL_TO || op == OperatorKind::NOT_EQUAL_TO) {
+			return ir::Value::get(ctx->irCtx->builder.CreateICmp(op == OperatorKind::EQUAL_TO ? llvm::CmpInst::ICMP_EQ
+			                                                                                  : llvm::CmpInst::ICMP_NE,
+			                                                     lhsVal, rhsVal),
+			                      ir::UnsignedType::create_bool(ctx->irCtx), false)
+			    ->with_range(fileRange);
+		} else if (op == OperatorKind::ADDITION) {
+			return ir::Value::get(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), lhsValueType, false)
+			    ->with_range(fileRange);
+		} else if (op == OperatorKind::SUBTRACT) {
+			return ir::Value::get(ctx->irCtx->builder.CreateXor(ctx->irCtx->builder.CreateOr(lhsVal, rhsVal), rhsVal),
+			                      lhsValueType, false)
+			    ->with_range(fileRange);
+		} else if (op == OperatorKind::AND) {
+			return ir::Value::get(ctx->irCtx->builder.CreateAnd(lhsVal, rhsVal), lhsValueType, false)
+			    ->with_range(fileRange);
+		} else {
+			ctx->Error("The operator " + ctx->color(operator_to_string(op)) + " is not supported for flag types",
+			           fileRange);
 		}
 	} else if (lhsValueType->is_text() && rhsValueType->is_text()) {
 		if (op == OperatorKind::EQUAL_TO || op == OperatorKind::NOT_EQUAL_TO) {

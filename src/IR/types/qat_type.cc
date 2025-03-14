@@ -51,25 +51,6 @@ void Type::clear_all() {
 	}
 }
 
-bool Type::has_default_implementations() const {
-	for (auto* doSkill : doneSkills) {
-		if (doSkill->is_type_extension()) {
-			return true;
-		}
-	}
-	return false;
-}
-
-Vec<DoneSkill*> Type::get_all_default_implementations() const {
-	Vec<DoneSkill*> res;
-	for (auto* doSkill : doneSkills) {
-		if (doSkill->is_type_extension()) {
-			res.push_back(doSkill);
-		}
-	}
-	return res;
-}
-
 String Type::get_name_for_linking() const { return linkingName; }
 
 bool Type::can_be_prerun_generic() const { return false; }

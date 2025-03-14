@@ -191,8 +191,8 @@ bool ExpandedType::has_any_constructor() const { return (not constructors.empty(
 
 bool ExpandedType::has_any_from_convertor() const { return not fromConvertors.empty(); }
 
-Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> const&           cons,
-                                                              Vec<Pair<Maybe<bool>, ir::Type*>> types) {
+Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> const&                  cons,
+                                                              Vec<Pair<Maybe<bool>, ir::Type*>> const& types) {
 	for (auto* con : cons) {
 		auto argTys = con->get_ir_type()->as_function()->get_argument_types();
 		if (types.size() == (argTys.size() - 1)) {
@@ -221,11 +221,11 @@ Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> c
 	return None;
 }
 
-bool ExpandedType::has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> argTypes) const {
+bool ExpandedType::has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const {
 	return check_constructor_with_types(constructors, argTypes).has_value();
 }
 
-Method* ExpandedType::get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> argTypes) const {
+Method* ExpandedType::get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const {
 	return check_constructor_with_types(constructors, argTypes).value();
 }
 

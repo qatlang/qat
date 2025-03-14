@@ -268,7 +268,11 @@ void GenericSkill::update_overview() {
 DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType,
                      FileRange _typeRange)
     : parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType), typeRange(_typeRange) {
-	candidateType->doneSkills.push_back(this);
+	if (skill.has_value()) {
+		candidateType->doneSkills.push_back(this);
+	} else {
+		candidateType->defaultImplementations.push_back(this);
+	}
 }
 
 DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* candidateType, FileRange typeRange) {
@@ -337,11 +341,11 @@ ir::Method* DoneSkill::get_to_convertor(ir::Type* destTy) const {
 	return ExpandedType::check_to_convertor(toConvertors, destTy).value();
 }
 
-bool DoneSkill::has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> argTypes) const {
+bool DoneSkill::has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const {
 	return ExpandedType::check_constructor_with_types(constructors, argTypes).has_value();
 }
 
-ir::Method* DoneSkill::get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> argTypes) const {
+ir::Method* DoneSkill::get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const {
 	return ExpandedType::check_constructor_with_types(constructors, argTypes).value();
 }
 

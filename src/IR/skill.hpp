@@ -266,7 +266,7 @@ class DoneSkill : public Uniq {
 	useit bool has_default_constructor() const;
 	useit bool has_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
 	useit bool has_to_convertor(ir::Type* type) const;
-	useit bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> types) const;
+	useit bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& types) const;
 	useit bool has_static_method(String const& name) const;
 	useit bool has_normal_method(String const& name) const;
 	useit bool has_valued_method(String const& name) const;
@@ -283,7 +283,7 @@ class DoneSkill : public Uniq {
 	useit ir::Method* get_default_constructor() const;
 	useit ir::Method* get_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
 	useit ir::Method* get_to_convertor(ir::Type* type) const;
-	useit ir::Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> argTypes) const;
+	useit ir::Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const;
 	useit ir::Method* get_static_method(String const& name) const;
 	useit ir::Method* get_normal_method(String const& name) const;
 	useit ir::Method* get_valued_method(String const& name) const;

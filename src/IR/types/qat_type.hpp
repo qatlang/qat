@@ -53,6 +53,7 @@ class Type : public Uniq {
 
 	String          linkingName;
 	llvm::Type*     llvmType;
+	Vec<DoneSkill*> defaultImplementations;
 	Vec<DoneSkill*> doneSkills;
 
 	TypeInfo* typeInfo = nullptr;
@@ -62,8 +63,9 @@ class Type : public Uniq {
 	virtual ~Type();
 	static void clear_all();
 
-	useit bool has_default_implementations() const;
-	useit Vec<DoneSkill*> get_all_default_implementations() const;
+	useit bool has_default_implementations() const { return not defaultImplementations.empty(); }
+
+	useit Vec<DoneSkill*> const& get_default_implementations() const { return defaultImplementations; }
 
 	useit virtual bool          can_be_prerun_generic() const;
 	useit virtual Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const;

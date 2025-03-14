@@ -125,12 +125,12 @@ class ExpandedType : public Type {
 
 	useit Method* get_to_convertor(ir::Type* type) const;
 
-	useit static Maybe<ir::Method*> check_constructor_with_types(Vec<Method*> const&               cons,
-	                                                             Vec<Pair<Maybe<bool>, ir::Type*>> types);
+	useit static Maybe<ir::Method*> check_constructor_with_types(Vec<Method*> const&                      cons,
+	                                                             Vec<Pair<Maybe<bool>, ir::Type*>> const& types);
 
-	useit bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> types) const;
+	useit bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& types) const;
 
-	useit Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> types) const;
+	useit Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& types) const;
 
 	useit bool has_default_constructor() const;
 

@@ -33,21 +33,45 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 		}
 		auto* candTy = expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->get_subtype() : expEmit->get_ir_type();
 		if (not isAssignment) {
+			if (isLocalDecl()) {
+				createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
+			}
 			if (candTy->is_copy_constructible()) {
 				bool shouldLoadValue = false;
-				if (isLocalDecl()) {
-					if (not candTy->is_same(localValue->get_ir_type())) {
+				if (canCreateIn()) {
+					if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
 						ctx->Error(
-						    "The type provided in the local declaration does not match the type of the value to be copied",
+						    "Trying to optimise the copy by creating in-place, but the containing type is not a reference",
 						    fileRange);
 					}
-					createIn =
-					    ir::Value::get(localValue->get_alloca(), ir::RefType::get(true, candTy, ctx->irCtx), false);
-				} else if (canCreateIn()) {
+					auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+					                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+					if (not type_check_create_in(candTy)) {
+						ctx->Error(
+						    "Trying to optimise the copy by creating in-place, but the expression type is " +
+						        ctx->color(candTy->to_string()) +
+						        " which does not match with the underlying type for in-place creation which is " +
+						        ctx->color(expTy->to_string()),
+						    fileRange);
+					}
+				} else {
+					shouldLoadValue = true;
+					createIn        = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, candTy->get_llvm_type()),
+					                                 ir::RefType::get(true, candTy, ctx->irCtx), false);
+				}
+				(void)candTy->copy_construct_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
+				if (shouldLoadValue) {
+					return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), createIn->get_llvm()),
+					                      candTy, true);
+				} else {
+					return createIn;
+				}
+			} else if (candTy->has_simple_copy()) {
+				if (canCreateIn()) {
 					if (createIn->is_ref() || createIn->is_ghost_ref()) {
 						auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
 						                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-						if (not expTy->is_same(candTy)) {
+						if (not type_check_create_in(candTy)) {
 							ctx->Error(
 							    "Trying to optimise the copy by creating in-place, but the expression type is " +
 							        ctx->color(candTy->to_string()) +
@@ -60,56 +84,10 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 						    "Trying to optimise the copy by creating in-place, but the containing type is not a reference",
 						    fileRange);
 					}
-				} else {
-					if (irName.has_value()) {
-						createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
-					} else {
-						shouldLoadValue = true;
-						createIn = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, candTy->get_llvm_type()),
-						                          ir::RefType::get(true, candTy, ctx->irCtx), false);
-					}
-				}
-				(void)candTy->copy_construct_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
-				if (shouldLoadValue) {
-					return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), createIn->get_llvm()),
-					                      candTy, true);
-				} else {
-					return createIn;
-				}
-			} else if (candTy->has_simple_copy()) {
-				if (isLocalDecl()) {
-					if (not candTy->is_same(localValue->get_ir_type())) {
-						ctx->Error(
-						    "The type provided in the local declaration does not match the type of the value to be copied",
-						    fileRange);
-					}
-					createIn =
-					    ir::Value::get(localValue->get_alloca(), ir::RefType::get(true, candTy, ctx->irCtx), false);
-				}
-				if (canCreateIn()) {
-					if (not isLocalDecl()) {
-						if (createIn->is_ref() || createIn->is_ghost_ref()) {
-							auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
-							                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-							if (not expTy->is_same(candTy)) {
-								ctx->Error(
-								    "Trying to optimise the copy by creating in-place, but the expression type is " +
-								        ctx->color(candTy->to_string()) +
-								        " which does not match with the underlying type for in-place creation which is " +
-								        ctx->color(expTy->to_string()),
-								    fileRange);
-							}
-						} else {
-							ctx->Error(
-							    "Trying to optimise the copy by creating in-place, but the containing type is not a reference",
-							    fileRange);
-						}
-					}
-					// FIXME - Use memcpy?
 					ctx->irCtx->builder.CreateStore(
 					    ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),
 					    createIn->get_llvm());
-					return createIn;
+					return get_creation_result(ctx->irCtx, candTy);
 				} else {
 					return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),
 					                      candTy, true);

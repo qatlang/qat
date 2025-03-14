@@ -36,38 +36,28 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 			if (candTy->is_move_constructible()) {
 				bool shouldLoadValue = false;
 				if (isLocalDecl()) {
-					if (not candTy->is_same(localValue->get_ir_type())) {
-						ctx->Error(
-						    "The type provided in the local declaration does not match the type of the value to be moved",
-						    fileRange);
-					}
-					createIn =
-					    ir::Value::get(localValue->get_alloca(), ir::RefType::get(true, candTy, ctx->irCtx), false);
-				} else if (canCreateIn()) {
-					if (createIn->is_ref() || createIn->is_ghost_ref()) {
-						auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
-						                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-						if (not expTy->is_same(candTy)) {
-							ctx->Error(
-							    "Trying to optimise the move by creating in-place, but the expression type is " +
-							        ctx->color(candTy->to_string()) +
-							        " which does not match with the underlying type for in-place creation which is " +
-							        ctx->color(expTy->to_string()),
-							    fileRange);
-						}
-					} else {
+					createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
+				}
+				if (canCreateIn()) {
+					if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
 						ctx->Error(
 						    "Trying to optimise the move by creating in-place, but the containing type is not a reference",
 						    fileRange);
 					}
-				} else {
-					if (irName.has_value()) {
-						createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
-					} else {
-						shouldLoadValue = true;
-						createIn = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, candTy->get_llvm_type()),
-						                          ir::RefType::get(true, candTy, ctx->irCtx), false);
+					auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+					                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+					if (not type_check_create_in(candTy)) {
+						ctx->Error(
+						    "Trying to optimise the move by creating in-place, but the expression type is " +
+						        ctx->color(candTy->to_string()) +
+						        " which does not match with the underlying type for in-place creation which is " +
+						        ctx->color(expTy->to_string()),
+						    fileRange);
 					}
+				} else {
+					shouldLoadValue = true;
+					createIn        = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, candTy->get_llvm_type()),
+					                                 candTy, true);
 				}
 				(void)candTy->move_construct_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
 				if (expEmit->is_local_value()) {
@@ -77,33 +67,26 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), createIn->get_llvm()),
 					                      candTy, true);
 				} else {
-					return createIn;
+					return get_creation_result(ctx->irCtx, candTy);
 				}
 			} else if (candTy->has_simple_move()) {
 				if (isLocalDecl()) {
-					if (not candTy->is_same(localValue->get_ir_type())) {
-						ctx->Error(
-						    "The type provided in the local declaration does not match the type of the value to be moved",
-						    fileRange);
-					}
-					createIn =
-					    ir::Value::get(localValue->get_alloca(), ir::RefType::get(true, candTy, ctx->irCtx), false);
+					createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
 				}
 				if (canCreateIn()) {
-					if (createIn->is_ref() || createIn->is_ghost_ref()) {
-						auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
-						                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-						if (not expTy->is_same(candTy)) {
-							ctx->Error(
-							    "Trying to optimise the move by creating in-place, but the expression type is " +
-							        ctx->color(candTy->to_string()) +
-							        " which does not match with the underlying type for in-place creation which is " +
-							        ctx->color(expTy->to_string()),
-							    fileRange);
-						}
-					} else {
+					if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
 						ctx->Error(
 						    "Trying to optimise the move by creating in-place, but the containing type is not a reference",
+						    fileRange);
+					}
+					auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+					                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+					if (not type_check_create_in(candTy)) {
+						ctx->Error(
+						    "Trying to optimise the move by creating in-place, but the expression type is " +
+						        ctx->color(candTy->to_string()) +
+						        " which does not match with the underlying type for in-place creation which is " +
+						        ctx->color(expTy->to_string()),
 						    fileRange);
 					}
 					ctx->irCtx->builder.CreateStore(
@@ -114,7 +97,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					if (expEmit->is_local_value()) {
 						ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
 					}
-					return createIn;
+					return get_creation_result(ctx->irCtx, candTy);
 				} else {
 					auto* loadRes = ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm());
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(candTy->get_llvm_type()),
@@ -122,8 +105,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					return ir::Value::get(loadRes, candTy, true);
 				}
 			} else {
-				ctx->Error((candTy->is_struct() ? "Struct type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
-				               ctx->color(candTy->to_string()) +
+				ctx->Error("Type " + ctx->color(candTy->to_string()) +
 				               " does not have a move constructor and does not have simple-move",
 				           fileRange);
 			}
@@ -151,8 +133,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					}
 					return createIn;
 				} else {
-					ctx->Error((candTy->is_struct() ? "Struct type " : (candTy->is_mix() ? "Mix type " : "Type ")) +
-					               ctx->color(candTy->to_string()) +
+					ctx->Error("Type " + ctx->color(candTy->to_string()) +
 					               " does not have a move assignment operator and does not have simple-move",
 					           fileRange);
 				}

@@ -72,14 +72,14 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 		} else if (subExpr->has_type_inferrance()) {
 			subExpr->as_type_inferrable()->set_inference_type(usableType->as_result()->get_valid_type());
 		}
-		llvm::Value* newAlloc = nullptr;
 		if (isLocalDecl()) {
-			newAlloc = localValue->get_llvm();
-		} else if (canCreateIn()) {
+			createIn = ctx->get_fn()->get_block()->new_local(irName->value, resTy, isVar, irName->range);
+		}
+		if (canCreateIn()) {
 			if (createIn->is_ref() || createIn->is_ghost_ref()) {
 				auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
 				                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-				if (not expTy->is_same(usableType)) {
+				if (not type_check_create_in(usableType)) {
 					ctx->Error("Trying to optimise the " + ctx->color("ok") +
 					               " expression by creating in-place, but the expression type is " +
 					               ctx->color(usableType->to_string()) +
@@ -93,21 +93,17 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 				               ctx->color(createIn->get_ir_type()->to_string()) + ", which is not a reference",
 				           fileRange);
 			}
-		} else if (irName.has_value()) {
-			newAlloc = ctx->get_fn()
-			               ->get_block()
-			               ->new_local(irName.value().value, resTy, isVar, irName.value().range)
-			               ->get_llvm();
 		} else {
-			newAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, usableType->get_llvm_type());
+			createIn = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, usableType->get_llvm_type()),
+			                          usableType, true);
 		}
 		const auto shouldCreateIn = not resTy->is_void() && subExpr && subExpr->isInPlaceCreatable();
 		if (shouldCreateIn) {
-			subExpr->asInPlaceCreatable()->setCreateIn(
-			    ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
-			                       ctx->irCtx->builder.CreateStructGEP(usableType->get_llvm_type(), newAlloc, 1u),
-			                       valTy->get_llvm_type()->getPointerTo(0u)),
-			                   ir::RefType::get(true, valTy, ctx->irCtx), false));
+			subExpr->asInPlaceCreatable()->setCreateIn(ir::Value::get(
+			    ctx->irCtx->builder.CreatePointerCast(
+			        ctx->irCtx->builder.CreateStructGEP(usableType->get_llvm_type(), createIn->get_llvm(), 1u),
+			        valTy->get_llvm_type()->getPointerTo(0u)),
+			    ir::RefType::get(true, valTy, ctx->irCtx), false));
 		}
 		auto* validVal = subExpr ? subExpr->emit(ctx) : nullptr;
 		if (valTy->is_void()) {
@@ -117,24 +113,24 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 				               ", which is " + ctx->color(valTy->to_string()),
 				           subExpr->fileRange);
 			}
-			resTy->handle_tag_store(newAlloc, true, ctx->irCtx);
-			return ir::Value::get(ctx->irCtx->builder.CreateLoad(resTy->get_llvm_type(), newAlloc), resTy, true);
+			resTy->handle_tag_store(createIn->get_llvm(), true, ctx->irCtx);
+			return get_creation_result(ctx->irCtx, resTy);
 		}
 		SHOW("Sub expression emitted")
 		if (shouldCreateIn) {
 			// NOTE - Condition means that the sub-expression has already been created in-place
-			resTy->handle_tag_store(newAlloc, true, ctx->irCtx);
+			resTy->handle_tag_store(createIn->get_llvm(), true, ctx->irCtx);
 			subExpr->asInPlaceCreatable()->unsetCreateIn();
-			return createIn;
+			return get_creation_result(ctx->irCtx, resTy);
 		}
 		// NOTE - The following function does further type checking
 		auto* finalVal = ir::Logic::handle_pass_semantics(ctx, valTy, validVal, subExpr->fileRange);
-		resTy->handle_tag_store(newAlloc, true, ctx->irCtx);
-		ctx->irCtx->builder.CreateStore(finalVal->get_llvm(),
-		                                ctx->irCtx->builder.CreatePointerCast(
-		                                    ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
-		                                    valTy->get_llvm_type()->getPointerTo(0u)));
-		return ir::Value::get(ctx->irCtx->builder.CreateLoad(resTy->get_llvm_type(), newAlloc), resTy, false);
+		resTy->handle_tag_store(createIn->get_llvm(), true, ctx->irCtx);
+		ctx->irCtx->builder.CreateStore(finalVal->get_llvm(), ctx->irCtx->builder.CreatePointerCast(
+		                                                          ctx->irCtx->builder.CreateStructGEP(
+		                                                              resTy->get_llvm_type(), createIn->get_llvm(), 1u),
+		                                                          valTy->get_llvm_type()->getPointerTo(0u)));
+		return get_creation_result(ctx->irCtx, resTy);
 	} else {
 		ctx->Error("No inferred type found for this expression, and no type were provided. "
 		           "You can provide a type for ok expression like " +

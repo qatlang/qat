@@ -71,39 +71,33 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 			}
 			llvm::Value* newAlloc = nullptr;
 			if (isLocalDecl()) {
-				newAlloc = localValue->get_llvm();
-			} else if (canCreateIn()) {
-				if (createIn->is_ref() || createIn->is_ghost_ref()) {
-					auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
-					                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-					if (not expTy->is_same(usableType)) {
-						ctx->Error(
-						    "Tried to optimise the " + ctx->color("error") +
-						        " expression by creating in-place, but the inferred type is " +
-						        ctx->color(usableType->to_string()) +
-						        " which does not match with the underlying type for in-place creation which is " +
-						        ctx->color(expTy->to_string()),
-						    fileRange);
-					}
-				} else {
+				newAlloc =
+				    ctx->get_fn()->get_block()->new_local(irName->value, resTy, isVar, irName->range)->get_llvm();
+			}
+			if (canCreateIn()) {
+				if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
 					ctx->Error(
 					    "Tried to optimise the " + ctx->color("error") +
 					        " expression by creating in-place, but the underlying type for in-place creation is " +
 					        ctx->color(createIn->get_ir_type()->to_string()) + ", which is not a reference",
 					    fileRange);
 				}
-			} else if (irName.has_value()) {
-				newAlloc = ctx->get_fn()
-				               ->get_block()
-				               ->new_local(irName.value().value, resTy, isVar, irName.value().range)
-				               ->get_llvm();
+				auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
+				                                      : createIn->get_ir_type()->as_ref()->get_subtype();
+				if (not type_check_create_in(usableType)) {
+					ctx->Error("Tried to optimise the " + ctx->color("error") +
+					               " expression by creating in-place, but the inferred type is " +
+					               ctx->color(usableType->to_string()) +
+					               " which does not match with the underlying type for in-place creation which is " +
+					               ctx->color(expTy->to_string()),
+					           fileRange);
+				}
+				newAlloc = createIn->get_llvm();
 			} else {
 				newAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, resTy->get_llvm_type());
 			}
 			const auto shouldCreateIn = not errTy->is_void() && errorValue && errorValue->isInPlaceCreatable();
 			if (shouldCreateIn) {
-				// TODO - Check if the reference type below can have variation. It should be in almost all cases,
-				// since the reference is supposed to facilitate in-place creation
 				errorValue->asInPlaceCreatable()->setCreateIn(
 				    ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
 				                       ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
@@ -119,13 +113,12 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 					           errorValue->fileRange);
 				}
 				resTy->handle_tag_store(newAlloc, false, ctx->irCtx);
-				return ir::Value::get(ctx->irCtx->builder.CreateLoad(resTy->get_llvm_type(), newAlloc), resTy, true);
+				return ir::Value::get(newAlloc, resTy, true);
 			}
 			if (shouldCreateIn) {
-				// NOTE - Condition means that the sub-expression has already been created in-place
 				resTy->handle_tag_store(newAlloc, false, ctx->irCtx);
 				errorValue->asInPlaceCreatable()->unsetCreateIn();
-				return createIn;
+				return get_creation_result(ctx->irCtx, resTy);
 			}
 			// NOTE - The following function checks for the type of the expression
 			auto* finalErr = ir::Logic::handle_pass_semantics(ctx, errTy, errVal, errorValue->fileRange);
@@ -134,7 +127,10 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 			    finalErr->get_llvm(), ctx->irCtx->builder.CreatePointerCast(
 			                              ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
 			                              errTy->get_llvm_type()->getPointerTo(0u)));
-			return ir::Value::get(ctx->irCtx->builder.CreateLoad(resTy->get_llvm_type(), newAlloc), resTy, false);
+			if (canCreateIn()) {
+				return get_creation_result(ctx->irCtx, resTy);
+			}
+			return ir::Value::get(newAlloc, resTy, false);
 		} else {
 			ctx->Error("The inferred type is " + ctx->color(usableType->to_string()) +
 			               " but creating an error requires a " + ctx->color("result") + " type",

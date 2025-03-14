@@ -20,27 +20,37 @@ namespace qat::ast {
 
 class LocalDeclCompatible {
   public:
-	ir::LocalValue*   localValue = nullptr;
 	Maybe<Identifier> irName;
 	bool              isVar = false;
 
-	useit bool isLocalDecl() const { return localValue != nullptr; }
-
-	void type_check_local(ir::Type* type, ir::Ctx* irCtx, FileRange fileRange) {
-		if (not localValue->get_ir_type()->is_same(type)) {
-			irCtx->Error("The type of this expression is " + irCtx->color(type->to_string()) +
-			                 " which does not match the type of the local declaration, which is " +
-			                 irCtx->color(localValue->get_ir_type()->to_string()),
-			             fileRange);
-		}
-	}
-
-	void setLocalValue(ir::LocalValue* _localValue) { localValue = _localValue; }
+	useit bool isLocalDecl() const { return irName.has_value(); }
 };
 
 class InPlaceCreatable {
   public:
-	ir::Value* createIn = nullptr;
+	ir::Value* createIn           = nullptr;
+	bool       ignoreCreateInType = false;
+
+	useit bool type_check_create_in(ir::Type* _type) const {
+		return ignoreCreateInType ||
+		       (createIn->is_ghost_ref() ? createIn->get_ir_type()->is_same(_type)
+		                                 : createIn->get_ir_type()->as_ref()->get_subtype()->is_same(_type));
+	}
+
+	useit ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type) {
+		auto created = createIn;
+		unsetCreateIn();
+		if (created->is_ghost_ref()) {
+			return ir::Value::get(created->get_llvm(), type, created->is_variable());
+		} else {
+			return ir::Value::get(created->get_llvm(),
+			                      ir::RefType::get(created->is_ghost_ref()
+			                                           ? created->is_variable()
+			                                           : created->get_ir_type()->as_ref()->has_variability(),
+			                                       type, irCtx),
+			                      false);
+		}
+	}
 
 	useit bool canCreateIn() const { return createIn != nullptr; }
 

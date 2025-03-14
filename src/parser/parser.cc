@@ -1602,7 +1602,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				cacheTy = ast::VoidType::create(token.fileRange);
 				break;
 			}
-			case TokenType::stringSliceType: {
+			case TokenType::textType: {
 				if (cacheTy.has_value()) {
 					return {cacheTy.value(), i - 1};
 				}

@@ -611,7 +611,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("match", match);
 	else Check_Normal_Keyword("copy", copy);
 	else Check_Normal_Keyword("move", move);
-	else Check_Normal_Keyword("text", stringSliceType);
+	else Check_Normal_Keyword("text", textType);
 	else Check_Normal_Keyword("for", For);
 	else Check_Normal_Keyword("give", give);
 	else Check_Normal_Keyword("var", var);
@@ -624,7 +624,6 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("break", Break);
 	else Check_Normal_Keyword("continue", Continue);
 	else Check_Normal_Keyword("own", own);
-	else Check_Normal_Keyword("disown", disown);
 	else Check_Normal_Keyword("end", end);
 	else Check_Normal_Keyword("choice", choice);
 	else Check_Normal_Keyword("flag", flag);

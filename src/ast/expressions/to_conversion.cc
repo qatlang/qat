@@ -286,7 +286,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			}
 			return convFn->call(ctx->irCtx, {val->get_llvm()}, None, ctx->mod);
 		} else if (valType->has_default_implementations()) {
-			auto        defImps = valType->get_all_default_implementations();
+			auto        defImps = valType->get_default_implementations();
 			ir::Method* convFn  = nullptr;
 			for (auto imp : defImps) {
 				if (imp->has_to_convertor(destTy)) {

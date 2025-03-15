@@ -5,6 +5,7 @@
 #include "./types/function.hpp"
 #include "./types/pointer.hpp"
 #include "./types/qat_type.hpp"
+#include "./types/reference.hpp"
 
 #include <llvm/IR/Instructions.h>
 
@@ -25,6 +26,14 @@ Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRa
 		return result;
 	} else {
 		return this;
+	}
+}
+
+ir::Type* Value::get_pass_type() const {
+	if (isConfirmedRef || not type->is_ref()) {
+		return type;
+	} else {
+		return type->as_ref()->get_subtype();
 	}
 }
 

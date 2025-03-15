@@ -35,6 +35,7 @@ class Value {
 	Maybe<u64>       localID;
 	bool             isSelf = false;
 	Maybe<FileRange> associatedRange;
+	bool             isConfirmedRef = false;
 
   public:
 	static Vec<ir::Value*> allValues;
@@ -70,6 +71,12 @@ class Value {
 	useit bool is_value() const { return not is_ref() && not is_prerun_value() && not is_ghost_ref(); }
 
 	useit bool is_local_value() const { return localID.has_value(); }
+
+	useit void set_confirmed_ref() { isConfirmedRef = true; }
+
+	useit ir::Type* get_pass_type() const;
+
+	useit bool should_be_ref() const { return isConfirmedRef; }
 
 	useit bool is_ref() const { return type->is_ref(); }
 

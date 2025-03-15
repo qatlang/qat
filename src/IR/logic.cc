@@ -7,6 +7,7 @@
 #include "./generics.hpp"
 #include "./qat_module.hpp"
 #include "./stdlib.hpp"
+#include "./type_id.hpp"
 #include "./types/array.hpp"
 #include "./types/float.hpp"
 #include "./types/integer.hpp"
@@ -28,27 +29,26 @@ namespace qat::ir {
 ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
                                         FileRange valueRange) {
 	if (expectedType->is_same(value->get_ir_type())) {
-		if (value->is_ghost_ref()) {
-			auto valueType = value->get_ir_type();
-			if (valueType->has_simple_copy() || valueType->has_simple_move()) {
-				auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
-				if (not valueType->has_simple_copy()) {
-					if (not value->is_variable()) {
-						ctx->Error("This expression does not have variability and hence simple-move is not possible",
-						           valueRange);
-					}
-					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(valueType->get_llvm_type()),
-					                                value->get_llvm());
-				}
-				return ir::Value::get(loadRes, valueType, false);
-			} else {
-				ctx->Error("This expression is of type " + ctx->color(valueType->to_string()) +
-				               " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") +
-				               " or " + ctx->color("'move") + " accordingly",
-				           valueRange);
-			}
-		} else {
+		if (not value->is_ghost_ref()) {
 			return value;
+		}
+		auto valueType = value->get_ir_type();
+		if (valueType->has_simple_copy() || valueType->has_simple_move()) {
+			auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
+			if (not valueType->has_simple_copy()) {
+				if (not value->is_variable()) {
+					ctx->Error("This expression does not have variability and hence simple-move is not possible",
+					           valueRange);
+				}
+				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(valueType->get_llvm_type()),
+				                                value->get_llvm());
+			}
+			return ir::Value::get(loadRes, valueType, false);
+		} else {
+			ctx->Error("This reference-like expression is of type " + ctx->color(valueType->to_string()) +
+			               " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") +
+			               " or " + ctx->color("'move") + " to create a value manually",
+			           valueRange);
 		}
 	} else if ((expectedType->is_ref() && expectedType->as_ref()->is_same(value->get_ir_type()) &&
 	            (value->is_ghost_ref() && (expectedType->as_ref()->has_variability() ? value->is_variable() : true))) ||
@@ -71,12 +71,14 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 					               " which is a reference without variability and hence simple-move is not possible",
 					           valueRange);
 				}
+				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(memType->get_llvm_type()),
+				                                value->get_llvm());
 			}
 			return ir::Value::get(loadRes, memType, false);
 		} else {
 			ctx->Error("This expression is a reference of type " + ctx->color(memType->to_string()) +
 			               " which does not have simple-copy and simple-move. Please use " + ctx->color("'copy") +
-			               " or " + ctx->color("'move") + " accordingly",
+			               " or " + ctx->color("'move") + " to create a value manually",
 			           valueRange);
 		}
 	} else {
@@ -134,7 +136,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			if (val->is_prerun_value()) {
 				printVals.push_back(val->get_llvm_constant()->getAggregateElement(1u));
 				printVals.push_back(val->get_llvm_constant()->getAggregateElement(0u));
-			} else if (val->is_ghost_ref() || val->is_ref()) {
+			} else if (val->is_ref() || val->is_ghost_ref()) {
 				auto* strTy = val->is_ref() ? val->get_ir_type()->as_ref()->get_subtype() : val->get_ir_type();
 				if (val->is_ref()) {
 					val->load_ghost_ref(ctx->irCtx->builder);
@@ -149,6 +151,33 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			} else {
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}));
+			}
+		} else if (valTy->is_typed()) {
+			formatString += "%.*s";
+			if (val->is_prerun_value()) {
+				auto name = TypeInfo::get_for(val->get_llvm_constant())->typeInfo->getAggregateElement(0u);
+				printVals.push_back(name->getAggregateElement(1u));
+				printVals.push_back(name->getAggregateElement(0u));
+			} else {
+				llvm::Value* useVal = val->get_llvm();
+				if (val->is_ref() || val->is_ghost_ref()) {
+					if (val->is_ref()) {
+						val->load_ghost_ref(ctx->irCtx->builder);
+					}
+					useVal = ctx->irCtx->builder.CreateLoad(
+					    llvm::PointerType::get(ctx->irCtx->llctx,
+					                           ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace()),
+					    val->get_llvm());
+				}
+				auto strTy   = ir::TextType::get(ctx->irCtx);
+				auto nameVal = ctx->irCtx->builder.CreateStructGEP(TypeInfo::typeInfoType, useVal, 0u);
+				printVals.push_back(ctx->irCtx->builder.CreateLoad(
+				    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), nameVal, 1u)));
+				printVals.push_back(ctx->irCtx->builder.CreateLoad(
+				    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
+				        ->getPointerTo(ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace()),
+				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), nameVal, 0u)));
 			}
 		} else if (valTy->is_native_type() && valTy->as_native_type()->is_cstring()) {
 			formatString += "%s";
@@ -349,6 +378,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			}
 			formatString += "]";
 		} else {
+			// TODO - Support conversions from default implementations
 			if ((not val->is_prerun_value()) && valTy->is_expanded() && ir::StdLib::is_std_lib_found() &&
 			    ir::StdLib::has_string_type() &&
 			    valTy->as_expanded()->has_to_convertor(ir::StdLib::get_string_type())) {

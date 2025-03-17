@@ -5,7 +5,7 @@
 <a href="https://paypal.me/aldrinsartfactory"><img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Paypal badge"/></a>
 </div>
 
-![Qat cover image](./media/qat_curved_cover.png)
+![Qat cover image](./media/curved_cover_wide.png)
 
 <div>
 <a href="https://qatlang.org"><img src="https://img.shields.io/badge/qatlang.org-444444?style=for-the-badge&logoColor=white" alt="Qat website badge"/></a>

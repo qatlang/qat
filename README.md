@@ -40,10 +40,9 @@ Requirements:
 
 Make sure that the LLVM & Boost builds are in release mode, if you are building those yourself.
 
-```bash
-cmake -DCMAKE_INSTALL_PREFIX="${HOME}/dev/qat" -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR="/path/to/llvm" -DCMAKE_CXX_COMPILER="clang++-19" -DBOOST_DIR="/path/to/boost" -DCMAKE_C_COMPILER="clang-19" -DCMAKE_C_COMPILER_WORKS=1 -DCMAKE_CXX_COMPILER_WORKS=1 -DBUILD_SHARED_LIBS=false -GNinja -S src/ -B build/
-cmake --build build --config Release --target install
-```
+To configure the CMake project, run `cmake -DCMAKE_INSTALL_PREFIX="${HOME}/dev/qat" -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR="/path/to/llvm" -DCMAKE_CXX_COMPILER="clang++-19" -DBOOST_DIR="/path/to/boost" -DCMAKE_C_COMPILER="clang-19" -DCMAKE_C_COMPILER_WORKS=1 -DCMAKE_CXX_COMPILER_WORKS=1 -DBUILD_SHARED_LIBS=false -GNinja -S src/ -B build/`
+
+To build, run `cmake --build build --config Release --target install`
 
 The above command installs the language in the directory `${HOME}/dev/qat`, which is the recommended installation path for unix-like systems. Feel free to make changes to the above configuration to suit your needs.
 

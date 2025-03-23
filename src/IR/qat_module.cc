@@ -153,7 +153,6 @@ Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _t
 
 Mod::~Mod() {
 	SHOW("Deleting module " << name.value << " in file " << filePath.string())
-	std::destroy_at(llvmModule);
 	for (auto* global : otherGlobals) {
 		std::destroy_at(global);
 	}
@@ -167,6 +166,7 @@ Mod::~Mod() {
 		std::destroy_at(type);
 	}
 	SHOW("Destroyed generic functions, generic struct types, generic type definitions")
+	// std::destroy_at(llvmModule);
 }
 
 void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {

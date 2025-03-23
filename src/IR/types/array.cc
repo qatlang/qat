@@ -38,8 +38,8 @@ Maybe<String> ArrayType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	if (can_be_prerun_generic()) {
 		String result("[");
 		for (usize i = 0; i < length; i++) {
-			auto elemStr = elementType->to_prerun_generic_string(ir::PrerunValue::get(
-			    llvm::cast<llvm::ConstantArray>(val->get_llvm_constant())->getAggregateElement(i), elementType));
+			auto elemStr = elementType->to_prerun_generic_string(
+			    ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(i), elementType));
 			if (elemStr.has_value()) {
 				result += elemStr.value();
 			} else {

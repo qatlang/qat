@@ -72,8 +72,9 @@ class Value {
 
 	useit bool is_local_value() const { return localID.has_value(); }
 
-	useit void set_confirmed_ref() { isConfirmedRef = true; }
+	void set_confirmed_ref() { isConfirmedRef = true; }
 
+	// Not useful for prerun values
 	useit ir::Type* get_pass_type() const;
 
 	useit bool should_be_ref() const { return isConfirmedRef; }

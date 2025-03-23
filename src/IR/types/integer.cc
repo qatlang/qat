@@ -41,7 +41,7 @@ Maybe<String> IntegerType::to_prerun_generic_string(ir::PrerunValue* val) const 
 	auto               isValNegative =
 	    llvm::cast<llvm::ConstantInt>(
 	        llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_SLT, val->get_llvm_constant(),
-	                                             llvm::ConstantInt::get(val->get_ir_type()->get_llvm_type(), 0u, true)))
+	                                             llvm::ConstantInt::get(val->get_llvm_constant()->getType(), 0u, true)))
 	        ->getValue()
 	        .getBoolValue();
 	auto value = val->get_llvm_constant();
@@ -71,12 +71,11 @@ Maybe<String> IntegerType::to_prerun_generic_string(ir::PrerunValue* val) const 
 		                                       llvm::ConstantInt::get(value->getType(), 10u, true), irCtx->dataLayout));
 		len                                         = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
             llvm::ConstantExpr::getSub(len, llvm::ConstantInt::get(len->getType(), 1u, false)), irCtx->dataLayout));
-		resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(
-		    llvm::ConstantFoldIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout),
-		    irCtx->dataLayout));
-		value                                       = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
-            llvm::Instruction::BinaryOps::SDiv, llvm::ConstantExpr::getSub(value, digit),
-            llvm::ConstantInt::get(value->getType(), 10u, true), irCtx->dataLayout));
+		resultDigits[*len->getValue().getRawData()] = llvm::cast<llvm::ConstantInt>(
+		    llvm::ConstantFoldIntegerCast(digit, llvm::Type::getInt8Ty(irCtx->llctx), false, irCtx->dataLayout));
+		value = llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryOpOperands(
+		    llvm::Instruction::BinaryOps::SDiv, llvm::ConstantExpr::getSub(value, digit),
+		    llvm::ConstantInt::get(value->getType(), 10u, true), irCtx->dataLayout));
 	} while (llvm::cast<llvm::ConstantInt>(
 	             llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_NE, len,
 	                                                  llvm::ConstantInt::get(len->getType(), 0u, false)))

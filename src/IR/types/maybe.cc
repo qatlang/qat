@@ -292,10 +292,11 @@ Maybe<String> MaybeType::to_prerun_generic_string(ir::PrerunValue* value) const 
 		if (llvm::cast<llvm::ConstantInt>(value->get_llvm_constant()->getAggregateElement(0u))
 		        ->getValue()
 		        .getBoolValue()) {
+			SHOW("Maybe has value")
 			return "is(" +
 			       subTy
 			           ->to_prerun_generic_string(
-			               ir::PrerunValue::get(value->get_llvm_constant()->getAggregateElement(0u), subTy))
+			               ir::PrerunValue::get(value->get_llvm_constant()->getAggregateElement(1u), subTy))
 			           .value() +
 			       ")";
 		} else {

@@ -37,7 +37,7 @@ class Logic {
 
 	/// NOTE - This function should ideally control copy & move semantics behaviour for the entire language
 	useit static ir::Value* handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
-	                                              FileRange valueRange);
+	                                              FileRange valueRange, bool restricLocalRefs = false);
 };
 
 } // namespace qat::ir

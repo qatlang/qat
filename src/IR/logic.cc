@@ -27,22 +27,30 @@
 namespace qat::ir {
 
 ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
-                                        FileRange valueRange) {
-	if (expectedType->is_same(value->get_ir_type())) {
+                                        FileRange valueRange, bool restrictLocalRefs) {
+	if (expectedType->is_same(value->get_ir_type()) && not expectedType->is_ref()) {
 		if (not value->is_ghost_ref()) {
 			return value;
+		}
+		if (value->should_be_ref()) {
+			ctx->Error("This reference-like expression was confirmed to be used as a reference using the " +
+			               ctx->color(value->is_variable() ? "'ref" : "'ref:var") +
+			               " expression. Please avoid this to remove the reference confirmation",
+			           valueRange);
 		}
 		auto valueType = value->get_ir_type();
 		if (valueType->has_simple_copy() || valueType->has_simple_move()) {
 			auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
 			if (not valueType->has_simple_copy()) {
 				if (not value->is_variable()) {
-					ctx->Error("This expression does not have variability and hence simple-move is not possible",
-					           valueRange);
+					ctx->Error(
+					    "This reference-like expression does not have variability and hence simple-move is not possible",
+					    valueRange);
 				}
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(valueType->get_llvm_type()),
 				                                value->get_llvm());
 			}
+			SHOW("Value type " << valueType->to_string())
 			return ir::Value::get(loadRes, valueType, false);
 		} else {
 			ctx->Error("This reference-like expression is of type " + ctx->color(valueType->to_string()) +
@@ -56,11 +64,26 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 	            expectedType->as_ref()->get_subtype()->is_same(value->get_ir_type()->as_ref()->get_subtype()) &&
 	            (expectedType->as_ref()->has_variability() ? value->get_ir_type()->as_ref()->has_variability()
 	                                                       : true))) {
+		if (not value->should_be_ref()) {
+			ctx->Error("This expression is not confirmed to be used as a reference, please use " + ctx->color("'ref") +
+			               " or " + ctx->color("'ref:var") +
+			               " after this expression to confirm a reference accordingly",
+			           valueRange);
+		}
 		if (value->is_ref()) {
 			value->load_ghost_ref(ctx->irCtx->builder);
+		} else if (restrictLocalRefs && value->get_local_id().has_value()) {
+			ctx->Error("Retrieving reference to a local value is prohibited here", valueRange);
 		}
-		return value;
+		SHOW("Value type " << value->get_ir_type()->to_string() << " ; expected type " << expectedType->to_string());
+		return ir::Value::get(value->get_llvm(), expectedType, false);
 	} else if (value->is_ref() && value->get_ir_type()->as_ref()->get_subtype()->is_same(expectedType)) {
+		if (value->should_be_ref()) {
+			ctx->Error("This expression was confirmed to be a reference using the " +
+			               ctx->color(value->get_ir_type()->as_ref()->has_variability() ? "'@var" : "'@") +
+			               " expression. Please avoid this to remove the reference confirmation",
+			           valueRange);
+		}
 		value->load_ghost_ref(ctx->irCtx->builder);
 		auto memType = value->get_ir_type()->as_ref()->get_subtype();
 		if (memType->has_simple_copy() || memType->has_simple_move()) {
@@ -74,6 +97,7 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(memType->get_llvm_type()),
 				                                value->get_llvm());
 			}
+			SHOW("Value type " << memType->to_string())
 			return ir::Value::get(loadRes, memType, false);
 		} else {
 			ctx->Error("This expression is a reference of type " + ctx->color(memType->to_string()) +

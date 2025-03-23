@@ -69,12 +69,16 @@ bool Type::isCompatible(Type* other) {
 		    (as_mark()->get_owner().is_same(other->as_mark()->get_owner()) ||
 		     as_mark()->get_owner().is_of_anonymous() ||
 		     (as_mark()->get_owner().is_of_any_region() && other->as_mark()->get_owner().is_of_region())) &&
+		    (as_mark()->is_subtype_variable() ? other->as_mark()->is_subtype_variable() : true) &&
 		    (as_mark()->is_non_nullable() ? other->as_mark()->is_non_nullable() : true) &&
 		    (as_mark()->is_slice() == other->as_mark()->is_slice())) {
 			return true;
 		} else {
 			return is_same(other);
 		}
+	} else if (is_ref() && other->is_ref()) {
+		return (as_ref()->get_subtype()->is_same(other->as_ref()->get_subtype()) &&
+		        (as_ref()->has_variability() ? other->as_ref()->has_variability() : true));
 	} else {
 		return is_same(other);
 	}

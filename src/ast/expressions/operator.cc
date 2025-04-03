@@ -85,7 +85,7 @@ OperatorKind operator_from_string(const String& str) {
 		return OperatorKind::INDEX;
 	} else if (str == "!") {
 		return OperatorKind::NOT;
-	} else if (str == "@") {
+	} else if (str == "ref") {
 		return OperatorKind::DEREFERENCE;
 	} else if (str == "~") {
 		return OperatorKind::BITWISE_NOT;
@@ -142,7 +142,7 @@ String operator_to_string(OperatorKind opr) {
 		case OperatorKind::MOVE_ASSIGNMENT:
 			return "move =";
 		case OperatorKind::DEREFERENCE:
-			return "@";
+			return "ref";
 		case OperatorKind::BITWISE_NOT:
 			return "~";
 	}

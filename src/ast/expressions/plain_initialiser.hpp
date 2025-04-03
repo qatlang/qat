@@ -6,7 +6,10 @@
 
 namespace qat::ast {
 
-class PlainInitialiser final : public Expression, public LocalDeclCompatible, public TypeInferrable {
+class PlainInitialiser final : public Expression,
+                               public LocalDeclCompatible,
+                               public InPlaceCreatable,
+                               public TypeInferrable {
 	friend class LocalDeclaration;
 
   private:
@@ -26,6 +29,7 @@ class PlainInitialiser final : public Expression, public LocalDeclCompatible, pu
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS
+	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
@@ -38,8 +42,10 @@ class PlainInitialiser final : public Expression, public LocalDeclCompatible, pu
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::PLAIN_INITIALISER; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::PLAIN_INITIALISER; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

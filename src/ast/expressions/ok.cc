@@ -114,14 +114,14 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 				           subExpr->fileRange);
 			}
 			resTy->handle_tag_store(createIn->get_llvm(), true, ctx->irCtx);
-			return get_creation_result(ctx->irCtx, resTy);
+			return get_creation_result(ctx->irCtx, resTy, fileRange);
 		}
 		SHOW("Sub expression emitted")
 		if (shouldCreateIn) {
 			// NOTE - Condition means that the sub-expression has already been created in-place
 			resTy->handle_tag_store(createIn->get_llvm(), true, ctx->irCtx);
 			subExpr->asInPlaceCreatable()->unsetCreateIn();
-			return get_creation_result(ctx->irCtx, resTy);
+			return get_creation_result(ctx->irCtx, resTy, fileRange);
 		}
 		// NOTE - The following function does further type checking
 		auto* finalVal = ir::Logic::handle_pass_semantics(ctx, valTy, validVal, subExpr->fileRange);
@@ -130,7 +130,7 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 		                                                          ctx->irCtx->builder.CreateStructGEP(
 		                                                              resTy->get_llvm_type(), createIn->get_llvm(), 1u),
 		                                                          valTy->get_llvm_type()->getPointerTo(0u)));
-		return get_creation_result(ctx->irCtx, resTy);
+		return get_creation_result(ctx->irCtx, resTy, fileRange);
 	} else {
 		ctx->Error("No inferred type found for this expression, and no type were provided. "
 		           "You can provide a type for ok expression like " +

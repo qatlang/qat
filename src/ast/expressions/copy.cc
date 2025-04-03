@@ -87,7 +87,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 					ctx->irCtx->builder.CreateStore(
 					    ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),
 					    createIn->get_llvm());
-					return get_creation_result(ctx->irCtx, candTy);
+					return get_creation_result(ctx->irCtx, candTy, fileRange);
 				} else {
 					return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm()),
 					                      candTy, true);

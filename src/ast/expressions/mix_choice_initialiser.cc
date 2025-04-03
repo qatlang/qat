@@ -104,7 +104,7 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					             ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 1),
 					             mixTy->get_variant_with_name(subName.value)->get_llvm_type()->getPointerTo()));
 				}
-				return get_creation_result(ctx->irCtx, mixTy);
+				return get_creation_result(ctx->irCtx, mixTy, fileRange);
 			} else {
 				ctx->Error("No field named " + ctx->color(subName.value) + " is present inside mix type " +
 				               ctx->color(mixTy->get_full_name()),
@@ -141,9 +141,9 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					    fileRange);
 				}
 				ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), createIn->get_llvm());
-				return get_creation_result(ctx->irCtx, chTy);
+				return get_creation_result(ctx->irCtx, chTy, fileRange);
 			} else {
-				return ir::PrerunValue::get(chTy->get_value_for(subName.value), chTy);
+				return ir::PrerunValue::get(chTy->get_value_for(subName.value), chTy)->with_range(fileRange);
 			}
 		} else {
 			ctx->Error("Choice type " + ctx->color(chTy->to_string()) + " does not have a variant named " +

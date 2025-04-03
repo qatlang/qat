@@ -5,13 +5,14 @@
 
 namespace qat::ast {
 
-class IsExpression final : public Expression, public LocalDeclCompatible, public TypeInferrable {
+class IsExpression final : public Expression,
+                           public LocalDeclCompatible,
+                           public InPlaceCreatable,
+                           public TypeInferrable {
 	friend class Assignment;
 	friend class LocalDeclaration;
 
-	Expression* subExpr      = nullptr;
-	bool        confirmedRef = false;
-	bool        isRefVar     = false;
+	Expression* subExpr = nullptr;
 
   public:
 	IsExpression(Expression* _subExpr, FileRange _fileRange) : Expression(_fileRange), subExpr(_subExpr) {}
@@ -21,6 +22,7 @@ class IsExpression final : public Expression, public LocalDeclCompatible, public
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS
+	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
@@ -28,8 +30,10 @@ class IsExpression final : public Expression, public LocalDeclCompatible, public
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::IS; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::IS; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

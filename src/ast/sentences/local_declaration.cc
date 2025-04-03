@@ -35,26 +35,32 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 
 	ir::Value* expVal = nullptr;
 	if (value.has_value()) {
-		if (type && value.value()->has_type_inferrance()) {
+		SHOW("LocalDecl value kind is " << (int)value.value()->nodeType())
+		if (type && not declType) {
 			declType = type->emit(ctx);
 			typeCheck();
+		}
+		if (declType && value.value()->has_type_inferrance()) {
 			value.value()->as_type_inferrable()->set_inference_type(declType);
 		}
-		if (value.value()->isLocalDeclCompatible()) {
-			if ((type || declType)) {
-				if (not declType) {
-					declType = type->emit(ctx);
-					typeCheck();
-				}
-				value.value()->asLocalDeclCompatible()->setLocalValue(
-				    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range));
-			} else {
-				auto* localDeclCompat   = value.value()->asLocalDeclCompatible();
-				localDeclCompat->irName = name;
-				localDeclCompat->isVar  = variability;
+		if (value.value()->isInPlaceCreatable() && declType) {
+			SHOW("LocalDecl value is in-place creatable")
+			value.value()->asInPlaceCreatable()->setCreateIn(
+			    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range));
+			return value.value()->emit(ctx);
+		} else if (value.value()->isLocalDeclCompatible()) {
+			SHOW("LocalDecl value is compatible")
+			auto* localDeclCompat   = value.value()->asLocalDeclCompatible();
+			localDeclCompat->irName = name;
+			localDeclCompat->isVar  = variability;
+			SHOW("Emitting value")
+			auto valRes = value.value()->emit(ctx);
+			if (declType && not valRes->get_ir_type()->is_same(declType)) {
+				ctx->Error("The type of this local declaration is " + ctx->color(declType->to_string()) +
+				               " but the expression is of type " + ctx->color(valRes->get_ir_type()->to_string()),
+				           value.value()->fileRange);
 			}
-			(void)value.value()->emit(ctx);
-			return nullptr;
+			return valRes;
 		}
 		SHOW("Emitting value")
 		expVal = value.value()->emit(ctx);

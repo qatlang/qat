@@ -39,7 +39,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			valType = valType->as_native_type()->get_subtype();
 		}
 		if (valType->is_mark()) {
-			if (destTy->is_mark() || (destTy->is_native_type() && destTy->as_native_type()->is_c_ptr())) {
+			if (destTy->is_mark()) {
 				loadRef();
 				auto targetTy =
 				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_mark() : destTy->as_mark();

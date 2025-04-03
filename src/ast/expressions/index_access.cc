@@ -86,7 +86,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			    (inst->get_ir_type()->as_ref()->get_subtype()->is_mark() &&
 			     not inst->get_ir_type()->as_ref()->get_subtype()->as_mark()->is_slice())) {
 				SHOW("Instance for member access is a Reference to: "
-				     << inst->get_ir_type()->as_reference()->get_subtype()->to_string())
+				     << inst->get_ir_type()->as_ref()->get_subtype()->to_string())
 				inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()),
 				                      instType, inst->get_ir_type()->as_ref()->has_variability());
 			}
@@ -276,7 +276,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		bool isVarExp = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->is_variable();
 		return ir::Value::get(
 		    ctx->irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->irCtx->llctx), instVal, {ind->get_llvm()}),
-		    ir::RefType::get(isVarExp, ir::NativeType::get_char(ctx->irCtx), ctx->irCtx), false);
+		    ir::RefType::get(isVarExp, ir::NativeType::get_byte(ctx->irCtx), ctx->irCtx), false);
 	} else if (instType->is_expanded()) {
 		auto*       eTy      = instType->as_expanded();
 		ir::Method* opFn     = nullptr;

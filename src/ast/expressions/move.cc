@@ -65,9 +65,10 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 				}
 				if (shouldLoadValue) {
 					return ir::Value::get(ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), createIn->get_llvm()),
-					                      candTy, true);
+					                      candTy, true)
+					    ->with_range(fileRange);
 				} else {
-					return get_creation_result(ctx->irCtx, candTy);
+					return get_creation_result(ctx->irCtx, candTy, fileRange);
 				}
 			} else if (candTy->has_simple_move()) {
 				if (isLocalDecl()) {
@@ -97,12 +98,12 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 					if (expEmit->is_local_value()) {
 						ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
 					}
-					return get_creation_result(ctx->irCtx, candTy);
+					return get_creation_result(ctx->irCtx, candTy, fileRange);
 				} else {
 					auto* loadRes = ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm());
 					ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(candTy->get_llvm_type()),
 					                                expEmit->get_llvm());
-					return ir::Value::get(loadRes, candTy, true);
+					return ir::Value::get(loadRes, candTy, true)->with_range(fileRange);
 				}
 			} else {
 				ctx->Error("Type " + ctx->color(candTy->to_string()) +

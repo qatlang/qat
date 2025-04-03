@@ -7,7 +7,7 @@
 
 namespace qat::ast {
 
-class TupleValue final : public Expression, public LocalDeclCompatible, public TypeInferrable {
+class TupleValue final : public Expression, public LocalDeclCompatible, public InPlaceCreatable, public TypeInferrable {
 	friend class LocalDeclaration;
 
 	bool             isPacked = false;
@@ -21,6 +21,7 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public T
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS
+	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
@@ -31,7 +32,8 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public T
 
 	useit ir::Value* emit(EmitCtx* ctx);
 	useit Json       to_json() const;
-	useit NodeType   nodeType() const { return NodeType::TUPLE_VALUE; }
+
+	useit NodeType nodeType() const { return NodeType::TUPLE_VALUE; }
 };
 
 } // namespace qat::ast

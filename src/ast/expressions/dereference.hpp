@@ -6,7 +6,6 @@
 namespace qat::ast {
 
 class Dereference final : public Expression {
-  private:
 	Expression* exp;
 
   public:
@@ -21,8 +20,10 @@ class Dereference final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::DEREFERENCE; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::DEREFERENCE; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

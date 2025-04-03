@@ -22,46 +22,16 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 	}
 	if (typeEmit->is_struct()) {
 		auto* cTy = typeEmit->as_struct();
-		if (fieldValues.empty()) {
-			if (cTy->has_default_constructor()) {
-				auto* dFn = cTy->get_default_constructor();
-				if (dFn->is_accessible(ctx->get_access_info())) {
-					llvm::Value* alloca = nullptr;
-					if (isLocalDecl()) {
-						type_check_local(cTy, ctx->irCtx, fileRange);
-						alloca = localValue->get_llvm();
-					} else if (irName) {
-						auto newAlloca =
-						    ctx->get_fn()->get_block()->new_local(irName->value, cTy, isVar, irName->range);
-						alloca = newAlloca->get_llvm();
-					} else {
-						alloca = ir::Logic::newAlloca(ctx->get_fn(), None, cTy->get_llvm_type());
-					}
-					(void)dFn->call(ctx->irCtx, {alloca}, None, ctx->mod);
-					if (isLocalDecl()) {
-						return localValue->to_new_ir_value();
-					} else {
-						return ir::Value::get(alloca, cTy, true);
-					}
-				} else {
-					ctx->Error("The default constructor of struct type " + ctx->color(cTy->get_full_name()) +
-					               " is not accessible here",
-					           fileRange);
-				}
-			}
-		}
-		if (ctx->get_fn()->is_method() ? not((ir::Method*)ctx->get_fn())->get_parent_type()->is_same(cTy) : true) {
-			if (cTy->has_any_constructor()) {
-				ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) +
-				               " have constructors and hence the plain initialiser "
-				               "cannot be used for this type",
-				           fileRange);
-			} else if (cTy->has_any_from_convertor()) {
-				ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) +
-				               " has convertor constructors and hence the plain initialiser "
-				               "syntax cannot be used for this type",
-				           fileRange);
-			}
+		if (cTy->has_any_constructor()) {
+			ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) +
+			               " have constructors and hence the plain initialiser "
+			               "cannot be used for this type",
+			           fileRange);
+		} else if (cTy->has_any_from_convertor()) {
+			ctx->Error("Struct type " + ctx->color(cTy->get_full_name()) +
+			               " has from-convertors and hence the plain initialiser "
+			               "cannot be used for this type",
+			           fileRange);
 		}
 		if (cTy->get_field_count() != fieldValues.size()) {
 			ctx->Error("Struct type " + ctx->color(cTy->to_string()) + " has " +
@@ -115,88 +85,48 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			if (fieldValues.at(i)->has_type_inferrance()) {
 				fieldValues.at(i)->as_type_inferrable()->set_inference_type(cTy->get_field_at(indices.at(i))->type);
 			}
-			auto* fVal  = fieldValues.at(i)->emit(ctx);
-			auto* memTy = cTy->get_field_at(i)->type;
-			if (fVal->get_ir_type()->is_same(memTy) ||
-			    (memTy->is_ref() && memTy->as_ref()->get_subtype()->is_same(fVal->get_ir_type()) &&
-			     fVal->is_ghost_ref() && (memTy->as_ref()->has_variability() ? fVal->is_variable() : true)) ||
-			    (fVal->get_ir_type()->is_ref() && fVal->get_ir_type()->as_ref()->get_subtype()->is_same(memTy))) {
-				if (not fVal->is_prerun_value()) {
-					areAllValsPrerun = false;
-				}
-				irVals.push_back(fVal);
-			} else {
+			auto* memVal  = fieldValues.at(i)->emit(ctx);
+			auto* fieldTy = cTy->get_field_at(i)->type;
+			if (not memVal->get_pass_type()->is_same(fieldTy)) {
 				ctx->Error("This expression does not match the type of the "
-				           "corresponding member " +
+				           "corresponding field " +
 				               ctx->color(cTy->get_field_name_at(i)) + " of struct type " +
-				               ctx->color(cTy->to_string()) + ". The member is of type " +
-				               ctx->color(memTy->to_string()) + ", but the expression is of type " +
-				               ctx->color(fVal->get_ir_type()->to_string()),
+				               ctx->color(cTy->to_string()) + ". The field is of type " +
+				               ctx->color(fieldTy->to_string()) + ", but the expression is of type " +
+				               ctx->color(memVal->get_pass_type()->to_string()),
 				           fieldValues.at(i)->fileRange);
 			}
+			if (not memVal->is_prerun_value()) {
+				areAllValsPrerun = false;
+			}
+			memVal = ir::Logic::handle_pass_semantics(ctx, fieldTy, memVal, fieldValues[i]->fileRange);
+			irVals.push_back(memVal);
 		}
-		llvm::Value* alloca = nullptr;
-		if (isLocalDecl()) {
-			type_check_local(cTy, ctx->irCtx, fileRange);
-			alloca = localValue->get_llvm();
-		} else {
-			auto newAlloca = ctx->get_fn()->get_block()->new_local(
+		if (isLocalDecl() || not areAllValsPrerun) {
+			createIn = ctx->get_fn()->get_block()->new_local(
 			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), cTy, isVar,
 			    irName.has_value() ? irName->range : fileRange);
-			alloca = newAlloca->get_llvm();
 		}
+		llvm::Constant* constVal;
 		if (areAllValsPrerun) {
 			SHOW("PlainInit Type " << cTy->to_string() << " all values prerun. Count " << indices.size())
 			Vec<llvm::Constant*> memVals(indices.size());
 			for (usize i = 0; i < indices.size(); i++) {
 				memVals[indices[i]] = irVals[i]->get_llvm_constant();
 			}
-			ctx->irCtx->builder.CreateStore(
-			    llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(cTy->get_llvm_type()), memVals), alloca);
+			constVal = llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(cTy->get_llvm_type()), memVals);
+			if (canCreateIn()) {
+				ctx->irCtx->builder.CreateStore(constVal, createIn->get_llvm());
+				return get_creation_result(ctx->irCtx, cTy, fileRange);
+			}
+			return ir::PrerunValue::get(constVal, cTy);
 		} else {
 			for (usize i = 0; i < irVals.size(); i++) {
-				auto* memPtr = ctx->irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), alloca, indices.at(i));
-				auto  irVal  = irVals.at(i);
-				auto  memTy  = cTy->get_field_at(indices.at(i))->type;
-				if (irVal->is_ghost_ref() || irVal->is_ref()) {
-					if (memTy->has_simple_copy() || memTy->has_simple_move()) {
-						if (irVal->is_ref()) {
-							irVal->load_ghost_ref(ctx->irCtx->builder);
-						}
-						auto* irOrigVal = ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm());
-						if (not memTy->has_simple_copy()) {
-							if (irVal->is_ref() && not irVal->get_ir_type()->as_ref()->has_variability()) {
-								ctx->Error(
-								    "This is a reference without variability and hence simple-move is not possible",
-								    fieldValues.at(i)->fileRange);
-							} else if (not irVal->is_ref() && not irVal->is_variable()) {
-								ctx->Error(
-								    "This is an expression without variability and hence simple-move is not possible",
-								    fieldValues.at(i)->fileRange);
-							}
-							ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(memTy->get_llvm_type()),
-							                                irVal->get_llvm());
-							if (irVal->is_local_value()) {
-								ctx->get_fn()->get_block()->add_moved_value(irVal->get_local_id().value());
-							}
-						}
-						ctx->irCtx->builder.CreateStore(irOrigVal, memPtr);
-					} else {
-						ctx->Error("The member field " + ctx->color(cTy->get_field_name_at(indices.at(i))) +
-						               " expects an expression of type " + ctx->color(memTy->to_string()) +
-						               " which does not have simple-copy and simple-move. Please use " +
-						               ctx->color("'copy") + " or " + ctx->color("'move") + " accordingly",
-						           fieldValues.at(i)->fileRange);
-					}
-				} else {
-					ctx->irCtx->builder.CreateStore(irVal->get_llvm(), memPtr);
-				}
+				ctx->irCtx->builder.CreateStore(
+				    irVals[i]->get_llvm(),
+				    ctx->irCtx->builder.CreateStructGEP(cTy->get_llvm_type(), createIn->get_llvm(), indices.at(i)));
 			}
-		}
-		if (isLocalDecl()) {
-			return localValue;
-		} else {
-			return ir::Value::get(alloca, cTy, true);
+			return get_creation_result(ctx->irCtx, cTy, fileRange);
 		}
 	} else if (typeEmit->is_text()) {
 		if (fieldValues.size() == 2) {
@@ -365,19 +295,13 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		SHOW("Handled all vals")
 		if (areAllValuesConstant) {
 			if (isLocalDecl()) {
-				SHOW("Is local decl and val is const")
-				type_check_local(vecTy, ctx->irCtx, fileRange);
-				SHOW("Storing vector constant in local")
-				ctx->irCtx->builder.CreateStore(llvm::ConstantVector::get(constVals), localValue->get_llvm());
-				return localValue->to_new_ir_value();
-			} else if (irName.has_value()) {
-				auto newAlloca = ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, fileRange);
-				ctx->irCtx->builder.CreateStore(llvm::ConstantVector::get(constVals), newAlloca->get_llvm());
-				return newAlloca->to_new_ir_value();
-			} else {
-				SHOW("Getting vector " << vecTy->to_string())
-				return ir::PrerunValue::get(llvm::ConstantVector::get(constVals), vecTy);
+				createIn = ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, fileRange);
 			}
+			if (canCreateIn()) {
+				ctx->irCtx->builder.CreateStore(llvm::ConstantVector::get(constVals), createIn->get_llvm());
+				return get_creation_result(ctx->irCtx, vecTy, fileRange);
+			}
+			return ir::PrerunValue::get(llvm::ConstantVector::get(constVals), vecTy)->with_range(fileRange);
 		} else {
 			SHOW("Values not constant")
 			llvm::Value* lastValue =
@@ -386,15 +310,13 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				lastValue = ctx->irCtx->builder.CreateInsertElement(lastValue, values[i]->get_llvm(), i);
 			}
 			if (isLocalDecl()) {
-				ctx->irCtx->builder.CreateStore(lastValue, localValue->get_llvm());
-				return localValue->to_new_ir_value();
-			} else if (irName.has_value()) {
-				auto newAlloca = ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, fileRange);
-				ctx->irCtx->builder.CreateStore(lastValue, localValue->get_llvm());
-				return newAlloca->to_new_ir_value();
-			} else {
-				return ir::Value::get(lastValue, vecTy, false);
+				createIn = ctx->get_fn()->get_block()->new_local(irName->value, vecTy, isVar, irName->range);
 			}
+			if (canCreateIn()) {
+				ctx->irCtx->builder.CreateStore(lastValue, createIn->get_llvm());
+				return get_creation_result(ctx->irCtx, vecTy, fileRange);
+			}
+			return ir::Value::get(lastValue, vecTy, false)->with_range(fileRange);
 		}
 	} else {
 		ctx->Error("The type is " + ctx->color(typeEmit->to_string()) +

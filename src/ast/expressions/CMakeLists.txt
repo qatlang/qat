@@ -5,6 +5,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	await.cc
 	binary_expression.cc
 	cast.cc
+	confirm_ref.cc
 	constructor_call.cc
 	copy.cc
 	default.cc

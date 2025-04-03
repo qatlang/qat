@@ -20,6 +20,7 @@
 #include "../ast/expressions/await.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/cast.hpp"
+#include "../ast/expressions/confirm_ref.hpp"
 #include "../ast/expressions/constructor_call.hpp"
 #include "../ast/expressions/copy.hpp"
 #include "../ast/expressions/default.hpp"
@@ -30,6 +31,7 @@
 #include "../ast/expressions/generic_entity.hpp"
 #include "../ast/expressions/get_intrinsic.hpp"
 #include "../ast/expressions/heap.hpp"
+#include "../ast/expressions/in.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/is.hpp"
 #include "../ast/expressions/member_access.hpp"
@@ -147,12 +149,13 @@
 	case TokenType::nativeType:                                                                                        \
 	case TokenType::maybeType:                                                                                         \
 	case TokenType::vectorType:                                                                                        \
-	case TokenType::stringSliceType:                                                                                   \
+	case TokenType::textType:                                                                                          \
 	case TokenType::unsignedIntegerType:                                                                               \
 	case TokenType::integerType:                                                                                       \
 	case TokenType::floatType:                                                                                         \
 	case TokenType::futureType:                                                                                        \
-	case TokenType::result:
+	case TokenType::result:                                                                                            \
+	case TokenType::referenceType:
 
 namespace qat::parser {
 
@@ -390,6 +393,7 @@ ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRange fileRange) 
 					}
 					break;
 				}
+				// !!! FALLTHROUGH HAPPENING HERE
 			}
 			case TokenType::identifier: {
 				if (not is_next(TokenType::associatedAssignment, i)) {
@@ -1095,11 +1099,11 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						}
 					} else if (is_next(TokenType::to, i)) {
 						auto start = i;
-						if (is_next(TokenType::parenthesisOpen, i + 1)) {
+						if (is_next(TokenType::genericTypeStart, i + 1)) {
 							auto typeRes = do_type(preCtx, i + 2, None);
 							auto exp     = consumeCachedExp();
 							i            = typeRes.second;
-							if (not is_next(TokenType::parenthesisClose, i)) {
+							if (not is_next(TokenType::genericTypeEnd, i)) {
 								add_error("Expected ) after this to end the type specification for the " +
 								              color_error("to") + " conversion",
 								          RangeSpan(start, i));
@@ -1108,7 +1112,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							setCachedPreExp(ast::PrerunTo::create(exp, typeRes.first, {exp->fileRange, RangeAt(i)}), i);
 						} else {
 							// TODO - Allow type inference in this case???
-							add_error("Expected a type to be provided here like " + color_error("'to(TargetType)") +
+							add_error("Expected a type to be provided here like " + color_error("'to:[TargetType]") +
 							              " for the conversion",
 							          RangeAt(i + 1));
 						}
@@ -1700,13 +1704,21 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				}
 				const auto start    = i;
 				bool       isRefVar = false;
+				if (not is_next(TokenType::genericTypeStart, i)) {
+					add_error("Expected :[ after this to start the subtype of the reference type", RangeAt(i));
+				}
+				i++;
 				if (is_next(TokenType::var, i)) {
-					isRefVar = true;
 					i++;
+					isRefVar = true;
 				}
 				auto subRes = do_type(ctx, i, None);
 				i           = subRes.second;
-				cacheTy     = ast::ReferenceType::create(subRes.first, isRefVar, RangeSpan(start, i));
+				if (not is_next(TokenType::genericTypeEnd, i)) {
+					add_error("Expected ] after this to end the subtype of the reference type", RangeSpan(start, i));
+				}
+				i++;
+				cacheTy = ast::ReferenceType::create(subRes.first, isRefVar, RangeSpan(start, i));
 				break;
 			}
 			case TokenType::sliceType:
@@ -2420,7 +2432,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						if (not gEnd.has_value()) {
 							add_error("Expected ] to end the list of generic parameters", RangeAt(i + 1));
 						}
-						generics = std::move(do_generic_fill(preCtx, i + 1, gEnd.value()));
+						generics = do_generic_fill(preCtx, i + 1, gEnd.value());
 						i        = gEnd.value();
 					}
 					if (not is_next(TokenType::For, i)) {
@@ -2532,7 +2544,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					i            = typeRes.second;
 					providedType = typeRes.first;
 				}
-				auto flagRes = do_flag_type(i, name, providedType, get_visibility(), RangeAt(i));
+				auto flagRes = do_flag_type(i, name, providedType, get_visibility(), RangeAt(start));
 				addNode(flagRes.first);
 				i = flagRes.second;
 				break;
@@ -4973,7 +4985,59 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					if (is_next(TokenType::Not, i)) {
 						setCachedExpr(ast::LogicalNot::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
 						i++;
-						break;
+					} else if (is_next(TokenType::referenceType, i)) {
+						const auto start = i;
+						i++;
+						bool isVar = false;
+						if (is_next(TokenType::colon, i) && is_next(TokenType::var, i + 1)) {
+							isVar = true;
+							i += 2;
+						}
+						setCachedExpr(ast::ConfirmRef::create(exp, isVar, RangeSpan(start, i)), i);
+					} else if (is_next(TokenType::in, i)) {
+						if (is_next(TokenType::parenthesisOpen, i + 1)) {
+							auto subExp = do_expression(preCtx, None, i + 2, None, None);
+							i           = subExp.second;
+							if (not is_next(TokenType::parenthesisClose, i)) {
+								add_error("Expected ) after this to end the expression to create the value in",
+								          RangeSpan(start + 2, i));
+							}
+							i++;
+							setCachedExpr(ast::InExpression::create_expression(exp, subExp.first, RangeSpan(start, i)),
+							              i);
+						} else if (is_next(TokenType::colon, i + 1)) {
+							if (is_next(TokenType::heap, i + 2)) {
+								i += 3;
+								setCachedExpr(ast::InExpression::create_heap(exp, RangeSpan(start, i)), i);
+							} else if (is_next(TokenType::region, i + 2)) {
+								if (not is_next(TokenType::parenthesisOpen, i + 3)) {
+									add_error("Expected ( after this to start the region type",
+									          RangeSpan(start, i + 3));
+								}
+								auto regRes = do_type(preCtx, i + 4, None);
+								i           = regRes.second;
+								if (not is_next(TokenType::parenthesisClose, i)) {
+									add_error("Expected ) after this to end the region type here", RangeSpan(start, i));
+								}
+								i++;
+								setCachedExpr(ast::InExpression::create_region(exp, regRes.first, RangeSpan(start, i)),
+								              i);
+							} else {
+								add_error(
+								    "Unexpected token found after this. in-expression should have one of the following syntaxes:\n"
+								    "1) value'in(target)\n"
+								    "2) value'in:heap\n"
+								    "3) value'in:region(regionType)",
+								    RangeSpan(start, i + 2)); // TODO - Add more allocator syntaxes
+							}
+						} else {
+							add_error(
+							    "Unexpected token found after this. in-expression should have one of the following syntaxes:\n"
+							    "1) value'in(target)\n"
+							    "2) value'in:heap\n"
+							    "3) value'in:region(regionType)",
+							    RangeAt(i)); // TODO - Add more allocator syntaxes
+						}
 					} else if (is_next(TokenType::copy, i)) {
 						setCachedExpr(ast::Copy::create(exp, false, exp->fileRange.spanTo(RangeAt(i + 1))), i + 1);
 						i++;

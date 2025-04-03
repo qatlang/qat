@@ -2,7 +2,6 @@
 #define QAT_TYPES_REFERENCE_HPP
 
 #include "./qat_type.hpp"
-#include <string>
 
 namespace qat::ast {
 
@@ -13,10 +12,10 @@ class ReferenceType final : public Type {
 
   public:
 	ReferenceType(Type* _type, bool _isSubtypeVar, FileRange _fileRange)
-	    : Type(_fileRange), type(_type), isSubtypeVar(_isSubtypeVar) {}
+	    : Type(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar) {}
 
-	useit static ReferenceType* create(Type* _type, bool _isSubtypeVar, FileRange _fileRange) {
-		return std::construct_at(OwnNormal(ReferenceType), _type, _isSubtypeVar, _fileRange);
+	useit static ReferenceType* create(Type* type, bool isSubtypeVar, FileRange fileRange) {
+		return std::construct_at(OwnNormal(ReferenceType), type, isSubtypeVar, std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,

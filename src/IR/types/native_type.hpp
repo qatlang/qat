@@ -11,8 +11,8 @@ enum class NativeTypeKind {
 	Bool,
 	Int,
 	Uint,
-	Char,
-	UChar,
+	Byte,
+	UByte,
 	Short,
 	UShort,
 	WideChar,
@@ -31,9 +31,7 @@ enum class NativeTypeKind {
 	UintPtr,
 	PtrDiff,
 	UPtrDiff,
-	Pointer,
 	SigAtomic,
-	ProcessID,
 	LongDouble,
 };
 
@@ -71,9 +69,9 @@ class NativeType : public Type {
 
 	useit bool is_cbool() const { return nativeKind == NativeTypeKind::Bool; }
 
-	useit bool is_char() const { return nativeKind == NativeTypeKind::Char; }
+	useit bool is_byte() const { return nativeKind == NativeTypeKind::Byte; }
 
-	useit bool is_char_unsigned() const { return nativeKind == NativeTypeKind::UChar; }
+	useit bool is_byte_unsigned() const { return nativeKind == NativeTypeKind::UByte; }
 
 	useit bool is_short() const { return nativeKind == NativeTypeKind::Short; }
 
@@ -103,8 +101,6 @@ class NativeType : public Type {
 
 	useit bool is_int_max_unsigned() const { return nativeKind == NativeTypeKind::UintMax; }
 
-	useit bool is_c_ptr() const { return nativeKind == NativeTypeKind::Pointer; }
-
 	useit bool is_intptr() const { return nativeKind == NativeTypeKind::IntPtr; }
 
 	useit bool is_intptr_unsigned() const { return nativeKind == NativeTypeKind::UintPtr; }
@@ -115,8 +111,6 @@ class NativeType : public Type {
 
 	useit bool is_sig_atomic() const { return nativeKind == NativeTypeKind::SigAtomic; }
 
-	useit bool is_process_id() const { return nativeKind == NativeTypeKind::ProcessID; }
-
 	useit bool is_cstring() const { return nativeKind == NativeTypeKind::String; }
 
 	useit bool is_long_double() const { return nativeKind == NativeTypeKind::LongDouble; }
@@ -125,8 +119,8 @@ class NativeType : public Type {
 	useit static NativeType* get_int(ir::Ctx* irCtx);
 	useit static NativeType* get_uint(ir::Ctx* irCtx);
 	useit static NativeType* get_bool(ir::Ctx* irCtx);
-	useit static NativeType* get_char(ir::Ctx* irCtx);
-	useit static NativeType* get_char_unsigned(ir::Ctx* irCtx);
+	useit static NativeType* get_byte(ir::Ctx* irCtx);
+	useit static NativeType* get_byte_unsigned(ir::Ctx* irCtx);
 	useit static NativeType* get_short(ir::Ctx* irCtx);
 	useit static NativeType* get_short_unsigned(ir::Ctx* irCtx);
 	useit static NativeType* get_wide_char(ir::Ctx* irCtx);
@@ -141,14 +135,12 @@ class NativeType : public Type {
 	useit static NativeType* get_double(ir::Ctx* irCtx);
 	useit static NativeType* get_intmax(ir::Ctx* irCtx);
 	useit static NativeType* get_uintmax(ir::Ctx* irCtx);
-	useit static NativeType* get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx);
 	useit static NativeType* get_intptr(ir::Ctx* irCtx);
 	useit static NativeType* get_uintptr(ir::Ctx* irCtx);
 	useit static NativeType* get_ptrdiff(ir::Ctx* irCtx);
 	useit static NativeType* get_ptrdiff_unsigned(ir::Ctx* irCtx);
 	// TODO - Check if there is more to SigAtomic than just an integer type
 	useit static NativeType* get_sigatomic(ir::Ctx* irCtx);
-	useit static NativeType* get_processid(ir::Ctx* irCtx);
 	useit static NativeType* get_cstr(ir::Ctx* irCtx);
 
 	useit static bool        has_long_double(ir::Ctx* irCtx);

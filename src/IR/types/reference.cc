@@ -14,7 +14,7 @@ RefType::RefType(bool _isSubtypeVariable, Type* _type, ir::Ctx* irCtx)
 		llvmType =
 		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace());
 	}
-	linkingName = "qat'@" + String(isSubVariable ? "var[" : "[") + subType->get_name_for_linking() + "]";
+	linkingName = "qat'ref:[" + String(isSubVariable ? "var " : "") + subType->get_name_for_linking() + "]";
 }
 
 RefType* RefType::get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx) {
@@ -37,6 +37,6 @@ bool RefType::is_type_sized() const { return true; }
 
 TypeKind RefType::type_kind() const { return TypeKind::REFERENCE; }
 
-String RefType::to_string() const { return "@" + String(isSubVariable ? "var[" : "[") + subType->to_string() + "]"; }
+String RefType::to_string() const { return "ref:[" + String(isSubVariable ? "var " : "") + subType->to_string() + "]"; }
 
 } // namespace qat::ir

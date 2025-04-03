@@ -1,5 +1,6 @@
 #include "./reference.hpp"
 #include "../../IR/types/reference.hpp"
+#include "../expression.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
 
@@ -16,11 +17,11 @@ Maybe<usize> ReferenceType::get_type_bitsize(EmitCtx* ctx) const {
 }
 
 ir::Type* ReferenceType::emit(EmitCtx* ctx) {
-	auto* typEmit = type->emit(ctx);
-	if (typEmit->is_ref() || typEmit->is_void() || typEmit->is_region()) {
-		ctx->Error("Subtype of reference cannot be " + ctx->color(typEmit->to_string()), fileRange);
+	auto* typRes = type->emit(ctx);
+	if (typRes->is_ref() || typRes->is_void() || typRes->is_region()) {
+		ctx->Error("Sub-type of reference cannot be " + ctx->color(typRes->to_string()), fileRange);
 	}
-	return ir::RefType::get(isSubtypeVar, typEmit, ctx->irCtx);
+	return ir::RefType::get(isSubtypeVar, typRes, ctx->irCtx);
 }
 
 AstTypeKind ReferenceType::type_kind() const { return AstTypeKind::REFERENCE; }
@@ -33,6 +34,8 @@ Json ReferenceType::to_json() const {
 	    ._("fileRange", fileRange);
 }
 
-String ReferenceType::to_string() const { return "@" + String(isSubtypeVar ? "var[" : "[") + type->to_string() + "]"; }
+String ReferenceType::to_string() const {
+	return "ref:[" + String(isSubtypeVar ? "var " : "") + type->to_string() + "]";
+}
 
 } // namespace qat::ast

@@ -15,10 +15,10 @@ Maybe<NativeTypeKind> native_type_kind_from_string(String const& val) {
 		return NativeTypeKind::Int;
 	} else if (val == "uint") {
 		return NativeTypeKind::Uint;
-	} else if (val == "char") {
-		return NativeTypeKind::Char;
-	} else if (val == "uchar") {
-		return NativeTypeKind::UChar;
+	} else if (val == "byte") {
+		return NativeTypeKind::Byte;
+	} else if (val == "ubyte") {
+		return NativeTypeKind::UByte;
 	} else if (val == "shortint") {
 		return NativeTypeKind::Short;
 	} else if (val == "ushortint") {
@@ -57,14 +57,10 @@ Maybe<NativeTypeKind> native_type_kind_from_string(String const& val) {
 		return NativeTypeKind::PtrDiff;
 	} else if (val == "uptrdiff") {
 		return NativeTypeKind::UPtrDiff;
-	} else if (val == "cSigAtomic") {
+	} else if (val == "sigatomic") {
 		return NativeTypeKind::SigAtomic;
-	} else if (val == "cProcessID") {
-		return NativeTypeKind::ProcessID;
-	} else if (val == "cBool") {
+	} else if (val == "widebool") {
 		return NativeTypeKind::Bool;
-	} else if (val == "cPtr") {
-		return NativeTypeKind::Pointer;
 	}
 	return None;
 }
@@ -75,10 +71,10 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 			return "int";
 		case NativeTypeKind::Uint:
 			return "uint";
-		case NativeTypeKind::Char:
-			return "char";
-		case NativeTypeKind::UChar:
-			return "uchar";
+		case NativeTypeKind::Byte:
+			return "byte";
+		case NativeTypeKind::UByte:
+			return "ubyte";
 		case NativeTypeKind::Short:
 			return "shortint";
 		case NativeTypeKind::UShort:
@@ -118,15 +114,11 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 		case NativeTypeKind::UPtrDiff:
 			return "uptrdiff";
 		case NativeTypeKind::SigAtomic:
-			return "cSigAtomic";
-		case NativeTypeKind::ProcessID:
-			return "cProcessID";
+			return "sigatomic";
 		case NativeTypeKind::String:
-			return "cStr";
+			return "cstring";
 		case NativeTypeKind::Bool:
-			return "cBool";
-		case NativeTypeKind::Pointer:
-			return "cPtr";
+			return "widebool";
 	}
 }
 
@@ -149,10 +141,10 @@ NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 			return get_int(irCtx);
 		case NativeTypeKind::Uint:
 			return get_uint(irCtx);
-		case NativeTypeKind::Char:
-			return get_char(irCtx);
-		case NativeTypeKind::UChar:
-			return get_char_unsigned(irCtx);
+		case NativeTypeKind::Byte:
+			return get_byte(irCtx);
+		case NativeTypeKind::UByte:
+			return get_byte_unsigned(irCtx);
 		case NativeTypeKind::Short:
 			return get_short(irCtx);
 		case NativeTypeKind::UShort:
@@ -189,12 +181,8 @@ NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 			return get_ptrdiff(irCtx);
 		case NativeTypeKind::UPtrDiff:
 			return get_ptrdiff_unsigned(irCtx);
-		case NativeTypeKind::Pointer:
-			return nullptr;
 		case NativeTypeKind::SigAtomic:
 			return get_sigatomic(irCtx);
-		case NativeTypeKind::ProcessID:
-			return get_processid(irCtx);
 		case NativeTypeKind::LongDouble:
 			return get_long_double(irCtx);
 	}
@@ -241,31 +229,31 @@ NativeType* NativeType::get_uint(ir::Ctx* irCtx) {
 	                         NativeTypeKind::Uint);
 }
 
-NativeType* NativeType::get_char(ir::Ctx* irCtx) {
+NativeType* NativeType::get_byte(ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
 			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Char) {
+			if (cTyp->nativeKind == NativeTypeKind::Byte) {
 				return cTyp;
 			}
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getCharWidth(), irCtx),
-	                         NativeTypeKind::Char);
+	                         NativeTypeKind::Byte);
 }
 
-NativeType* NativeType::get_char_unsigned(ir::Ctx* irCtx) {
+NativeType* NativeType::get_byte_unsigned(ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
 			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UChar) {
+			if (cTyp->nativeKind == NativeTypeKind::UByte) {
 				return cTyp;
 			}
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
 	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getCharWidth(), irCtx),
-	                         NativeTypeKind::UChar);
+	                         NativeTypeKind::UByte);
 }
 
 NativeType* NativeType::get_short(ir::Ctx* irCtx) {
@@ -279,7 +267,7 @@ NativeType* NativeType::get_short(ir::Ctx* irCtx) {
 	}
 	return std::construct_at(OwnNormal(NativeType),
 	                         ir::IntegerType::get(irCtx->clangTargetInfo->getShortWidth(), irCtx),
-	                         NativeTypeKind::Char);
+	                         NativeTypeKind::Byte);
 }
 
 NativeType* NativeType::get_short_unsigned(ir::Ctx* irCtx) {
@@ -293,7 +281,7 @@ NativeType* NativeType::get_short_unsigned(ir::Ctx* irCtx) {
 	}
 	return std::construct_at(OwnNormal(NativeType),
 	                         ir::UnsignedType::create(irCtx->clangTargetInfo->getShortWidth(), irCtx),
-	                         NativeTypeKind::UChar);
+	                         NativeTypeKind::UByte);
 }
 
 NativeType* NativeType::get_wide_char(ir::Ctx* irCtx) {
@@ -508,23 +496,6 @@ NativeType* NativeType::get_uintmax(ir::Ctx* irCtx) {
 	                         NativeTypeKind::UintMax);
 }
 
-NativeType* NativeType::get_ptr(bool isSubTypeVariable, ir::Type* subType, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Pointer &&
-			    (cTyp->subType->as_mark()->is_subtype_variable() == isSubTypeVariable) &&
-			    cTyp->subType->as_mark()->get_subtype()->is_same(subType)) {
-				return cTyp;
-			}
-		}
-	}
-	return std::construct_at(
-	    OwnNormal(NativeType),
-	    ir::MarkType::get(isSubTypeVariable, subType, false, MarkOwner::of_anonymous(), false, irCtx),
-	    NativeTypeKind::Pointer);
-}
-
 NativeType* NativeType::get_intptr(ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
@@ -604,21 +575,6 @@ NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
 	    NativeTypeKind::SigAtomic);
 }
 
-NativeType* NativeType::get_processid(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::ProcessID) {
-				return cTyp;
-			}
-		}
-	}
-	return std::construct_at(
-	    OwnNormal(NativeType),
-	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getProcessIDType()), irCtx),
-	    NativeTypeKind::ProcessID);
-}
-
 NativeType* NativeType::get_cstr(ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
@@ -679,12 +635,6 @@ Maybe<bool> NativeType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::
 	return None;
 }
 
-String NativeType::to_string() const {
-	return native_type_kind_to_string(nativeKind) +
-	       ((nativeKind == NativeTypeKind::Pointer)
-	            ? (String(":[") + (subType->as_mark()->is_subtype_variable() ? "var " : "") +
-	               subType->as_mark()->get_subtype()->to_string() + "]")
-	            : "");
-}
+String NativeType::to_string() const { return native_type_kind_to_string(nativeKind); }
 
 } // namespace qat::ir

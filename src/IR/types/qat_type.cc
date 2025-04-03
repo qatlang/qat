@@ -153,8 +153,7 @@ bool Type::is_same(Type* other) {
 			case TypeKind::NATIVE: {
 				auto* thisVal  = (NativeType*)this;
 				auto* otherVal = (NativeType*)other;
-				return thisVal->get_c_type_kind() == otherVal->get_c_type_kind() &&
-				       (thisVal->is_c_ptr() ? (thisVal->get_subtype()->is_same(otherVal->get_subtype())) : true);
+				return thisVal->get_c_type_kind() == otherVal->get_c_type_kind();
 			}
 			case TypeKind::TEXT: {
 				auto* thisVal  = (TextType*)this;
@@ -168,21 +167,15 @@ bool Type::is_same(Type* other) {
 			case TypeKind::ARRAY: {
 				auto* thisVal  = (ArrayType*)this;
 				auto* otherVal = (ArrayType*)other;
-				if (thisVal->get_length() == otherVal->get_length()) {
-					return thisVal->get_element_type()->is_same(otherVal->get_element_type());
-				} else {
-					return false;
-				}
+				return thisVal->get_length() == otherVal->get_length() &&
+				       thisVal->get_element_type()->is_same(otherVal->get_element_type());
 			}
 			case TypeKind::VECTOR: {
 				auto* thisVal  = (VectorType*)this;
 				auto* otherVal = (VectorType*)other;
-				if (thisVal->get_count() == otherVal->get_count()) {
-					return thisVal->get_element_type()->is_same(otherVal->get_element_type()) &&
-					       (thisVal->get_vector_kind() == otherVal->get_vector_kind());
-				} else {
-					return false;
-				}
+				return thisVal->get_count() == otherVal->get_count() &&
+				       thisVal->get_element_type()->is_same(otherVal->get_element_type()) &&
+				       thisVal->get_vector_kind() == otherVal->get_vector_kind();
 			}
 			case TypeKind::TUPLE: {
 				auto* thisVal  = (TupleType*)this;

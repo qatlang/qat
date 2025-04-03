@@ -1304,30 +1304,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 			}
 			case TokenType::nativeType: {
 				auto start = i;
-				if (ValueAt(i) == "cPtr") {
-					if (is_next(TokenType::genericTypeStart, i)) {
-						auto gEnd = first_primary_position(TokenType::genericTypeEnd, i + 1);
-						if (gEnd.has_value()) {
-							bool isPtrSubtyVar = false;
-							if (is_next(TokenType::var, i + 1)) {
-								isPtrSubtyVar = true;
-								i++;
-							}
-							auto* subTy = do_type(preCtx, i + 1, gEnd).first;
-							cacheTy     = ast::NativeType::create(subTy, isPtrSubtyVar, RangeSpan(start, gEnd.value()));
-							i           = gEnd.value();
-						} else {
-							add_error("Expected " TOKEN_GENERIC_LIST_END " to end the generic type specification",
-							          RangeAt(i + 1));
-						}
-					} else {
-						add_error(
-						    "Expected subtype for cPtr. Did you forget to provide the subtype like cPtr" TOKEN_GENERIC_LIST_START
-						    "subtype" TOKEN_GENERIC_LIST_END " ?",
-						    RangeAt(i));
-					}
-				} else if (((ValueAt(i) == "int") || (ValueAt(i) == "uint")) &&
-				           is_next(TokenType::genericTypeStart, i)) {
+				if (((ValueAt(i) == "int") || (ValueAt(i) == "uint")) && is_next(TokenType::genericTypeStart, i)) {
 					auto bitVal = do_prerun_expression(preCtx, i + 1, None);
 					i           = bitVal.second;
 					if (is_next(TokenType::genericTypeEnd, i)) {
@@ -3450,7 +3427,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 					i++;
 				} else if (is_next(TokenType::referenceType, i)) {
 					isUnary = true;
-					opr     = "@";
+					opr     = "ref";
 					i++;
 				} else if (is_next(TokenType::assignment, i)) {
 					opr = "=";
@@ -4267,7 +4244,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						          RangeSpan(i, i + 1));
 					}
 				} else {
-					setCachedExpr(ast::Default::create(None, RangeAt(i)), i);
+					setCachedExpr(ast::Default::create(nullptr, RangeAt(i)), i);
 				}
 				break;
 			}
@@ -4450,153 +4427,135 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 			case TokenType::heap: {
-				if (is_next(TokenType::colon, i)) {
-					if (is_next(TokenType::identifier, i + 1)) {
-						if (ValueAt(i + 2) == "get") {
-							if (is_next(TokenType::genericTypeStart, i + 2)) {
-								auto tEndRes =
-								    get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3);
-								if (tEndRes.has_value()) {
-									auto  tEnd    = tEndRes.value();
-									auto  typeRes = do_type(preCtx, i + 3, tEnd);
-									auto* type    = typeRes.first;
-									if (typeRes.second != tEnd - 1) {
-										add_error("Invalid type for heap'get", RangeSpan(i, typeRes.second));
-									}
-									if (is_next(TokenType::parenthesisOpen, tEnd)) {
-										auto pCloseRes = get_pair_end(TokenType::parenthesisOpen,
-										                              TokenType::parenthesisClose, tEnd + 1);
-										if (pCloseRes.has_value()) {
-											auto  pClose = pCloseRes.value();
-											auto* exp    = do_expression(preCtx, None, tEnd + 1, pClose).first;
-											setCachedExpr(ast::HeapGet::create(type, exp, RangeAt(i)), i);
-											i = pClose;
-											break;
-										} else {
-											add_error("Expected end for (", RangeAt(tEnd + 1));
-										}
-									} else {
-										setCachedExpr(ast::HeapGet::create(type, nullptr, RangeSpan(i, tEnd)), tEnd);
-										i = tEnd;
-										break;
-									}
-								} else {
-									add_error("Expected end for generic type specification", RangeAt(i + 3));
-								}
-							} else {
-								add_error("Expected generic type specification for the type to allocate the memory for",
-								          RangeSpan(i, i + 2));
-							}
-						} else if (ValueAt(i + 2) == "put") {
-							if (is_next(TokenType::parenthesisOpen, i + 2)) {
-								auto pCloseRes =
-								    get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3);
-								if (pCloseRes.has_value()) {
-									auto* exp = do_expression(preCtx, None, i + 3, pCloseRes.value()).first;
-									setCachedExpr(ast::HeapPut::create(exp, RangeSpan(i, pCloseRes.value())),
-									              pCloseRes.value());
-									i = pCloseRes.value();
-									break;
-								} else {
-									add_error("Expected end for (", RangeAt(i + 3));
-								}
-							} else {
-								add_error("Invalid expression. Expected a pointer expression to use "
-								          "for heap'put",
-								          RangeSpan(i, i + 2));
-							}
-						} else if (ValueAt(i + 2) == "grow") {
-							// FIXME - Maybe provided type is not necessary
-							if (is_next(TokenType::genericTypeStart, i + 2)) {
-								auto tEndRes =
-								    get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3);
-								if (tEndRes.has_value()) {
-									auto  tEnd = tEndRes.value();
-									auto* type = do_type(preCtx, i + 3, tEnd).first;
-									if (is_next(TokenType::parenthesisOpen, tEnd)) {
-										auto pCloseRes = get_pair_end(TokenType::parenthesisOpen,
-										                              TokenType::parenthesisClose, tEnd + 1);
-										if (pCloseRes.has_value()) {
-											auto pClose = pCloseRes.value();
-											if (is_primary_within(TokenType::separator, tEnd + 1, pClose)) {
-												auto split =
-												    first_primary_position(TokenType::separator, tEnd + 1).value();
-												auto* exp   = do_expression(preCtx, None, tEnd + 1, split).first;
-												auto* count = do_expression(preCtx, None, split, pClose).first;
-												setCachedExpr(
-												    ast::HeapGrow::create(type, exp, count, RangeSpan(i, pClose)),
-												    pClose);
-												i = pClose;
-											} else {
-												add_error("Expected 2 argument values for heap'grow",
-												          RangeSpan(tEnd + 1, pClose));
-											}
-											break;
-										} else {
-											add_error("Expected end for (", RangeAt(tEnd + 1));
-										}
-									} else {
-										add_error("Expected arguments for heap'grow", RangeSpan(i, tEnd));
-									}
-								} else {
-									add_error("Expected end for the generic type specification", RangeAt(i + 3));
-								}
-							}
+				auto start = i;
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Invalid expression", RangeAt(i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after " + color_error("heap:") +
+					              " to represent the operation to perform",
+					          RangeSpan(i, i + 1));
+				}
+				if (ValueAt(i + 2) == "get") {
+					if (not is_next(TokenType::genericTypeStart, i + 2)) {
+						add_error("Expected generic type specification for the type to allocate the memory for",
+						          RangeSpan(i, i + 2));
+					}
+					auto tEndRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3);
+					if (not tEndRes.has_value()) {
+						add_error("Expected ] to end the generic type", RangeAt(i + 3));
+					}
+					auto  tEnd    = tEndRes.value();
+					auto  typeRes = do_type(preCtx, i + 3, tEnd);
+					auto* type    = typeRes.first;
+					if (typeRes.second != tEnd - 1) {
+						add_error("Invalid type for heap'get", RangeSpan(i, typeRes.second));
+					}
+					if (is_next(TokenType::parenthesisOpen, tEnd)) {
+						auto pCloseRes =
+						    get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, tEnd + 1);
+						if (pCloseRes.has_value()) {
+							auto  pClose = pCloseRes.value();
+							auto* exp    = do_expression(preCtx, None, tEnd + 1, pClose).first;
+							setCachedExpr(ast::HeapGet::create(type, exp, RangeAt(i)), i);
+							i = pClose;
+							break;
 						} else {
-							add_error("Invalid identifier found after heap'", RangeAt(i + 2));
+							add_error("Expected end for (", RangeAt(tEnd + 1));
 						}
 					} else {
-						add_error("Expected an identifier after heap' to represent the heap operation to perform",
-						          RangeSpan(i, i + 1));
+						setCachedExpr(ast::HeapGet::create(type, nullptr, RangeSpan(i, tEnd)), tEnd);
+						i = tEnd;
+						break;
 					}
+				} else if (ValueAt(i + 2) == "put") {
+					if (not is_next(TokenType::parenthesisOpen, i + 2)) {
+						add_error("Expected ( after this to start the mark expression to be used for deallocation",
+						          RangeSpan(i, i + 2));
+					}
+					auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 3);
+					if (not pCloseRes.has_value()) {
+						add_error("Expected end for (", RangeAt(i + 3));
+					}
+					auto* exp = do_expression(preCtx, None, i + 3, pCloseRes.value()).first;
+					setCachedExpr(ast::HeapPut::create(exp, RangeSpan(i, pCloseRes.value())), pCloseRes.value());
+					i = pCloseRes.value();
+					break;
+				} else if (ValueAt(i + 2) == "grow") {
+					// FIXME - Maybe provided type is not necessary
+					if (not is_next(TokenType::genericTypeStart, i + 2)) {
+						add_error("Expected :[ after this to mention the type of the allocation",
+						          RangeSpan(start, i + 2));
+					}
+					auto tEndRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 3);
+					if (not tEndRes.has_value()) {
+						add_error("Expected end for the generic type specification", RangeAt(i + 3));
+					}
+					auto  tEnd = tEndRes.value();
+					auto* type = do_type(preCtx, i + 3, tEnd).first;
+					if (not is_next(TokenType::parenthesisOpen, tEnd)) {
+						add_error("Expected arguments for heap'grow", RangeSpan(i, tEnd));
+					}
+					auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, tEnd + 1);
+					if (not pCloseRes.has_value()) {
+						add_error("Expected end for (", RangeAt(tEnd + 1));
+					}
+					auto pClose = pCloseRes.value();
+					if (not is_primary_within(TokenType::separator, tEnd + 1, pClose)) {
+						add_error("Expected 2 argument values for heap'grow", RangeSpan(tEnd + 1, pClose));
+					}
+					auto  split = first_primary_position(TokenType::separator, tEnd + 1).value();
+					auto* exp   = do_expression(preCtx, None, tEnd + 1, split).first;
+					auto* count = do_expression(preCtx, None, split, pClose).first;
+					setCachedExpr(ast::HeapGrow::create(type, exp, count, RangeSpan(i, pClose)), pClose);
+					i = pClose;
+					break;
 				} else {
-					add_error("Invalid expression", RangeAt(i));
+					add_error("Invalid identifier found after heap'", RangeAt(i + 2));
 				}
 				break;
 			}
 			case TokenType::bracketOpen: {
-				SHOW("Found [")
 				auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
-				if (bCloseRes.has_value()) {
-					//   if (isNotPartOfExpression(i, bCloseRes.value())) {
-					//     if (hasCachedExpr()) {
-					//       return {consumeCachedExpr(), i - 1};
-					//     } else {
-					//       if (hasCachedSymbol()) {
-					//         auto symbol = consumeCachedSymbol();
-					//         return {ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange), i - 1};
-					//       } else {
-					//         Error("[ ...... ] found that is not part of an expression and no expression found
-					//         before that",
-					//               RangeSpan(i, bCloseRes.value()));
-					//       }
-					//     }
-					//   }
-					if (hasCachedSymbol()) {
-						auto symbol = consumeCachedSymbol();
-						setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange),
-						              symbol.tokenIndex);
-					}
-					if (hasCachedExpr()) {
-						auto* exp = do_expression(preCtx, None, i, bCloseRes.value()).first;
-						auto* ent = consumeCachedExpr();
-						setCachedExpr(ast::IndexAccess::create(ent, exp, {ent->fileRange, exp->fileRange}),
-						              bCloseRes.value());
-						i = bCloseRes.value();
-					} else {
-						auto bClose = bCloseRes.value();
-						if (bClose == i + 1) {
-							// Empty array literal
-							setCachedExpr(ast::ArrayLiteral::create({}, RangeSpan(i, bClose)), bClose);
-							i = bClose;
-						} else {
-							auto vals = do_separated_expressions(preCtx, i, bClose);
-							setCachedExpr(ast::ArrayLiteral::create(vals, RangeSpan(i, bClose)), bClose);
-							i = bClose;
-						}
-					}
+				if (not bCloseRes.has_value()) {
+					add_error("Expected ] to end the expression that started here", RangeAt(i));
+				}
+				//   if (isNotPartOfExpression(i, bCloseRes.value())) {
+				//     if (hasCachedExpr()) {
+				//       return {consumeCachedExpr(), i - 1};
+				//     } else {
+				//       if (hasCachedSymbol()) {
+				//         auto symbol = consumeCachedSymbol();
+				//         return {ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange), i - 1};
+				//       } else {
+				//         Error("[ ...... ] found that is not part of an expression and no expression found
+				//         before that",
+				//               RangeSpan(i, bCloseRes.value()));
+				//       }
+				//     }
+				//   }
+				if (hasCachedSymbol()) {
+					auto symbol = consumeCachedSymbol();
+					setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange),
+					              symbol.tokenIndex);
+				}
+				if (hasCachedExpr()) {
+					auto* exp = do_expression(preCtx, None, i, bCloseRes.value()).first;
+					auto* ent = consumeCachedExpr();
+					setCachedExpr(ast::IndexAccess::create(ent, exp, {ent->fileRange, RangeAt(bCloseRes.value())}),
+					              bCloseRes.value());
+					i = bCloseRes.value();
 				} else {
-					add_error("Expected end for [", token.fileRange);
+					auto bClose = bCloseRes.value();
+					if (bClose == i + 1) {
+						// Empty array literal
+						setCachedExpr(ast::ArrayLiteral::create({}, RangeSpan(i, bClose)), bClose);
+						i = bClose;
+					} else {
+						auto vals = do_separated_expressions(preCtx, i, bClose);
+						setCachedExpr(ast::ArrayLiteral::create(vals, RangeSpan(i, bClose)), bClose);
+						i = bClose;
+					}
 				}
 				break;
 			}
@@ -4816,25 +4775,6 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				}
 				break;
 			}
-			case TokenType::referenceType: {
-				if (hasCachedExpr() || hasCachedSymbol()) {
-					if (hasCachedSymbol()) {
-						if (hasCachedExpr()) {
-							add_error("Compiler internal error : Both a cached expression and a cached symbol found",
-							          RangeAt(i));
-						} else {
-							auto symbol = consumeCachedSymbol();
-							setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange),
-							              symbol.tokenIndex);
-						}
-					}
-					auto* exp = consumeCachedExpr();
-					setCachedExpr(ast::Dereference::create(exp, {exp->fileRange, RangeAt(i)}), i);
-				} else {
-					add_error("No expression found before pointer dereference operator", RangeAt(i));
-				}
-				break;
-			}
 			case TokenType::Await: {
 				auto expRes = do_expression(preCtx, None, i, None);
 				setCachedExpr(ast::Await::create(expRes.first, RangeSpan(i, expRes.second)), expRes.second);
@@ -5018,6 +4958,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 			case TokenType::child: {
+				auto start = i;
 				SHOW("Expression parsing : Member access")
 				if (hasCachedExpr() || hasCachedSymbol()) {
 					if ((not hasCachedExpr()) && hasCachedSymbol()) {
@@ -5040,10 +4981,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						setCachedExpr(ast::Move::create(exp, false, exp->fileRange.spanTo(RangeAt(i + 1))), i + 1);
 						i++;
 					} else if (is_next(TokenType::to, i)) {
-						if (is_next(TokenType::parenthesisOpen, i + 1)) {
+						if (is_next(TokenType::genericTypeStart, i + 1)) {
 							auto destTyRes = do_type(preCtx, i + 2, None);
-							if (not is_next(TokenType::parenthesisClose, destTyRes.second)) {
-								add_error("Could not find ) to end the target type of the " + color_error("to") +
+							if (not is_next(TokenType::genericTypeEnd, destTyRes.second)) {
+								add_error("Could not find ] to end the target type of the " + color_error("to") +
 								              " conversion",
 								          RangeSpan(i, destTyRes.second));
 							}
@@ -5052,23 +4993,26 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							                              FileRange{exp->fileRange, RangeAt(destTyRes.second + 1)}),
 							    destTyRes.second + 1);
 							i = destTyRes.second + 1;
+						} else if (is_next(TokenType::colon, i + 1) && is_next(TokenType::referenceType, i + 2)) {
+							i += 3;
+							setCachedExpr(ast::Dereference::create(exp, RangeSpan(start, i)), i);
 						} else {
 							// TODO - Support type inference in this case ???
 							add_error("Expected a type to be provided after this like " +
-							              color_error("'to(TargetType)"),
+							              color_error("'to:[TargetType]"),
 							          RangeAt(i + 1));
 						}
 					} else if (is_next(TokenType::as, i)) {
-						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
+						if (not is_next(TokenType::genericTypeStart, i + 1)) {
 							add_error(
-							    "Expected ( after this to start the target type for the cast. The type for the cast can be provided like " +
-							        color_error("'as(TargetType)"),
+							    "Expected :[ after this to start the target type for the cast. The type for the cast can be provided like " +
+							        color_error("'as:[TargetType]"),
 							    {exp->fileRange, RangeAt(i + 1)});
 						}
 						auto targetTy = do_type(preCtx, i + 2, None);
 						i             = targetTy.second;
-						if (not is_next(TokenType::parenthesisClose, i)) {
-							add_error("Expected ) after this to end the target type for the cast",
+						if (not is_next(TokenType::genericTypeEnd, i)) {
+							add_error("Expected ] after this to end the target type for the cast",
 							          {exp->fileRange, RangeAt(i)});
 						}
 						i++;

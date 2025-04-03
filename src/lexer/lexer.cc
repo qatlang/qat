@@ -195,10 +195,6 @@ Token Lexer::tokeniser() {
 			read();
 			return Token::normal(TokenType::curlybraceClose, this->get_position(1));
 		}
-		case '@': {
-			read();
-			return Token::normal(TokenType::referenceType, this->get_position(1));
-		}
 		case '^': {
 			read();
 			if (current == '=') {
@@ -331,6 +327,10 @@ Token Lexer::tokeniser() {
 			} else {
 				return Token::normal(TokenType::questionMark, this->get_position(1));
 			}
+		}
+		case '#': {
+			read();
+			return Token::normal(TokenType::markType, this->get_position(1));
 		}
 		case '+':
 		case '-':
@@ -560,7 +560,7 @@ Token Lexer::tokeniser() {
 				if (wordRes.has_value()) {
 					return wordRes.value();
 				} else {
-					throw_error("Could not convert the value " + value + " to a token");
+					throw_error("Could not convert the character sequence " + value + " to a token", value.length());
 					return Token::normal(TokenType::endOfFile, this->get_position(0));
 				}
 			} else {
@@ -587,6 +587,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("let", let);
 	else Check_Normal_Keyword("self", selfWord);
 	else Check_Normal_Keyword("void", voidType);
+	else Check_Normal_Keyword("ref", referenceType);
 	else Check_Normal_Keyword("type", Type);
 	else Check_Normal_Keyword("define", define);
 	else Check_Normal_Keyword("skill", skill);
@@ -633,7 +634,6 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("meta", meta);
 	else Check_Normal_Keyword("region", region);
 	else Check_VALUED_Keyword("bool", unsignedIntegerType);
-	else Check_Normal_Keyword("mark", markType);
 	else Check_Normal_Keyword("slice", sliceType);
 	else Check_Normal_Keyword("vec", vectorType);
 	else Check_Normal_Keyword("is", is);
@@ -650,8 +650,8 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("use", use);
 	else Check_VALUED_Keyword("int", nativeType);
 	else Check_VALUED_Keyword("uint", nativeType);
-	else Check_VALUED_Keyword("char", nativeType);
-	else Check_VALUED_Keyword("uchar", nativeType);
+	else Check_VALUED_Keyword("byte", nativeType);
+	else Check_VALUED_Keyword("ubyte", nativeType);
 	else Check_VALUED_Keyword("shortint", nativeType);
 	else Check_VALUED_Keyword("ushortint", nativeType);
 	else Check_VALUED_Keyword("widechar", nativeType);
@@ -671,11 +671,9 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_VALUED_Keyword("uintptr", nativeType);
 	else Check_VALUED_Keyword("ptrdiff", nativeType);
 	else Check_VALUED_Keyword("uptrdiff", nativeType);
-	else Check_VALUED_Keyword("cSigAtomic", nativeType);
-	else Check_VALUED_Keyword("cProcessID", nativeType);
+	else Check_VALUED_Keyword("sigatomic", nativeType);
 	else Check_VALUED_Keyword("cstring", nativeType);
-	else Check_VALUED_Keyword("cBool", nativeType);
-	else Check_VALUED_Keyword("cPtr", nativeType);
+	else Check_VALUED_Keyword("widebool", nativeType);
 	else if (wordValue.substr(0, 1) == "u" &&
 	         ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
 		return Token::valued(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),

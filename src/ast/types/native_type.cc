@@ -13,10 +13,10 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 			return ir::NativeType::get_int(ctx->irCtx);
 		case ir::NativeTypeKind::Uint:
 			return ir::NativeType::get_uint(ctx->irCtx);
-		case ir::NativeTypeKind::Char:
-			return ir::NativeType::get_char(ctx->irCtx);
-		case ir::NativeTypeKind::UChar:
-			return ir::NativeType::get_char_unsigned(ctx->irCtx);
+		case ir::NativeTypeKind::Byte:
+			return ir::NativeType::get_byte(ctx->irCtx);
+		case ir::NativeTypeKind::UByte:
+			return ir::NativeType::get_byte_unsigned(ctx->irCtx);
 		case ir::NativeTypeKind::Short:
 			return ir::NativeType::get_short(ctx->irCtx);
 		case ir::NativeTypeKind::UShort:
@@ -53,15 +53,8 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 			return ir::NativeType::get_ptrdiff(ctx->irCtx);
 		case ir::NativeTypeKind::UPtrDiff:
 			return ir::NativeType::get_ptrdiff_unsigned(ctx->irCtx);
-		case ir::NativeTypeKind::Pointer: {
-			auto subTy = subType->emit(ctx);
-			// TODO - Verify that the sub type is linked to have C compatible name
-			return ir::NativeType::get_ptr(isPointerSubTypeVariable, subTy, ctx->irCtx);
-		}
 		case ir::NativeTypeKind::SigAtomic:
 			return ir::NativeType::get_sigatomic(ctx->irCtx);
-		case ir::NativeTypeKind::ProcessID:
-			return ir::NativeType::get_processid(ctx->irCtx);
 		case ir::NativeTypeKind::LongDouble: {
 			if (ir::NativeType::has_long_double(ctx->irCtx)) {
 				return ir::NativeType::get_long_double(ctx->irCtx);
@@ -83,8 +76,8 @@ Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 		case ir::NativeTypeKind::Int:
 		case ir::NativeTypeKind::Uint:
 			return ctx->irCtx->clangTargetInfo->getIntWidth();
-		case ir::NativeTypeKind::Char:
-		case ir::NativeTypeKind::UChar:
+		case ir::NativeTypeKind::Byte:
+		case ir::NativeTypeKind::UByte:
 			return ctx->irCtx->clangTargetInfo->getCharWidth();
 		case ir::NativeTypeKind::Short:
 		case ir::NativeTypeKind::UShort:
@@ -119,12 +112,8 @@ Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 		case ir::NativeTypeKind::UPtrDiff:
 			return ctx->irCtx->clangTargetInfo->getTypeWidth(
 			    ctx->irCtx->clangTargetInfo->getUnsignedPtrDiffType(ctx->irCtx->get_language_address_space()));
-		case ir::NativeTypeKind::Pointer:
-			return ctx->irCtx->clangTargetInfo->getPointerWidth(ctx->irCtx->get_language_address_space());
 		case ir::NativeTypeKind::SigAtomic:
 			return ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getSigAtomicType());
-		case ir::NativeTypeKind::ProcessID:
-			return ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getProcessIDType());
 		case ir::NativeTypeKind::LongDouble: {
 			if (ctx->irCtx->clangTargetInfo->hasLongDoubleType()) {
 				return ctx->irCtx->clangTargetInfo->getLongDoubleWidth();

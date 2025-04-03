@@ -230,6 +230,7 @@ void QatSitter::initialise() {
 				                            choiceJSON, typeDefinitionsJSON, genericTypeDefsJSON, skillsJSON,
 				                            genericSkillsJSON);
 			}
+			log->say("Exporting expression units");
 			Vec<JsonValue> expressionUnits;
 			for (auto* exp : ir::Value::allValues) {
 				if (exp->get_ir_type() && exp->has_associated_range()) {
@@ -259,6 +260,7 @@ void QatSitter::initialise() {
 			if (not mStream.is_open()) {
 				ctx->Error("Could not open the code info file for output", codeStructFilePath);
 			}
+			log->say("Writing code info file");
 			mStream << Json()
 			               ._("modules", modulesJSON)
 			               ._("functions", functionsJSON)
@@ -274,11 +276,14 @@ void QatSitter::initialise() {
 			               ._("skills", skillsJSON)
 			               ._("genericSkills", genericSkillsJSON)
 			               ._("expressionUnits", expressionUnits);
+			log->say("Wrote code info JSON");
 			mStream.close();
 		}
 		//
 		//
+		log->say("Checked AST export");
 		if (cfg->should_export_ast()) {
+			log->say("Exporting AST representation");
 			for (auto* entity : fileEntities) {
 				entity->export_json_from_ast(ctx);
 			}
@@ -315,6 +320,7 @@ void QatSitter::initialise() {
 				SHOW("Wrote JSON result")
 				clear_llvm_files();
 				SHOW("Cleared llvm files")
+				log->say("Cleared LLVM files");
 				if (cfg->is_workflow_run() && not ctx->executablePaths.empty()) {
 					if (llvm::Triple(cfg->get_target_triple()) != llvm::Triple(LLVM_HOST_TRIPLE)) {
 						ctx->Error("The target provided for compilation is " + ctx->color(cfg->get_target_triple()) +

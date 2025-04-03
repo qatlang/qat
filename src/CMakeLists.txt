@@ -193,7 +193,7 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS filesystem PATHS "${BOOST_DIR}/lib/cmake" NO_DEFAULT_PATH)
 
 if (is_os_linux)
-   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -I${LLVM_ROOT_DIR}/include -fexceptions -fno-rtti -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -I${LLVM_ROOT_DIR}/include -ftime-trace -fexceptions -fno-rtti -D_GNU_SOURCE -D__STDC_CONSTANT_MACROS -D__STDC_FORMAT_MACROS -D__STDC_LIMIT_MACROS")
    if (NOT CMAKE_CROSSCOMPILING)
 	  set(CMAKE_CXX_FLAGS "-fuse-ld=lld ${CMAKE_CXX_FLAGS}")
    endif()

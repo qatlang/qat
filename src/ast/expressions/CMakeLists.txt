@@ -16,6 +16,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	generic_entity.cc
 	get_intrinsic.cc
 	heap.cc
+	in.cc
 	is.cc
 	method_call.cc
 	index_access.cc

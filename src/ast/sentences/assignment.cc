@@ -55,8 +55,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 				if (expTy->is_ref() || expVal->is_ghost_ref()) {
 					if (expTy->is_ref()) {
 						expVal->load_ghost_ref(ctx->irCtx->builder);
-						SHOW("Expression for assignment is of type "
-						     << expTy->as_reference()->get_subtype()->to_string())
+						SHOW("Expression for assignment is of type " << expTy->as_ref()->get_subtype()->to_string())
 						expTy = expTy->as_ref()->get_subtype();
 					}
 					if (expTy->has_simple_copy() || expTy->has_simple_move()) {

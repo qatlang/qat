@@ -37,18 +37,16 @@ class InPlaceCreatable {
 		                                 : createIn->get_ir_type()->as_ref()->get_subtype()->is_same(_type));
 	}
 
-	useit ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type) {
+	useit ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type, FileRange rangeVal) {
 		auto created = createIn;
 		unsetCreateIn();
-		if (created->is_ghost_ref()) {
-			return ir::Value::get(created->get_llvm(), type, created->is_variable());
-		} else {
+		if (created->is_ref()) {
 			return ir::Value::get(created->get_llvm(),
-			                      ir::RefType::get(created->is_ghost_ref()
-			                                           ? created->is_variable()
-			                                           : created->get_ir_type()->as_ref()->has_variability(),
-			                                       type, irCtx),
-			                      false);
+			                      ir::RefType::get(created->get_ir_type()->as_ref()->has_variability(), type, irCtx),
+			                      false)
+			    ->with_range(std::move(rangeVal));
+		} else {
+			return ir::Value::get(created->get_llvm(), type, created->is_variable())->with_range(std::move(rangeVal));
 		}
 	}
 

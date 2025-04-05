@@ -427,6 +427,18 @@ FloatType* Type::as_float() const {
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_float() : (FloatType*)this);
 }
 
+bool Type::is_char() const {
+	return (type_kind() == TypeKind::CHAR) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_char()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_char());
+}
+
+CharType* Type::as_char() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_char()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_char() : (CharType*)this);
+}
+
 bool Type::is_ref() const {
 	return (type_kind() == TypeKind::REFERENCE) ||
 	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_ref()) ||

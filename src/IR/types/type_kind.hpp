@@ -11,6 +11,7 @@ enum class TypeKind {
 	FLOAT,            // Floating point number
 	INTEGER,          // Signed integer
 	UNSIGNED_INTEGER, // Unsigned integer
+	CHAR,             // Unicode scalar value
 	TEXT,             // Text type (String View)
 	MIX,              // Mix Type (Discriminated Union / Sum Type)
 	TUPLE,            // Tuple is a product type of multiple types

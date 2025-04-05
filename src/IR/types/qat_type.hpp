@@ -20,6 +20,7 @@ class DoneSkill;
 class IntegerType;
 class UnsignedType;
 class FloatType;
+class CharType;
 class RefType;
 class SliceType;
 class PtrType;
@@ -123,6 +124,9 @@ class Type : public Uniq {
 
 	useit bool       is_float() const;
 	useit FloatType* as_float() const;
+
+	useit bool      is_char() const;
+	useit CharType* as_char() const;
 
 	useit bool     is_ref() const;
 	useit RefType* as_ref() const;

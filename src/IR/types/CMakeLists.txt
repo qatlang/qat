@@ -1,5 +1,6 @@
 add_library(QAT_IR_TYPES STATIC
 	array.cc
+	char.cc
 	choice.cc
 	definition.cc
 	expanded_type.cc

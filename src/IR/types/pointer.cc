@@ -9,27 +9,25 @@
 
 namespace qat::ir {
 
-MarkOwner MarkOwner::of_heap() { return MarkOwner{.owner = nullptr, .ownerTy = PointerOwnerType::heap}; }
+PtrOwner PtrOwner::of_heap() { return PtrOwner{.owner = nullptr, .ownerTy = PointerOwnerType::heap}; }
 
-MarkOwner MarkOwner::of_type(Type* type) { return MarkOwner{.owner = (void*)type, .ownerTy = PointerOwnerType::type}; }
+PtrOwner PtrOwner::of_type(Type* type) { return PtrOwner{.owner = (void*)type, .ownerTy = PointerOwnerType::type}; }
 
-MarkOwner MarkOwner::of_anonymous() { return MarkOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anonymous}; }
+PtrOwner PtrOwner::of_anonymous() { return PtrOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anonymous}; }
 
-MarkOwner MarkOwner::of_parent_function(Function* fun) {
-	return MarkOwner{.owner = (void*)fun, .ownerTy = PointerOwnerType::parentFunction};
+PtrOwner PtrOwner::of_parent_function(Function* fun) {
+	return PtrOwner{.owner = (void*)fun, .ownerTy = PointerOwnerType::parentFunction};
 }
 
-MarkOwner MarkOwner::of_parent_instance(Type* typ) {
-	return MarkOwner{.owner = (void*)typ, .ownerTy = PointerOwnerType::parentInstance};
+PtrOwner PtrOwner::of_parent_instance(Type* typ) {
+	return PtrOwner{.owner = (void*)typ, .ownerTy = PointerOwnerType::parentInstance};
 }
 
-MarkOwner MarkOwner::of_region(Region* region) {
-	return MarkOwner{.owner = region, .ownerTy = PointerOwnerType::region};
-}
+PtrOwner PtrOwner::of_region(Region* region) { return PtrOwner{.owner = region, .ownerTy = PointerOwnerType::region}; }
 
-MarkOwner MarkOwner::of_any_region() { return MarkOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anyRegion}; }
+PtrOwner PtrOwner::of_any_region() { return PtrOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anyRegion}; }
 
-bool MarkOwner::is_same(const MarkOwner& other) const {
+bool PtrOwner::is_same(const PtrOwner& other) const {
 	if (ownerTy == other.ownerTy) {
 		switch (ownerTy) {
 			case PointerOwnerType::anonymous:
@@ -51,7 +49,7 @@ bool MarkOwner::is_same(const MarkOwner& other) const {
 	}
 }
 
-String MarkOwner::to_string() const {
+String PtrOwner::to_string() const {
 	switch (ownerTy) {
 		case PointerOwnerType::anyRegion:
 			return "region";
@@ -72,11 +70,11 @@ String MarkOwner::to_string() const {
 	}
 }
 
-MarkType::MarkType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner, bool _hasMulti,
-                   ir::Ctx* irCtx)
+PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
+                 ir::Ctx* irCtx)
     : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable) {
 	if (_hasMulti) {
-		linkingName = (nonNullable ? "qat'slice![" : "qat'slice:[") + String(isSubtypeVar ? "var " : "") +
+		linkingName = (nonNullable ? "qat'multi![" : "qat'multi:[") + String(isSubtypeVar ? "var " : "") +
 		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
 		if (llvm::StructType::getTypeByName(irCtx->llctx, linkingName)) {
 			llvmType = llvm::StructType::getTypeByName(irCtx->llctx, linkingName);
@@ -89,37 +87,37 @@ MarkType::MarkType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Mark
 			    linkingName);
 		}
 	} else {
-		linkingName = (nonNullable ? "qat'mark![" : "qat'mark:[") + String(isSubtypeVar ? "var " : "") +
+		linkingName = (nonNullable ? "qat'ptr![" : "qat'ptr:[") + String(isSubtypeVar ? "var " : "") +
 		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
 		llvmType =
 		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace());
 	}
 }
 
-MarkType* MarkType::get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner, bool _hasMulti,
-                        ir::Ctx* irCtx) {
+PtrType* PtrType::get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
+                      ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
-		if (typ->is_mark()) {
-			if (typ->as_mark()->get_subtype()->is_same(_type) &&
-			    (typ->as_mark()->is_subtype_variable() == _isSubtypeVariable) &&
-			    typ->as_mark()->get_owner().is_same(_owner) && (typ->as_mark()->is_slice() == _hasMulti) &&
-			    (typ->as_mark()->nonNullable == _nonNullable)) {
-				return typ->as_mark();
+		if (typ->is_ptr()) {
+			if (typ->as_ptr()->get_subtype()->is_same(_type) &&
+			    (typ->as_ptr()->is_subtype_variable() == _isSubtypeVariable) &&
+			    typ->as_ptr()->get_owner().is_same(_owner) && (typ->as_ptr()->is_multi() == _hasMulti) &&
+			    (typ->as_ptr()->nonNullable == _nonNullable)) {
+				return typ->as_ptr();
 			}
 		}
 	}
-	return std::construct_at(OwnNormal(MarkType), _isSubtypeVariable, _type, _nonNullable, _owner, _hasMulti, irCtx);
+	return std::construct_at(OwnNormal(PtrType), _isSubtypeVariable, _type, _nonNullable, _owner, _hasMulti, irCtx);
 }
 
-bool MarkType::is_subtype_variable() const { return isSubtypeVar; }
+bool PtrType::is_subtype_variable() const { return isSubtypeVar; }
 
-bool MarkType::is_type_sized() const { return true; }
+bool PtrType::is_type_sized() const { return true; }
 
-bool MarkType::has_prerun_default_value() const { return not nonNullable; }
+bool PtrType::has_prerun_default_value() const { return not nonNullable; }
 
-PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
+PrerunValue* PtrType::get_prerun_default_value(ir::Ctx* irCtx) {
 	if (has_prerun_default_value()) {
-		if (is_slice()) {
+		if (is_multi()) {
 			return ir::PrerunValue::get(
 			    llvm::ConstantStruct::get(
 			        llvm::cast<llvm::StructType>(get_llvm_type()),
@@ -137,24 +135,24 @@ PrerunValue* MarkType::get_prerun_default_value(ir::Ctx* irCtx) {
 	}
 }
 
-bool MarkType::has_simple_copy() const { return true; }
+bool PtrType::has_simple_copy() const { return true; }
 
-bool MarkType::has_simple_move() const { return not nonNullable; }
+bool PtrType::has_simple_move() const { return not nonNullable; }
 
-bool MarkType::is_slice() const { return hasMulti; }
+bool PtrType::is_multi() const { return hasMulti; }
 
-bool MarkType::is_nullable() const { return not nonNullable; }
+bool PtrType::is_nullable() const { return not nonNullable; }
 
-bool MarkType::is_non_nullable() const { return nonNullable; }
+bool PtrType::is_non_nullable() const { return nonNullable; }
 
-Type* MarkType::get_subtype() const { return subType; }
+Type* PtrType::get_subtype() const { return subType; }
 
-MarkOwner MarkType::get_owner() const { return owner; }
+PtrOwner PtrType::get_owner() const { return owner; }
 
-TypeKind MarkType::type_kind() const { return TypeKind::MARK; }
+TypeKind PtrType::type_kind() const { return TypeKind::POINTER; }
 
-String MarkType::to_string() const {
-	return String(is_slice() ? (nonNullable ? "slice![" : "slice:[") : (nonNullable ? "mark![" : "mark:[")) +
+String PtrType::to_string() const {
+	return String(is_multi() ? (nonNullable ? "multi![" : "multi:[") : (nonNullable ? "ptr![" : "ptr:[")) +
 	       String(is_subtype_variable() ? "var " : "") + subType->to_string() + (owner.is_of_anonymous() ? "" : " ") +
 	       owner.to_string() + "]";
 }

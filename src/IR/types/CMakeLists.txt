@@ -17,6 +17,7 @@ add_library(QAT_IR_TYPES STATIC
 	reference.cc
 	region.cc
 	result.cc
+	slice.cc
 	struct_type.cc
 	text.cc
 	toggle.cc

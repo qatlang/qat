@@ -1,5 +1,5 @@
-#ifndef QAT_AST_TYPES_MARK_OWNER_HPP
-#define QAT_AST_TYPES_MARK_OWNER_HPP
+#ifndef QAT_AST_TYPES_PTR_OWNER_HPP
+#define QAT_AST_TYPES_PTR_OWNER_HPP
 
 #include "../../IR/types/pointer.hpp"
 #include "../../utils/file_range.hpp"
@@ -13,7 +13,7 @@ namespace qat::ast {
 
 class EmitCtx;
 
-enum class MarkOwnType {
+enum class PtrOwnType {
 	heap,
 	type,
 	typeParent,
@@ -23,9 +23,9 @@ enum class MarkOwnType {
 	anyRegion,
 };
 
-useit ir::MarkOwner get_mark_owner(EmitCtx* ctx, MarkOwnType ownType, Maybe<ir::Type*> ownerVal, FileRange fileRange);
+useit ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwnType ownType, Maybe<ir::Type*> ownerVal, FileRange fileRange);
 
-useit String mark_owner_to_string(MarkOwnType ownType);
+useit String ptr_owner_to_string(PtrOwnType ownType);
 
 } // namespace qat::ast
 

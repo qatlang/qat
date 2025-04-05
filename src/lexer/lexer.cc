@@ -328,10 +328,6 @@ Token Lexer::tokeniser() {
 				return Token::normal(TokenType::questionMark, this->get_position(1));
 			}
 		}
-		case '#': {
-			read();
-			return Token::normal(TokenType::markType, this->get_position(1));
-		}
 		case '+':
 		case '-':
 		case '%':
@@ -613,6 +609,8 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("copy", copy);
 	else Check_Normal_Keyword("move", move);
 	else Check_Normal_Keyword("text", textType);
+	else Check_Normal_Keyword("ptr", ptrType);
+	else Check_Normal_Keyword("multi", multiPtrType);
 	else Check_Normal_Keyword("for", For);
 	else Check_Normal_Keyword("give", give);
 	else Check_Normal_Keyword("var", var);
@@ -635,6 +633,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("region", region);
 	else Check_VALUED_Keyword("bool", unsignedIntegerType);
 	else Check_Normal_Keyword("slice", sliceType);
+	else Check_Normal_Keyword("struct", structType);
 	else Check_Normal_Keyword("vec", vectorType);
 	else Check_Normal_Keyword("is", is);
 	else Check_Normal_Keyword("in", in);

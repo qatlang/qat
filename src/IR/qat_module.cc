@@ -2690,8 +2690,8 @@ void Mod::handle_native_libs(Ctx* ctx) {
 					}
 				}
 			} else {
-				ctx->Error("The field " + ctx->color(LINK_LIB_KEY) +
-				               " is expected to be an array of string slices. The provided value is of type " +
+				ctx->Error("The field " + ctx->color(LINK_LIB_KEY) + " is expected to be an array of " +
+				               ctx->color("text") + " values. The provided value is of type " +
 				               ctx->color(linkLibPre->get_ir_type()->to_string()),
 				           metaInfo.value().get_value_range_for(LINK_LIB_KEY));
 			}
@@ -2714,8 +2714,8 @@ void Mod::handle_native_libs(Ctx* ctx) {
 					}
 				}
 			} else {
-				ctx->Error("The field " + ctx->color(LINK_FILE_KEY) +
-				               " is expected to be an array of string slices. The provided value is of type " +
+				ctx->Error("The field " + ctx->color(LINK_FILE_KEY) + " is expected to be an array of " +
+				               ctx->color("text") + ". The provided value is of type " +
 				               ctx->color(linkFilePre->get_ir_type()->to_string()),
 				           metaInfo.value().get_value_range_for(LINK_FILE_KEY));
 			}

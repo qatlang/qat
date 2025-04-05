@@ -42,9 +42,9 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 			return ir::PrerunValue::get(llvm::ConstantInt::get(useTy->as_unsigned()->get_llvm_type(), 0u), useTy)
 			    ->with_range(fileRange);
 
-		} else if (useTy->is_mark()) {
-			if (not useTy->as_mark()->is_nullable()) {
-				ctx->Error("The mark type is " + ctx->color(useTy->to_string()) +
+		} else if (useTy->is_ptr()) {
+			if (not useTy->as_ptr()->is_nullable()) {
+				ctx->Error("The pointer type is " + ctx->color(useTy->to_string()) +
 				               " which is not nullable, and hence cannot have a default value",
 				           fileRange);
 			}

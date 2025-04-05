@@ -21,7 +21,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			index->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(32u, ctx->irCtx));
 		} else if (instType->is_array()) {
 			index->as_type_inferrable()->set_inference_type(ir::UnsignedType::create(64u, ctx->irCtx));
-		} else if (instType->is_mark() || instType->is_text()) {
+		} else if (instType->is_ptr() || instType->is_text()) {
 			index->as_type_inferrable()->set_inference_type(ir::NativeType::get_usize(ctx->irCtx));
 		}
 	}
@@ -76,15 +76,15 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			               " type",
 			           index->fileRange);
 		}
-	} else if (instType->is_mark() || instType->is_array()) {
+	} else if (instType->is_ptr() || instType->is_array()) {
 		ind->load_ghost_ref(ctx->irCtx->builder);
 		if (ind->get_ir_type()->is_ref()) {
 			indType = indType->as_ref()->get_subtype();
 		}
 		if (indType->is_unsigned() || (indType->is_native_type() && indType->as_native_type()->is_usize())) {
 			if (inst->get_ir_type()->is_ref() &&
-			    (inst->get_ir_type()->as_ref()->get_subtype()->is_mark() &&
-			     not inst->get_ir_type()->as_ref()->get_subtype()->as_mark()->is_slice())) {
+			    (inst->get_ir_type()->as_ref()->get_subtype()->is_ptr() &&
+			     not inst->get_ir_type()->as_ref()->get_subtype()->as_ptr()->is_multi())) {
 				SHOW("Instance for member access is a Reference to: "
 				     << inst->get_ir_type()->as_ref()->get_subtype()->to_string())
 				inst = ir::Value::get(ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm()),
@@ -94,9 +94,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				ind = ir::Value::get(ctx->irCtx->builder.CreateLoad(indType->get_llvm_type(), ind->get_llvm()), indType,
 				                     ind->get_ir_type()->as_ref()->has_variability());
 			}
-			if (instType->is_mark()) {
-				if (not instType->as_mark()->is_slice()) {
-					ctx->Error("Only values of " + ctx->color("slice") + " type can be indexed into", fileRange);
+			if (instType->is_ptr()) {
+				if (not instType->as_ptr()->is_multi()) {
+					ctx->Error("Only values of multi-pointer type can be indexed into", fileRange);
 				}
 				auto* lenExceedTrueBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());
 				auto* restBlock          = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block()->get_parent());
@@ -111,7 +111,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				    ctx->get_fn(),
 				    {ir::TextType::create_value(ctx->irCtx, ctx->mod, "The index is "), ind,
 				     ir::TextType::create_value(ctx->irCtx, ctx->mod,
-				                                " which is not less than the length of the slice, which is "),
+				                                " which is not less than the length of the multi-pointer, which is "),
 				     ir::Value::get(ptrLen, ir::NativeType::get_usize(ctx->irCtx), false)},
 				    {}, index->fileRange, ctx);
 				(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
@@ -120,15 +120,15 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				idxs.push_back(ind->get_llvm());
 				return ir::Value::get(
 				    ctx->irCtx->builder.CreateInBoundsGEP(
-				        instType->as_mark()->get_subtype()->get_llvm_type(),
+				        instType->as_ptr()->get_subtype()->get_llvm_type(),
 				        ctx->irCtx->builder.CreateLoad(
-				            llvm::PointerType::get(instType->as_mark()->get_subtype()->get_llvm_type(),
+				            llvm::PointerType::get(instType->as_ptr()->get_subtype()->get_llvm_type(),
 				                                   ctx->irCtx->dataLayout.getProgramAddressSpace()),
 				            ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), 0u)),
 				        idxs),
-				    ir::RefType::get(instType->as_mark()->is_subtype_variable(), instType->as_mark()->get_subtype(),
+				    ir::RefType::get(instType->as_ptr()->is_subtype_variable(), instType->as_ptr()->get_subtype(),
 				                     ctx->irCtx),
-				    instType->as_mark()->is_subtype_variable());
+				    instType->as_ptr()->is_subtype_variable());
 			} else {
 				if (inst->is_ref()) {
 					inst->load_ghost_ref(ctx->irCtx->builder);
@@ -173,9 +173,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		}
 		if (not ind->get_ir_type()->is_native_type() ||
 		    (ind->get_ir_type()->is_native_type() && not ind->get_ir_type()->as_native_type()->is_usize())) {
-			ctx->Error(ctx->color(ind->get_ir_type()->to_string()) +
-			               " is an invalid type for the index of string slice. The index should be of type " +
-			               ctx->color("usize"),
+			ctx->Error(ctx->color(ind->get_ir_type()->to_string()) + " is an invalid type for the index of " +
+			               ctx->color("text") + ". The index should be of type " + ctx->color("usize"),
 			           fileRange);
 		}
 		if (inst->is_ref() || inst->is_ghost_ref()) {
@@ -196,7 +195,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			lenExceedTrueBlock->set_active(ctx->irCtx->builder);
 			ir::Logic::panic_in_function(
 			    ctx->get_fn(),
-			    {ir::TextType::create_value(ctx->irCtx, ctx->mod, "Index for string slice is "), ind,
+			    {ir::TextType::create_value(ctx->irCtx, ctx->mod, "Index for text is "), ind,
 			     ir::TextType::create_value(ctx->irCtx, ctx->mod, " which is not less than its length, which is "),
 			     ir::Value::get(strLen, ir::UnsignedType::create(64u, ctx->irCtx), false)},
 			    {}, fileRange, ctx);
@@ -233,7 +232,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			} else {
 				ctx->Error("The provided index is " +
 				               ctx->color(ind->get_ir_type()->to_prerun_generic_string((ir::PrerunValue*)ind).value()) +
-				               " which is not less than the length of the string slice, which is " +
+				               " which is not less than the length of the text, which is " +
 				               ctx->color(ind->get_ir_type()
 				                              ->to_prerun_generic_string(ir::PrerunValue::get(
 				                                  inst->get_llvm_constant()->getAggregateElement(1u),
@@ -253,8 +252,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			lenExceedTrueBlock->set_active(ctx->irCtx->builder);
 			ir::Logic::panic_in_function(
 			    ctx->get_fn(),
-			    {ir::TextType::create_value(ctx->irCtx, ctx->mod, "Index of string slice is not less than its length")},
-			    {}, fileRange, ctx);
+			    {ir::TextType::create_value(ctx->irCtx, ctx->mod, "Index of text is not less than its length")}, {},
+			    fileRange, ctx);
 			(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 			restBlock->set_active(ctx->irCtx->builder);
 			return ir::Value::get(

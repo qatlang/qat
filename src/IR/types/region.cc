@@ -63,7 +63,7 @@ Region::Region(Identifier _name, usize _blockSize, Mod* _module, const Visibilit
 	//                           \
   //                                                               0U, ctx->getMod()->get_llvm_module())});
 	//   ;
-	//   (void)ir::StringSliceType::get(ctx);
+	//   (void)ir::TextType::get(ctx);
 	//   mod->linkNative(NativeUnit::printf);
 	//   auto* printFn = mod->get_llvm_module()->getFunction("printf");
 	// #endif
@@ -466,7 +466,7 @@ ir::Value* Region::ownData(ir::Type* otype, Maybe<llvm::Value*> _count, ir::Ctx*
 	                        llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo())
 	                  : llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(irCtx->llctx)->getPointerTo()))}),
 	        otype->get_llvm_type()->getPointerTo()),
-	    ir::MarkType::get(true, otype, false, MarkOwner::of_region(this), _count.has_value(), irCtx), false);
+	    ir::PtrType::get(true, otype, false, PtrOwner::of_region(this), _count.has_value(), irCtx), false);
 }
 
 void Region::destroyObjects(ir::Ctx* irCtx) {

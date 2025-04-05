@@ -38,19 +38,19 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 		if (valType->is_native_type()) {
 			valType = valType->as_native_type()->get_subtype();
 		}
-		if (valType->is_mark()) {
-			if (destTy->is_mark()) {
+		if (valType->is_ptr()) {
+			if (destTy->is_ptr()) {
 				loadRef();
 				auto targetTy =
-				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_mark() : destTy->as_mark();
-				if (not valType->as_mark()->get_owner().is_same(targetTy->get_owner()) &&
+				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_ptr() : destTy->as_ptr();
+				if (not valType->as_ptr()->get_owner().is_same(targetTy->get_owner()) &&
 				    not targetTy->get_owner().is_of_anonymous()) {
 					ctx->Error(
 					    "This change of ownership of the pointer type is not allowed. Pointers with valid ownership can only be converted to anonymous ownership",
 					    fileRange);
 				}
-				if (valType->as_mark()->is_nullable() != targetTy->as_mark()->is_nullable()) {
-					if (valType->as_mark()->is_nullable()) {
+				if (valType->as_ptr()->is_nullable() != targetTy->as_ptr()->is_nullable()) {
+					if (valType->as_ptr()->is_nullable()) {
 						auto  fun           = ctx->get_fn();
 						auto* currBlock     = fun->get_block();
 						auto* nullTrueBlock = ir::Block::create(fun, currBlock);
@@ -59,15 +59,15 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						ctx->irCtx->builder.CreateCondBr(
 						    ctx->irCtx->builder.CreateICmpEQ(
 						        ctx->irCtx->builder.CreatePtrDiff(
-						            valType->as_mark()->get_subtype()->is_type_sized()
-						                ? valType->as_mark()->get_subtype()->get_llvm_type()
+						            valType->as_ptr()->get_subtype()->is_type_sized()
+						                ? valType->as_ptr()->get_subtype()->get_llvm_type()
 						                : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-						            valType->as_mark()->is_slice()
+						            valType->as_ptr()->is_multi()
 						                ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
 						                : val->get_llvm(),
 						            llvm::ConstantPointerNull::get(
-						                llvm::PointerType::get(valType->as_mark()->get_subtype()->is_type_sized()
-						                                           ? valType->as_mark()->get_subtype()->get_llvm_type()
+						                llvm::PointerType::get(valType->as_ptr()->get_subtype()->is_type_sized()
+						                                           ? valType->as_ptr()->get_subtype()->get_llvm_type()
 						                                           : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
 						                                       ctx->irCtx->dataLayout.getProgramAddressSpace()))),
 						        llvm::ConstantInt::get(ir::NativeType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u,
@@ -85,15 +85,15 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						restBlock->set_active(ctx->irCtx->builder);
 					}
 				}
-				if (not valType->as_mark()->get_subtype()->is_same(targetTy->get_subtype())) {
+				if (not valType->as_ptr()->get_subtype()->is_same(targetTy->get_subtype())) {
 					ctx->Error(
 					    "The value to be converted is of type " + ctx->color(typ->to_string()) +
 					        " but the destination type is " + ctx->color(destTy->to_string()) +
 					        ". The subtype of the pointer types do not match and conversion between them is not allowed. Use casting instead",
 					    fileRange);
 				}
-				if (valType->as_mark()->is_slice() != targetTy->as_mark()->is_slice()) {
-					if (valType->as_mark()->is_slice()) {
+				if (valType->as_ptr()->is_multi() != targetTy->as_ptr()->is_multi()) {
+					if (valType->as_ptr()->is_multi()) {
 						return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy,
 						                      false);
 					} else {
@@ -108,7 +108,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						return newVal->to_new_ir_value();
 					}
 				}
-				if (valType->as_mark()->is_slice()) {
+				if (valType->as_ptr()->is_multi()) {
 					val->get_llvm()->mutateType(destTy->get_llvm_type());
 					return ir::Value::get(val->get_llvm(), destTy, false);
 				} else {
@@ -119,7 +119,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			           (destTy->as_native_type()->is_intptr() || destTy->as_native_type()->is_intptr_unsigned())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateBitCast(
-				                          valType->as_mark()->is_slice()
+				                          valType->as_ptr()->is_multi()
 				                              ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
 				                              : val->get_llvm(),
 				                          destTy->get_llvm_type()),
@@ -137,22 +137,22 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 					loadRef();
 					return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy, false);
 				}
-			} else if (destValTy->is_mark() &&
-			           (destValTy->as_mark()->get_subtype()->is_unsigned() ||
-			            (destValTy->as_mark()->get_subtype()->is_native_type() &&
-			             destValTy->as_mark()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
-			           destValTy->as_mark()->get_owner().is_of_anonymous() &&
-			           (destValTy->as_mark()->get_subtype()->is_unsigned()
-			                ? (destValTy->as_mark()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
-			                : (destValTy->as_mark()
+			} else if (destValTy->is_ptr() &&
+			           (destValTy->as_ptr()->get_subtype()->is_unsigned() ||
+			            (destValTy->as_ptr()->get_subtype()->is_native_type() &&
+			             destValTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
+			           destValTy->as_ptr()->get_owner().is_of_anonymous() &&
+			           (destValTy->as_ptr()->get_subtype()->is_unsigned()
+			                ? (destValTy->as_ptr()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
+			                : (destValTy->as_ptr()
 			                       ->get_subtype()
 			                       ->as_native_type()
 			                       ->get_subtype()
 			                       ->as_unsigned()
 			                       ->get_bitwidth() == 8u)) &&
-			           not destValTy->as_mark()->is_subtype_variable()) {
+			           not destValTy->as_ptr()->is_subtype_variable()) {
 				loadRef();
-				if (destValTy->as_mark()->is_slice()) {
+				if (destValTy->as_ptr()->is_multi()) {
 					val->get_llvm()->mutateType(destTy->get_llvm_type());
 					return ir::Value::get(val->get_llvm(), destTy, false);
 				} else {

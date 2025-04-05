@@ -219,66 +219,66 @@ void QatSitter::initialise() {
 		                          .count();
 		ctx->qatCompileTimeInMs = qatCompileTime;
 		auto* cfg               = cli::Config::get();
-		if (cfg->export_code_metadata()) {
-			log->say("Exporting code metadata");
-			Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
-			    genericStructTypesJSON, structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON,
-			    genericTypeDefsJSON, skillsJSON, genericSkillsJSON;
-			for (auto* entity : fileEntities) {
-				entity->output_all_overview(modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
-				                            genericStructTypesJSON, structTypesJSON, mixTypesJSON, regionJSON,
-				                            choiceJSON, typeDefinitionsJSON, genericTypeDefsJSON, skillsJSON,
-				                            genericSkillsJSON);
-			}
-			log->say("Exporting expression units");
-			Vec<JsonValue> expressionUnits;
-			for (auto* exp : ir::Value::allValues) {
-				if (exp->get_ir_type() && exp->has_associated_range()) {
-					Maybe<String> expStr;
-					if (exp->is_prerun_value()) {
-						expStr = exp->get_ir_type()->to_prerun_generic_string((ir::PrerunValue*)(exp));
-					}
-					expressionUnits.push_back(Json()
-					                              ._("fileRange", exp->get_associated_range())
-					                              ._("typeID", exp->get_ir_type()->get_id())
-					                              ._("value", expStr.has_value() ? expStr.value() : JsonValue()));
-				}
-			}
-			auto            codeStructFilePath = cfg->get_output_path() / "QatCodeInfo.json";
-			bool            codeInfoExists     = fs::exists(codeStructFilePath);
-			std::error_code errorCode;
-			if (not codeInfoExists) {
-				fs::create_directories(codeStructFilePath.parent_path(), errorCode);
-			}
-			if (not codeInfoExists && errorCode) {
-				ctx->Error("Could not create parent directory of the code info file. The error is " +
-				               errorCode.message(),
-				           {codeStructFilePath});
-			}
-			std::ofstream mStream;
-			mStream.open(codeStructFilePath, std::ios_base::out | std::ios_base::trunc);
-			if (not mStream.is_open()) {
-				ctx->Error("Could not open the code info file for output", codeStructFilePath);
-			}
-			log->say("Writing code info file");
-			mStream << Json()
-			               ._("modules", modulesJSON)
-			               ._("functions", functionsJSON)
-			               ._("prerunFunctions", prerunFunctionsJSON)
-			               ._("genericFunctions", genericFunctionsJSON)
-			               ._("structTypes", structTypesJSON)
-			               ._("genericStructTypes", genericStructTypesJSON)
-			               ._("mixTypes", mixTypesJSON)
-			               ._("regions", regionJSON)
-			               ._("choiceTypes", choiceJSON)
-			               ._("typeDefinitions", typeDefinitionsJSON)
-			               ._("genericTypeDefinitions", genericTypeDefsJSON)
-			               ._("skills", skillsJSON)
-			               ._("genericSkills", genericSkillsJSON)
-			               ._("expressionUnits", expressionUnits);
-			log->say("Wrote code info JSON");
-			mStream.close();
-		}
+		// if (cfg->export_code_metadata()) {
+		// 	log->say("Exporting code metadata");
+		// 	Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
+		// 	    genericStructTypesJSON, structTypesJSON, mixTypesJSON, regionJSON, choiceJSON, typeDefinitionsJSON,
+		// 	    genericTypeDefsJSON, skillsJSON, genericSkillsJSON;
+		// 	for (auto* entity : fileEntities) {
+		// 		entity->output_all_overview(modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
+		// 		                            genericStructTypesJSON, structTypesJSON, mixTypesJSON, regionJSON,
+		// 		                            choiceJSON, typeDefinitionsJSON, genericTypeDefsJSON, skillsJSON,
+		// 		                            genericSkillsJSON);
+		// 	}
+		// 	log->say("Exporting expression units");
+		// 	Vec<JsonValue> expressionUnits;
+		// 	for (auto* exp : ir::Value::allValues) {
+		// 		if (exp->get_ir_type() && exp->has_associated_range()) {
+		// 			Maybe<String> expStr;
+		// 			if (exp->is_prerun_value()) {
+		// 				expStr = exp->get_ir_type()->to_prerun_generic_string((ir::PrerunValue*)(exp));
+		// 			}
+		// 			expressionUnits.push_back(Json()
+		// 			                              ._("fileRange", exp->get_associated_range())
+		// 			                              ._("typeID", exp->get_ir_type()->get_id())
+		// 			                              ._("value", expStr.has_value() ? expStr.value() : JsonValue()));
+		// 		}
+		// 	}
+		// 	auto            codeStructFilePath = cfg->get_output_path() / "QatCodeInfo.json";
+		// 	bool            codeInfoExists     = fs::exists(codeStructFilePath);
+		// 	std::error_code errorCode;
+		// 	if (not codeInfoExists) {
+		// 		fs::create_directories(codeStructFilePath.parent_path(), errorCode);
+		// 	}
+		// 	if (not codeInfoExists && errorCode) {
+		// 		ctx->Error("Could not create parent directory of the code info file. The error is " +
+		// 		               errorCode.message(),
+		// 		           {codeStructFilePath});
+		// 	}
+		// 	std::ofstream mStream;
+		// 	mStream.open(codeStructFilePath, std::ios_base::out | std::ios_base::trunc);
+		// 	if (not mStream.is_open()) {
+		// 		ctx->Error("Could not open the code info file for output", codeStructFilePath);
+		// 	}
+		// 	log->say("Writing code info file");
+		// 	mStream << Json()
+		// 	               ._("modules", modulesJSON)
+		// 	               ._("functions", functionsJSON)
+		// 	               ._("prerunFunctions", prerunFunctionsJSON)
+		// 	               ._("genericFunctions", genericFunctionsJSON)
+		// 	               ._("structTypes", structTypesJSON)
+		// 	               ._("genericStructTypes", genericStructTypesJSON)
+		// 	               ._("mixTypes", mixTypesJSON)
+		// 	               ._("regions", regionJSON)
+		// 	               ._("choiceTypes", choiceJSON)
+		// 	               ._("typeDefinitions", typeDefinitionsJSON)
+		// 	               ._("genericTypeDefinitions", genericTypeDefsJSON)
+		// 	               ._("skills", skillsJSON)
+		// 	               ._("genericSkills", genericSkillsJSON)
+		// 	               ._("expressionUnits", expressionUnits);
+		// 	log->say("Wrote code info JSON");
+		// 	mStream.close();
+		// }
 		//
 		//
 		log->say("Checked AST export");

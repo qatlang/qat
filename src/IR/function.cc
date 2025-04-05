@@ -200,9 +200,9 @@ void Block::destroy_locals(ast::EmitCtx* ctx) {
 	SHOW("Locals being destroyed for " << name)
 	for (auto* loc : values) {
 		if (loc->get_ir_type()->is_destructible()) {
-			if (loc->get_ir_type()->is_mark()
-			        ? (loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
-			           (loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() ==
+			if (loc->get_ir_type()->is_ptr()
+			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_of_parent_function() &&
+			           (loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() ==
 			            ctx->get_fn()->get_id()))
 			        : true) {
 				loc->get_ir_type()->destroy_value(ctx->irCtx, loc, ctx->get_fn());
@@ -484,13 +484,12 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 		} else if (loc->get_ir_type()->is_destructible()) {
 			loc->get_ir_type()->destroy_value(irCtx, loc->to_new_ir_value(), fun);
 			SHOW("Destroyed value using type level feature")
-		} else if (loc->get_ir_type()->is_mark() &&
-		           loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
-		           loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
-			auto* ptrTy = loc->get_ir_type()->as_mark();
+		} else if (loc->get_ir_type()->is_ptr() && loc->get_ir_type()->as_ptr()->get_owner().is_of_parent_function() &&
+		           loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
+			auto* ptrTy = loc->get_ir_type()->as_ptr();
 			if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
 				auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
-				if (ptrTy->is_slice()) {
+				if (ptrTy->is_multi()) {
 					auto* currBlock = fun->get_block();
 					auto* condBlock = ir::Block::create(fun, currBlock);
 					auto* trueBlock = ir::Block::create(fun, currBlock);
@@ -562,7 +561,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 			auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
 			irCtx->builder.CreateCall(
 			    freeFn->getFunctionType(), freeFn,
-			    {ptrTy->is_slice()
+			    {ptrTy->is_multi()
 			         ? irCtx->builder.CreatePointerCast(
 			               irCtx->builder.CreateLoad(
 			                   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
@@ -587,9 +586,9 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 		if (mFn->get_method_type() == MethodType::destructor) {
 			for (usize i = 0; i < cTy->get_members().size(); i++) {
 				auto& mem = cTy->get_members().at(i);
-				if (mem->type->is_mark() && mem->type->as_mark()->get_owner().is_of_type() &&
-				    (mem->type->as_mark()->get_owner().owner_as_type()->get_id() == mem->type->get_id())) {
-					auto* ptrTy  = mem->type->as_mark();
+				if (mem->type->is_ptr() && mem->type->as_ptr()->get_owner().is_of_type() &&
+				    (mem->type->as_ptr()->get_owner().owner_as_type()->get_id() == mem->type->get_id())) {
+					auto* ptrTy  = mem->type->as_ptr();
 					auto* memPtr = irCtx->builder.CreateStructGEP(
 					    ptrTy->get_llvm_type(),
 					    irCtx->builder.CreateStructGEP(cTy->get_llvm_type(),
@@ -597,7 +596,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 					    0u);
 					if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
 						auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
-						if (ptrTy->is_slice()) {
+						if (ptrTy->is_multi()) {
 							auto* currBlock = fun->get_block();
 							auto* condBlock = ir::Block::create(fun, currBlock);
 							auto* trueBlock = ir::Block::create(fun, currBlock);
@@ -672,7 +671,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 					auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
 					irCtx->builder.CreateCall(
 					    freeFn->getFunctionType(), freeFn,
-					    {ptrTy->is_slice()
+					    {ptrTy->is_multi()
 					         ? irCtx->builder.CreatePointerCast(
 					               irCtx->builder.CreateLoad(
 					                   ptrTy->get_subtype()->get_llvm_type()->getPointerTo(),
@@ -745,9 +744,9 @@ void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block) {
 	block->collect_locals_from(locals);
 	for (auto* loc : locals) {
 		if (loc->get_ir_type()->is_destructible()) {
-			if (loc->get_ir_type()->is_mark()
-			        ? (loc->get_ir_type()->as_mark()->get_owner().is_of_parent_function() &&
-			           (loc->get_ir_type()->as_mark()->get_owner().owner_as_parent_function()->get_id() ==
+			if (loc->get_ir_type()->is_ptr()
+			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_of_parent_function() &&
+			           (loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() ==
 			            block->get_fn()->get_id()))
 			        : true) {
 				loc->get_ir_type()->destroy_value(irCtx, loc, block->get_fn());

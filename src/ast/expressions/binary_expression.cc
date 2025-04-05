@@ -29,11 +29,11 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 		rhs->as_type_inferrable()->set_inference_type(
 		    lhsEmit->is_ref() ? lhsEmit->get_ir_type()->as_ref()->get_subtype() : lhsEmit->get_ir_type());
 		rhsEmit = rhs->emit(ctx);
-	} else if (lhs->nodeType() == NodeType::NULL_MARK) {
+	} else if (lhs->nodeType() == NodeType::NULL_POINTER) {
 		rhsEmit = rhs->emit(ctx);
 		lhs->as_type_inferrable()->set_inference_type(rhsEmit->get_ir_type());
 		lhsEmit = lhs->emit(ctx);
-	} else if (rhs->nodeType() == NodeType::NULL_MARK) {
+	} else if (rhs->nodeType() == NodeType::NULL_POINTER) {
 		lhsEmit = lhs->emit(ctx);
 		rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
 		rhsEmit = rhs->emit(ctx);
@@ -523,15 +523,15 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			               ctx->color("!="),
 			           fileRange);
 		}
-	} else if (lhsValueType->is_mark() && rhsValueType->is_mark()) {
+	} else if (lhsValueType->is_ptr() && rhsValueType->is_ptr()) {
 		SHOW("LHS type is: " << lhsType->to_string() << " and RHS type is: " << rhsType->to_string())
-		if (lhsValueType->as_mark()->get_subtype()->is_same(rhsValueType->as_mark()->get_subtype()) &&
-		    (lhsValueType->as_mark()->is_slice() == rhsValueType->as_mark()->is_slice())) {
+		if (lhsValueType->as_ptr()->get_subtype()->is_same(rhsValueType->as_ptr()->get_subtype()) &&
+		    (lhsValueType->as_ptr()->is_multi() == rhsValueType->as_ptr()->is_multi())) {
 			llvm::Value* lhsCount = nullptr;
 			llvm::Value* rhsCount = nullptr;
 			auto         usizeTy  = llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->clangTargetInfo->getTypeWidth(
                                                                         ctx->irCtx->clangTargetInfo->getSizeType()));
-			if (lhsValueType->as_mark()->is_slice()) {
+			if (lhsValueType->as_ptr()->is_multi()) {
 				bool isLHSRef = false;
 				SHOW("LHS side")
 				if (lhsEmit->is_ref()) {
@@ -540,10 +540,10 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				} else if (lhsEmit->is_ghost_ref()) {
 					isLHSRef = true;
 				}
-				auto* ptrType = lhsValueType->as_mark();
+				auto* ptrType = lhsValueType->as_ptr();
 				lhsType       = ptrType;
-				auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
-				                                  ir::MarkOwner::of_anonymous(), false, ctx->irCtx);
+				auto resPtrTy = ir::PtrType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
+				                                 ir::PtrOwner::of_anonymous(), false, ctx->irCtx);
 				if (lhsEmit->is_prerun_value()) {
 					lhsCount = llvm::cast<llvm::ConstantStruct>(lhsEmit->get_llvm_constant())->getAggregateElement(1u);
 					lhsEmit  = ir::PrerunValue::get(
@@ -575,7 +575,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				lhsType = lhsValueType;
 				lhsVal  = lhsEmit->get_llvm();
 			}
-			if (rhsValueType->as_mark()->is_slice()) {
+			if (rhsValueType->as_ptr()->is_multi()) {
 				bool isRHSRef = false;
 				SHOW("RHS side")
 				if (rhsEmit->is_ref()) {
@@ -585,10 +585,10 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				} else if (rhsEmit->is_ghost_ref()) {
 					isRHSRef = true;
 				}
-				auto* ptrType = rhsValueType->as_mark();
+				auto* ptrType = rhsValueType->as_ptr();
 				rhsType       = ptrType;
-				auto resPtrTy = ir::MarkType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
-				                                  ir::MarkOwner::of_anonymous(), false, ctx->irCtx);
+				auto resPtrTy = ir::PtrType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
+				                                 ir::PtrOwner::of_anonymous(), false, ctx->irCtx);
 				if (rhsEmit->is_prerun_value()) {
 					SHOW("RHS is prerun")
 					rhsCount = rhsEmit->get_llvm_constant()->getAggregateElement(1u);
@@ -619,7 +619,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				rhsType = rhsValueType;
 				rhsVal  = rhsEmit->get_llvm();
 			}
-			auto ptrTy = lhsValueType->as_mark();
+			auto ptrTy = lhsValueType->as_ptr();
 			if (op == OperatorKind::EQUAL_TO) {
 				SHOW("Pointer is normal")
 				auto finalComparison = ctx->irCtx->builder.CreateICmpEQ(
@@ -642,8 +642,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				return ir::Value::get(finalComparison, ir::UnsignedType::create_bool(ctx->irCtx), false)
 				    ->with_range(fileRange);
 			} else {
-				ctx->Error("The operands are of type " + ctx->color("mark") + ", and the operation " +
-				               ctx->color(operator_to_string(op)) + " is not supported for mark values",
+				ctx->Error("The operands are of pointer types, and the operation " +
+				               ctx->color(operator_to_string(op)) + " is not supported for pointer values",
 				           fileRange);
 			}
 		} else {

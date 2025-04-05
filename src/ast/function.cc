@@ -1,5 +1,6 @@
 #include "./function.hpp"
 #include "../IR/qat_module.hpp"
+#include "../IR/types/slice.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"
 #include "./emit_ctx.hpp"
@@ -154,19 +155,18 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			             fileRange);
 		} else {
 			if (generatedTypes.size() == 1) {
-				if (generatedTypes.at(0)->is_mark() && generatedTypes.at(0)->as_mark()->is_slice() &&
-				    generatedTypes.at(0)->as_mark()->get_owner().is_of_anonymous()) {
-					if (generatedTypes.at(0)->as_mark()->is_subtype_variable()) {
+				if (generatedTypes.at(0)->is_slice()) {
+					if (generatedTypes.at(0)->as_slice()->has_var()) {
 						irCtx->Error("Type of the argument of the " + irCtx->color("main") +
 						                 " function, cannot be a slice with variability. It should be of type " +
-						                 irCtx->color("slice![cstring]"),
+						                 irCtx->color("slice:[cstring]"),
 						             arguments[0]->get_type()->fileRange);
 					}
 					mod->set_has_main_function();
 					irCtx->hasMain = true;
 				} else {
 					irCtx->Error("Type of the argument of the " + irCtx->color("main") + " function should be " +
-					                 irCtx->color("slice![cstring]"),
+					                 irCtx->color("slice:[cstring]"),
 					             arguments[0]->get_type()->fileRange);
 				}
 			} else if (generatedTypes.empty()) {
@@ -190,8 +190,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			        ir::UnsignedType::create(32u, irCtx), 0u));
 			args.push_back(ir::Argument::Create(
 			    Identifier(arguments.at(0)->get_name().value + "'data", arguments.at(0)->get_name().range),
-			    ir::MarkType::get(false, ir::NativeType::get_cstr(irCtx), true, ir::MarkOwner::of_anonymous(), false,
-			                      irCtx),
+			    ir::PtrType::get(false, ir::NativeType::get_cstr(irCtx), true, ir::PtrOwner::of_anonymous(), false,
+			                     irCtx),
 			    1u));
 		}
 	} else {
@@ -355,8 +355,8 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 		if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
 			auto* cmdArgsVal =
 			    block->new_local(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
-			                     ir::MarkType::get(false, ir::NativeType::get_cstr(irCtx), false,
-			                                       ir::MarkOwner::of_anonymous(), true, irCtx),
+			                     ir::PtrType::get(false, ir::NativeType::get_cstr(irCtx), false,
+			                                      ir::PtrOwner::of_anonymous(), true, irCtx),
 			                     false, fnEmit->arg_name_at(0).range);
 			SHOW("Storing argument pointer")
 			irCtx->builder.CreateStore(

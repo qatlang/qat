@@ -9,7 +9,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 	if (give_expr.has_value()) {
 		if (fun->get_ir_type()->as_function()->get_return_type()->is_return_self()) {
 			if (give_expr.value()->nodeType() != NodeType::SELF) {
-				ctx->Error("This function is marked to return '' and cannot return anything else", fileRange);
+				ctx->Error("This function is defined to return '' and cannot return anything else", fileRange);
 			}
 			auto expr = give_expr.value()->emit(ctx);
 			return ir::Value::get(ctx->irCtx->builder.CreateRet(expr->get_llvm()), expr->get_ir_type(), false);

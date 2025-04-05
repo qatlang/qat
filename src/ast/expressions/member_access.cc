@@ -70,22 +70,22 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 		} else if (name.value == "data") {
 			if (inst->is_prerun_value()) {
 				return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(0u),
-				                            ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                              ir::MarkOwner::of_anonymous(), false, ctx->irCtx));
+				                            ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
+				                                             ir::PtrOwner::of_anonymous(), false, ctx->irCtx));
 			} else if (inst->is_value()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
-				                      ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                        ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
+				                      ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
+				                                       ir::PtrOwner::of_anonymous(), false, ctx->irCtx),
 				                      false);
 			} else {
-				SHOW("String slice is an implicit pointer or a reference or pointer")
+				SHOW("Text is an implicit pointer or a reference or pointer")
 				return ir::Value::get(
 				    ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
 				                                        inst->get_llvm(), 0u),
 				    ir::RefType::get(false,
-				                     ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
-				                                       false, // NOLINT(readability-magic-numbers)
-				                                       ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
+				                     ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
+				                                      false, // NOLINT(readability-magic-numbers)
+				                                      ir::PtrOwner::of_anonymous(), false, ctx->irCtx),
 				                     ctx->irCtx),
 				    false);
 			}
@@ -266,7 +266,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			               ctx->color(instType->to_string()),
 			           fileRange);
 		}
-	} else if (instType->is_mark() && instType->as_mark()->is_slice()) {
+	} else if (instType->is_ptr() && instType->as_ptr()->is_multi()) {
 		if (name.value == "length") {
 			if (inst->is_prerun_value()) {
 				return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(1u),

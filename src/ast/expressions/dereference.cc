@@ -9,13 +9,13 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 	if (expTy->is_ref()) {
 		expTy = expTy->as_ref()->get_subtype();
 	}
-	if (expTy->is_mark()) {
+	if (expTy->is_ptr()) {
 		llvm::Value* refVal = nullptr;
 		auto         refTy =
-		    ir::RefType::get(expTy->as_mark()->is_subtype_variable(), expTy->as_mark()->get_subtype(), ctx->irCtx);
+		    ir::RefType::get(expTy->as_ptr()->is_subtype_variable(), expTy->as_ptr()->get_subtype(), ctx->irCtx);
 		if (expEmit->is_ref()) {
 			expEmit->load_ghost_ref(ctx->irCtx->builder);
-			if (expTy->as_mark()->is_slice()) {
+			if (expTy->as_ptr()->is_multi()) {
 				refVal = ctx->irCtx->builder.CreateLoad(
 				    refTy->get_llvm_type(),
 				    ctx->irCtx->builder.CreateStructGEP(expTy->get_llvm_type(), expEmit->get_llvm(), 0u));
@@ -23,14 +23,14 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 				refVal = ctx->irCtx->builder.CreateLoad(refTy->get_llvm_type(), expEmit->get_llvm());
 			}
 		} else if (expEmit->is_ghost_ref()) {
-			if (not expTy->as_mark()->is_slice()) {
+			if (not expTy->as_ptr()->is_multi()) {
 				refVal = ctx->irCtx->builder.CreateLoad(refTy->get_llvm_type(), expEmit->get_llvm());
 			} else {
 				refVal = ctx->irCtx->builder.CreateLoad(
 				    refTy->get_llvm_type(),
 				    ctx->irCtx->builder.CreateStructGEP(expTy->get_llvm_type(), expEmit->get_llvm(), 0u));
 			}
-		} else if (expTy->as_mark()->is_slice()) {
+		} else if (expTy->as_ptr()->is_multi()) {
 			refVal = ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {0u});
 		}
 		// FIXME - Change implementation for each pointer ownership types
@@ -68,7 +68,8 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 			return uFn->call(ctx->irCtx, {expEmit->get_llvm()}, localID, ctx->mod);
 		} else {
 			ctx->Error("Type " + ctx->color(expTy->to_string()) +
-			               " is not a mark type and does not have the dereference operator " + ctx->color(opStr),
+			               " is not a pointer type and also does not have the dereference operator " +
+			               ctx->color(opStr),
 			           exp->fileRange);
 		}
 	}

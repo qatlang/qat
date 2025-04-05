@@ -56,7 +56,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		isVar    = instType->as_ref()->has_variability();
 		instType = instType->as_ref()->get_subtype();
 	}
-	if (instType->is_mark()) {
+	if (instType->is_ptr()) {
 		ctx->Error("The expression is of pointer type. Please dereference the pointer to call the method",
 		           instance->fileRange);
 	}

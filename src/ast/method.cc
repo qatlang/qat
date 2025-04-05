@@ -213,7 +213,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 						}
 						generatedTypes.push_back(memTy);
 					} else {
-						irCtx->Error("This member function is not marked as a variation. It "
+						irCtx->Error("This method is not marked as a variation. It "
 						             "cannot use the member argument syntax",
 						             fileRange);
 					}

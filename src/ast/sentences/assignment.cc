@@ -106,7 +106,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 			ctx->Error(
 			    "Left hand side of the assignment cannot be assigned to because the reference does not have variability",
 			    lhs->fileRange);
-		} else if (lhsVal->get_ir_type()->is_mark()) {
+		} else if (lhsVal->get_ir_type()->is_ptr()) {
 			ctx->Error(
 			    "Left hand side of the assignment cannot be assigned to because it is of pointer type. If you intend to change the "
 			    "value pointed to by this pointer, consider dereferencing it before assigning",

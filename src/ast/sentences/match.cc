@@ -342,7 +342,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			for (auto* strExp : section.first) {
 				if (strExp->getType() != MatchType::Exp) {
 					ctx->Error(
-					    "Invalid match type. Expected an expression in this match case since the candidate expression to match is a string slice",
+					    "Invalid match type. Expected an expression in this match case since the candidate expression to match is a text",
 					    strExp->getMainRange());
 				}
 				auto* strEmit = strExp->asExp()->getExpression()->emit(ctx);
@@ -474,7 +474,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					                                     ctx->irCtx->builder.CreateLoad(Ty64Int, elemIter->get_llvm())),
 					    caseTrueBlock->get_bb(), thisCaseFalseBlock->get_bb());
 				} else {
-					ctx->Error("Expected a string slice to be the expression for this match case",
+					ctx->Error("Expected a text to be the expression for this match case",
 					           section.first.at(j)->getMainRange());
 				}
 				SHOW("Setting thisCaseFalseBlock active")
@@ -512,7 +512,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 	} else {
 		if (not elseNotRequired && not isTrueForACase()) {
 			ctx->Error(
-			    "A string slice has infinite number of patterns to match. Please add an else case to account for the remaining possibilies",
+			    "A text has infinite number of patterns to match. Please add an else case to account for the remaining possibilies",
 			    fileRange);
 		}
 	}

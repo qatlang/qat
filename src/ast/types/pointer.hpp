@@ -6,24 +6,24 @@
 
 namespace qat::ast {
 
-class MarkType final : public Type {
+class PtrType final : public Type {
 	Type*             type;
-	MarkOwnType       ownTyp;
+	PtrOwnType        ownTyp;
 	Maybe<ast::Type*> ownerTyTy;
-	bool              isSlice;
+	bool              isMulti;
 	bool              isSubtypeVar;
 	bool              isNonNullable;
 
   public:
-	MarkType(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable, Maybe<Type*> _ownerTyTy,
-	         bool _isSlice, FileRange _fileRange)
-	    : Type(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isSlice(_isSlice),
+	PtrType(Type* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable, Maybe<Type*> _ownerTyTy,
+	        bool _isMulti, FileRange _fileRange)
+	    : Type(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isMulti(_isMulti),
 	      isSubtypeVar(_isSubtypeVar), isNonNullable(_isNonNullable) {}
 
-	useit static MarkType* create(Type* _type, bool _isSubtypeVar, MarkOwnType _ownTy, bool _isNonNullable,
-	                              Maybe<Type*> _ownerTyTy, bool _isSlice, FileRange _fileRange) {
-		return std::construct_at(OwnNormal(MarkType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy,
-		                         _isSlice, _fileRange);
+	useit static PtrType* create(Type* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable,
+	                             Maybe<Type*> _ownerTyTy, bool _isMulti, FileRange _fileRange) {
+		return std::construct_at(OwnNormal(PtrType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy, _isMulti,
+		                         _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,

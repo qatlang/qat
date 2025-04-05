@@ -140,9 +140,9 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			if (lenType->is_ref()) {
 				lenType = lenType->as_ref()->get_subtype();
 			}
-			if (dataType->is_mark() && dataType->as_mark()->get_subtype()->is_unsigned() &&
-			    dataType->as_mark()->get_subtype()->as_unsigned()->is_bitwidth(8u)) {
-				if (dataType->as_mark()->is_slice()) {
+			if (dataType->is_ptr() && dataType->as_ptr()->get_subtype()->is_unsigned() &&
+			    dataType->as_ptr()->get_subtype()->as_unsigned()->is_bitwidth(8u)) {
+				if (dataType->as_ptr()->is_multi()) {
 					// FIXME - Change when `check` is added
 					// FIXME - Add length confirmation if pointer is multi, compare with
 					// the provided length of the string
@@ -157,8 +157,8 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 					                                     ctx->irCtx->dataLayout.getProgramAddressSpace()),
 					              ctx->irCtx->builder.CreateStructGEP(dataType->get_llvm_type(), strData->get_llvm(),
 					                                                  0u)),
-					    ir::MarkType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-					                      ir::MarkOwner::of_anonymous(), false, ctx->irCtx),
+					    ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
+					                     ir::PtrOwner::of_anonymous(), false, ctx->irCtx),
 					    false);
 				} else {
 					if (strData->is_ghost_ref() || strData->get_ir_type()->is_ref()) {
@@ -170,29 +170,28 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 						    false);
 					}
 				}
-				if (lenType->is_unsigned() && lenType->as_unsigned()->get_bitwidth() == 64u) {
+				if (lenType->is_native_type() && lenType->as_native_type()->is_usize()) {
 					if (strLen->is_ghost_ref() || strLen->is_ref()) {
 						strLen =
 						    ir::Value::get(ctx->irCtx->builder.CreateLoad(lenType->get_llvm_type(), strLen->get_llvm()),
 						                   lenType, false);
 					}
-					auto* strSliceTy = ir::TextType::get(ctx->irCtx);
-					auto* strAlloca  = ir::Logic::newAlloca(ctx->get_fn(), None, strSliceTy->get_llvm_type());
+					auto* textTy    = ir::TextType::get(ctx->irCtx);
+					auto* strAlloca = ir::Logic::newAlloca(ctx->get_fn(), None, textTy->get_llvm_type());
+					ctx->irCtx->builder.CreateStore(strData->get_llvm(), ctx->irCtx->builder.CreateStructGEP(
+					                                                         textTy->get_llvm_type(), strAlloca, 0));
 					ctx->irCtx->builder.CreateStore(
-					    strData->get_llvm(),
-					    ctx->irCtx->builder.CreateStructGEP(strSliceTy->get_llvm_type(), strAlloca, 0));
-					ctx->irCtx->builder.CreateStore(strLen->get_llvm(), ctx->irCtx->builder.CreateStructGEP(
-					                                                        strSliceTy->get_llvm_type(), strAlloca, 1));
-					return ir::Value::get(strAlloca, strSliceTy, false);
+					    strLen->get_llvm(), ctx->irCtx->builder.CreateStructGEP(textTy->get_llvm_type(), strAlloca, 1));
+					return ir::Value::get(strAlloca, textTy, false);
 				} else {
-					ctx->Error("The second argument for creating a string slice is not a 64-bit unsigned integer",
+					ctx->Error("The second argument for creating a text is not of type " + ctx->color("usize"),
 					           fieldValues.at(1)->fileRange);
 				}
 			} else {
 				ctx->Error("You are creating an " + ctx->color("text") +
 				               " value from 2 arguments and the first argument "
 				               "should be of " +
-				               ctx->color("mark:[u8]") + " or " + ctx->color("slice:[u8]") + " type",
+				               ctx->color("ptr:[u8]") + " or " + ctx->color("multi:[u8]") + " type",
 				           fieldValues.at(0)->fileRange);
 			}
 		} else if (fieldValues.size() == 1) {
@@ -201,9 +200,9 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			if (strDataTy->is_ref()) {
 				strDataTy = strDataTy->as_ref()->get_subtype();
 			}
-			if (strDataTy->is_mark() && strDataTy->as_mark()->is_slice() &&
-			    (strDataTy->as_mark()->get_subtype()->is_unsigned() &&
-			     strDataTy->as_mark()->get_subtype()->as_unsigned()->is_bitwidth(8u))) {
+			if (strDataTy->is_ptr() && strDataTy->as_ptr()->is_multi() &&
+			    (strDataTy->as_ptr()->get_subtype()->is_unsigned() &&
+			     strDataTy->as_ptr()->get_subtype()->as_unsigned()->is_bitwidth(8u))) {
 				auto* strTy = ir::TextType::get(ctx->irCtx);
 				if (strData->is_ghost_ref() || strData->is_ref()) {
 					if (strData->is_ref()) {
@@ -226,17 +225,17 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 			} else {
 				ctx->Error("While creating a " + ctx->color("text") +
 				               " value with one argument, the argument is expected to be of type " +
-				               ctx->color("slice:[u8]"),
+				               ctx->color("multi:[u8]"),
 				           fieldValues.at(0)->fileRange);
 			}
 		} else {
 			ctx->Error(
 			    "There are two ways to create a " + ctx->color("text") +
 			        " value using a plain initialiser. The first way requires one argument of type " +
-			        ctx->color("slice:[u8]") + ". The second way requires 2 arguments. In two possible ways:\n1) " +
-			        ctx->color("mark:[u8]") + " and " + ctx->color("u64") + "\n2) " + ctx->color("slice:[u8]") +
-			        " and " + ctx->color("u64") +
-			        "\nIn case you are providing two arguments, the first argument is supposed to be a mark" +
+			        ctx->color("multi:[u8]") + ". The second way requires 2 arguments. In two possible ways:\n1) " +
+			        ctx->color("ptr:[u8]") + " and " + ctx->color("usize") + "\n2) " + ctx->color("multi:[u8]") +
+			        " and " + ctx->color("usize") +
+			        "\nIn case you are providing two arguments, the first argument is supposed to be a pointer" +
 			        " to the start of the data and the second argument is supposed to be the number of characters," +
 			        " EXCLUDING the null character (which is required to be present at the end regardless)",
 			    fileRange);

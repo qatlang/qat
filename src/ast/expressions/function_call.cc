@@ -49,9 +49,9 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 		auto* preFn = fnVal->as_prerun_function();
 		return preFn->call_prerun(argsEmit, ctx->irCtx, fileRange);
 	} else if (fnVal->get_ir_type()->is_function() ||
-	           (fnValType->is_mark() && fnValType->as_mark()->get_subtype()->is_function())) {
+	           (fnValType->is_ptr() && fnValType->as_ptr()->get_subtype()->is_function())) {
 		auto*                fnTy = fnVal->get_ir_type()->is_function() ? fnVal->get_ir_type()->as_function()
-		                                                                : fnValType->as_mark()->get_subtype()->as_function();
+		                                                                : fnValType->as_ptr()->get_subtype()->as_function();
 		Maybe<ir::Function*> fun;
 		if (fnVal->get_ir_type()->is_function()) {
 			fun = (ir::Function*)fnVal;

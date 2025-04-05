@@ -12,12 +12,12 @@ class Skill;
 class Polymorph final : public Type {
 	bool        isTyped;
 	Vec<Skill*> skills;
-	MarkOwner   owner;
+	PtrOwner    owner;
 
   public:
-	Polymorph(bool _isTyped, Vec<Skill*> _skills, MarkOwner _owner, ir::Ctx* ctx);
+	Polymorph(bool _isTyped, Vec<Skill*> _skills, PtrOwner _owner, ir::Ctx* ctx);
 
-	useit static Polymorph* create(bool isTyped, Vec<Skill*> skills, MarkOwner owner, ir::Ctx* ctx) {
+	useit static Polymorph* create(bool isTyped, Vec<Skill*> skills, PtrOwner owner, ir::Ctx* ctx) {
 		return std::construct_at(OwnNormal(Polymorph), isTyped, std::move(skills), owner, ctx);
 	}
 
@@ -27,7 +27,7 @@ class Polymorph final : public Type {
 
 	useit Vec<Skill*> const& get_skills() const { return skills; }
 
-	useit MarkOwner const& get_owner() const { return owner; }
+	useit PtrOwner const& get_owner() const { return owner; }
 
 	useit bool is_type_sized() const final { return true; }
 

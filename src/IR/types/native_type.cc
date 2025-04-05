@@ -586,7 +586,7 @@ NativeType* NativeType::get_cstr(ir::Ctx* irCtx) {
 	}
 	return std::construct_at(
 	    OwnNormal(NativeType),
-	    ir::MarkType::get(false, ir::IntegerType::get(8, irCtx), false, MarkOwner::of_anonymous(), false, irCtx),
+	    ir::PtrType::get(false, ir::IntegerType::get(8, irCtx), false, PtrOwner::of_anonymous(), false, irCtx),
 	    NativeTypeKind::String);
 }
 

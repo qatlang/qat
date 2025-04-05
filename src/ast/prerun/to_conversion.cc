@@ -75,20 +75,20 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 	} else if (valTy->is_text()) {
 		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_cstring()) {
 			return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
-		} else if (valTy->is_mark() &&
-		           (valTy->as_mark()->get_subtype()->is_unsigned() ||
-		            (valTy->as_mark()->get_subtype()->is_native_type() &&
-		             valTy->as_mark()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
-		           (valTy->as_mark()->get_subtype()->is_unsigned()
-		                ? (valTy->as_mark()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
-		                : (valTy->as_mark()
+		} else if (valTy->is_ptr() &&
+		           (valTy->as_ptr()->get_subtype()->is_unsigned() ||
+		            (valTy->as_ptr()->get_subtype()->is_native_type() &&
+		             valTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
+		           (valTy->as_ptr()->get_subtype()->is_unsigned()
+		                ? (valTy->as_ptr()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
+		                : (valTy->as_ptr()
 		                       ->get_subtype()
 		                       ->as_native_type()
 		                       ->get_subtype()
 		                       ->as_unsigned()
 		                       ->get_bitwidth() == 8u)) &&
-		           (valTy->as_mark()->get_owner().is_of_anonymous()) && (not valTy->as_mark()->is_subtype_variable())) {
-			if (valTy->as_mark()->is_slice()) {
+		           (valTy->as_ptr()->get_owner().is_of_anonymous()) && (not valTy->as_ptr()->is_subtype_variable())) {
+			if (valTy->as_ptr()->is_multi()) {
 				return ir::PrerunValue::get(
 				    llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()),
 				    usableTarget);

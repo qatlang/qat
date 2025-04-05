@@ -56,17 +56,18 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 	bool candHasVar = false;
 	auto candType =
 	    candExp->get_ir_type()->is_ref() ? candExp->get_ir_type()->as_ref()->get_subtype() : candExp->get_ir_type();
-	auto const isTyArray    = candType->is_array();
-	auto const isTySlice    = candType->is_mark() && candType->as_mark()->is_slice();
-	auto const isTyCString  = candType->is_native_type() && candType->as_native_type()->is_cstring();
-	auto const isTyStrSlice = candType->is_text();
-	auto const isTyVec      = candType->is_vector();
+	auto const isTyArray = candType->is_array();
+	auto const isTyMulti =
+	    candType->is_ptr() && candType->as_ptr()->is_multi(); // TODO Disallow multi-pointers and allow slices
+	auto const isTyCString = candType->is_native_type() && candType->as_native_type()->is_cstring();
+	auto const isTyText    = candType->is_text();
+	auto const isTyVec     = candType->is_vector();
 	if (candExp->get_ir_type()->is_ref()) {
 		candExp->load_ghost_ref(ctx->irCtx->builder);
 	} else if (candExp->is_ghost_ref()) {
 		isRefUnder = true;
 	}
-	if (isTyArray || isTySlice || isTyCString || isTyStrSlice || isTyVec) {
+	if (isTyArray || isTyText || isTyCString || isTyText || isTyVec) {
 		ir::Type*    elemTy  = nullptr;
 		ir::Type*    countTy = ir::NativeType::get_usize(ctx->irCtx);
 		llvm::Value* ptrVal  = nullptr;
@@ -80,8 +81,8 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 				candHasVar = true;
 			}
 			lenVal = llvm::ConstantInt::get(countTy->get_llvm_type(), candType->as_array()->get_length(), false);
-		} else if (isTySlice) {
-			elemTy = candType->as_mark()->get_subtype();
+		} else if (isTyText) {
+			elemTy = candType->as_ptr()->get_subtype();
 			if (isRefUnder) {
 				ptrVal = ctx->irCtx->builder.CreateLoad(
 				    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()),
@@ -93,7 +94,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 				ptrVal = ctx->irCtx->builder.CreateExtractValue(candExp->get_llvm(), {0u});
 				lenVal = ctx->irCtx->builder.CreateExtractValue(candExp->get_llvm(), {1u});
 			}
-			candHasVar = candType->as_mark()->is_subtype_variable();
+			candHasVar = candType->as_ptr()->is_subtype_variable();
 		} else if (isTyCString) {
 			elemTy = ir::UnsignedType::create(8, ctx->irCtx);
 			if (isRefUnder) {
@@ -101,7 +102,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 				                         candType, false);
 			}
 			ptrVal = candExp->get_llvm();
-		} else if (isTyStrSlice) {
+		} else if (isTyText) {
 			elemTy = ir::UnsignedType::create(8, ctx->irCtx);
 			if (isRefUnder) {
 				ptrVal = ctx->irCtx->builder.CreateLoad(

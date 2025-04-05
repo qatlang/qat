@@ -21,7 +21,8 @@ class IntegerType;
 class UnsignedType;
 class FloatType;
 class RefType;
-class MarkType;
+class SliceType;
+class PtrType;
 class TupleType;
 class FunctionType;
 class TextType;
@@ -129,8 +130,11 @@ class Type : public Uniq {
 	useit bool       is_poly() const;
 	useit Polymorph* as_poly() const;
 
-	useit bool      is_mark() const;
-	useit MarkType* as_mark() const;
+	useit bool     is_ptr() const;
+	useit PtrType* as_ptr() const;
+
+	useit bool       is_slice() const;
+	useit SliceType* as_slice() const;
 
 	useit bool       is_array() const;
 	useit ArrayType* as_array() const;

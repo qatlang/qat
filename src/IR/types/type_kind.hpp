@@ -14,8 +14,9 @@ enum class TypeKind {
 	TEXT,             // Text type (String View)
 	MIX,              // Mix Type (Discriminated Union / Sum Type)
 	TUPLE,            // Tuple is a product type of multiple types
-	MARK,             // Pointer to another Type type
+	POINTER,          // Pointer to another Type type
 	REFERENCE,        // Reference to another Type type
+	SLICE,            // Reference-like type that represents multiple values
 	FUNCTION,         // Function type
 	DEFINITION,       // A type definition
 	CHOICE,           // Choice (C++ style enums)

@@ -295,28 +295,28 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				formatString += "%u";
 				printVals.push_back(floatVal);
 			}
-		} else if (valTy->is_mark() || (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_mark())) {
+		} else if (valTy->is_ptr() || (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_ptr())) {
 			if (val->is_prerun_value()) {
 				auto valStr = valTy->to_prerun_generic_string(val->as_prerun()).value();
 				formatString += valStr;
 			} else {
-				if (valTy->as_mark()->is_slice()) {
+				if (valTy->as_ptr()->is_multi()) {
 					if (val->is_ref() || val->is_ghost_ref()) {
 						if (val->is_ref()) {
 							val->load_ghost_ref(ctx->irCtx->builder);
 						}
 						val = ir::Value::get(
 						    ctx->irCtx->builder.CreateLoad(
-						        valTy->as_mark()->get_subtype()->get_llvm_type()->getPointerTo(
+						        valTy->as_ptr()->get_subtype()->get_llvm_type()->getPointerTo(
 						            ctx->irCtx->dataLayout.getProgramAddressSpace()),
 						        ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u)),
-						    ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false, MarkOwner::of_anonymous(),
-						                      false, ctx->irCtx),
+						    ir::PtrType::get(false, valTy->as_ptr()->get_subtype(), false, PtrOwner::of_anonymous(),
+						                     false, ctx->irCtx),
 						    false);
 					} else {
 						val = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
-						                     ir::MarkType::get(false, valTy->as_mark()->get_subtype(), false,
-						                                       MarkOwner::of_anonymous(), false, ctx->irCtx),
+						                     ir::PtrType::get(false, valTy->as_ptr()->get_subtype(), false,
+						                                      PtrOwner::of_anonymous(), false, ctx->irCtx),
 						                     false);
 					}
 				} else {
@@ -702,7 +702,7 @@ useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Va
 	                int8Type, rhsBuff, {ctx->irCtx->builder.CreateLoad(int64Type, qatStrCmpIndex->get_llvm())}))),
 	    iterIncrBlock->get_bb(), iterFalseBlock->get_bb());
 	//
-	// NOTE - Increment string slice iteration count
+	// NOTE - Increment text iteration count
 	iterIncrBlock->set_active(ctx->irCtx->builder);
 	ctx->irCtx->builder.CreateStore(
 	    ctx->irCtx->builder.CreateAdd(ctx->irCtx->builder.CreateLoad(int64Type, qatStrCmpIndex->get_llvm()),

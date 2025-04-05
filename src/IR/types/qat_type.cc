@@ -64,14 +64,13 @@ bool Type::is_type_sized() const { return false; }
 Maybe<bool> Type::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const { return None; }
 
 bool Type::isCompatible(Type* other) {
-	if (is_mark() && other->is_mark()) {
-		if ((as_mark()->get_subtype()->is_same(other->as_mark()->get_subtype())) &&
-		    (as_mark()->get_owner().is_same(other->as_mark()->get_owner()) ||
-		     as_mark()->get_owner().is_of_anonymous() ||
-		     (as_mark()->get_owner().is_of_any_region() && other->as_mark()->get_owner().is_of_region())) &&
-		    (as_mark()->is_subtype_variable() ? other->as_mark()->is_subtype_variable() : true) &&
-		    (as_mark()->is_non_nullable() ? other->as_mark()->is_non_nullable() : true) &&
-		    (as_mark()->is_slice() == other->as_mark()->is_slice())) {
+	if (is_ptr() && other->is_ptr()) {
+		if ((as_ptr()->get_subtype()->is_same(other->as_ptr()->get_subtype())) &&
+		    (as_ptr()->get_owner().is_same(other->as_ptr()->get_owner()) || as_ptr()->get_owner().is_of_anonymous() ||
+		     (as_ptr()->get_owner().is_of_any_region() && other->as_ptr()->get_owner().is_of_region())) &&
+		    (as_ptr()->is_subtype_variable() ? other->as_ptr()->is_subtype_variable() : true) &&
+		    (as_ptr()->is_non_nullable() ? other->as_ptr()->is_non_nullable() : true) &&
+		    (as_ptr()->is_multi() == other->as_ptr()->is_multi())) {
 			return true;
 		} else {
 			return is_same(other);
@@ -118,11 +117,11 @@ bool Type::is_same(Type* other) {
 					return thisVal->get_id() == otherVal->get_id();
 				}
 			}
-			case TypeKind::MARK: {
-				return (((MarkType*)this)->is_subtype_variable() == ((MarkType*)other)->is_subtype_variable()) &&
-				       (((MarkType*)this)->is_nullable() == ((MarkType*)other)->is_nullable()) &&
-				       (((MarkType*)this)->get_subtype()->is_same(((MarkType*)other)->get_subtype())) &&
-				       (((MarkType*)this)->get_owner().is_same(((MarkType*)other)->get_owner()));
+			case TypeKind::POINTER: {
+				return (((PtrType*)this)->is_subtype_variable() == ((PtrType*)other)->is_subtype_variable()) &&
+				       (((PtrType*)this)->is_nullable() == ((PtrType*)other)->is_nullable()) &&
+				       (((PtrType*)this)->get_subtype()->is_same(((PtrType*)other)->get_subtype())) &&
+				       (((PtrType*)this)->get_owner().is_same(((PtrType*)other)->get_owner()));
 			}
 			case TypeKind::REFERENCE: {
 				return (((RefType*)this)->has_variability() == ((RefType*)other)->has_variability()) &&
@@ -452,16 +451,28 @@ Polymorph* Type::as_poly() const {
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_poly() : (Polymorph*)this);
 }
 
-bool Type::is_mark() const {
-	return (type_kind() == TypeKind::MARK) ||
-	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_mark()) ||
-	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_mark());
+bool Type::is_ptr() const {
+	return (type_kind() == TypeKind::POINTER) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_ptr()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_ptr());
 }
 
-MarkType* Type::as_mark() const {
+PtrType* Type::as_ptr() const {
 	return (type_kind() == TypeKind::DEFINITION)
-	           ? ((DefinitionType*)this)->get_subtype()->as_mark()
-	           : (is_opaque() ? as_opaque()->get_subtype()->as_mark() : (MarkType*)this);
+	           ? ((DefinitionType*)this)->get_subtype()->as_ptr()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_ptr() : (PtrType*)this);
+}
+
+bool Type::is_slice() const {
+	return (type_kind() == TypeKind::SLICE) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_slice()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_slice());
+}
+
+SliceType* Type::as_slice() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_slice()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_slice() : (SliceType*)this);
 }
 
 bool Type::is_array() const {

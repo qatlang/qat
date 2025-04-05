@@ -16,16 +16,16 @@ namespace qat::ast {
 class PolymorphType final : public Type {
 	bool             isTyped;
 	Vec<SkillEntity> skills;
-	MarkOwnType      ownType;
+	PtrOwnType       ownType;
 	Maybe<FileRange> ownRange;
 
   public:
-	PolymorphType(bool _isTyped, Vec<SkillEntity> _skills, MarkOwnType _ownType, Maybe<FileRange> _ownRange,
+	PolymorphType(bool _isTyped, Vec<SkillEntity> _skills, PtrOwnType _ownType, Maybe<FileRange> _ownRange,
 	              FileRange _range)
 	    : Type(std::move(_range)), isTyped(_isTyped), skills(std::move(_skills)), ownType(_ownType),
 	      ownRange(std::move(_ownRange)) {}
 
-	useit static PolymorphType* create(bool isTyped, Vec<SkillEntity> skills, MarkOwnType ownType,
+	useit static PolymorphType* create(bool isTyped, Vec<SkillEntity> skills, PtrOwnType ownType,
 	                                   Maybe<FileRange> ownRange, FileRange range) {
 		return std::construct_at(OwnNormal(PolymorphType), isTyped, std::move(skills), ownType, std::move(ownRange),
 		                         std::move(range));
@@ -52,7 +52,7 @@ class PolymorphType final : public Type {
 		    ._("typeKind", "polymorph")
 		    ._("isTyped", isTyped)
 		    ._("skills", skillsJSON)
-		    ._("markOwner", mark_owner_to_string(ownType))
+		    ._("ptrOwner", ptr_owner_to_string(ownType))
 		    ._("hasOwnRange", ownRange.has_value())
 		    ._("ownRange", ownRange.has_value() ? ownRange.value() : JsonValue());
 	}
@@ -66,7 +66,7 @@ class PolymorphType final : public Type {
 			}
 		}
 		return (isTyped ? "poly:[type, " : "poly:[") + skillStr +
-		       (ownType != MarkOwnType::anonymous ? (", " + mark_owner_to_string(ownType)) : "") + "]";
+		       (ownType != PtrOwnType::anonymous ? (", " + ptr_owner_to_string(ownType)) : "") + "]";
 	}
 };
 

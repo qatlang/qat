@@ -10,15 +10,15 @@ namespace qat::ast {
 ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 	ir::PrerunValue* lhsEmit = nullptr;
 	ir::PrerunValue* rhsEmit = nullptr;
-	if (lhs->nodeType() == NodeType::DEFAULT || lhs->nodeType() == NodeType::NULL_MARK) {
+	if (lhs->nodeType() == NodeType::DEFAULT || lhs->nodeType() == NodeType::NULL_POINTER) {
 		rhsEmit = rhs->emit(ctx);
 		lhs->as_type_inferrable()->set_inference_type(rhsEmit->get_ir_type());
 		lhsEmit = lhs->emit(ctx);
-	} else if (rhs->nodeType() == NodeType::DEFAULT || rhs->nodeType() == NodeType::NULL_MARK) {
+	} else if (rhs->nodeType() == NodeType::DEFAULT || rhs->nodeType() == NodeType::NULL_POINTER) {
 		lhsEmit = lhs->emit(ctx);
 		rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
 		rhsEmit = rhs->emit(ctx);
-	} else if (rhs->nodeType() == NodeType::NULL_MARK) {
+	} else if (rhs->nodeType() == NodeType::NULL_POINTER) {
 		lhsEmit = lhs->emit(ctx);
 		rhs->as_type_inferrable()->set_inference_type(lhsEmit->get_ir_type());
 		rhsEmit = rhs->emit(ctx);
@@ -531,9 +531,9 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			               " is not supported for expressions of type " + ctx->color(lhsType->to_string()),
 			           fileRange);
 		}
-	} else if (lhsValTy->is_mark() && rhsValTy->is_mark()) {
-		if (lhsValTy->as_mark()->get_subtype()->is_same(rhsValTy->as_mark()->get_subtype()) &&
-		    (lhsValTy->as_mark()->is_slice() == rhsValTy->as_mark()->is_slice())) {
+	} else if (lhsValTy->is_ptr() && rhsValTy->is_ptr()) {
+		if (lhsValTy->as_ptr()->get_subtype()->is_same(rhsValTy->as_ptr()->get_subtype()) &&
+		    (lhsValTy->as_ptr()->is_multi() == rhsValTy->as_ptr()->is_multi())) {
 			llvm::Constant* finalCondition = nullptr;
 			if (opr != OperatorKind::EQUAL_TO && opr != OperatorKind::NOT_EQUAL_TO) {
 				ctx->Error("Unsupported operator " + ctx->color(operator_to_string(opr)) + " for expressions of type " +
@@ -544,13 +544,13 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			    (opr == OperatorKind::EQUAL_TO) ? llvm::CmpInst::Predicate::ICMP_EQ : llvm::CmpInst::Predicate::ICMP_NE,
 			    llvm::ConstantExpr::getSub(
 			        llvm::ConstantExpr::getPtrToInt(
-			            lhsValTy->as_mark()->is_slice() ? lhsEmit->get_llvm()->getAggregateElement(0u)
-			                                            : lhsEmit->get_llvm(),
+			            lhsValTy->as_ptr()->is_multi() ? lhsEmit->get_llvm()->getAggregateElement(0u)
+			                                           : lhsEmit->get_llvm(),
 			            llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerSizeInBits(
 			                                                         ctx->irCtx->dataLayout.getProgramAddressSpace()))),
 			        llvm::ConstantExpr::getPtrToInt(
-			            lhsValTy->as_mark()->is_slice() ? rhsEmit->get_llvm()->getAggregateElement(0u)
-			                                            : rhsEmit->get_llvm(),
+			            lhsValTy->as_ptr()->is_multi() ? rhsEmit->get_llvm()->getAggregateElement(0u)
+			                                           : rhsEmit->get_llvm(),
 			            llvm::Type::getIntNTy(ctx->irCtx->llctx,
 			                                  ctx->irCtx->dataLayout.getPointerSizeInBits(
 			                                      ctx->irCtx->dataLayout.getProgramAddressSpace())))),
@@ -558,7 +558,7 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 			        llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerSizeInBits(
 			                                                     ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			        0u));
-			if (lhsValTy->as_mark()->is_slice()) {
+			if (lhsValTy->as_ptr()->is_multi()) {
 				finalCondition = llvm::ConstantFoldBinaryInstruction(
 				    (opr == OperatorKind::EQUAL_TO) ? llvm::Instruction::BinaryOps::And
 				                                    : llvm::Instruction::BinaryOps::Or,

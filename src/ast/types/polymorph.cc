@@ -15,9 +15,9 @@ ir::Type* PolymorphType::emit(EmitCtx* ctx) {
 	for (auto& sk : skills) {
 		irSkills.push_back(sk.find_skill(ctx));
 	}
-	auto markOwner =
-	    ownRange.has_value() ? get_mark_owner(ctx, ownType, None, ownRange.value()) : ir::MarkOwner::of_anonymous();
-	return ir::Polymorph::create(isTyped, std::move(irSkills), markOwner, ctx->irCtx);
+	auto ptrOwner =
+	    ownRange.has_value() ? get_ptr_owner(ctx, ownType, None, ownRange.value()) : ir::PtrOwner::of_anonymous();
+	return ir::Polymorph::create(isTyped, std::move(irSkills), ptrOwner, ctx->irCtx);
 }
 
 } // namespace qat::ast

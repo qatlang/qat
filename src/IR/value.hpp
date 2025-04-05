@@ -81,7 +81,7 @@ class Value {
 
 	useit bool is_ref() const { return type->is_ref(); }
 
-	useit bool is_mark() const { return type->is_mark(); }
+	useit bool is_ptr() const { return type->is_ptr(); }
 
 	useit bool is_ghost_ref() const {
 		return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&

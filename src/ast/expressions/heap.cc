@@ -48,9 +48,9 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 		                           mod->get_llvm_module()->getDataLayout().getTypeAllocSize(typRes->get_llvm_type()));
 	}
 	auto  mallocName = mod->link_internal_dependency(ir::InternalDependency::malloc, ctx->irCtx, fileRange);
-	auto* resTy      = ir::MarkType::get(true, typRes, false, ir::MarkOwner::of_heap(), count != nullptr, ctx->irCtx);
+	auto* resTy      = ir::PtrType::get(true, typRes, false, ir::PtrOwner::of_heap(), count != nullptr, ctx->irCtx);
 	auto* mallocFn   = mod->get_llvm_module()->getFunction(mallocName);
-	if (resTy->is_slice()) {
+	if (resTy->is_multi()) {
 		SHOW("Creating alloca for multi pointer")
 		auto* llAlloca = ir::Logic::newAlloca(ctx->get_fn(), None, resTy->get_llvm_type());
 		ctx->irCtx->builder.CreateStore(
@@ -84,15 +84,15 @@ Json HeapGet::to_json() const {
 }
 
 ir::Value* HeapPut::emit(EmitCtx* ctx) {
-	if (ptr->nodeType() == NodeType::NULL_MARK) {
-		ctx->Error("Null mark cannot be freed", ptr->fileRange);
+	if (ptr->nodeType() == NodeType::NULL_POINTER) {
+		ctx->Error("Null pointers cannot be freed", ptr->fileRange);
 	}
 	auto* exp   = ptr->emit(ctx);
 	auto  expTy = exp->is_ref() ? exp->get_ir_type()->as_ref()->get_subtype() : exp->get_ir_type();
-	if (expTy->is_mark()) {
-		auto ptrTy = expTy->as_mark();
+	if (expTy->is_ptr()) {
+		auto ptrTy = expTy->as_ptr();
 		if (not ptrTy->get_owner().is_of_heap()) {
-			ctx->Error("The mark type of this expression is " + ctx->color(ptrTy->to_string()) +
+			ctx->Error("The pointer type of this expression is " + ctx->color(ptrTy->to_string()) +
 			               " which does not have heap ownership and hence cannot be used here",
 			           ptr->fileRange);
 		}
@@ -111,7 +111,7 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 	}
 	// FIXME - CONSIDER PRERUN POINTERS
 	candExp =
-	    expTy->as_mark()->is_slice() ? ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {0u}) : exp->get_llvm();
+	    expTy->as_ptr()->is_multi() ? ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {0u}) : exp->get_llvm();
 	auto* mod      = ctx->mod;
 	auto  freeName = mod->link_internal_dependency(ir::InternalDependency::free, ctx->irCtx, fileRange);
 	auto* freeFn   = mod->get_llvm_module()->getFunction(freeName);
@@ -129,21 +129,21 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 	auto* typ    = type->emit(ctx);
 	auto* ptrVal = ptr->emit(ctx);
 	// FIXME - Add check to see if the new size is lower than the previous size
-	ir::MarkType* ptrType = nullptr;
+	ir::PtrType* ptrType = nullptr;
 	if (ptrVal->is_ref()) {
 		if (not ptrVal->get_ir_type()->as_ref()->has_variability()) {
 			ctx->Error("This reference does not have variability and hence the pointer inside cannot be grown",
 			           ptr->fileRange);
 		}
-		if (ptrVal->get_ir_type()->as_ref()->get_subtype()->is_mark()) {
-			ptrType = ptrVal->get_ir_type()->as_ref()->get_subtype()->as_mark();
+		if (ptrVal->get_ir_type()->as_ref()->get_subtype()->is_ptr()) {
+			ptrType = ptrVal->get_ir_type()->as_ref()->get_subtype()->as_ptr();
 			ptrVal->load_ghost_ref(ctx->irCtx->builder);
 			if (not ptrType->get_owner().is_of_heap()) {
 				ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
 				               " and hence cannot be used in heap:grow",
 				           fileRange);
 			}
-			if (not ptrType->is_slice()) {
+			if (not ptrType->is_multi()) {
 				ctx->Error("The type of the expression is " +
 				               ctx->color(ptrVal->get_ir_type()->as_ref()->get_subtype()->to_string()) +
 				               " which is not a multi pointer and hence cannot be grown",
@@ -156,17 +156,17 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 			ctx->Error("The first argument should be a pointer to " + ctx->color(typ->to_string()), ptr->fileRange);
 		}
 	} else if (ptrVal->is_ghost_ref()) {
-		if (ptrVal->get_ir_type()->is_mark()) {
+		if (ptrVal->get_ir_type()->is_ptr()) {
 			if (ptrVal->is_variable()) {
 				ctx->Error("This expression is not a variable", fileRange);
 			}
-			ptrType = ptrVal->get_ir_type()->as_mark();
+			ptrType = ptrVal->get_ir_type()->as_ptr();
 			if (not ptrType->get_owner().is_of_heap()) {
 				ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
 				               " and hence cannot be used in heap:grow",
 				           fileRange);
 			}
-			if (not ptrType->is_slice()) {
+			if (not ptrType->is_multi()) {
 				ctx->Error("The type of the expression is " + ctx->color(ptrVal->get_ir_type()->to_string()) +
 				               " which is not a multi pointer and hence cannot be grown",
 				           ptr->fileRange);
@@ -180,14 +180,14 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 			           ptr->fileRange);
 		}
 	} else {
-		ptrType = ptrVal->get_ir_type()->as_mark();
+		ptrType = ptrVal->get_ir_type()->as_ptr();
 		if (not ptrType->get_owner().is_of_heap()) {
 			ctx->Error("Expected a multipointer with " + ctx->color("heap") +
 			               " ownership. The ownership of this pointer is " +
 			               ctx->color(ptrType->get_owner().to_string()) + " and hence cannot be used.",
 			           fileRange);
 		}
-		if (not ptrType->is_slice()) {
+		if (not ptrType->is_multi()) {
 			ctx->Error("The type of the expression is " + ctx->color(ptrVal->get_ir_type()->to_string()) +
 			               " which is not a multi pointer and hence cannot be used here",
 			           ptr->fileRange);
@@ -223,7 +223,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
                      llvm::ConstantInt::get(
                          ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(),
                          ctx->irCtx->dataLayout.getTypeStoreSize(ptrType->get_subtype()->get_llvm_type())))}),
-            llvm::PointerType::get(ptrType->as_mark()->get_subtype()->get_llvm_type(),
+            llvm::PointerType::get(ptrType->as_ptr()->get_subtype()->get_llvm_type(),
 		                                ctx->irCtx->dataLayout.getProgramAddressSpace()));
 		auto* resAlloc = ir::Logic::newAlloca(ctx->get_fn(), None, ptrType->get_llvm_type());
 		SHOW("Storing raw pointer into multipointer")

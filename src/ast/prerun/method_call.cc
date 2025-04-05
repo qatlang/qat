@@ -188,16 +188,26 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 		return ir::PrerunValue::get(
 		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_future() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
-	} else if (memberName.value == "is_mark_type") {
+	} else if (memberName.value == "is_any_ptr_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
-		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_mark() ? 1u : 0u),
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_ptr() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
-	} else if (memberName.value == "is_slice_type") {
+	} else if (memberName.value == "is_ptr_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
 		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-		                           (subTy->is_mark() && subTy->as_mark()->is_slice()) ? 1u : 0u),
+		                           (subTy->is_ptr() && not subTy->as_ptr()->is_multi()) ? 1u : 0u),
+		    ir::UnsignedType::create_bool(ctx->irCtx));
+	} else if (memberName.value == "is_multiptr_type") {
+		zeroArgCheck();
+		return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+		                                                   (subTy->is_ptr() && subTy->as_ptr()->is_multi()) ? 1u : 0u),
+		                            ir::UnsignedType::create_bool(ctx->irCtx));
+	} else if (memberName.value == "is_slice_type") {
+		zeroArgCheck();
+		return ir::PrerunValue::get(
+		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_slice() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
 	} else if (memberName.value == "has_simple_copy") {
 		zeroArgCheck();

@@ -19,18 +19,18 @@ enum class PointerOwnerType {
 	Static,
 };
 
-class MarkOwner {
+class PtrOwner {
   public:
 	void*            owner;
 	PointerOwnerType ownerTy;
 
-	useit static MarkOwner of_heap();
-	useit static MarkOwner of_anonymous();
-	useit static MarkOwner of_type(Type* type);
-	useit static MarkOwner of_parent_function(Function* fun);
-	useit static MarkOwner of_parent_instance(Type* type);
-	useit static MarkOwner of_region(Region* region);
-	useit static MarkOwner of_any_region();
+	useit static PtrOwner of_heap();
+	useit static PtrOwner of_anonymous();
+	useit static PtrOwner of_type(Type* type);
+	useit static PtrOwner of_parent_function(Function* fun);
+	useit static PtrOwner of_parent_instance(Type* type);
+	useit static PtrOwner of_region(Region* region);
+	useit static PtrOwner of_any_region();
 
 	useit Type* owner_as_type() const { return (Type*)owner; }
 
@@ -56,30 +56,30 @@ class MarkOwner {
 
 	useit bool is_of_static() const { return ownerTy == PointerOwnerType::Static; }
 
-	useit bool is_same(const MarkOwner& other) const;
+	useit bool is_same(const PtrOwner& other) const;
 
 	useit String to_string() const;
 };
 
-class MarkType : public Type {
+class PtrType : public Type {
   private:
-	Type*     subType;
-	bool      isSubtypeVar;
-	MarkOwner owner;
-	bool      hasMulti;
-	bool      nonNullable;
+	Type*    subType;
+	bool     isSubtypeVar;
+	PtrOwner owner;
+	bool     hasMulti;
+	bool     nonNullable;
 
   public:
-	MarkType(bool _isSubVar, Type* _subtype, bool nonNullable, MarkOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
+	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, PtrOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
 
-	useit static MarkType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, MarkOwner _owner,
-	                           bool _hasMulti, ir::Ctx* irCtx);
+	useit static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
+	                          ir::Ctx* irCtx);
 
-	useit Type*     get_subtype() const;
-	useit MarkOwner get_owner() const;
+	useit Type*    get_subtype() const;
+	useit PtrOwner get_owner() const;
 
 	useit bool is_subtype_variable() const;
-	useit bool is_slice() const;
+	useit bool is_multi() const;
 	useit bool is_nullable() const;
 	useit bool is_non_nullable() const;
 

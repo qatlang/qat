@@ -20,39 +20,39 @@ void InExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType
 }
 
 ir::Value* InExpression::emit(EmitCtx* ctx) {
-	ir::MarkType* finalTy = nullptr;
+	ir::PtrType* finalTy = nullptr;
 	if (is_type_inferred()) {
-		if (not inferredType->is_mark()) {
+		if (not inferredType->is_ptr()) {
 			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			               ", which is not a mark type. This expression expects to be a mark type",
+			               ", which is not a pointer type. This expression expects to be of a pointer type",
 			           fileRange);
 		}
-		if (inferredType->as_mark()->is_slice()) {
+		if (inferredType->as_ptr()->is_multi()) {
 			ctx->Error(
 			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			        ", which is a slice type. This expression expects to be a mark type and cannot be of slice type",
+			        ", which is a multi-pointer type. This expression expects to be a pointer type and cannot be of multi-pointer type",
 			    fileRange);
 		}
-		finalTy = inferredType->as_mark();
+		finalTy = inferredType->as_ptr();
 		if (is_target_heap() && not finalTy->get_owner().is_of_heap()) {
-			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			               ", which is a mark type without heap ownership. This expression expects to be of type " +
-			               ctx->color(ir::MarkType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
-			                                            finalTy->is_non_nullable(), ir::MarkOwner::of_heap(), false,
-			                                            ctx->irCtx)
-			                              ->to_string()),
-			           fileRange);
+			ctx->Error(
+			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
+			        ", which is a pointer type without heap ownership. This expression expects to be of type " +
+			        ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
+			                                    finalTy->is_non_nullable(), ir::PtrOwner::of_heap(), false, ctx->irCtx)
+			                       ->to_string()),
+			    fileRange);
 		} else if (is_target_region() &&
 		           not(finalTy->get_owner().is_of_region() || finalTy->get_owner().is_of_any_region())) {
 			ctx->Error(
 			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			        ", which is a mark type without region ownership. This expression expects either to be of type " +
-			        ctx->color(ir::MarkType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
-			                                     finalTy->is_non_nullable(), ir::MarkOwner::of_any_region(), false,
-			                                     ctx->irCtx)
+			        ", which is a pointer type without region ownership. This expression expects either to be of type " +
+			        ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
+			                                    finalTy->is_non_nullable(), ir::PtrOwner::of_any_region(), false,
+			                                    ctx->irCtx)
 			                       ->to_string()) +
 			        " or of type " +
-			        ctx->color("mark" + String(finalTy->is_non_nullable() ? "!" : ":") + "[" +
+			        ctx->color("ptr" + String(finalTy->is_non_nullable() ? "!" : ":") + "[" +
 			                   (finalTy->is_subtype_variable() ? "var " : "") + finalTy->get_subtype()->to_string() +
 			                   ", region(" + target_as_region()->to_string() + ")]"),
 			    fileRange);
@@ -90,7 +90,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    {llvm::ConstantInt::get(mallocFn->getArg(0)->getType(),
 			                            (usize)ctx->irCtx->dataLayout.getTypeAllocSize(exprTy->get_llvm_type()))});
 			result = ir::Value::get(
-			    mallocCall, ir::MarkType::get(true, exprTy, false, ir::MarkOwner::of_heap(), false, ctx->irCtx), false);
+			    mallocCall, ir::PtrType::get(true, exprTy, false, ir::PtrOwner::of_heap(), false, ctx->irCtx), false);
 		} else if (is_target_region()) {
 			auto regRes = target_as_region()->emit(ctx);
 			if (not regRes->is_region()) {
@@ -136,7 +136,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    {llvm::ConstantInt::get(mallocFn->getArg(0)->getType(),
 			                            (usize)ctx->irCtx->dataLayout.getTypeAllocSize(expTy->get_llvm_type()))});
 			result = ir::Value::get(
-			    mallocCall, ir::MarkType::get(true, expTy, false, ir::MarkOwner::of_heap(), false, ctx->irCtx), false);
+			    mallocCall, ir::PtrType::get(true, expTy, false, ir::PtrOwner::of_heap(), false, ctx->irCtx), false);
 		} else if (is_target_region()) {
 			auto regRes = target_as_region()->emit(ctx);
 			if (not regRes->is_region()) {

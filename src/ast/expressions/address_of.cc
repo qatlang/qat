@@ -10,9 +10,9 @@ ir::Value* AddressOf::emit(EmitCtx* ctx) {
 		if (inst->is_ref()) {
 			inst->load_ghost_ref(ctx->irCtx->builder);
 		}
-		return ir::Value::get(
-		           inst->get_llvm(),
-		           ir::MarkType::get(isPtrVar, subTy, true, ir::MarkOwner::of_anonymous(), false, ctx->irCtx), false)
+		return ir::Value::get(inst->get_llvm(),
+		                      ir::PtrType::get(isPtrVar, subTy, true, ir::PtrOwner::of_anonymous(), false, ctx->irCtx),
+		                      false)
 		    ->with_range(fileRange);
 	} else {
 		ctx->Error("The expression provided is of type " + ctx->color(inst->get_ir_type()->to_string()) +

@@ -160,6 +160,7 @@ bool Type::is_same(Type* other) {
 				return thisVal->is_packed() == otherVal->is_packed();
 			}
 			case TypeKind::VOID:
+			case TypeKind::CHAR:
 			case TypeKind::TYPED: {
 				return true;
 			}

@@ -101,6 +101,7 @@
 #include "../ast/sentences/say_sentence.hpp"
 #include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
+#include "../ast/types/char.hpp"
 #include "../ast/types/float.hpp"
 #include "../ast/types/function.hpp"
 #include "../ast/types/future.hpp"
@@ -1585,6 +1586,10 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					return {cacheTy.value(), i - 1};
 				}
 				cacheTy = ast::VoidType::create(token.fileRange);
+				break;
+			}
+			case TokenType::characterType: {
+				cacheTy = ast::CharType::create(RangeAt(i));
 				break;
 			}
 			case TokenType::textType: {

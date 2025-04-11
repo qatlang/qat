@@ -335,11 +335,11 @@ void QatSitter::initialise() {
 						           None);
 					}
 					for (const auto& exePath : ctx->executablePaths) {
-						auto cmdRes = run_command_get_output(fs::absolute(exePath).string(), {});
-						std::cout << "\n===== Output of \"" + exePath.lexically_relative(fs::current_path()).string() +
-						                 "\"\n" + cmdRes.second + "===== Status Code: " + std::to_string(cmdRes.first) +
-						                 "\n";
-						if (cmdRes.first) {
+						std::cout << "\n===== Output of \"" << exePath.lexically_relative(fs::current_path()).string()
+						          << "\"\n";
+						auto exitCode = run_command_with_output(fs::absolute(exePath).string(), {});
+						std::cout << "\n===== Status Code: " << std::to_string(exitCode) << "\n";
+						if (exitCode) {
 							std::cout << "\nThe built executable at " + ctx->color(exePath.string()) +
 							                 " exited with error";
 						}

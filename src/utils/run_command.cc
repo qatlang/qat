@@ -1,18 +1,21 @@
 #include "./run_command.hpp"
 
 #include <boost/process/child.hpp>
+#include <boost/process/environment.hpp>
 #include <boost/process/io.hpp>
+
+#include <iostream>
 
 namespace qat {
 
-int run_command_get_code(String command, Vec<String> args) {
+int run_command_get_code(String command, Vec<String> const& args) {
 	boost::process::ipstream outStream;
 	boost::process::child    childProcess(command, args, boost::process::std_out > boost::process::null);
 	childProcess.wait();
 	return childProcess.exit_code();
 }
 
-Pair<int, String> run_command_get_stdout(String command, Vec<String> args) {
+Pair<int, String> run_command_get_stdout(String command, Vec<String> const& args) {
 	boost::process::ipstream outStream;
 	boost::process::child    childProcess(command, args, boost::process::std_out > outStream);
 	childProcess.wait();
@@ -23,9 +26,15 @@ Pair<int, String> run_command_get_stdout(String command, Vec<String> args) {
 	return Pair<int, String>(childProcess.exit_code(), output);
 }
 
-Pair<int, String> run_command_get_output(String command, Vec<String> args) {
+int run_command_with_output(String command, Vec<String> const& args) {
+	boost::process::child childProcess(command, args);
+	childProcess.wait();
+	return childProcess.exit_code();
+}
+
+Pair<int, String> run_command_get_output(String command, Vec<String> const& args) {
 	boost::process::ipstream outStream;
-	boost::process::child childProcess(command, args, (boost::process::std_out & boost::process::std_err) > outStream);
+	boost::process::child childProcess(command, args, (boost::process::std_err & boost::process::std_out) > outStream);
 	childProcess.wait();
 	String output;
 	for (String line; std::getline(outStream, line);) {
@@ -34,7 +43,7 @@ Pair<int, String> run_command_get_output(String command, Vec<String> args) {
 	return Pair<int, String>(childProcess.exit_code(), output);
 }
 
-Pair<int, String> run_command_get_stderr(String command, Vec<String> args) {
+Pair<int, String> run_command_get_stderr(String command, Vec<String> const& args) {
 	boost::process::ipstream errorStream;
 	boost::process::child    childProcess(command, args, boost::process::std_err > errorStream);
 	childProcess.wait();
@@ -45,7 +54,7 @@ Pair<int, String> run_command_get_stderr(String command, Vec<String> args) {
 	return Pair<int, String>(childProcess.exit_code(), errorOutput);
 }
 
-std::tuple<int, String, String> run_command_get_stdout_and_stderr(String command, Vec<String> args) {
+std::tuple<int, String, String> run_command_get_stdout_and_stderr(String command, Vec<String> const& args) {
 	boost::process::ipstream errorStream;
 	boost::process::ipstream outStream;
 	boost::process::child    childProcess(command, args, boost::process::std_out > outStream,

@@ -38,8 +38,8 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 				               ctx->color(radixDigits.substr(0, radix.value())),
 				           FileRange{fileRange.file,
 				                     FilePos{fileRange.start.line,
-				                             fileRange.start.character + radixToString(radix.value()).length() + i},
-				                     FilePos{fileRange.start.line, fileRange.start.character +
+				                             fileRange.start.byteOffset + radixToString(radix.value()).length() + i},
+				                     FilePos{fileRange.start.line, fileRange.start.byteOffset +
 				                                                       radixToString(radix.value()).length() + i + 1}});
 			}
 		}
@@ -52,8 +52,8 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 					if (value.at(i + 1) == '_') {
 						ctx->Error("Two adjacent underscores found in custom integer literal",
 						           FileRange{fileRange.file,
-						                     FilePos{fileRange.start.line, fileRange.start.character + i},
-						                     FilePos{fileRange.start.line, fileRange.start.character + i + 1}});
+						                     FilePos{fileRange.start.line, fileRange.start.byteOffset + i},
+						                     FilePos{fileRange.start.line, fileRange.start.byteOffset + i + 1}});
 					}
 				}
 			}

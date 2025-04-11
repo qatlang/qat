@@ -7,16 +7,13 @@
 
 namespace qat {
 
-// Position indicates a line and character number in a file
 struct FilePos {
 	FilePos(Json);
 
-	FilePos(uint64_t line, uint64_t character);
+	FilePos(u64 line, u64 byteOffset);
 
-	// Number of the line of this position. This will never be negative
-	uint64_t line;
-	// Number of the character of this position. This will never be negative
-	uint64_t character;
+	u64 line;
+	u64 byteOffset;
 
 	operator JsonValue() const;
 

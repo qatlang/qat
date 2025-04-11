@@ -12,6 +12,7 @@ namespace qat::ast {
 enum class AstTypeKind {
 	VOID,
 	ARRAY,
+	CHAR,
 	NAMED,
 	GENERIC_NAMED,
 	FLOAT,

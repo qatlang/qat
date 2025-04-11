@@ -44,7 +44,7 @@ LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun
 	SHOW("Creating llvm::AllocaInst for " << name)
 	ll      = ir::Logic::newAlloca(fun, name, type->get_llvm_type());
 	localID = utils::unique_id();
-	SHOW("AllocaInst name is: " << ((llvm::AllocaInst*)ll)->getName().str());
+	SHOW("AllocaInst name is: " << ll->getName().str());
 }
 
 String LocalValue::get_name() const { return name; }

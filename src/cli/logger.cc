@@ -37,7 +37,7 @@ void Logger::warn(String message, Maybe<ErrorLocation> range) {
 	                         getPathFromErrorLocation(range.value()).string() +
 	                         (std::holds_alternative<FileRange>(range.value())
 	                              ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
-	                                 std::to_string(std::get<FileRange>(range.value()).start.character))
+	                                 std::to_string(std::get<FileRange>(range.value()).start.byteOffset))
 	                              : "") +
 	                         "\n")
 	                      : "") +
@@ -50,7 +50,7 @@ void Logger::fatalError(String message, Maybe<ErrorLocation> range) {
 	                      ? (" --> " + getPathFromErrorLocation(range.value()).string() +
 	                         (std::holds_alternative<FileRange>(range.value())
 	                              ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
-	                                 std::to_string(std::get<FileRange>(range.value()).start.character))
+	                                 std::to_string(std::get<FileRange>(range.value()).start.byteOffset))
 	                              : "") +
 	                         "\n")
 	                      : "") +

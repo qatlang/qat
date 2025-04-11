@@ -1,5 +1,6 @@
 add_library(QAT_AST_TYPES
 	array.cc
+	char.cc
 	float.cc
 	function.cc
 	future.cc

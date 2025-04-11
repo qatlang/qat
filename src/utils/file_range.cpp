@@ -1,17 +1,16 @@
 #include "./file_range.hpp"
 #include "./json.hpp"
 #include <filesystem>
+
 namespace qat {
 
-FilePos::FilePos(uint64_t _line, uint64_t _character) : line(_line), character(_character) {}
-
-FilePos::FilePos(Json json) : line(json["line"].asInt()), character(json["char"].asInt()) {}
+FilePos::FilePos(u64 _line, u64 _byte) : line(_line), byteOffset(_byte) {}
 
 FilePos::operator JsonValue() const { return (Json)(*this); }
 
-FilePos::operator Json() const { return Json()._("line", line)._("char", character); }
+FilePos::operator Json() const { return Json()._("line", line)._("byteOffset", byteOffset); }
 
-std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << (pos.character + 1); }
+std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << pos.byteOffset; }
 
 FileRange::FileRange(fs::path _filePath) : file(std::move(_filePath)), start({0u, 0u}), end({0u, 0u}) {}
 
@@ -28,13 +27,13 @@ FileRange FileRange::spanTo(FileRange const& other) const { return FileRange{*th
 FileRange FileRange::trimTo(FilePos othStart) const { return FileRange(file, start, othStart); }
 
 String FileRange::start_to_string() const {
-	return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.character + 1);
+	return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.byteOffset);
 }
 
 bool FileRange::is_before(FileRange another) const {
 	return std::filesystem::equivalent(file, another.file) &&
 	       ((end.line < another.start.line) ||
-	        ((end.line == another.start.line) && (end.character < another.start.character)));
+	        ((end.line == another.start.line) && (end.byteOffset < another.start.byteOffset)));
 }
 
 FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }

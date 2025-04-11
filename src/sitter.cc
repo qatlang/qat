@@ -300,7 +300,12 @@ void QatSitter::initialise() {
 		};
 		auto clangStartTime = std::chrono::high_resolution_clock::now();
 		if (cfg->is_workflow_build()) {
-			if (check_executable_exists("clang") || check_executable_exists("clang++")) {
+			if (cfg->has_clang_path() || check_executable_exists("qat-clang") || check_executable_exists("clang") ||
+			    check_executable_exists("clang++") || check_executable_exists("clang-20") ||
+			    check_executable_exists("clang++-20") || check_executable_exists("clang-19") ||
+			    check_executable_exists("clang++-19") || check_executable_exists("clang-18") ||
+			    check_executable_exists("clang++-18") || check_executable_exists("clang-17") ||
+			    check_executable_exists("clang++-17")) {
 				for (auto* entity : fileEntities) {
 					entity->compile_to_object(ctx);
 				}
@@ -342,9 +347,11 @@ void QatSitter::initialise() {
 				}
 				SHOW("Workflow run check complete")
 			} else {
-				ctx->Error("Cannot find clang on path. Please make sure that you have clang with version 17 "
-				           "or later installed and the path to clang is available in the system environment",
-				           None);
+				ctx->Error(
+				    "Cannot find clang on path. Please make sure that you have clang with version 17 "
+				    "or later installed and the path to clang executable is present in the system PATH environment variable. Or else, provide path to a valid version of clang using the command line argument " +
+				        ctx->color("--clang=/path/to/clang/exe"),
+				    None);
 			}
 		} else {
 			display_stats();

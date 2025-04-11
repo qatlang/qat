@@ -2323,6 +2323,33 @@ bool Mod::find_clang_path(Ctx* ctx) {
 	if (not cfg->has_clang_path()) {
 		auto clangPath    = find_executable("clang");
 		auto qatClangPath = find_executable("qat-clang");
+		if (not clangPath.has_value() && not qatClangPath.has_value()) {
+			clangPath = find_executable("clang++");
+			if (not clangPath.has_value()) {
+				clangPath = find_executable("clang-20");
+				if (not clangPath.has_value()) {
+					clangPath = find_executable("clang++-20");
+					if (not clangPath.has_value()) {
+						clangPath = find_executable("clang-19");
+						if (not clangPath.has_value()) {
+							clangPath = find_executable("clang++-19");
+							if (not clangPath.has_value()) {
+								clangPath = find_executable("clang-18");
+								if (not clangPath.has_value()) {
+									clangPath = find_executable("clang++-18");
+									if (not clangPath.has_value()) {
+										clangPath = find_executable("clang-17");
+										if (not clangPath.has_value()) {
+											clangPath = find_executable("clang++-17");
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 		SHOW("clang path is " << (clangPath.has_value() ? clangPath.value() : "none"))
 		SHOW("clang path is " << (qatClangPath.has_value() ? qatClangPath.value() : "none"))
 		if ((not clangPath.has_value()) && (not qatClangPath.has_value())) {
@@ -2452,7 +2479,6 @@ void Mod::compile_to_object(Ctx* ctx) {
 		compileArgs.push_back(objectFilePath.value().string());
 		auto clangFound = find_clang_path(ctx);
 		SHOW("Clang is found: " << clangFound)
-		// TODO - ?? Check if the provided clang compiler is above version 17
 		auto cmdRes = run_command_get_stderr(usableClangPath.value(), compileArgs);
 		if (cmdRes.first) {
 			ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +

@@ -102,6 +102,10 @@ useit inline Maybe<u32> utf8_to_unicode_scalar(std::array<u8, 4> bytes) {
 	}
 	return value;
 }
+useit String to_hex_with_prefix(u32 value, Maybe<u8> width);
+
+useit String to_hex(u32 value, Maybe<u8> width);
+
 } // namespace qat::utils
 
 #endif

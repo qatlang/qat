@@ -35,6 +35,18 @@ u64 unique_id() {
 
 String uid_string() { return std::to_string(unique_id()); }
 
+String to_hex_with_prefix(u32 value, Maybe<u8> width) { return "0x" + to_hex(value, width); }
+
+String to_hex(u32 value, Maybe<u8> width) {
+	std::stringstream ss;
+	ss << std::hex << std::uppercase << std::setfill('0');
+	if (width.has_value()) {
+		ss << std::setw(width.value());
+	}
+	ss << value;
+	return ss.str();
+}
+
 } // namespace utils
 
 Maybe<String> find_executable(StringView name) {

@@ -102,9 +102,34 @@ useit inline Maybe<u32> utf8_to_unicode_scalar(std::array<u8, 4> bytes) {
 	}
 	return value;
 }
+
+useit bool is_invisible_unicode(u32 scalar);
+
 useit String to_hex_with_prefix(u32 value, Maybe<u8> width);
 
 useit String to_hex(u32 value, Maybe<u8> width);
+
+useit inline Maybe<u8> get_utf8_byte_length(u8 byte) {
+	if ((byte & 0x80) == 0) {
+		return 1;
+	} else if ((byte & 0xE0) == 0xC0) {
+		return 2;
+	} else if ((byte & 0xF0) == 0xE0) {
+		return 3;
+	} else if ((byte & 0xF8) == 0xF0) {
+		return 4;
+	} else {
+		return None;
+	}
+}
+
+useit inline bool is_follow_byte_utf8(u8 byte) { return (byte & 0xC0) == 0x80; }
+
+useit bool is_unicode_scalar_letter(u32 scalar);
+
+useit bool is_unicode_scalar_digit(u32 scalar);
+
+useit usize count_unicode_characters(String const& value);
 
 } // namespace qat::utils
 

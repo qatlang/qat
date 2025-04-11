@@ -1,8 +1,15 @@
+#include "./utils.hpp"
 #include "./find_executable.hpp"
 #include "./run_command.hpp"
 #include "./unique_id.hpp"
+
 #include <cstdio>
 #include <random>
+#include <set>
+#include <unicode/brkiter.h>
+#include <unicode/uchar.h>
+#include <unicode/unistr.h>
+#include <unicode/ustring.h>
 
 #if MINGW_RUNTIME
 #include <sdkddkver.h>
@@ -35,6 +42,13 @@ u64 unique_id() {
 
 String uid_string() { return std::to_string(unique_id()); }
 
+bool is_invisible_unicode(u32 scalar) {
+	static std::set<u32> invisibles{0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, 0x00A0, 0x2000, 0x2001, 0x2002, 0x2003,
+	                                0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x202A,
+	                                0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069, 0x200E, 0x200F};
+	return invisibles.contains(scalar);
+}
+
 String to_hex_with_prefix(u32 value, Maybe<u8> width) { return "0x" + to_hex(value, width); }
 
 String to_hex(u32 value, Maybe<u8> width) {
@@ -45,6 +59,43 @@ String to_hex(u32 value, Maybe<u8> width) {
 	}
 	ss << value;
 	return ss.str();
+}
+
+bool is_unicode_scalar_letter(u32 scalar) {
+	switch (u_charType_74(scalar)) {
+		case U_UPPERCASE_LETTER:
+		case U_LOWERCASE_LETTER:
+		case U_TITLECASE_LETTER:
+			return true;
+		default:
+			return false;
+	}
+}
+
+bool is_unicode_scalar_digit(u32 scalar) {
+	switch (u_charType_74(scalar)) {
+		case U_DECIMAL_DIGIT_NUMBER:
+			return true;
+		default:
+			return false;
+	}
+}
+
+usize count_unicode_characters(String const& value) {
+	auto                                   str       = icu_74::UnicodeString::fromUTF8(value);
+	UErrorCode                             errorCode = U_ZERO_ERROR;
+	std::unique_ptr<icu_74::BreakIterator> iter(
+	    icu_74::BreakIterator::createCharacterInstance(icu_74::Locale::getDefault(), errorCode));
+	if (U_SUCCESS(errorCode)) {
+		iter->setText(str);
+		usize count = 0;
+		while (iter->next() != icu_74::BreakIterator::DONE) {
+			count++;
+		}
+		return count;
+	} else {
+		return value.length();
+	}
 }
 
 } // namespace utils

@@ -6,6 +6,7 @@
 #include "../parser/parser.hpp"
 #include "../sitter.hpp"
 #include "../utils/qat_region.hpp"
+#include "../utils/utils.hpp"
 #include "./qat_module.hpp"
 #include "./value.hpp"
 
@@ -246,7 +247,7 @@ void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isC
 					spacing += " ";
 				}
 			}
-			auto   indicatorCount = std::get<2>(lineInfo) - std::get<1>(lineInfo);
+			auto   indicatorCount = std::get<3>(lineInfo);
 			String indicator(indicatorCount, '^');
 			(isError ? std::cerr : std::cout)
 			    << String(lineNumSize, ' ') << " | " << spacing
@@ -293,16 +294,16 @@ void Ctx::Errors(Vec<QatError> errors) {
 	finalise_errors();
 }
 
-Pair<usize, Vec<std::tuple<String, u64, u64>>> Ctx::get_range_content(FileRange const& _range) const {
-	Vec<std::tuple<String, u64, u64>> result;
+Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> Ctx::get_range_content(FileRange const& _range) const {
+	Vec<std::tuple<String, u64, u64, u32>> result;
 
 	std::ifstream file(_range.file);
 	String        line;
 	u64           lineCount = 0;
 	const usize   startLine = _range.start.line;
-	const usize   startChar = _range.start.character;
+	const usize   startByte = _range.start.byteOffset;
 	const usize   endLine   = _range.end.line;
-	const usize   endChar   = _range.end.character;
+	const usize   endByte   = _range.end.byteOffset;
 	usize         firstLine = startLine;
 	while (std::getline(file, line)) {
 		lineCount++;
@@ -312,26 +313,28 @@ Pair<usize, Vec<std::tuple<String, u64, u64>>> Ctx::get_range_content(FileRange 
 		}
 		if ((startLine > 0u) && (lineCount == (startLine - 1))) {
 			// Line before the first relevant line in file range
-			result.push_back({line, 0u, 0u});
+			result.push_back({line, 0u, 0u, 0u});
 			firstLine = lineCount;
 		} else if ((lineCount >= startLine) && (lineCount <= endLine)) {
 			// Relevant line
 			if (startLine == endLine) {
 				// Only one line for the relevant content
-				result.push_back({line, startChar, endChar});
+				result.push_back({line, startByte, endByte,
+				                  utils::count_unicode_characters(line.substr(startByte, endByte - startByte))});
 			} else if (lineCount == startLine) {
 				// First relevant line
-				result.push_back({line, startChar, line.size()});
+				result.push_back(
+				    {line, startByte, line.size(), utils::count_unicode_characters(line.substr(startByte))});
 			} else if (lineCount == endLine) {
 				// Last relevant line
-				result.push_back({line, i, endChar});
+				result.push_back({line, i, endByte, utils::count_unicode_characters(line.substr(i, endByte - i))});
 			} else {
 				// Relevant lines in the middle
-				result.push_back({line, i, line.size()});
+				result.push_back({line, i, line.size(), utils::count_unicode_characters(line.substr(i))});
 			}
 		} else if ((endLine < UINT64_MAX) && (lineCount == (endLine + 1))) {
 			// Line after the last relevant line in file range
-			result.push_back({line, 0u, 0u});
+			result.push_back({line, 0u, 0u, 0u});
 			break;
 		}
 	}
@@ -349,7 +352,7 @@ void Ctx::Warning(const String& message, const FileRange& fileRange) {
 	std::cout << "\n"
 	          << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
 	          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-	          << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.character
+	          << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.byteOffset
 	          << cli::get_color(cli::Color::white) << "\n"
 	          << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
 	          << cli::get_color(cli::Color::reset) << "\n";

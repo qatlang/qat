@@ -107,7 +107,7 @@ class Ctx {
 		return false;
 	}
 
-	Pair<usize, Vec<std::tuple<String, u64, u64>>> get_range_content(FileRange const& _range) const;
+	Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> get_range_content(FileRange const& _range) const;
 
 	void print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const;
 

@@ -810,7 +810,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						suffix = {token.value.substr(lastUnderscorePos + 1),
 						          FileRange(token.fileRange.file,
 						                    FilePos{token.fileRange.start.line,
-						                            token.fileRange.start.character + lastUnderscorePos + 1},
+						                            token.fileRange.start.byteOffset + lastUnderscorePos + 1},
 						                    token.fileRange.end)};
 					}
 					Maybe<u64> bits =
@@ -845,7 +845,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						                  ? Maybe<Pair<u64, FileRange>>(
 						                        {bits.value(), FileRange(token.fileRange.file,
 						                                                 FilePos{token.fileRange.start.line,
-						                                                         token.fileRange.start.character +
+						                                                         token.fileRange.start.byteOffset +
 						                                                             lastUnderscorePos + 1},
 						                                                 token.fileRange.end)})
 						                  : None,
@@ -856,7 +856,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						                  ? Maybe<Pair<u64, FileRange>>(
 						                        {bits.value(), FileRange(token.fileRange.file,
 						                                                 FilePos{token.fileRange.start.line,
-						                                                         token.fileRange.start.character +
+						                                                         token.fileRange.start.byteOffset +
 						                                                             lastUnderscorePos + 1},
 						                                                 token.fileRange.end)})
 						                  : None,
@@ -1284,9 +1284,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::skill: {
-				if (isPartOfExpression && cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				auto             start      = i;
 				Maybe<FileRange> skillRange = RangeAt(i);
 				if (not is_next(TokenType::colon, i)) {
@@ -1305,9 +1302,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::colon: {
-				if (isPartOfExpression && cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				if (not cacheTy.has_value()) {
 					add_error("Could not find a type before this", RangeAt(i));
 				}
@@ -1478,21 +1472,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::parenthesisOpen: {
-				auto start = i;
-				if (cacheTy.has_value()) {
-					auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
-					if (pCloseRes.has_value()) {
-						auto hasPrimary = is_primary_within(TokenType::semiColon, i, pCloseRes.value());
-						if (hasPrimary) {
-							add_error("Tuple type found after another type",
-							          FileRange(token.fileRange, RangeAt(pCloseRes.value())));
-						} else {
-							return {cacheTy.value(), i - 1};
-						}
-					} else {
-						add_error("Expected )", token.fileRange);
-					}
-				}
+				auto start        = i;
 				auto pCloseResult = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
 				if (not pCloseResult.has_value()) {
 					add_error("Expected )", token.fileRange);
@@ -1595,9 +1575,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::voidType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				cacheTy = ast::VoidType::create(token.fileRange);
 				break;
 			}
@@ -1606,31 +1583,19 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::textType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				cacheTy = ast::TextType::create(token.fileRange);
 				break;
 			}
 			case TokenType::unsignedIntegerType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				cacheTy = ast::UnsignedType::create(((token.value == "bool") ? 1u : std::stoul(token.value)),
 				                                    token.value == "bool", token.fileRange);
 				break;
 			}
 			case TokenType::integerType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				cacheTy = ast::IntegerType::create(std::stoul(token.value), token.fileRange);
 				break;
 			}
 			case TokenType::genericIntegerType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				auto start = i;
 				if (is_next(TokenType::genericTypeStart, i)) {
 					auto isUnsigned = do_prerun_expression(preCtx, i + 1, None);
@@ -1654,9 +1619,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::floatType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				if (token.value == "fbrain") {
 					cacheTy = ast::FloatType::create(ir::FloatTypeKind::_brain, token.fileRange);
 				} else if (token.value == "f16") {
@@ -1678,10 +1640,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 			}
 			case TokenType::super:
 			case TokenType::identifier: {
-				auto start = i;
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
+				auto start  = i;
 				auto symRes = do_symbol(ctx, i);
 				auto name   = symRes.first.name;
 				i           = symRes.second;
@@ -1721,9 +1680,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::referenceType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				const auto start    = i;
 				bool       isRefVar = false;
 				if (not is_next(TokenType::genericTypeStart, i)) {
@@ -1744,9 +1700,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::sliceType: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				const auto start  = i;
 				bool       hasVar = false;
 				if (not is_next(TokenType::genericTypeStart, i)) {
@@ -1769,9 +1722,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 			case TokenType::multiPtrType:
 			case TokenType::ptrType: {
 				const bool isMulti = token.type == TokenType::multiPtrType;
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				if (is_next(TokenType::genericTypeStart, i) || is_next(TokenType::exclamation, i)) {
 					bool      isSubtypeVar  = false;
 					bool      isNonNullable = false;
@@ -1916,9 +1866,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::bracketOpen: {
-				if (cacheTy.has_value()) {
-					return {cacheTy.value(), i - 1};
-				}
 				auto bClose = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
 				if (bClose.has_value()) {
 					auto lengthExp = do_prerun_expression(preCtx, i, bClose);
@@ -1941,9 +1888,15 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				return {cacheTy.value(), i - 1};
 			}
 		}
+		if (((i + 1 < tokens->size()) && (tokens->at(i + 1).type != TokenType::colon)) || isPartOfExpression) {
+			if (not cacheTy.has_value()) {
+				add_error("No type could be parsed at this point", RangeAt(from));
+			}
+			return {cacheTy.value(), i};
+		}
 	}
 	if (not cacheTy.has_value()) {
-		add_error("No type found", RangeAt(from));
+		add_error("No type could be parsed at this point", RangeAt(from));
 	}
 	return {cacheTy.value(), i - 1};
 }
@@ -6565,9 +6518,9 @@ void Parser::add_warning(const String& message, const FileRange& fileRange) {
 	std::cout << cli::get_bg_color(cli::Color::orange) << " PARSER WARNING " << cli::get_color(cli::Color::reset)
 	          << "▌ " << cli::get_color(cli::Color::yellow) << message << cli::get_color(cli::Color::reset) << " | "
 	          << cli::get_color(cli::Color::green) << fileRange.file.string() << ":" << fileRange.start.line << ":"
-	          << fileRange.start.character << cli::get_color(cli::Color::reset) << " >> "
+	          << fileRange.start.byteOffset << cli::get_color(cli::Color::reset) << " >> "
 	          << cli::get_color(cli::Color::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
-	          << fileRange.end.character << cli::get_color(cli::Color::reset) << "\n";
+	          << fileRange.end.byteOffset << cli::get_color(cli::Color::reset) << "\n";
 }
 
 } // namespace qat::parser

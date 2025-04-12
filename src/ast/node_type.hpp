@@ -108,6 +108,7 @@ enum class NodeType {
 	FLAG_INITIALISER,
 	IN_EXPRESSION,
 	CONFIRM_REF,
+	CHARACTER,
 };
 
 } // namespace qat::ast

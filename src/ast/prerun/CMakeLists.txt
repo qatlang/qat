@@ -3,6 +3,7 @@ add_library(QAT_AST_PRERUN
 	binary_op.cc
 	bitwise_not.cc
 	boolean_literal.cc
+	character.cc
 	custom_float_literal.cc
 	custom_integer_literal.cc
 	default.cc

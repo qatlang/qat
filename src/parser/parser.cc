@@ -57,6 +57,7 @@
 #include "../ast/prerun/binary_op.hpp"
 #include "../ast/prerun/bitwise_not.hpp"
 #include "../ast/prerun/boolean_literal.hpp"
+#include "../ast/prerun/character.hpp"
 #include "../ast/prerun/custom_float_literal.hpp"
 #include "../ast/prerun/custom_integer_literal.hpp"
 #include "../ast/prerun/default.hpp"
@@ -131,6 +132,7 @@
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
 
+#include <array>
 #include <chrono>
 #include <string>
 #include <utility>
@@ -686,6 +688,17 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 			case TokenType::FALSE:
 			case TokenType::TRUE: {
 				setCachedPreExp(ast::BooleanLiteral::create(token.type == TokenType::TRUE, RangeAt(i)), i);
+				break;
+			}
+			case TokenType::byteLiteral:
+			case TokenType::characterLiteral: {
+				setCachedPreExp(
+				    token.type == TokenType::byteLiteral
+				        ? ast::Character::create_byte(ValueAt(i)[0], RangeAt(i))
+				        : ast::Character::create_char(std::array<u8, 4>{(u8)ValueAt(i)[0], (u8)ValueAt(i)[1],
+				                                                        (u8)ValueAt(i)[2], (u8)ValueAt(i)[3]},
+				                                      RangeAt(i)),
+				    i);
 				break;
 			}
 			case TokenType::unaryOperator: {
@@ -4183,6 +4196,16 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 			}
 			case TokenType::StringLiteral: {
 				setCachedExpr(ast::StringLiteral::create(token.value, token.fileRange), i);
+				break;
+			}
+			case TokenType::byteLiteral:
+			case TokenType::characterLiteral: {
+				setCachedExpr(token.type == TokenType::byteLiteral
+				                  ? ast::Character::create_byte(ValueAt(i)[0], RangeAt(i))
+				                  : ast::Character::create_char(std::array<u8, 4>{(u8)ValueAt(i)[0], (u8)ValueAt(i)[1],
+				                                                                  (u8)ValueAt(i)[2], (u8)ValueAt(i)[3]},
+				                                                RangeAt(i)),
+				              i);
 				break;
 			}
 			case TokenType::none: {

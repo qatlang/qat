@@ -14,6 +14,7 @@ enum class TokenType {
 	voidType,
 	ptrType,
 	multiPtrType,
+	characterType,
 	sliceType,
 	referenceType,
 	unsignedIntegerType,
@@ -116,6 +117,8 @@ enum class TokenType {
 	ellipsis,
 	use,
 	flag,
+	characterLiteral,
+	byteLiteral,
 };
 
 } // namespace qat::lexer

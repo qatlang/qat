@@ -174,9 +174,9 @@ void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMContext& llctx) {
 	for (auto* typ : allTypes) {
 		if (typ->is_tuple()) {
-			auto subTys  = typ->as_tuple()->getSubTypes();
+			auto subTys  = typ->as_tuple()->get_all_types();
 			bool is_same = true;
-			if (typ->as_tuple()->isPackedTuple() != isPacked) {
+			if (typ->as_tuple()->is_packed_tuple() != isPacked) {
 				is_same = false;
 			} else if (newSubTypes.size() != subTys.size()) {
 				is_same = false;
@@ -196,13 +196,13 @@ TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMConte
 	return std::construct_at(OwnNormal(TupleType), newSubTypes, isPacked, llctx);
 }
 
-Vec<Type*> TupleType::getSubTypes() const { return subTypes; }
+Vec<Type*> TupleType::get_all_types() const { return subTypes; }
 
-Type* TupleType::getSubtypeAt(u32 index) { return subTypes.at(index); }
+Type* TupleType::get_type_at(u32 index) const { return subTypes.at(index); }
 
-u32 TupleType::getSubTypeCount() const { return subTypes.size(); }
+u32 TupleType::get_element_count() const { return subTypes.size(); }
 
-bool TupleType::isPackedTuple() const { return isPacked; }
+bool TupleType::is_packed_tuple() const { return isPacked; }
 
 bool TupleType::is_type_sized() const { return not subTypes.empty(); }
 

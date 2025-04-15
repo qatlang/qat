@@ -51,10 +51,10 @@ class TupleType : public Type {
 		return true;
 	}
 
-	useit Vec<Type*> getSubTypes() const;
-	useit Type*      getSubtypeAt(u32 index);
-	useit u32        getSubTypeCount() const;
-	useit bool       isPackedTuple() const;
+	useit Vec<Type*> get_all_types() const;
+	useit Type*      get_type_at(u32 index) const;
+	useit u32        get_element_count() const;
+	useit bool       is_packed_tuple() const;
 	useit TypeKind   type_kind() const final;
 	useit String     to_string() const final;
 };

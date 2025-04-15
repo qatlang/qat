@@ -334,7 +334,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 		} else if (valTy->is_tuple()) {
 			// FIXME - Update when named tuple members are allowed
 			formatString += "(";
-			auto subTypes = valTy->as_tuple()->getSubTypes();
+			auto subTypes = valTy->as_tuple()->get_all_types();
 			if (val->is_ref() || val->is_ghost_ref()) {
 				val->load_ghost_ref(ctx->irCtx->builder);
 			}

@@ -15,10 +15,10 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 		tupleTy = is_type_inferred() ? inferredType->as_tuple() : nullptr;
-		if (inferredType->as_tuple()->getSubTypeCount() != members.size()) {
+		if (inferredType->as_tuple()->get_element_count() != members.size()) {
 			ctx->Error("Expected the type of this tuple to be " + ctx->color(inferredType->to_string()) + " with " +
-			               ctx->color(std::to_string(inferredType->as_tuple()->getSubTypeCount())) + " members. But " +
-			               ctx->color(std::to_string(members.size())) + " values were provided",
+			               ctx->color(std::to_string(inferredType->as_tuple()->get_element_count())) +
+			               " members. But " + ctx->color(std::to_string(members.size())) + " values were provided",
 			           fileRange);
 		}
 	}
@@ -27,7 +27,7 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
 	Vec<ir::Value*> memsIR;
 	bool            isAllMemsPre = true;
 	for (usize i = 0; i < members.size(); i++) {
-		auto* expMemTy = tupleTy ? tupleTy->getSubtypeAt(i) : nullptr;
+		auto* expMemTy = tupleTy ? tupleTy->get_type_at(i) : nullptr;
 		auto* mem      = members.at(i);
 		if (expMemTy) {
 			if (mem->has_type_inferrance()) {

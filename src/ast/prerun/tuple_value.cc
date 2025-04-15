@@ -17,11 +17,11 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 			               ctx->color(inferredType->to_string()),
 			           fileRange);
 		}
-		if (members.size() != inferredType->as_tuple()->getSubTypeCount()) {
+		if (members.size() != inferredType->as_tuple()->get_element_count()) {
 			ctx->Error("The type inferred from scope for this expression is " + ctx->color(inferredType->to_string()) +
-			               " which expects " + ctx->color(std::to_string(inferredType->as_tuple()->getSubTypeCount())) +
-			               " values. But " +
-			               ((inferredType->as_tuple()->getSubTypeCount() > members.size()) ? "only " : "") +
+			               " which expects " +
+			               ctx->color(std::to_string(inferredType->as_tuple()->get_element_count())) + " values. But " +
+			               ((inferredType->as_tuple()->get_element_count() > members.size()) ? "only " : "") +
 			               std::to_string(members.size()) + " values were provided",
 			           fileRange);
 		}
@@ -30,14 +30,14 @@ ir::PrerunValue* PrerunTupleValue::emit(EmitCtx* ctx) {
 	for (usize i = 0; i < members.size(); i++) {
 		if (expected.has_value()) {
 			if (members.at(i)->has_type_inferrance()) {
-				members.at(i)->as_type_inferrable()->set_inference_type(expected.value()->getSubtypeAt(i));
+				members.at(i)->as_type_inferrable()->set_inference_type(expected.value()->get_type_at(i));
 			}
 		}
 		memberVals.push_back(members.at(i)->emit(ctx));
-		if (expected.has_value() && not expected.value()->getSubtypeAt(i)->is_same(memberVals.back()->get_ir_type())) {
+		if (expected.has_value() && not expected.value()->get_type_at(i)->is_same(memberVals.back()->get_ir_type())) {
 			ctx->Error("The tuple type inferred is " + ctx->color(expected.value()->to_string()) +
 			               " so the expected type of this expression is " +
-			               ctx->color(expected.value()->getSubtypeAt(i)->to_string()) +
+			               ctx->color(expected.value()->get_type_at(i)->to_string()) +
 			               " but got an expression of type " +
 			               ctx->color(memberVals.back()->get_ir_type()->to_string()),
 			           members.at(i)->fileRange);

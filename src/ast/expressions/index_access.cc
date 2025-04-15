@@ -44,9 +44,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                             : ind->get_llvm_constant())
 			                         ->getValue()
 			                         .getRawData());
-			if (indPre >= instType->as_tuple()->getSubTypeCount()) {
+			if (indPre >= instType->as_tuple()->get_element_count()) {
 				ctx->Error("The index value is " + ctx->color(std::to_string(indPre)) + " which is not less than " +
-				               ctx->color(std::to_string(instType->as_tuple()->getSubTypeCount())) +
+				               ctx->color(std::to_string(instType->as_tuple()->get_element_count())) +
 				               ", the number of members in this tuple",
 				           index->fileRange);
 			}
@@ -57,19 +57,19 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				}
 				return ir::Value::get(
 				    ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), indPre),
-				    ir::RefType::get(isMemVar, instType->as_tuple()->getSubtypeAt(indPre), ctx->irCtx), false);
+				    ir::RefType::get(isMemVar, instType->as_tuple()->get_type_at(indPre), ctx->irCtx), false);
 			} else if (inst->is_prerun_value()) {
 				if (llvm::isa<llvm::ConstantExpr>(inst->get_llvm_constant())) {
 					return ir::PrerunValue::get(
 					    llvm::ConstantFoldConstant(inst->get_llvm_constant(), ctx->irCtx->dataLayout),
-					    instType->as_tuple()->getSubtypeAt(indPre));
+					    instType->as_tuple()->get_type_at(indPre));
 				} else {
 					return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(indPre),
-					                            instType->as_tuple()->getSubtypeAt(indPre));
+					                            instType->as_tuple()->get_type_at(indPre));
 				}
 			} else {
 				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {indPre}),
-				                      instType->as_tuple()->getSubtypeAt(indPre), false);
+				                      instType->as_tuple()->get_type_at(indPre), false);
 			}
 		} else {
 			ctx->Error("Tuple members can only be accessed using prerun unsigned integers of the " + ctx->color("u32") +

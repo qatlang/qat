@@ -180,10 +180,10 @@ bool Type::is_same(Type* other) {
 			case TypeKind::TUPLE: {
 				auto* thisVal  = (TupleType*)this;
 				auto* otherVal = (TupleType*)other;
-				if ((thisVal->isPackedTuple() == otherVal->isPackedTuple()) &&
-				    thisVal->getSubTypeCount() == otherVal->getSubTypeCount()) {
-					for (usize i = 0; i < thisVal->getSubTypeCount(); i++) {
-						if (not(thisVal->getSubtypeAt(i)->is_same(otherVal->getSubtypeAt(i)))) {
+				if ((thisVal->is_packed_tuple() == otherVal->is_packed_tuple()) &&
+				    thisVal->get_element_count() == otherVal->get_element_count()) {
+					for (usize i = 0; i < thisVal->get_element_count(); i++) {
+						if (not(thisVal->get_type_at(i)->is_same(otherVal->get_type_at(i)))) {
 							return false;
 						}
 					}

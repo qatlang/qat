@@ -277,9 +277,9 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 			    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), subTy->as_array()->get_length()),
 			    ir::UnsignedType::create(64u, ctx->irCtx));
 		} else if (subTy->is_tuple()) {
-			return ir::PrerunValue::get(
-			    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), subTy->as_tuple()->getSubTypeCount()),
-			    ir::UnsignedType::create(64u, ctx->irCtx));
+			return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+			                                                   subTy->as_tuple()->get_element_count()),
+			                            ir::UnsignedType::create(64u, ctx->irCtx));
 		} else if (subTy->is_vector() && subTy->as_vector()->is_fixed()) {
 			return ir::PrerunValue::get(
 			    llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), subTy->as_vector()->get_count()),

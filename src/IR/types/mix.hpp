@@ -52,9 +52,13 @@ class MixType : public ExpandedType, public EntityOverview {
 	useit Pair<bool, bool> has_variant_with_name(const String& sname) const;
 	useit Type*            get_variant_with_name(const String& sname) const;
 
-	useit bool      has_default_variant() const;
-	useit usize     get_default_index() const;
-	useit usize     get_variant_count() const;
+	useit bool  has_default_variant() const;
+	useit usize get_default_index() const;
+
+	useit usize get_variant_count() const;
+
+	useit Type* get_variant_type_at(usize index) const;
+
 	useit bool      is_packed() const;
 	useit usize     get_tag_bitwidth() const;
 	useit u64       get_data_bitwidth() const;

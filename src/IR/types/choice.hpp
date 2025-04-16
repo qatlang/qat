@@ -63,7 +63,19 @@ class ChoiceType : public Type, public EntityOverview {
 
 	useit bool has_field(const String& name) const;
 
+	useit Vec<Identifier> const& get_variant_names(String const& name) const {
+		for (auto const& it : fields) {
+			for (auto& vName : it) {
+				if (vName.value == name) {
+					return it;
+				}
+			}
+		}
+	}
+
 	useit llvm::ConstantInt* get_value_for(const String& name) const;
+
+	useit usize get_variant_count() const { return fields.size(); }
 
 	useit llvm::ConstantInt* get_default() const;
 

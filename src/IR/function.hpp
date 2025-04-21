@@ -64,6 +64,24 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
 	useit ir::Value* to_new_ir_value() const;
 };
 
+class UseValue final : public Value, public Uniq, public EntityOverview {
+	String name;
+
+  public:
+	UseValue(String _name, llvm::Value* _value, ir::Type* _type, FileRange _fileRange)
+	    : Value(_value, _type, false), EntityOverview("useValue", Json(), _fileRange), name(_name) {
+		associatedRange = _fileRange;
+	}
+
+	useit static UseValue* create(String name, llvm::Value* value, ir::Type* type, FileRange fileRange) {
+		return std::construct_at(OwnNormal(UseValue), std::move(name), value, type, std::move(fileRange));
+	}
+
+	useit String get_name() const { return name; }
+
+	useit FileRange get_range() const { return associatedRange.value(); }
+};
+
 class Block : public Uniq {
 	friend Method;
 
@@ -71,6 +89,7 @@ class Block : public Uniq {
 	String            name;
 	llvm::BasicBlock* bb;
 	Vec<LocalValue*>  values;
+	Vec<UseValue*>    usedValues;
 	Block*            parent = nullptr;
 	Vec<Block*>       children;
 	Function*         fn;
@@ -117,6 +136,29 @@ class Block : public Uniq {
 	useit LocalValue* new_local(const String& name, ir::Type* type, bool isVar, FileRange fileRange) {
 		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
 		return values.back();
+	}
+
+	useit UseValue* create_use_value(String name, llvm::Value* value, ir::Type* type, FileRange fileRange) {
+		usedValues.push_back(UseValue::create(std::move(name), value, type, std::move(fileRange)));
+		return usedValues.back();
+	}
+
+	useit bool has_used_value(String const& name) const {
+		for (auto* it : usedValues) {
+			if (it->get_name() == name) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	useit UseValue* get_used_value(String const& name) const {
+		for (auto* it : usedValues) {
+			if (it->get_name() == name) {
+				return it;
+			}
+		}
+		return nullptr;
 	}
 
 	useit bool is_moved(u64 locID) const;

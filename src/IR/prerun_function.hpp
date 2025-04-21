@@ -35,7 +35,8 @@ class PrerunLocal final : public PrerunValue {
 	bool is_prerun_local() const final { return true; }
 
 	useit Identifier get_name() const { return name; }
-	useit bool       is_variable() const { return isVar; }
+
+	useit bool is_variable() const { return isVar; }
 
 	void change_value(llvm::Constant* other) { ll = other; }
 };
@@ -73,8 +74,11 @@ class PreBlock {
 	void make_active();
 
 	useit bool has_previous() const { return previous != nullptr; }
+
 	useit bool has_next() const { return next != nullptr; }
+
 	useit bool has_parent() const { return parent != nullptr; }
+
 	useit bool has_local(String const& name) {
 		for (auto loc : locals) {
 			if (loc->get_name().value == name) {
@@ -106,6 +110,8 @@ class PreBlock {
 		}
 		return nullptr;
 	}
+
+	void add_local(PrerunLocal* local) { locals.push_back(local); }
 
 	void set_previous(PreBlock* _prev) {
 		previous       = _prev;
@@ -162,10 +168,12 @@ class PrerunCallState {
 		return std::construct_at(OwnNormal(PrerunCallState), fun, argVals);
 	}
 
-	useit PreBlock*       get_block() const { return activeBlock; }
+	useit PreBlock* get_block() const { return activeBlock; }
+
 	useit PrerunFunction* get_function() const { return function; }
-	useit bool            has_arg_with_name(String const& name);
-	useit PrerunValue*    get_arg_value_for(String const& name);
+
+	useit bool         has_arg_with_name(String const& name);
+	useit PrerunValue* get_arg_value_for(String const& name);
 };
 
 class PrerunFunction : public PrerunValue, public EntityOverview {
@@ -191,11 +199,15 @@ class PrerunFunction : public PrerunValue, public EntityOverview {
 
 	void update_overview() final;
 
-	useit Identifier    get_name() const { return name; }
-	useit String        get_full_name() const;
-	useit Type*         get_return_type() const { return returnType; }
+	useit Identifier get_name() const { return name; }
+
+	useit String get_full_name() const;
+
+	useit Type* get_return_type() const { return returnType; }
+
 	useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
-	useit Mod*          get_module() const { return parent; }
+
+	useit Mod* get_module() const { return parent; }
 
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
 

@@ -56,6 +56,7 @@ class MixType : public ExpandedType, public EntityOverview {
 	useit usize get_default_index() const;
 
 	useit usize get_variant_count() const;
+	useit usize get_variant_index(String const& name) const;
 
 	useit Type* get_variant_type_at(usize index) const;
 

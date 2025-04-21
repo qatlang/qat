@@ -160,6 +160,15 @@ Type* MixType::get_variant_with_name(const String& sname) const {
 
 Type* MixType::get_variant_type_at(usize index) const { return subtypes[index].second.value_or(nullptr); }
 
+usize MixType::get_variant_index(String const& _varName) const {
+	for (usize i = 0; i < subtypes.size(); i++) {
+		if (subtypes[i].first.value == _varName) {
+			return i;
+		}
+	}
+	return 0;
+}
+
 void MixType::get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const {
 	for (const auto& sub : subtypes) {
 		bool result = false;

@@ -149,6 +149,12 @@ class Block : public Uniq {
 				return true;
 			}
 		}
+		if (prevBlock && prevBlock->has_used_value(name)) {
+			return true;
+		}
+		if (has_parent()) {
+			return parent->has_used_value(name);
+		}
 		return false;
 	}
 

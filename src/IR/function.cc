@@ -82,10 +82,8 @@ bool Block::has_value(const String& name) const {
 			return true;
 		}
 	}
-	if (prevBlock) {
-		if (prevBlock->has_value(name)) {
-			return true;
-		}
+	if (prevBlock && prevBlock->has_value(name)) {
+		return true;
 	}
 	if (has_parent()) {
 		SHOW("Has parent block")

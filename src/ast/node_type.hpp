@@ -109,6 +109,7 @@ enum class NodeType {
 	IN_EXPRESSION,
 	CONFIRM_REF,
 	CHARACTER,
+	USE_DECLARATION,
 };
 
 } // namespace qat::ast

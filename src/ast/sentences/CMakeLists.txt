@@ -12,7 +12,9 @@ add_library(QAT_AST_SENTENCES
 	loop_to.cc
 	match.cc
 	member_initialisation.cc
-	say_sentence.cc)
+	say_sentence.cc
+	use_declaration.cc
+)
 
 target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_ROOT_DIR}/include")
 

@@ -33,6 +33,7 @@
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/in.hpp"
 #include "../ast/expressions/index_access.hpp"
+#include "../ast/expressions/inline_let.hpp"
 #include "../ast/expressions/is.hpp"
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/method_call.hpp"
@@ -5000,8 +5001,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					if (is_next(TokenType::Not, i)) {
 						setCachedExpr(ast::LogicalNot::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
 						i++;
+					} else if (is_next(TokenType::let, i)) {
+						setCachedExpr(ast::InlineLet::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
+						i++;
 					} else if (is_next(TokenType::referenceType, i)) {
-						const auto start = i;
 						i++;
 						bool isVar = false;
 						if (is_next(TokenType::colon, i) && is_next(TokenType::var, i + 1)) {

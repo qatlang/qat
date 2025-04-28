@@ -1,0 +1,253 @@
+#ifndef QAT_AST_PATTERNS_HPP
+#define QAT_AST_PATTERNS_HPP
+
+#include "../utils/file_range.hpp"
+#include "../utils/identifier.hpp"
+#include "../utils/qat_region.hpp"
+#include "prerun_function.hpp"
+
+#include <variant>
+
+namespace llvm {
+class Value;
+};
+
+namespace qat::ir {
+class Type;
+class Value;
+class PreBlock;
+class Block;
+} // namespace qat::ir
+
+namespace qat::ast {
+
+class EmitCtx;
+
+enum class PatternType {
+	ARRAY,
+	TUPLE,
+	IS,
+	NONE,
+	NULL_PTR,
+	CHARACTER,
+	BYTE_CHARACTER,
+	BOOLEAN,
+	CHOICE,
+	MIX,
+	FLAG,
+	OK,
+	ERROR,
+	RANGE,
+	INTEGER,
+	FLOAT,
+	STRING_LITERAL,
+	COMPARISON,
+	ELLIPSIS,
+};
+
+useit inline bool pattern_supports_chaining(PatternType type) {
+	switch (type) {
+		case PatternType::BOOLEAN:
+		case PatternType::CHOICE:
+		case PatternType::MIX:
+		case PatternType::FLAG:
+		case PatternType::RANGE:
+		case PatternType::CHARACTER:
+		case PatternType::BYTE_CHARACTER:
+		case PatternType::STRING_LITERAL:
+		case PatternType::INTEGER:
+		case PatternType::FLOAT:
+		case PatternType::COMPARISON:
+			return true;
+		default:
+			return false;
+	}
+}
+
+enum class PatternFillType {
+	POSITIVE,
+	NEGATIVE,
+	MESSAGE,
+	COMPLETE,
+	NONE,
+};
+
+struct PatternFill {
+	PatternFillType fillType;
+	Vec<String>     fills;
+	ir::Type*       type;
+
+	Vec<PatternFill*> childFills;
+
+	PatternFill(ir::Type* _type) : fillType(PatternFillType::NONE), type(_type) {}
+
+	useit static PatternFill* create_for_type(EmitCtx* ctx, ir::Type* type);
+};
+
+struct ConditionSlot {
+	Vec<llvm::Value*> conditions;
+};
+
+struct MatchArm {
+	bool  isRef;
+	bool  isRefVar;
+	void* conditionBlock;
+	void* bodyBlock;
+
+	Deque<ConditionSlot> conditions;
+
+	MatchArm(bool _isRef, bool _isRefVar, void* _condBlock, void* _bodyBlock)
+	    : isRef(_isRef), isRefVar(_isRefVar), conditionBlock(_condBlock), bodyBlock(_bodyBlock) {
+		conditions.push_back(ConditionSlot{.conditions = {}});
+	}
+
+	useit ConditionSlot& get_slot() { return conditions.back(); }
+
+	useit ir::Block* get_condition_block() const { return (ir::Block*)conditionBlock; }
+
+	useit ir::PreBlock* as_prerun_block() const { return (ir::PreBlock*)bodyBlock; }
+
+	useit ir::Block* as_block() const { return (ir::Block*)bodyBlock; }
+};
+
+struct Pattern {
+	PatternType type;
+	FileRange   range;
+
+	Pattern(PatternType _type, FileRange _range) : type(_type), range(std::move(_range)) {}
+
+	void precheck(PatternFill* fill, EmitCtx* ctx) const;
+
+	virtual void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const = 0;
+
+	virtual void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const = 0;
+
+	useit virtual String to_string() const = 0;
+};
+
+enum class BindingType {
+	VALUED,
+	NORMAL,
+	VARIATION,
+};
+
+struct PatternBinding {
+	BindingType bindType;
+	Identifier  name;
+	FileRange   range;
+
+	useit static PatternBinding create(BindingType bindType, Identifier name, FileRange range) {
+		return PatternBinding{
+		    .bindType = bindType,
+		    .name     = std::move(name),
+		    .range    = std::move(range),
+		};
+	}
+
+	useit bool is_normal() const { return bindType == BindingType::NORMAL; }
+
+	useit bool is_var() const { return bindType == BindingType::VARIATION; }
+
+	useit bool is_valued() const { return bindType == BindingType::VALUED; }
+
+	useit String to_string() const { return String(is_var() ? "var " : (is_valued() ? "use " : "")) + name.value; }
+};
+
+struct PatternChild {
+	std::variant<Pattern*, PatternBinding> child;
+
+	PatternChild(Pattern* _pattern) : child(std::in_place_index<0>, std::move(_pattern)) {}
+
+	PatternChild(PatternBinding _binding) : child(std::in_place_index<1>, std::move(_binding)) {}
+
+	useit bool is_pattern() const { return child.index() == 0; }
+
+	useit Pattern* as_pattern() const { return std::get<0>(child); }
+
+	useit bool is_binding() const { return child.index() == 1; }
+
+	useit PatternBinding const& as_binding() const { return std::get<1>(child); }
+
+	useit FileRange const& get_range() { return is_pattern() ? as_pattern()->range : as_binding().range; }
+
+	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const;
+
+	useit String to_string() const {
+		if (is_pattern()) {
+			return as_pattern()->to_string();
+		} else {
+			return as_binding().to_string();
+		}
+	}
+};
+
+struct PatternArray final : public Pattern {
+	Vec<PatternChild>             patterns;
+	Maybe<Pair<usize, FileRange>> ellipsis;
+
+	mutable Vec<usize> patternIndices;
+
+  public:
+	PatternArray(Vec<PatternChild> _patterns, Maybe<Pair<usize, FileRange>> _ellipsis, FileRange _fileRange)
+	    : Pattern(PatternType::ARRAY, std::move(_fileRange)), patterns(std::move(_patterns)),
+	      ellipsis(std::move(_ellipsis)) {
+		patternIndices.reserve(patterns.size());
+	}
+
+	useit static PatternArray* create(Vec<PatternChild> patterns, Maybe<Pair<usize, FileRange>> ellipsis,
+	                                  FileRange fileRange) {
+		return std::construct_at(OwnNormal(PatternArray), std::move(patterns), std::move(ellipsis),
+		                         std::move(fileRange));
+	}
+
+	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const final;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
+
+	useit String to_string() const final;
+};
+
+struct PatternChoice final : public Pattern {
+	Identifier name;
+
+  public:
+	PatternChoice(Identifier _name, FileRange _fileRange)
+	    : Pattern(PatternType::CHOICE, std::move(_fileRange)), name(std::move(_name)) {}
+
+	useit static PatternChoice* create(Identifier name, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PatternChoice), std::move(name), std::move(fileRange));
+	}
+
+	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const final;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
+
+	useit String to_string() const final { return "::" + name.value; }
+};
+
+struct PatternMix final : public Pattern {
+	Identifier          name;
+	Maybe<PatternChild> child;
+
+  public:
+	PatternMix(Identifier _name, PatternChild _child, FileRange _fileRange)
+	    : Pattern(PatternType::MIX, std::move(_fileRange)), name(std::move(_name)), child(std::move(_child)) {}
+
+	useit static PatternMix* create(Identifier name, PatternChild child, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PatternMix), std::move(name), std::move(child), std::move(fileRange));
+	}
+
+	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const final;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
+
+	useit String to_string() const final {
+		return "::" + name.value + "(" + (child.has_value() ? child->to_string() : "") + ")";
+	}
+};
+
+} // namespace qat::ast
+
+#endif

@@ -320,6 +320,21 @@ struct PatternFlag final : public Pattern {
 	}
 };
 
+struct PatternRest final : public Pattern {
+  public:
+	PatternRest(FileRange _fileRange) : Pattern(PatternType::ELLIPSIS, std::move(_fileRange)) {}
+
+	useit static PatternRest* create(FileRange range) {
+		return std::construct_at(OwnNormal(PatternRest), std::move(range));
+	}
+
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final {}
+
+	useit String to_string() const final { return "..."; }
+};
+
 } // namespace qat::ast
 
 #endif

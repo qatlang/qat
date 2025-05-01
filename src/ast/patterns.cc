@@ -546,4 +546,12 @@ void PatternFlag::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emit
 	}
 }
 
+void PatternRest::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+	if (fill->fillType == PatternFillType::COMPLETE) {
+		ctx->Error("All possible patterns for the type " + ctx->color(fill->type->to_string()) +
+		               " has been matched already at this point, so there is no need for this pattern",
+		           range);
+	}
+}
+
 } // namespace qat::ast

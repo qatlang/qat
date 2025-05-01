@@ -276,6 +276,50 @@ struct PatternChain final : public Pattern {
 	}
 };
 
+enum class FlagPatternKind : u8 {
+	DEFAULT,
+	VARIANTS,
+	NONE,
+};
+
+struct PatternFlag final : public Pattern {
+	Vec<Identifier> names;
+	FlagPatternKind flagKind;
+
+  public:
+	PatternFlag(Vec<Identifier> _names, FlagPatternKind _flagKind, FileRange _fileRange)
+	    : Pattern(PatternType::FLAG, std::move(_fileRange)), names(std::move(names)), flagKind(_flagKind) {}
+
+	useit static PatternFlag* create(Vec<Identifier> names, FlagPatternKind flagKind, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PatternFlag), std::move(names), flagKind, std::move(fileRange));
+	}
+
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
+
+	useit String to_string() const final {
+		switch (flagKind) {
+			case FlagPatternKind::DEFAULT: {
+				return "::{ default }";
+			}
+			case FlagPatternKind::NONE: {
+				return "::{ none }";
+			}
+			case FlagPatternKind::VARIANTS: {
+				String res = "::{ ";
+				for (usize i = 0; i < names.size(); i++) {
+					res += names[i].value;
+					if (i != (names.size() - 1)) {
+						res += ", ";
+					}
+				}
+				res += " }";
+			}
+		}
+	}
+};
+
 } // namespace qat::ast
 
 #endif

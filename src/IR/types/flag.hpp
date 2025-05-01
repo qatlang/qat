@@ -7,6 +7,10 @@
 #include "../entity_overview.hpp"
 #include "./qat_type.hpp"
 
+namespace qat::ast {
+class PatternFlag;
+}
+
 namespace qat::ir {
 
 class Mod;
@@ -17,6 +21,8 @@ struct FlagVariant {
 };
 
 class FlagType final : public EntityOverview, public Type {
+	friend class ast::PatternFlag;
+
 	Identifier               name;
 	Mod*                     parent;
 	Vec<FlagVariant>         variants;

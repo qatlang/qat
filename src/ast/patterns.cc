@@ -1,12 +1,14 @@
 #include "./patterns.hpp"
 #include "../IR/types/array.hpp"
 #include "../IR/types/choice.hpp"
+#include "../IR/types/flag.hpp"
 #include "../IR/types/maybe.hpp"
 #include "../IR/types/mix.hpp"
 #include "../IR/types/qat_type.hpp"
 #include "../IR/types/reference.hpp"
 #include "../IR/types/result.hpp"
 #include "../IR/types/tuple.hpp"
+#include "../IR/types/unsigned.hpp"
 #include "../IR/types/void.hpp"
 #include "../IR/value.hpp"
 #include "./emit_ctx.hpp"
@@ -311,6 +313,9 @@ void PatternChoice::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, 
 }
 
 void PatternChoice::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const {
+	if (arm.get_condition_block()) {
+		arm.get_condition_block()->set_active(ctx->irCtx->builder);
+	}
 	value->load_ghost_ref(ctx->irCtx->builder);
 	auto chVal = value->get_llvm();
 	if (value->is_ref()) {
@@ -321,7 +326,6 @@ void PatternChoice::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Em
 		    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, llvm::cast<llvm::Constant>(chVal),
 		                                         fill->type->as_choice()->get_value_for(name.value)));
 	} else {
-		arm.get_condition_block()->set_active(ctx->irCtx->builder);
 		arm.get_slot().conditions.push_back(ctx->irCtx->builder.CreateICmp(
 		    llvm::CmpInst::ICMP_EQ, chVal, fill->type->as_choice()->get_value_for(name.value)));
 	}
@@ -377,6 +381,9 @@ void PatternMix::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, Emi
 
 void PatternMix::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const {
 	llvm::Value* tagVal = nullptr;
+	if (arm.get_condition_block()) {
+		arm.get_condition_block()->set_active(ctx->irCtx->builder);
+	}
 	if (value->is_ref()) {
 		value->load_ghost_ref(ctx->irCtx->builder);
 		tagVal = ctx->irCtx->builder.CreateStructGEP(fill->type->get_llvm_type(), value->get_llvm(), 0u);
@@ -395,7 +402,6 @@ void PatternMix::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitC
 		arm.get_slot().conditions.push_back(
 		    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, llvm::cast<llvm::Constant>(tagVal), index));
 	} else {
-		arm.get_condition_block()->set_active(ctx->irCtx->builder);
 		arm.get_slot().conditions.push_back(ctx->irCtx->builder.CreateICmpEQ(tagVal, index));
 	}
 }
@@ -463,6 +469,80 @@ void PatternChain::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 			arm.conditions.front().conditions.push_back(
 			    llvm::ConstantInt::getBool(llvm::Type::getInt1Ty(ctx->irCtx->llctx), mainPreCondValue));
 		}
+	}
+}
+
+void PatternFlag::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+	if (not fill->type->is_flag()) {
+		ctx->Error("A flag pattern is used here, but the type of the expression to be matched at this point is " +
+		               ctx->color(fill->type->to_string()),
+		           range);
+	}
+	precheck(fill, ctx);
+	auto   flTy = fill->type->as_flag();
+	String finalNum(flTy->get_underlying_type()->get_bitwidth(), '0');
+	if (flagKind == FlagPatternKind::DEFAULT) {
+		if (flTy->has_default_variants()) {
+			for (usize i = 0; i < flTy->variants.size(); i++) {
+				if (flTy->variants[i].isDefault) {
+					finalNum[i] = '1';
+				}
+			}
+		}
+	} else if (flagKind != FlagPatternKind::NONE) {
+		for (auto& id : names) {
+			auto ind = flTy->get_index_of(id.value);
+			if (not ind.has_value()) {
+				ctx->Error("The flag type " + ctx->color(flTy->to_string()) +
+				               " of the expression being matched here does not have a variant named " +
+				               ctx->color(id.value),
+				           id.range);
+			}
+			if (finalNum[ind.value()] == '1') {
+				ctx->Error("The variant " + ctx->color(id.value) + " is repeating here", id.range);
+			}
+			finalNum[ind.value()] = '1';
+		}
+	}
+	for (auto& fillIt : fill->fills) {
+		if (fillIt == finalNum) {
+			ctx->Error("The pattern " + ctx->color(to_string()) + " of the flag type " +
+			               ctx->color(fill->type->to_string()) +
+			               " has already been matched at this point, so there is no need to do it here",
+			           range);
+		}
+	}
+}
+
+void PatternFlag::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const {
+	auto   flTy = fill->type->as_flag();
+	String flagNum(flTy->get_underlying_type()->get_bitwidth(), '0');
+	if ((flagKind == FlagPatternKind::DEFAULT) && flTy->has_default_variants()) {
+		for (usize i = 0; i < flTy->variants.size(); i++) {
+			if (flTy->variants[i].isDefault) {
+				flagNum[i] = '1';
+			}
+		}
+	} else if (flagKind == FlagPatternKind::VARIANTS) {
+		for (auto& id : names) {
+			flagNum[flTy->get_index_of(id.value).value()] = '1';
+		}
+	}
+	auto flagVal = llvm::ConstantInt::get(flTy->get_llvm_type(),
+	                                      llvm::APInt(flTy->get_underlying_type()->get_bitwidth(), flagNum, 2u));
+	if (value->is_prerun_value()) {
+		arm.get_slot().conditions.push_back(
+		    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, value->get_llvm_constant(), flagVal));
+	} else {
+		arm.get_condition_block()->set_active(ctx->irCtx->builder);
+		auto cand = value->get_llvm();
+		if (value->is_ghost_ref()) {
+			value->load_ghost_ref(ctx->irCtx->builder);
+		}
+		if (value->is_ref()) {
+			cand = ctx->irCtx->builder.CreateLoad(flTy->get_llvm_type(), cand);
+		}
+		arm.get_slot().conditions.push_back(ctx->irCtx->builder.CreateICmpEQ(cand, flagVal));
 	}
 }
 

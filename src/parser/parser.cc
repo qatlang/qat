@@ -5226,9 +5226,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								add_error("Expected ( to start the list of arguments for the assembly block",
 								          RangeSpan(start, i));
 							}
-							setCachedExpr(ast::AssemblyBlock::create(functionType, expRes.first, args, argsRange,
-							                                         clobRes.first, volatileRange, volatileExpr,
-							                                         RangeSpan(start, i)),
+							setCachedExpr(ast::InlineAssembly::create(functionType, expRes.first, args, argsRange,
+							                                          clobRes.first, volatileRange, volatileExpr,
+							                                          RangeSpan(start, i)),
 							              i);
 						} else {
 							add_error("Expected , after this to precede the list of constraints", RangeSpan(start, i));

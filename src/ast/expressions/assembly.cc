@@ -11,8 +11,8 @@
 
 namespace qat::ast {
 
-void AssemblyBlock::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-                                        EmitCtx* ctx) {
+void InlineAssembly::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+                                         EmitCtx* ctx) {
 	if (functionType) {
 		functionType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	}
@@ -28,7 +28,7 @@ void AssemblyBlock::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependTyp
 	}
 }
 
-ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
+ir::Value* InlineAssembly::emit(EmitCtx* ctx) {
 	if (ctx->has_fn()) {
 		ir::FunctionType* asmFnTy = nullptr;
 		if (functionType) {
@@ -139,7 +139,7 @@ ir::Value* AssemblyBlock::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json AssemblyBlock::to_json() const {
+Json InlineAssembly::to_json() const {
 	return Json()._("nodeType", "assemblyBlock")._("asmValue", asmValue->to_json())._("fileRange", fileRange);
 }
 

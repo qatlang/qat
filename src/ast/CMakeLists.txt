@@ -23,6 +23,7 @@ add_library(QAT_AST STATIC
 	mod_info.cc
 	node.cc
 	operator_function.cc
+	patterns.cc
 	sentence.cc
 	skill_entity.cc
 	sub_entity_solver.cc

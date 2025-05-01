@@ -11,6 +11,8 @@
 #include "../IR/value.hpp"
 #include "./emit_ctx.hpp"
 
+#include <llvm/Analysis/ConstantFolding.h>
+
 namespace qat::ast {
 
 PatternFill* PatternFill::create_for_type(EmitCtx* ctx, ir::Type* type) {
@@ -41,14 +43,18 @@ PatternFill* PatternFill::create_for_type(EmitCtx* ctx, ir::Type* type) {
 	}
 }
 
-void PatternChild::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
+void PatternChild::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
 	if (is_binding()) {
 		auto& bind = as_binding();
+		if (isPartOfChain) {
+			ctx->Error("Bindings are not allowed in a pattern chain, please remove this or remove the chain",
+			           bind.range);
+		}
 		if (not arm.isRef) {
 			if (bind.bindType != BindingType::VALUED) {
 				ctx->Error(
 				    "The parent expression being matched is not reference-like, hence this binding cannot be used "
-				    "here to be bound to a reference-like expression. If you intended to bind within this pattern as a value, then use " +
+				    "here to be bound to a reference-like expression. If you intended to bind within this pattern as a value, then change this to " +
 				        ctx->color("use " + bind.name.value) + " instead",
 				    bind.range);
 			} else if (not fill->type->has_simple_copy()) {
@@ -59,11 +65,11 @@ void PatternChild::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
 				               "expression to be matched can be allocated before being matched, which would cause "
 				               "this to bind to a reference, which is done by default by the way. Try using " +
 				               ctx->color("'let") +
-				               " after the expression to allocate the value in-place before matching",
+				               " after the parent expression to allocate the value in-place before matching",
 				           bind.range);
 			}
 		} else if (bind.bindType == BindingType::VARIATION && not ctx->has_pre_call_state()) {
-			if (fill->type->is_ref() && fill->type->as_ref()->has_variability()) {
+			if (fill->type->is_ref() && not fill->type->as_ref()->has_variability()) {
 				ctx->Error("The type of the value being matched at this point is " +
 				               ctx->color(fill->type->to_string()) +
 				               " which is a reference without variability, but the binding " +
@@ -82,7 +88,7 @@ void PatternChild::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
 		}
 		fill->fillType = PatternFillType::COMPLETE;
 	} else {
-		as_pattern()->check(fill, arm, ctx);
+		as_pattern()->check(fill, isPartOfChain, arm, ctx);
 	}
 }
 
@@ -117,7 +123,7 @@ void PatternChild::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 	}
 }
 
-void PatternArray::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
+void PatternArray::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
 	if (not fill->type->is_array()) {
 		ctx->Error("An array pattern is used here, but the type of the expression to be matched for this pattern is " +
 		               ctx->color(fill->type->to_string()) + ", which is not an array type",
@@ -183,7 +189,7 @@ void PatternArray::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
 		}
 	}
 	for (usize i = 0; i < fill->childFills.size(); i++) {
-		patterns[i].check(fill->childFills[i], arm, ctx);
+		patterns[i].check(fill->childFills[i], isPartOfChain, arm, ctx);
 	}
 	bool isComplete = true;
 	for (auto sub : fill->childFills) {
@@ -255,7 +261,7 @@ String PatternArray::to_string() const {
 	return res;
 }
 
-void PatternChoice::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
+void PatternChoice::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
 	if (not fill->type->is_choice()) {
 		ctx->Error("A choice pattern is used here, but the type of the expression to be matched for this pattern is " +
 		               ctx->color(fill->type->to_string()) + ", which is not a choice type." +
@@ -310,15 +316,18 @@ void PatternChoice::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Em
 	if (value->is_ref()) {
 		chVal = ctx->irCtx->builder.CreateLoad(fill->type->get_llvm_type(), chVal);
 	}
-	arm.get_slot().conditions.push_back(
-	    llvm::isa<llvm::Constant>(chVal)
-	        ? llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, llvm::cast<llvm::Constant>(chVal),
-	                                               fill->type->as_choice()->get_value_for(name.value))
-	        : ctx->irCtx->builder.CreateICmp(llvm::CmpInst::ICMP_EQ, chVal,
-	                                         fill->type->as_choice()->get_value_for(name.value)));
+	if (llvm::isa<llvm::Constant>(chVal)) {
+		arm.get_slot().conditions.push_back(
+		    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, llvm::cast<llvm::Constant>(chVal),
+		                                         fill->type->as_choice()->get_value_for(name.value)));
+	} else {
+		arm.get_condition_block()->set_active(ctx->irCtx->builder);
+		arm.get_slot().conditions.push_back(ctx->irCtx->builder.CreateICmp(
+		    llvm::CmpInst::ICMP_EQ, chVal, fill->type->as_choice()->get_value_for(name.value)));
+	}
 }
 
-void PatternMix::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
+void PatternMix::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
 	if (not fill->type->is_mix()) {
 		ctx->Error("A mix pattern is used here, but the type of the expression to be matched to this pattern is " +
 		               ctx->color(fill->type->to_string()) + ", which is not a mix type." +
@@ -350,7 +359,7 @@ void PatternMix::check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const {
 		           name.range);
 	}
 	if (child.has_value()) {
-		child.value().check(fill->childFills[varInd], arm, ctx);
+		child.value().check(fill->childFills[varInd], isPartOfChain, arm, ctx);
 	} else {
 		fill->childFills[varInd]->fillType = PatternFillType::COMPLETE;
 	}
@@ -382,10 +391,79 @@ void PatternMix::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitC
 	auto index =
 	    llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, fill->type->as_mix()->get_tag_bitwidth()),
 	                           fill->type->as_mix()->get_index_of(name.value));
-	arm.get_slot().conditions.push_back(
-	    llvm::isa<llvm::Constant>(tagVal)
-	        ? llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, llvm::cast<llvm::Constant>(tagVal), index)
-	        : ctx->irCtx->builder.CreateICmpEQ(tagVal, index));
+	if (llvm::isa<llvm::Constant>(tagVal)) {
+		arm.get_slot().conditions.push_back(
+		    llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ, llvm::cast<llvm::Constant>(tagVal), index));
+	} else {
+		arm.get_condition_block()->set_active(ctx->irCtx->builder);
+		arm.get_slot().conditions.push_back(ctx->irCtx->builder.CreateICmpEQ(tagVal, index));
+	}
+}
+
+void PatternChain::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+	for (auto& it : patterns) {
+		if (not pattern_supports_chaining(it.type)) {
+			ctx->Error("This pattern cannot be used in a pattern chain", it.range);
+		}
+		it.check(fill, true, arm, ctx);
+	}
+}
+
+void PatternChain::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const {
+	Vec<llvm::Value*> mainConditions;
+	bool              areMainCondsPre  = true;
+	bool              mainPreCondValue = false;
+	for (auto i = 0; i < patterns.size(); i++) {
+		if (arm.get_condition_block()) {
+			arm.get_condition_block()->set_active(ctx->irCtx->builder);
+		}
+		arm.conditions.push_back(ConditionSlot{.conditions = {}});
+		auto slotIndex = arm.conditions.size();
+		patterns[i].match(fill, value, arm, ctx);
+		Vec<llvm::Value*> itConditions;
+		bool              areAllPre    = true;
+		bool              preCondValue = true;
+		for (usize j = slotIndex; j < arm.conditions.size(); j++) {
+			for (auto* it : arm.conditions[j].conditions) {
+				itConditions.push_back(it);
+				if (not llvm::isa<llvm::Constant>(it)) {
+					areAllPre = false;
+				} else {
+					if (not llvm::cast<llvm::ConstantInt>(
+					            llvm::ConstantFoldConstant(llvm::cast<llvm::Constant>(it), ctx->irCtx->dataLayout))
+					            ->getValue()
+					            .getBoolValue()) {
+						preCondValue = false;
+					}
+				}
+			}
+		}
+		for (usize j = slotIndex; j < arm.conditions.size(); j++) {
+			arm.conditions.pop_back();
+		}
+		if (not itConditions.empty()) {
+			if (not areAllPre) {
+				arm.get_condition_block()->set_active(ctx->irCtx->builder);
+				areMainCondsPre = false;
+				mainConditions.push_back(ctx->irCtx->builder.CreateAnd(itConditions));
+			} else {
+				mainConditions.push_back(
+				    llvm::ConstantInt::getBool(llvm::Type::getInt1Ty(ctx->irCtx->llctx), preCondValue));
+				if (preCondValue) {
+					mainPreCondValue = true;
+				}
+			}
+		}
+	}
+	if (not mainConditions.empty()) {
+		if (not areMainCondsPre) {
+			arm.get_condition_block()->set_active(ctx->irCtx->builder);
+			arm.conditions.front().conditions.push_back(ctx->irCtx->builder.CreateOr(mainConditions));
+		} else {
+			arm.conditions.front().conditions.push_back(
+			    llvm::ConstantInt::getBool(llvm::Type::getInt1Ty(ctx->irCtx->llctx), mainPreCondValue));
+		}
+	}
 }
 
 } // namespace qat::ast

@@ -42,6 +42,7 @@ enum class PatternType {
 	FLOAT,
 	STRING_LITERAL,
 	COMPARISON,
+	CHAIN,
 	ELLIPSIS,
 };
 
@@ -118,7 +119,7 @@ struct Pattern {
 
 	void precheck(PatternFill* fill, EmitCtx* ctx) const;
 
-	virtual void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const = 0;
+	virtual void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const = 0;
 
 	virtual void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const = 0;
 
@@ -170,7 +171,7 @@ struct PatternChild {
 
 	useit FileRange const& get_range() { return is_pattern() ? as_pattern()->range : as_binding().range; }
 
-	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const;
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const;
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const;
 
@@ -202,7 +203,7 @@ struct PatternArray final : public Pattern {
 		                         std::move(fileRange));
 	}
 
-	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const final;
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
@@ -220,7 +221,7 @@ struct PatternChoice final : public Pattern {
 		return std::construct_at(OwnNormal(PatternChoice), std::move(name), std::move(fileRange));
 	}
 
-	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const final;
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
@@ -239,12 +240,39 @@ struct PatternMix final : public Pattern {
 		return std::construct_at(OwnNormal(PatternMix), std::move(name), std::move(child), std::move(fileRange));
 	}
 
-	void check(PatternFill* fill, MatchArm& arm, EmitCtx* ctx) const final;
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
 	useit String to_string() const final {
 		return "::" + name.value + "(" + (child.has_value() ? child->to_string() : "") + ")";
+	}
+};
+
+struct PatternChain final : public Pattern {
+	Vec<Pattern> patterns;
+
+  public:
+	PatternChain(Vec<Pattern> _patterns, FileRange _fileRange)
+	    : Pattern(PatternType::CHAIN, std::move(_fileRange)), patterns(std::move(_patterns)) {}
+
+	useit static PatternChain* create(Vec<Pattern> patterns, FileRange range) {
+		return std::construct_at(OwnNormal(PatternChain), std::move(patterns), std::move(range));
+	}
+
+	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
+
+	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
+
+	useit String to_string() const final {
+		String res;
+		for (auto i = 0; i < patterns.size(); i++) {
+			res += patterns[i].to_string();
+			if (i != (patterns.size() - 1)) {
+				res += " | ";
+			}
+		}
+		return res;
 	}
 };
 

@@ -1,4 +1,5 @@
 #include "./parser.hpp"
+#include "../ast/assembly_block.hpp"
 #include "../ast/bring_bitwidths.hpp"
 #include "../ast/bring_entities.hpp"
 #include "../ast/bring_paths.hpp"
@@ -2234,6 +2235,27 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				} else {
 					add_error("Expected { to start the module meta information", RangeAt(i));
 				}
+				break;
+			}
+			case TokenType::assembly: {
+				const auto start   = i;
+				auto       entMeta = do_entity_metadata(preCtx, i, "assembly block", 0u);
+				if (entMeta.metaInfo.has_value()) {
+					add_error("Meta information is not allowed for assembly blocks",
+					          entMeta.metaInfo.value().fileRange);
+				}
+				i = entMeta.lastIndex;
+				if (not is_next(TokenType::bracketOpen, i)) {
+					add_error("Expected [ after this to begin the assembly block", RangeSpan(start, i));
+				}
+				i++;
+				auto contRes = do_prerun_expression(preCtx, i, None);
+				i            = contRes.second;
+				if (not is_next(TokenType::bracketClose, i)) {
+					add_error("Expected ] after this to end the assembly block", RangeSpan(start, i));
+				}
+				i++;
+				addNode(ast::AssemblyBlock::create(contRes.first, entMeta.defineChecker, RangeSpan(start, i)));
 				break;
 			}
 			case TokenType::let: {

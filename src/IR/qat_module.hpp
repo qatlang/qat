@@ -216,6 +216,7 @@ class LibToLink {
 };
 
 enum class EntityType {
+	assemblyBlock,
 	structType,
 	choiceType,
 	flagType,

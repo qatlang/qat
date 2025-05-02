@@ -34,7 +34,7 @@ class InlineAssembly : public Expression {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
 
-	useit NodeType nodeType() const final { return NodeType::ASSEMBLY_BLOCK; }
+	useit NodeType nodeType() const final { return NodeType::INLINE_ASSEMBLY; }
 };
 
 } // namespace qat::ast

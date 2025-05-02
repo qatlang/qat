@@ -1,4 +1,5 @@
 add_library(QAT_AST STATIC
+	assembly_block.cc
 	bring_bitwidths.cc
 	bring_paths.cc
 	bring_entities.cc

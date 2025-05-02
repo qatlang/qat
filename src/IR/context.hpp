@@ -155,6 +155,11 @@ class Ctx {
 	useit GenericArgument* get_generic_parameter_from_entity(String const& name) const;
 
 	void add_active_generic(GenericEntityMarker marker, bool main) {
+		if (allActiveGenerics.size() == 1024) {
+			Error("Reached the maximum threshold for generic redirection. " + std::to_string(allActiveGenerics.size()) +
+			          " generic entities are being instantiated at this point",
+			      None);
+		}
 		if (main) {
 			lastMainActiveGeneric.push_back(allActiveGenerics.size());
 		}

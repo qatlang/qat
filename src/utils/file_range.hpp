@@ -8,8 +8,7 @@
 namespace qat {
 
 struct FilePos {
-	FilePos(Json);
-
+	explicit FilePos(Json json);
 	FilePos(u64 line, u64 byteOffset);
 
 	u64 line;

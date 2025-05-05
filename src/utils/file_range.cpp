@@ -4,6 +4,9 @@
 
 namespace qat {
 
+FilePos::FilePos(Json json)
+    : line(std::stoul(json["line"].asString())), byteOffset(std::stoul(json["byteOffset"].asString())) {}
+
 FilePos::FilePos(u64 _line, u64 _byte) : line(_line), byteOffset(_byte) {}
 
 FilePos::operator JsonValue() const { return (Json)(*this); }

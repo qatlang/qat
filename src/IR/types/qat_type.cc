@@ -13,6 +13,7 @@
 #include "./native_type.hpp"
 #include "./opaque.hpp"
 #include "./pointer.hpp"
+#include "./polymorph.hpp"
 #include "./reference.hpp"
 #include "./region.hpp"
 #include "./result.hpp"
@@ -183,7 +184,7 @@ bool Type::is_same(Type* other) {
 				if ((thisVal->is_packed_tuple() == otherVal->is_packed_tuple()) &&
 				    thisVal->get_element_count() == otherVal->get_element_count()) {
 					for (usize i = 0; i < thisVal->get_element_count(); i++) {
-						if (not(thisVal->get_type_at(i)->is_same(otherVal->get_type_at(i)))) {
+						if (not thisVal->get_type_at(i)->is_same(otherVal->get_type_at(i))) {
 							return false;
 						}
 					}
@@ -191,6 +192,28 @@ bool Type::is_same(Type* other) {
 				} else {
 					return false;
 				}
+			}
+			case TypeKind::POLYMORPH: {
+				auto* thisVal  = (Polymorph*)this;
+				auto* otherVal = (Polymorph*)other;
+				if (thisVal->isVar != otherVal->isVar) {
+					return false;
+				}
+				if (thisVal->isTyped != otherVal->isTyped) {
+					return false;
+				}
+				if (thisVal->get_skills().size() != otherVal->get_skills().size()) {
+					return false;
+				}
+				if (not thisVal->owner.is_same(otherVal->owner)) {
+					return false;
+				}
+				for (usize i = 0; i < thisVal->get_skills().size(); i++) {
+					if (thisVal->get_skills()[i]->get_id() != otherVal->get_skills()[i]->get_id()) {
+						return false;
+					}
+				}
+				return true;
 			}
 			case TypeKind::STRUCT: {
 				auto* thisVal  = (StructType*)this;

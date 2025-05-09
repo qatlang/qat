@@ -10,24 +10,48 @@ namespace qat::ir {
 class Skill;
 
 class Polymorph final : public Type {
+	friend class Type;
 	bool        isTyped;
+	bool        isVar;
 	Vec<Skill*> skills;
 	PtrOwner    owner;
 
   public:
-	Polymorph(bool _isTyped, Vec<Skill*> _skills, PtrOwner _owner, ir::Ctx* ctx);
+	Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, PtrOwner _owner, ir::Ctx* ctx);
 
-	useit static Polymorph* create(bool isTyped, Vec<Skill*> skills, PtrOwner owner, ir::Ctx* ctx) {
-		return std::construct_at(OwnNormal(Polymorph), isTyped, std::move(skills), owner, ctx);
-	}
+	useit static Polymorph* create(bool isTyped, bool isVar, Vec<Skill*> skills, PtrOwner owner, ir::Ctx* ctx);
 
 	~Polymorph() = default;
 
 	useit bool is_typed_poly() const { return isTyped; }
 
+	useit bool has_variability() const { return isVar; }
+
 	useit Vec<Skill*> const& get_skills() const { return skills; }
 
 	useit PtrOwner const& get_owner() const { return owner; }
+
+	useit bool has_skill(Skill* skill) const {
+		for (auto sk : skills) {
+			if (sk == skill) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	useit usize get_skill_index_in_type(Skill* skill) const {
+		u8 offset = 1;
+		if (isTyped) {
+			offset += 1;
+		}
+		for (usize i = 0; i < skills.size(); i++) {
+			if (skills[i] == skill) {
+				return i;
+			}
+		}
+		return 0;
+	}
 
 	useit bool is_type_sized() const final { return true; }
 

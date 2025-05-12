@@ -1203,6 +1203,89 @@ GenericSkill* Mod::get_generic_skill(String const& name, AccessInfo const& reqIn
 	return nullptr;
 }
 
+// NAMED IMPLEMENTATIONS
+
+bool Mod::has_named_implementation(String const& name, AccessInfo const& reqInfo) const {
+	for (auto* impl : namedImplementations) {
+		if ((impl->get_name().value == name) && impl->get_visibility().is_accessible(reqInfo)) {
+			return true;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_named_implementation(name, reqInfo) || sub->has_brought_named_implementation(name, reqInfo) ||
+			    sub->has_named_implementation_in_imports(name, reqInfo).first) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mod::has_brought_named_implementation(String const& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : broughtNamedImplementations) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Pair<bool, String> Mod::has_named_implementation_in_imports(String const& name, AccessInfo const& reqInfo) const {
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_named_implementation(name, reqInfo) ||
+				    bMod->has_brought_named_implementation(name, reqInfo) ||
+				    bMod->has_named_implementation_in_imports(name, reqInfo).first) {
+					if (bMod->get_named_implementation(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return {true, bMod->filePath.string()};
+					}
+				}
+			}
+		}
+	}
+	return {false, ""};
+}
+
+DoneSkill* Mod::get_named_implementation(String const& name, AccessInfo const& reqInfo) const {
+	for (auto* done : namedImplementations) {
+		if ((done->get_name().value == name) && done->get_visibility().is_accessible(reqInfo)) {
+			return done;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_named_implementation(name, reqInfo) || sub->has_brought_named_implementation(name, reqInfo) ||
+			    sub->has_named_implementation_in_imports(name, reqInfo).first) {
+				return sub->get_named_implementation(name, reqInfo);
+			}
+		}
+	}
+	for (const auto& brought : broughtNamedImplementations) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return brought.get();
+		}
+	}
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_named_implementation(name, reqInfo) ||
+				    bMod->has_brought_named_implementation(name, reqInfo) ||
+				    bMod->has_named_implementation_in_imports(name, reqInfo).first) {
+					auto res = bMod->get_named_implementation(name, reqInfo);
+					if (res->get_visibility().is_accessible(reqInfo)) {
+						return res;
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
 // GENERIC FUNCTION
 
 bool Mod::has_generic_function(const String& name, AccessInfo reqInfo) const {

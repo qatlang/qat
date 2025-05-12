@@ -532,6 +532,9 @@ class Mod final : public Uniq, public EntityOverview {
 	Vec<GenericSkill*>         genericSkills;
 	Vec<Brought<GenericSkill>> broughtGenericSkills;
 
+	Vec<DoneSkill*>         namedImplementations;
+	Vec<Brought<DoneSkill>> broughtNamedImplementations;
+
 	Vec<Region*>         regions;
 	Vec<Brought<Region>> broughtRegions;
 
@@ -862,6 +865,13 @@ class Mod final : public Uniq, public EntityOverview {
 	useit bool has_brought_generic_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_generic_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
 	useit GenericSkill*      get_generic_skill(String const& name, AccessInfo const& reqInfo) const;
+
+	// NAMED IMPLEMENTATIONS
+
+	useit bool has_named_implementation(String const& name, AccessInfo const& access) const;
+	useit bool has_brought_named_implementation(String const& name, Maybe<AccessInfo> access) const;
+	useit Pair<bool, String> has_named_implementation_in_imports(String const& name, AccessInfo const& access) const;
+	useit DoneSkill*         get_named_implementation(String const& name, AccessInfo const& access) const;
 
 	// IMPORT
 

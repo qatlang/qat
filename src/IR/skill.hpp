@@ -206,6 +206,8 @@ class DoneSkill : public Uniq {
 	friend class DefinitionType;
 	friend class ast::ConvertorPrototype;
 
+	Maybe<Identifier> name;
+
 	Mod*                      parent;
 	Maybe<Skill*>             skill;
 	Vec<ir::GenericArgument*> generics;
@@ -232,12 +234,17 @@ class DoneSkill : public Uniq {
 	Vec<Method*>   toConvertors;
 
   public:
-	DoneSkill(Mod* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType, FileRange _typeRange);
+	DoneSkill(Maybe<Identifier> _name, Mod* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange,
+	          Type* _candidateType, FileRange _typeRange);
 
 	useit static DoneSkill* create_extension(Mod* parent, FileRange fileRange, Type* candidateType,
 	                                         FileRange typeRange);
-	useit static DoneSkill* create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
-	                                      FileRange typeRange);
+	useit static DoneSkill* create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRange fileRange,
+	                                      Type* candidateType, FileRange typeRange);
+
+	useit bool has_name() const { return name.has_value(); }
+
+	useit Identifier const& get_name() const { return name.value(); }
 
 	useit bool has_definition(String const& name) const;
 

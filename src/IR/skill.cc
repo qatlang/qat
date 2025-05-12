@@ -265,9 +265,10 @@ void GenericSkill::update_overview() {
 	    ._("variants", variantsJSON);
 }
 
-DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, Type* _candidateType,
-                     FileRange _typeRange)
-    : parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType), typeRange(_typeRange) {
+DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange,
+                     Type* _candidateType, FileRange _typeRange)
+    : name(std::move(_name)), parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType),
+      typeRange(_typeRange) {
 	if (skill.has_value()) {
 		candidateType->doneSkills.push_back(this);
 	} else {
@@ -276,12 +277,12 @@ DoneSkill::DoneSkill(Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange, T
 }
 
 DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* candidateType, FileRange typeRange) {
-	return std::construct_at(OwnNormal(DoneSkill), parent, None, fileRange, candidateType, typeRange);
+	return std::construct_at(OwnNormal(DoneSkill), None, parent, None, fileRange, candidateType, typeRange);
 }
 
-DoneSkill* DoneSkill::create_normal(Mod* parent, Skill* skill, FileRange fileRange, Type* candidateType,
-                                    FileRange typeRange) {
-	return std::construct_at(OwnNormal(DoneSkill), parent, skill, fileRange, candidateType, typeRange);
+DoneSkill* DoneSkill::create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRange fileRange,
+                                    Type* candidateType, FileRange typeRange) {
+	return std::construct_at(OwnNormal(DoneSkill), std::move(name), parent, skill, fileRange, candidateType, typeRange);
 }
 
 bool DoneSkill::has_definition(String const& name) const {

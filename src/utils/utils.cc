@@ -98,6 +98,28 @@ usize count_unicode_characters(String const& value) {
 	}
 }
 
+bool bytewise_comparison(String const& first, String const& second) {
+	auto ext = first.size();
+	if (second.size() > ext) {
+		ext = second.size();
+	}
+	for (usize i = 0; i < ext; i++) {
+		if (i < first.size()) {
+			if (i < second.size()) {
+				auto cmp = first[i] < second[i];
+				if (not cmp) {
+					return false;
+				}
+			} else {
+				return false;
+			}
+		} else {
+			return true;
+		}
+	}
+	return true;
+}
+
 } // namespace utils
 
 Maybe<String> find_executable(StringView name) {

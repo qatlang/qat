@@ -131,6 +131,8 @@ useit bool is_unicode_scalar_digit(u32 scalar);
 
 useit usize count_unicode_characters(String const& value);
 
+useit bool bytewise_comparison(String const& first, String const& second);
+
 } // namespace qat::utils
 
 #endif

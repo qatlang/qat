@@ -32,7 +32,9 @@ Json SkillArg::to_json() const {
 
 SkillMethod::SkillMethod(SkillMethodKind _fnTy, Skill* _skill, Identifier _name, TypeInSkill _returnType,
                          Vec<SkillArg*> _arguments)
-    : parent(_skill), name(_name), methodKind(_fnTy), returnType(_returnType), arguments(_arguments) {
+    : index(_skill->prototypes.size()), parent(_skill), name(_name), methodKind(_fnTy), returnType(_returnType),
+      arguments(_arguments) {
+
 	parent->prototypes.push_back(this);
 }
 
@@ -84,15 +86,18 @@ String SkillMethod::to_string() const {
 	return result;
 }
 
-Skill::Skill(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo)
+Skill::Skill(Identifier _name, bool _canBePoly, Vec<GenericArgument*> _generics, Mod* _parent,
+             VisibilityInfo _visibInfo)
     : EntityOverview("skill",
                      Json()
                          ._("name", _name)
+                         ._("canBePolymorph", _canBePoly)
                          ._("fullName", _parent->get_fullname_with_child(_name.value))
                          ._("parent", _parent->get_id())
                          ._("visibility", _visibInfo),
                      _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)) {
+      name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)),
+      canBePolymorph(_canBePoly) {
 	SHOW("Skill name is " << name.value)
 	if (generics.empty()) {
 		parent->skills.push_back(this);
@@ -267,13 +272,26 @@ void GenericSkill::update_overview() {
 
 DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange,
                      Type* _candidateType, FileRange _typeRange)
-    : name(std::move(_name)), parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType),
+    : EntityOverview("doneSkill",
+                     Json()
+                         ._("hasName", _name.has_value())
+                         ._("name", _name.has_value() ? _name.value() : JsonValue())
+                         ._("parent", _parent->get_id())
+                         ._("hasSkill", _skill.has_value())
+                         ._("skill", _skill.has_value() ? _skill.value()->get_id() : JsonValue())
+                         ._("fileRange", _fileRange)
+                         ._("candidateType", _candidateType->get_id())
+                         ._("typeRange", _typeRange),
+                     _typeRange),
+      name(std::move(_name)), parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType),
       typeRange(_typeRange) {
+	SHOW("DoneSkill constructor start")
 	if (skill.has_value()) {
 		candidateType->doneSkills.push_back(this);
 	} else {
 		candidateType->defaultImplementations.push_back(this);
 	}
+	SHOW("DoneSkill constructor completed")
 }
 
 DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* candidateType, FileRange typeRange) {
@@ -283,6 +301,32 @@ DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* c
 DoneSkill* DoneSkill::create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRange fileRange,
                                     Type* candidateType, FileRange typeRange) {
 	return std::construct_at(OwnNormal(DoneSkill), std::move(name), parent, skill, fileRange, candidateType, typeRange);
+}
+
+llvm::GlobalVariable* DoneSkill::get_method_table(ir::Ctx* irCtx) {
+	if (methodTable) {
+		return methodTable;
+	}
+	auto tableLinkName = get_link_names();
+	tableLinkName.addUnit(LinkNameUnit("method_table", LinkUnitType::global), None);
+	Vec<llvm::Constant*> methodList(skill.value()->prototypes.size(), nullptr);
+	for (auto stat : staticFunctions) {
+		if (stat->is_in_skill()) {
+			methodList[stat->get_skill_method()->get_method_index()] = llvm::cast<llvm::Function>(stat->get_llvm());
+		}
+	}
+	for (auto mem : memberFunctions) {
+		if (mem->is_in_skill()) {
+			methodList[mem->get_skill_method()->get_method_index()] = llvm::cast<llvm::Function>(mem->get_llvm());
+		}
+	}
+	auto arrTy = llvm::ArrayType::get(
+	    llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getDefaultGlobalsAddressSpace()), methodList.size());
+	methodTable = new llvm::GlobalVariable(
+	    *parent->get_llvm_module(), arrTy, true, llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+	    llvm::ConstantArray::get(arrTy, methodList), tableLinkName.toName(), nullptr,
+	    llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, irCtx->dataLayout.getDefaultGlobalsAddressSpace(), false);
+	return methodTable;
 }
 
 bool DoneSkill::has_definition(String const& name) const {
@@ -304,8 +348,9 @@ DefinitionType* DoneSkill::get_definition(String const& name) const {
 }
 
 String DoneSkill::get_full_name() const {
-	return (skill.has_value() ? (skill.value()->get_full_name() + ":") : "") + "do:[" + candidateType->to_string() +
-	       "]";
+	return name.has_value() ? parent->get_fullname_with_child(name.value().value)
+	                        : ((skill.has_value() ? (skill.value()->get_full_name() + ":") : "") + "do:[" +
+	                           candidateType->to_string() + "]");
 }
 
 bool DoneSkill::is_type_extension() const { return not skill.has_value(); }
@@ -318,7 +363,7 @@ FileRange DoneSkill::get_type_range() const { return typeRange; }
 
 FileRange DoneSkill::get_file_range() const { return fileRange; }
 
-Type* DoneSkill::get_ir_type() const { return candidateType; }
+Type* DoneSkill::get_candidate_type() const { return candidateType; }
 
 Mod* DoneSkill::get_module() const { return parent; }
 

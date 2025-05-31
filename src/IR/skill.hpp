@@ -68,6 +68,8 @@ enum class SkillMethodKind {
 class SkillMethod {
 	friend class Skill;
 
+	usize index;
+
 	Skill*          parent;
 	Identifier      name;
 	SkillMethodKind methodKind;
@@ -82,6 +84,8 @@ class SkillMethod {
 	                                               Vec<SkillArg*> _arguments);
 	useit static SkillMethod* create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
 	                                        Vec<SkillArg*> _arguments);
+
+	useit usize get_method_index() const { return index; }
 
 	useit Skill* get_parent_skill() const { return parent; }
 
@@ -118,6 +122,7 @@ class Skill : public Uniq, public EntityOverview {
 	friend class DefinitionType;
 	friend class SkillMethod;
 	friend class ast::DoSkill;
+	friend class DoneSkill;
 
 	Identifier            name;
 	Vec<GenericArgument*> generics;
@@ -125,17 +130,22 @@ class Skill : public Uniq, public EntityOverview {
 	Vec<DefinitionType*>  definitions;
 	Vec<SkillMethod*>     prototypes;
 	VisibilityInfo        visibInfo;
+	bool                  canBePolymorph;
 
   public:
-	Skill(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo);
+	Skill(Identifier _name, bool _canBePoly, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo);
 
-	useit static Skill* create(Identifier name, Vec<GenericArgument*> generics, Mod* parent, VisibilityInfo visibInfo) {
-		return std::construct_at(OwnNormal(Skill), std::move(name), std::move(generics), parent, std::move(visibInfo));
+	useit static Skill* create(Identifier name, bool canBePoly, Vec<GenericArgument*> generics, Mod* parent,
+	                           VisibilityInfo visibInfo) {
+		return std::construct_at(OwnNormal(Skill), std::move(name), canBePoly, std::move(generics), parent,
+		                         std::move(visibInfo));
 	}
 
 	useit String get_full_name() const;
 
 	useit Identifier get_name() const;
+
+	useit bool can_be_polymorph() const { return canBePolymorph; }
 
 	useit Mod* get_module() const;
 
@@ -201,7 +211,7 @@ class GenericSkill : public Uniq, public EntityOverview {
 	void update_overview() final;
 };
 
-class DoneSkill : public Uniq {
+class DoneSkill : public EntityOverview, public Uniq {
 	friend class Method;
 	friend class DefinitionType;
 	friend class ast::ConvertorPrototype;
@@ -232,6 +242,8 @@ class DoneSkill : public Uniq {
 	Vec<Method*>   constructors;
 	Vec<Method*>   fromConvertors;
 	Vec<Method*>   toConvertors;
+
+	llvm::GlobalVariable* methodTable = nullptr;
 
   public:
 	DoneSkill(Maybe<Identifier> _name, Mod* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange,
@@ -269,6 +281,8 @@ class DoneSkill : public Uniq {
 		}
 		return nullptr;
 	}
+
+	useit llvm::GlobalVariable* get_method_table(ir::Ctx* irCtx);
 
 	useit bool has_default_constructor() const;
 	useit bool has_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
@@ -311,7 +325,7 @@ class DoneSkill : public Uniq {
 	useit Skill*         get_skill() const;
 	useit FileRange      get_type_range() const;
 	useit FileRange      get_file_range() const;
-	useit Type*          get_ir_type() const;
+	useit Type*          get_candidate_type() const;
 	useit Mod*           get_module() const;
 	useit VisibilityInfo get_visibility() const;
 	useit LinkNames      get_link_names() const;

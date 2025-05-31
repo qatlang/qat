@@ -83,7 +83,7 @@ ir::Mod* MethodParent::get_module() const {
 }
 
 ir::Type* MethodParent::get_parent_type() const {
-	return is_done_skill() ? as_done_skill()->get_ir_type() : as_expanded();
+	return is_done_skill() ? as_done_skill()->get_candidate_type() : as_expanded();
 }
 
 FileRange MethodParent::get_type_range() const {

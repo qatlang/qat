@@ -1,10 +1,10 @@
 #ifndef QAT_AST_PATTERNS_HPP
 #define QAT_AST_PATTERNS_HPP
 
+#include "../IR/prerun_function.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/identifier.hpp"
 #include "../utils/qat_region.hpp"
-#include "prerun_function.hpp"
 
 #include <variant>
 

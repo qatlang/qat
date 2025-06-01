@@ -125,6 +125,14 @@ void PatternChild::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 	}
 }
 
+void Pattern::precheck(PatternFill* fill, EmitCtx* ctx) const {
+	if (fill->fillType == PatternFillType::COMPLETE) {
+		ctx->Error("All possible patterns for the type " + ctx->color(fill->type->to_string()) +
+		               " have been matched at this point",
+		           range);
+	}
+}
+
 void PatternArray::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
 	if (not fill->type->is_array()) {
 		ctx->Error("An array pattern is used here, but the type of the expression to be matched for this pattern is " +

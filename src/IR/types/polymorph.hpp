@@ -11,15 +11,15 @@ class Skill;
 
 class Polymorph final : public Type {
 	friend class Type;
-	bool        isTyped;
-	bool        isVar;
-	Vec<Skill*> skills;
-	PtrOwner    owner;
+	bool            isTyped;
+	bool            isVar;
+	Vec<Skill*>     skills;
+	Maybe<PtrOwner> owner;
 
   public:
-	Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, PtrOwner _owner, ir::Ctx* ctx);
+	Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner, ir::Ctx* ctx);
 
-	useit static Polymorph* create(bool isTyped, bool isVar, Vec<Skill*> skills, PtrOwner owner, ir::Ctx* ctx);
+	useit static Polymorph* create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<PtrOwner> owner, ir::Ctx* ctx);
 
 	~Polymorph() = default;
 
@@ -29,7 +29,9 @@ class Polymorph final : public Type {
 
 	useit Vec<Skill*> const& get_skills() const { return skills; }
 
-	useit PtrOwner const& get_owner() const { return owner; }
+	useit bool has_owner() const { return owner.has_value(); }
+
+	useit PtrOwner get_owner() const { return owner.value(); }
 
 	useit bool has_skill(Skill* skill) const {
 		for (auto sk : skills) {

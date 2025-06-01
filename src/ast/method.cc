@@ -101,8 +101,8 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		}
 	}
 	SHOW("Getting parent type")
-	auto* parentType =
-	    state.parent->is_done_skill() ? state.parent->as_done_skill()->get_ir_type() : state.parent->as_expanded();
+	auto* parentType = state.parent->is_done_skill() ? state.parent->as_done_skill()->get_candidate_type()
+	                                                 : state.parent->as_expanded();
 	if (parentType->is_expanded()) {
 		auto expTy = parentType->as_expanded();
 		if ((fnTy == MethodType::variation) && expTy->has_variation(name.value)) {

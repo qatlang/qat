@@ -10,18 +10,23 @@ namespace qat::ast {
 
 class DoSkill final : public IsEntity, public MemberParentLike {
 	bool               isDefaultSkill;
-	Maybe<SkillEntity> name;
+	Maybe<SkillEntity> skillName;
+	Maybe<Identifier>  implementationName;
 	ast::Type*         targetType;
 
 	mutable ir::DoneSkill*    doneSkill = nullptr;
 	mutable ir::MethodParent* parent    = nullptr;
 
   public:
-	DoSkill(bool _isDef, Maybe<SkillEntity> _name, ast::Type* _targetType, FileRange _fileRange)
-	    : IsEntity(_fileRange), isDefaultSkill(_isDef), name(_name), targetType(_targetType) {}
+	DoSkill(bool _isDef, Maybe<SkillEntity> _skillName, Maybe<Identifier> _implementationName, ast::Type* _targetType,
+	        FileRange _fileRange)
+	    : IsEntity(_fileRange), isDefaultSkill(_isDef), skillName(_skillName),
+	      implementationName(std::move(_implementationName)), targetType(_targetType) {}
 
-	useit static DoSkill* create(bool _isDef, Maybe<SkillEntity> _name, ast::Type* _targetType, FileRange _fileRange) {
-		return std::construct_at(OwnNormal(DoSkill), _isDef, _name, _targetType, _fileRange);
+	useit static DoSkill* create(bool isDef, Maybe<SkillEntity> skillName, Maybe<Identifier> implementationName,
+	                             ast::Type* targetType, FileRange fileRange) {
+		return std::construct_at(OwnNormal(DoSkill), isDef, std::move(skillName), std::move(implementationName),
+		                         targetType, fileRange);
 	}
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
@@ -33,10 +38,12 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 	void define_members(ir::Ctx* irCtx);
 	void emit_members(ir::Ctx* irCtx);
 
-	useit bool     is_done_skill() const final { return true; }
+	useit bool is_done_skill() const final { return true; }
+
 	useit DoSkill* as_done_skill() final { return this; }
 
-	Json     to_json() const final;
+	Json to_json() const final;
+
 	NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };
 

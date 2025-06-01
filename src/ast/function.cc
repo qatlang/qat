@@ -1,4 +1,5 @@
 #include "./function.hpp"
+#include "../IR/internal.hpp"
 #include "../IR/qat_module.hpp"
 #include "../IR/types/slice.hpp"
 #include "../IR/types/void.hpp"
@@ -8,7 +9,6 @@
 #include "./types/generic_abstract.hpp"
 #include "./types/prerun_generic.hpp"
 #include "./types/typed_generic.hpp"
-#include "internal.hpp"
 
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Function.h>
@@ -118,7 +118,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			        irCtx->color("int") +
 			        " to indicate the resultant status of the program to the operating system. Give a " +
 			        irCtx->color("0") +
-			        " value at the end of the main function to indicate success, if you don't care about the status of the program for now",
+			        " value at the end of the main function to indicate success, if you don't care about the status of the program for now.",
 			    fileRange);
 		}
 	} else if (fnName == "main") {

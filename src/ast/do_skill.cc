@@ -1,4 +1,5 @@
 #include "./do_skill.hpp"
+#include "../IR/context.hpp"
 #include "../IR/skill.hpp"
 #include "./constructor.hpp"
 #include "./convertor.hpp"
@@ -6,16 +7,18 @@
 #include "./method.hpp"
 #include "./operator_function.hpp"
 #include "./type_definition.hpp"
-#include "context.hpp"
 
 #include <unordered_set>
 
 namespace qat::ast {
 
 void DoSkill::create_entity(ir::Mod* parent, ir::Ctx* irCtx) {
-	entityState =
-	    parent->add_entity(None, isDefaultSkill ? ir::EntityType::defaultDoneSkill : ir::EntityType::doneSkill, this,
-	                       ir::EmitPhase::phase_3);
+	if (implementationName.has_value()) {
+		parent->entity_name_check(irCtx, implementationName.value(), ir::EntityType::doneSkill);
+	}
+	entityState                 = parent->add_entity(implementationName,
+                                     isDefaultSkill ? ir::EntityType::defaultDoneSkill : ir::EntityType::doneSkill,
+	                                                 this, ir::EmitPhase::phase_3);
 	entityState->phaseToPartial = ir::EmitPhase::phase_2;
 	for (auto memFn : methodDefinitions) {
 		memFn->prototype->add_to_parent(entityState, irCtx);
@@ -24,8 +27,8 @@ void DoSkill::create_entity(ir::Mod* parent, ir::Ctx* irCtx) {
 
 void DoSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, parent);
-	if (name.has_value()) {
-		name.value().update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	if (skillName.has_value()) {
+		skillName.value().update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 	}
 	targetType->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 	for (auto* def : typeDefinitions) {
@@ -101,13 +104,16 @@ void DoSkill::define_types(ir::DoneSkill* skillImp, ir::Mod* mod, ir::Ctx* irCtx
 
 void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto* target = targetType->emit(EmitCtx::get(irCtx, mod));
+	SHOW("Emitted target type for skill implementation")
 	if (target->is_region() || target->is_ref() || target->is_typed() || target->is_function() || target->is_void() ||
 	    target->is_poly()) {
 		irCtx->Error("Creating a default implementation for " + irCtx->color(target->to_string()) + " is not allowed",
 		             fileRange);
 	}
 	if (isDefaultSkill) {
+		SHOW("isTypeExtension")
 		doneSkill = ir::DoneSkill::create_extension(mod, fileRange, target, targetType->fileRange);
+		SHOW("Created ir::DoneSkill")
 		if (has_copy_constructor()) {
 			irCtx->Error("Copy constructor is not allowed in type extensions, but only in the original type",
 			             copyConstructor->fileRange);
@@ -129,7 +135,9 @@ void DoSkill::define_done_skill(ir::Mod* mod, ir::Ctx* irCtx) {
 			             destructorDefinition->fileRange);
 		}
 	} else {
-		doneSkill = ir::DoneSkill::create_normal(mod, name.value().find_skill(EmitCtx::get(irCtx, mod)), fileRange,
+		SHOW("isSkillImpl")
+		doneSkill = ir::DoneSkill::create_normal(implementationName, mod,
+		                                         skillName.value().find_skill(EmitCtx::get(irCtx, mod)), fileRange,
 		                                         target, targetType->fileRange);
 		if (not convertorDefinitions.empty()) {
 			Vec<ir::QatError> errors;

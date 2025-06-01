@@ -2523,19 +2523,20 @@ void Mod::compile_to_object(Ctx* ctx) {
 			compileArgs.push_back("-mllvm");
 			compileArgs.push_back("-enable-matrix");
 		}
-		if (linkPthread) {
+		if (linkPthread &&
+		    (ctx->clangTargetInfo->getTriple().isOSLinux() || ctx->clangTargetInfo->getTriple().isOSCygMing() ||
+		     (ctx->clangTargetInfo->getTriple().isWasm() && ctx->clangTargetInfo->getTriple().isOSWASI()))) {
 			compileArgs.push_back("-pthread");
 		}
 		compileArgs.push_back("--target=" + ctx->clangTargetInfo->getTriple().getTriple());
 		if (cfg->has_sysroot()) {
 			compileArgs.push_back("--sysroot=" + cfg->get_sysroot());
 		}
-		if (ctx->clangTargetInfo->getTriple().isWasm()) {
-			// -Wl,--import-memory
-			compileArgs.push_back("-nostartfiles");
-			compileArgs.push_back("-Wl,--no-entry");
-			compileArgs.push_back("-Wl,--export-all");
-		}
+		// if (ctx->clangTargetInfo->getTriple().isWasm()) {
+		// 	if (not hasMain || not ctx->clangTargetInfo->getTriple().isOSWASI()) {
+		// 		compileArgs.push_back("-nostartfiles");
+		// 	}
+		// }
 		for (auto* sub : submodules) {
 			sub->compile_to_object(ctx);
 		}
@@ -3270,9 +3271,13 @@ void Mod::bundle_modules(Ctx* ctx) {
 			}
 		}
 		if (ctx->clangTargetInfo->getTriple().isWasm()) {
-			// -Wl,--import-memory
-			targetCMD.push_back("-nostartfiles");
-			targetCMD.push_back("-Wl,--no-entry");
+			if (not ctx->clangTargetInfo->getTriple().isOSWASI()) {
+				targetCMD.push_back("-Wl,--import-memory");
+				targetCMD.push_back("-nostartfiles");
+			}
+			if (not hasMain) {
+				targetCMD.push_back("-Wl,--no-entry");
+			}
 			targetCMD.push_back("-Wl,--export-all");
 		}
 		std::set<String> objectFiles = get_all_object_files();
@@ -3317,7 +3322,8 @@ void Mod::bundle_modules(Ctx* ctx) {
 			Vec<String> staticArgs;
 			staticArgs.push_back("--verbose");
 			if (linkPthread) {
-				if (ctx->clangTargetInfo->getTriple().isOSLinux() || ctx->clangTargetInfo->getTriple().isOSCygMing()) {
+				if (ctx->clangTargetInfo->getTriple().isOSLinux() || ctx->clangTargetInfo->getTriple().isOSCygMing() ||
+				    (ctx->clangTargetInfo->getTriple().isWasm() && ctx->clangTargetInfo->getTriple().isOSWASI())) {
 					staticArgs.push_back("-pthread");
 				}
 			}

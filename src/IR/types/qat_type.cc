@@ -52,6 +52,51 @@ void Type::clear_all() {
 	}
 }
 
+bool Type::has_unnamed_implementation_for(Skill* skill) const {
+	for (auto done : doneSkills) {
+		if (done->is_normal_skill() && not done->has_name()) {
+			if (done->get_skill()->get_id() == skill->get_id()) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+DoneSkill* Type::get_unnamed_implementation_for(Skill* skill) const {
+	for (auto done : doneSkills) {
+		if (done->is_normal_skill() && not done->has_name()) {
+			if (done->get_skill()->get_id() == skill->get_id()) {
+				return done;
+			}
+		}
+	}
+	return nullptr;
+}
+
+bool Type::has_named_implementation_for(Skill* skill) const {
+	for (auto done : doneSkills) {
+		if (done->is_normal_skill() && done->has_name()) {
+			if (done->get_skill()->get_id() == skill->get_id()) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+Vec<DoneSkill*> Type::get_named_implementations_for(Skill* skill) const {
+	Vec<DoneSkill*> res;
+	for (auto done : doneSkills) {
+		if (done->is_normal_skill() && not done->has_name()) {
+			if (done->get_skill()->get_id() == skill->get_id()) {
+				res.push_back(done);
+			}
+		}
+	}
+	return res;
+}
+
 String Type::get_name_for_linking() const { return linkingName; }
 
 bool Type::can_be_prerun_generic() const { return false; }
@@ -205,7 +250,10 @@ bool Type::is_same(Type* other) {
 				if (thisVal->get_skills().size() != otherVal->get_skills().size()) {
 					return false;
 				}
-				if (not thisVal->owner.is_same(otherVal->owner)) {
+				if (thisVal->owner.has_value() != otherVal->owner.has_value()) {
+					return false;
+				}
+				if (thisVal->owner.has_value() && not thisVal->owner.value().is_same(otherVal->owner.value())) {
 					return false;
 				}
 				for (usize i = 0; i < thisVal->get_skills().size(); i++) {

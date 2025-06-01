@@ -44,6 +44,7 @@ class VectorType;
 class Polymorph;
 class FlagType;
 struct TypeInfo;
+class Skill;
 
 // Type is the base class for all types in the IR
 class Type : public Uniq {
@@ -68,6 +69,14 @@ class Type : public Uniq {
 	useit bool has_default_implementations() const { return not defaultImplementations.empty(); }
 
 	useit Vec<DoneSkill*> const& get_default_implementations() const { return defaultImplementations; }
+
+	useit bool has_unnamed_implementation_for(Skill* skill) const;
+
+	useit DoneSkill* get_unnamed_implementation_for(Skill* skill) const;
+
+	useit bool has_named_implementation_for(Skill* skill) const;
+
+	useit Vec<DoneSkill*> get_named_implementations_for(Skill* skill) const;
 
 	useit virtual bool          can_be_prerun_generic() const;
 	useit virtual Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const;

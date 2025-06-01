@@ -119,6 +119,7 @@ enum class TokenType {
 	flag,
 	characterLiteral,
 	byteLiteral,
+	polymorph,
 };
 
 } // namespace qat::lexer

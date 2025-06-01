@@ -60,7 +60,7 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
 		}
 		case VisibilityKind::skill: {
 			if (reqInfo.has_value() && reqInfo->has_skill()) {
-				return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
+				return reqInfo->get_skill()->get_candidate_type()->is_same(visibility.typePtr);
 			}
 		}
 		case VisibilityKind::parent: {
@@ -70,7 +70,7 @@ bool Visibility::is_accessible(const VisibilityInfo& visibility, Maybe<AccessInf
 			if (visibility.typePtr && reqInfo->has_type()) {
 				return visibility.typePtr->is_same(reqInfo->get_type());
 			} else if (visibility.typePtr && reqInfo->has_skill()) {
-				return reqInfo->get_skill()->get_ir_type()->is_same(visibility.typePtr);
+				return reqInfo->get_skill()->get_candidate_type()->is_same(visibility.typePtr);
 			} else if (visibility.moduleVal && reqInfo->get_module()) {
 				return (visibility.moduleVal->get_id() == reqInfo->get_module()->get_id()) ||
 				       visibility.moduleVal->is_parent_mod_of(reqInfo->get_module());

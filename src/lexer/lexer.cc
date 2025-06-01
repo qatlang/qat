@@ -1275,6 +1275,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("volatile", Volatile);
 	else Check_Normal_Keyword("inline", Inline);
 	else Check_Normal_Keyword("use", use);
+	else Check_Normal_Keyword("poly", polymorph);
 	else Check_VALUED_Keyword("int", nativeType);
 	else Check_VALUED_Keyword("uint", nativeType);
 	else Check_VALUED_Keyword("byte", nativeType);

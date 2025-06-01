@@ -1,7 +1,9 @@
 #include "./define_skill.hpp"
+#include "../IR/skill.hpp"
 #include "../IR/types/void.hpp"
-#include "./skill.hpp"
 #include "./types/generic_abstract.hpp"
+
+#include <llvm/Analysis/ConstantFolding.h>
 
 namespace qat::ast {
 
@@ -89,8 +91,20 @@ ir::Skill* DefineSkill::create_skill(Vec<ir::GenericToFill*> const& genericsToFi
 		}
 		genericsIR.push_back(gen->toIRGenericType());
 	}
-	auto skillResult =
-	    ir::Skill::create(name, genericsIR, parent, EmitCtx::get(irCtx, parent)->get_visibility_info(visibSpec));
+	auto polyQual = polyQualifier->emit(EmitCtx::get(irCtx, parent));
+	if (not polyQual->get_ir_type()->is_bool()) {
+		irCtx->Error(
+		    "The condition to determine whether this skill qualifies to be a polymorph or not, should be of type " +
+		        irCtx->color("bool") + ". Got an expression of type " +
+		        irCtx->color(polyQual->get_ir_type()->to_string()) + " instead",
+		    polyQualifier->fileRange);
+	}
+	auto skillResult = ir::Skill::create(
+	    name,
+	    llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(polyQual->get_llvm_constant(), irCtx->dataLayout))
+	        ->getValue()
+	        .getBoolValue(),
+	    genericsIR, parent, EmitCtx::get(irCtx, parent)->get_visibility_info(visibSpec));
 	if (genericSkill) {
 		genericSkill->variants.push_back(ir::GenericVariant<ir::Skill>(skillResult, genericsToFill));
 	}

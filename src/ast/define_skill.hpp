@@ -89,6 +89,7 @@ struct SkillMethod {
 class DefineSkill final : public IsEntity {
 	Maybe<VisibilitySpec>     visibSpec;
 	Identifier                name;
+	PrerunExpression*         polyQualifier;
 	Vec<SkillTypeDefinition>  typeDefinitions;
 	Vec<SkillMethod>          methods;
 	Vec<GenericAbstractType*> generics;
@@ -100,17 +101,18 @@ class DefineSkill final : public IsEntity {
 
   public:
 	DefineSkill(Identifier _name, Vec<GenericAbstractType*> _generics, Maybe<VisibilitySpec> _visibSpec,
-	            Vec<SkillTypeDefinition> _typeDefs, Vec<SkillMethod> _methods, PrerunExpression* _defineChecker,
-	            PrerunExpression* _genericConstraint, FileRange _fileRange)
-	    : IsEntity(std::move(_fileRange)), visibSpec(_visibSpec), name(std::move(_name)),
+	            PrerunExpression* _polyQualifier, Vec<SkillTypeDefinition> _typeDefs, Vec<SkillMethod> _methods,
+	            PrerunExpression* _defineChecker, PrerunExpression* _genericConstraint, FileRange _fileRange)
+	    : IsEntity(std::move(_fileRange)), visibSpec(_visibSpec), name(std::move(_name)), polyQualifier(_polyQualifier),
 	      typeDefinitions(std::move(_typeDefs)), methods(std::move(_methods)), generics(std::move(_generics)),
 	      defineChecker(_defineChecker), genericConstraint(_genericConstraint) {}
 
 	useit static DefineSkill* create(Identifier name, Vec<GenericAbstractType*> generics,
-	                                 Maybe<VisibilitySpec> visibSpec, Vec<SkillTypeDefinition> typeDefs,
-	                                 Vec<SkillMethod> methods, PrerunExpression* defineChecker,
-	                                 PrerunExpression* genericConstraint, FileRange fileRange) {
-		return std::construct_at(OwnNormal(DefineSkill), std::move(name), std::move(generics), visibSpec,
+	                                 Maybe<VisibilitySpec> visibSpec, PrerunExpression* polyQualifier,
+	                                 Vec<SkillTypeDefinition> typeDefs, Vec<SkillMethod> methods,
+	                                 PrerunExpression* defineChecker, PrerunExpression* genericConstraint,
+	                                 FileRange fileRange) {
+		return std::construct_at(OwnNormal(DefineSkill), std::move(name), std::move(generics), visibSpec, polyQualifier,
 		                         std::move(typeDefs), std::move(methods), defineChecker, genericConstraint,
 		                         std::move(fileRange));
 	}

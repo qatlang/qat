@@ -486,6 +486,16 @@ Config::Config(u64 count, const char** args)
 				    "targets",
 				    None);
 			}
+		} else {
+			cli::Error(
+			    "Unknown command " + command + " given. " +
+			        (fs::exists(command)
+			             ? ("If you meant to build the project using the provided path, use the command `qat build " +
+			                command + "`. ")
+			             : "The provided argument is not even an existing file or directory. Make sure that you "
+			               "use the correct path in the command `qat build <path>` to build a project. ") +
+			        "Please check the command and make the necessary corrections",
+			    None);
 		}
 		for (usize i = proceed; ((i < count) && not exitAfter); i++) {
 			String arg     = args[i];
@@ -648,8 +658,9 @@ Config::Config(u64 count, const char** args)
 			} else if (arg == "--clear-llvm") {
 				clearLLVMFiles = true;
 			} else {
-				if (fs::exists(arg)) {
-					paths.push_back(fs::path(arg));
+				auto argCheck = fs::path(arg).is_relative() ? (fs::current_path() / arg) : fs::path(arg);
+				if (fs::exists(argCheck)) {
+					paths.push_back(fs::path(argCheck));
 				} else {
 					if (arg.starts_with("--")) {
 						log->fatalError("Unrecognised argument " + log->color(arg) +

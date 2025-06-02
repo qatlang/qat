@@ -22,6 +22,21 @@ struct SkillEntity {
 	useit Json to_json() const;
 };
 
+struct DoneSkillEntity {
+	u32               relative;
+	Vec<Identifier>   names;
+	FileRange         range;
+	Vec<FillGeneric*> generics;
+
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx);
+
+	useit ir::DoneSkill* find_done_skill(EmitCtx* ctx) const;
+
+	useit String to_string() const;
+
+	useit Json to_json() const;
+};
+
 } // namespace qat::ast
 
 #endif

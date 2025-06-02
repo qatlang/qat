@@ -1,4 +1,5 @@
 #include "./skill_entity.hpp"
+#include "../IR/qat_module.hpp"
 
 namespace qat::ast {
 
@@ -134,6 +135,126 @@ ir::Skill* SkillEntity::find_skill(EmitCtx* ctx) const {
 		    range);
 	}
 	return nullptr;
+}
+
+void DoneSkillEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+                                          EmitCtx* ctx) {
+	auto mod = ctx->mod;
+	if (relative > 0) {
+		if (not mod->has_nth_parent(relative)) {
+			ctx->Error("The current module does not have " + ctx->color(std::to_string(relative)) + " parents", range);
+		}
+		mod = mod->get_nth_parent(relative);
+	}
+	auto access = ctx->get_access_info();
+	for (usize i = 0; i < names.size() - 1; i++) {
+		auto& name = names[i];
+		if (mod->has_lib(name.value, access) || mod->has_brought_lib(name.value, access) ||
+		    mod->has_lib_in_imports(name.value, access).first) {
+			mod = mod->get_lib(name.value, access);
+		} else if (mod->has_brought_mod(name.value, access) ||
+		           mod->has_brought_mod_in_imports(name.value, access).first) {
+			mod = mod->get_brought_mod(name.value, access);
+		} else {
+			ctx->Error("No module named " + ctx->color(name.value) + " found inside " +
+			               ctx->color(mod->get_referrable_name()) + " or its submodules",
+			           name.range);
+		}
+	}
+	auto const& impName = names.back();
+	if (mod->has_entity_with_name(impName.value)) {
+		if (mod->get_entity(impName.value)->type != ir::EntityType::doneSkill) {
+			ctx->Error("Found an entity named " + ctx->color(impName.value) + " inside the module " +
+			               mod->get_referrable_name() + ", but it is not a skill implementation. Instead it is a " +
+			               ir::entity_type_to_string(mod->get_entity(impName.value)->type),
+			           impName.range);
+		}
+		ent->addDependency(
+		    ir::EntityDependency{mod->get_entity(impName.value), expect.value_or(ir::DependType::complete), phase});
+	}
+}
+
+Json DoneSkillEntity::to_json() const {
+	Vec<JsonValue> namesJSON;
+	for (auto& id : names) {
+		namesJSON.push_back(id);
+	}
+	Vec<JsonValue> genJSON;
+	for (auto* gen : generics) {
+		genJSON.push_back(gen->to_json());
+	}
+	return Json()._("relative", relative)._("names", namesJSON)._("generics", genJSON)._("range", range);
+}
+
+ir::DoneSkill* DoneSkillEntity::find_done_skill(EmitCtx* ctx) const {
+	auto mod = ctx->mod;
+	if (relative > 0) {
+		if (not mod->has_nth_parent(relative)) {
+			ctx->Error("The current module " + ctx->color(mod->get_referrable_name()) + " does not have " +
+			               ctx->color(std::to_string(relative)) + " parent modules",
+			           range);
+		}
+		mod = mod->get_nth_parent(relative);
+	}
+	auto access = ctx->get_access_info();
+	for (usize i = 0; i < names.size() - 1; i++) {
+		auto& idn = names.at(i);
+		if (mod->has_lib(idn.value, access) || mod->has_brought_lib(idn.value, access) ||
+		    mod->has_lib_in_imports(idn.value, access).first) {
+			mod = mod->get_lib(idn.value, access);
+			mod->add_mention(idn.range);
+			if (not mod->get_visibility().is_accessible(access)) {
+				ctx->Error("This lib is not accessible in the current scope", idn.range);
+			}
+		} else if (mod->has_brought_mod(idn.value, access)) {
+			mod = mod->get_brought_mod(idn.value, access);
+			mod->add_mention(idn.range);
+			if (not mod->get_visibility().is_accessible(access)) {
+				ctx->Error("This brought module is not accessible in the current scope", idn.range);
+			}
+		} else {
+			ctx->Error("No lib or brought module named " + ctx->color(idn.value) + " found", idn.range);
+		}
+	}
+	auto& ent = names.back();
+	if (generics.empty() &&
+	    (mod->has_named_implementation(ent.value, access) || mod->has_brought_named_implementation(ent.value, access) ||
+	     mod->has_named_implementation_in_imports(ent.value, access).first)) {
+		auto doneSkill = mod->get_named_implementation(ent.value, access);
+		doneSkill->add_mention(ent.range);
+		return doneSkill;
+	} else if (not generics.empty()) {
+		ctx->Error("Generic implementations are not supported for now", range);
+	} else {
+		ctx->Error("Could not find a named skill implementation named " + ctx->color(ent.value) + " in the module " +
+		               ctx->color(mod->get_referrable_name()),
+		           range);
+	}
+	return nullptr;
+}
+
+String DoneSkillEntity::to_string() const {
+	String result;
+	for (auto i = 0; i < relative; i++) {
+		result += "up:";
+	}
+	for (usize i = 0; i < names.size(); i++) {
+		result += names[i].value;
+		if (i != (names.size() - 1)) {
+			result += ":";
+		}
+	}
+	if (not generics.empty()) {
+		result += ":[";
+		for (usize i = 0; i < generics.size(); i++) {
+			result += generics[i]->to_string();
+			if (i != (generics.size() - 1)) {
+				result += ", ";
+			}
+		}
+		result += "]";
+	}
+	return result;
 }
 
 } // namespace qat::ast

@@ -1756,16 +1756,16 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 								if (sepPos + 2 != bClose) {
 									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
 								}
-								cacheTy = ast::PtrType::create(subTypeRes.first, isSubtypeVar,
-								                               ast::PtrOwnType::function, isNonNullable, None, isMulti,
-								                               {token.fileRange, RangeAt(bClose)});
+								cacheTy = ast::PtrType::create(
+								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_function(RangeAt(sepPos + 1)),
+								    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
 							} else if (is_next(TokenType::heap, sepPos)) {
 								if (sepPos + 2 != bClose) {
 									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
 								}
-								cacheTy = ast::PtrType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::heap,
-								                               isNonNullable, None, isMulti,
-								                               {token.fileRange, RangeAt(bClose)});
+								cacheTy = ast::PtrType::create(
+								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_heap(RangeAt(sepPos + 1)),
+								    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
 							} else if (is_next(TokenType::Type, sepPos)) {
 								if (is_next(TokenType::parenthesisOpen, sepPos + 1)) {
 									auto pCloseRes = get_pair_end(TokenType::parenthesisOpen,
@@ -1781,8 +1781,10 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 											          RangeSpan(ownTy.second + 1, pCloseRes.value()));
 										}
 										cacheTy = ast::PtrType::create(
-										    subTypeRes.first, isSubtypeVar, ast::PtrOwnType::type, isNonNullable,
-										    ownTy.first, isMulti, {token.fileRange, RangeAt(bClose)});
+										    subTypeRes.first, isSubtypeVar,
+										    ast::PtrOwner::of_type(ownTy.first,
+										                           RangeSpan(sepPos + 1, pCloseRes.value())),
+										    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
 									} else {
 										add_error("Expected end for (", RangeAt(sepPos + 2));
 									}
@@ -1809,23 +1811,26 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 											          RangeSpan(regTy.second + 1, pCloseRes.value()));
 										}
 										cacheTy = ast::PtrType::create(
-										    subTypeRes.first, isSubtypeVar, ast::PtrOwnType::region, isNonNullable,
-										    regTy.first, isMulti, {token.fileRange, RangeAt(bClose)});
+										    subTypeRes.first, isSubtypeVar,
+										    ast::PtrOwner::of_region(regTy.first,
+										                             RangeSpan(sepPos + 1, pCloseRes.value())),
+										    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
 									} else {
 										add_error("Expected end for (", RangeAt(sepPos + 2));
 									}
 								} else {
 									cacheTy = ast::PtrType::create(subTypeRes.first, isSubtypeVar,
-									                               ast::PtrOwnType::anyRegion, isNonNullable, nullptr,
-									                               isMulti, {token.fileRange, RangeAt(bClose)});
+									                               ast::PtrOwner::of_any_region(RangeAt(sepPos + 1)),
+									                               isNonNullable, isMulti,
+									                               {token.fileRange, RangeAt(bClose)});
 								}
 							} else if (is_next(TokenType::selfInstance, sepPos)) {
 								if (sepPos + 2 != bClose) {
 									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
 								}
-								cacheTy = ast::PtrType::create(subTypeRes.first, isSubtypeVar,
-								                               ast::PtrOwnType::typeParent, isNonNullable, None,
-								                               isMulti, {token.fileRange, RangeAt(bClose)});
+								cacheTy = ast::PtrType::create(
+								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_type_parent(RangeAt(sepPos + 1)),
+								    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
 							} else {
 								add_error("Invalid ownership of the " +
 								              color_error(isMulti ? "multi-pointer" : "pointer"),
@@ -1837,9 +1842,10 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 								add_error("Subtype of the pointer did not span till ]",
 								          RangeSpan(subTypeRes.second + 1, bClose));
 							}
-							cacheTy =
-							    ast::PtrType::create(subTypeRes.first, isSubtypeVar, ast::PtrOwnType::anonymous,
-							                         isNonNullable, None, isMulti, {token.fileRange, RangeAt(bClose)});
+							cacheTy = ast::PtrType::create(
+							    subTypeRes.first, isSubtypeVar,
+							    ast::PtrOwner::of_anonymous(FileRange{token.fileRange, RangeAt(bClose)}), isNonNullable,
+							    isMulti, {token.fileRange, RangeAt(bClose)});
 						}
 						i = bClose;
 						break;

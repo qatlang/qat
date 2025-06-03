@@ -7,22 +7,20 @@
 namespace qat::ast {
 
 class PtrType final : public Type {
-	Type*             type;
-	PtrOwnType        ownTyp;
-	Maybe<ast::Type*> ownerTyTy;
-	bool              isMulti;
-	bool              isSubtypeVar;
-	bool              isNonNullable;
+	Type*    type;
+	PtrOwner owner;
+	bool     isMulti;
+	bool     isSubtypeVar;
+	bool     isNonNullable;
 
   public:
-	PtrType(Type* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable, Maybe<Type*> _ownerTyTy,
-	        bool _isMulti, FileRange _fileRange)
-	    : Type(_fileRange), type(_type), ownTyp(_ownTy), ownerTyTy(_ownerTyTy), isMulti(_isMulti),
-	      isSubtypeVar(_isSubtypeVar), isNonNullable(_isNonNullable) {}
+	PtrType(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti, FileRange _fileRange)
+	    : Type(_fileRange), type(_type), owner(_owner), isMulti(_isMulti), isSubtypeVar(_isSubtypeVar),
+	      isNonNullable(_isNonNullable) {}
 
-	useit static PtrType* create(Type* _type, bool _isSubtypeVar, PtrOwnType _ownTy, bool _isNonNullable,
-	                             Maybe<Type*> _ownerTyTy, bool _isMulti, FileRange _fileRange) {
-		return std::construct_at(OwnNormal(PtrType), _type, _isSubtypeVar, _ownTy, _isNonNullable, _ownerTyTy, _isMulti,
+	useit static PtrType* create(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti,
+	                             FileRange _fileRange) {
+		return std::construct_at(OwnNormal(PtrType), _type, _isSubtypeVar, _owner, _isNonNullable, _isMulti,
 		                         _fileRange);
 	}
 

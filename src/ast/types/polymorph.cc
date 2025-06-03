@@ -6,8 +6,11 @@ namespace qat::ast {
 
 Maybe<usize> PolymorphType::get_type_bitsize(EmitCtx* ctx) const {
 	auto ptrTy = llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace());
-	return (usize)ctx->irCtx->dataLayout.getTypeAllocSizeInBits(
-	    isTyped ? llvm::StructType::create({ptrTy, ptrTy, ptrTy}) : llvm::StructType::create({ptrTy, ptrTy}));
+	return (usize)ctx->irCtx->dataLayout.getTypeAllocSizeInBits(isTyped ? llvm::StructType::create({
+	                                                                          ptrTy,
+	                                                                          ptrTy,
+	                                                                      })
+	                                                                    : llvm::StructType::create({ptrTy, ptrTy}));
 }
 
 ir::Type* PolymorphType::emit(EmitCtx* ctx) {
@@ -16,8 +19,8 @@ ir::Type* PolymorphType::emit(EmitCtx* ctx) {
 		irSkills.push_back(sk.find_skill(ctx));
 	}
 	auto ptrOwner =
-	    ownRange.has_value() ? get_ptr_owner(ctx, ownType, None, ownRange.value()) : ir::PtrOwner::of_anonymous();
-	return ir::Polymorph::create(isTyped, std::move(irSkills), ptrOwner, ctx->irCtx);
+	    owner.has_value() ? Maybe<ir::PtrOwner>(get_ptr_owner(ctx, owner.value(), owner.value().range)) : None;
+	return ir::Polymorph::create(isTyped, isVar, std::move(irSkills), ptrOwner, ctx->irCtx);
 }
 
 } // namespace qat::ast

@@ -15,20 +15,17 @@ namespace qat::ast {
 
 class PolymorphType final : public Type {
 	bool             isTyped;
+	bool             isVar;
 	Vec<SkillEntity> skills;
-	PtrOwnType       ownType;
-	Maybe<FileRange> ownRange;
+	Maybe<PtrOwner>  owner;
 
   public:
-	PolymorphType(bool _isTyped, Vec<SkillEntity> _skills, PtrOwnType _ownType, Maybe<FileRange> _ownRange,
-	              FileRange _range)
-	    : Type(std::move(_range)), isTyped(_isTyped), skills(std::move(_skills)), ownType(_ownType),
-	      ownRange(std::move(_ownRange)) {}
+	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<PtrOwner> _owner, FileRange _range)
+	    : Type(std::move(_range)), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(_owner) {}
 
-	useit static PolymorphType* create(bool isTyped, Vec<SkillEntity> skills, PtrOwnType ownType,
-	                                   Maybe<FileRange> ownRange, FileRange range) {
-		return std::construct_at(OwnNormal(PolymorphType), isTyped, std::move(skills), ownType, std::move(ownRange),
-		                         std::move(range));
+	useit static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<PtrOwner> owner,
+	                                   FileRange range) {
+		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), owner, std::move(range));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {
@@ -50,11 +47,11 @@ class PolymorphType final : public Type {
 		}
 		return Json()
 		    ._("typeKind", "polymorph")
+		    ._("isVar", isVar)
 		    ._("isTyped", isTyped)
 		    ._("skills", skillsJSON)
-		    ._("ptrOwner", ptr_owner_to_string(ownType))
-		    ._("hasOwnRange", ownRange.has_value())
-		    ._("ownRange", ownRange.has_value() ? ownRange.value() : JsonValue());
+		    ._("hasPtrOwner", owner.has_value())
+		    ._("ptrOwner", owner.has_value() ? owner.value().to_json() : JsonValue());
 	}
 
 	useit String to_string() const final {
@@ -65,8 +62,10 @@ class PolymorphType final : public Type {
 				skillStr += " + ";
 			}
 		}
-		return (isTyped ? "poly:[type, " : "poly:[") + skillStr +
-		       (ownType != PtrOwnType::anonymous ? (", " + ptr_owner_to_string(ownType)) : "") + "]";
+		return String(isTyped ? "poly:[type, " : "poly:[") + (isVar ? "var " : "") + skillStr +
+		       (owner.has_value() && owner.value().kind != PtrOwnType::anonymous ? (", " + owner.value().to_string())
+		                                                                         : "") +
+		       "]";
 	}
 };
 

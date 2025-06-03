@@ -15,6 +15,7 @@ add_library(QAT_AST_TYPES
 	native_type.cc
 	reference.cc
 	pointer.cc
+	polymorph.cc
 	prerun_generic.cc
 	qat_type.cc
 	result.cc

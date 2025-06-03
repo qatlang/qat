@@ -112,6 +112,7 @@ enum class NodeType {
 	CHARACTER,
 	USE_DECLARATION,
 	INLINE_LET,
+	GET_POLYMORPH,
 };
 
 } // namespace qat::ast

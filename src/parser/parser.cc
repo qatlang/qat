@@ -2020,11 +2020,31 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
         return res;
 	};
 
+	ast::PrerunExpression*        polyQualifier = nullptr;
 	Vec<ast::SkillTypeDefinition> typeDefs;
 	Vec<ast::SkillMethod>         methods;
 	bool                          shouldExit = false;
 	for (; i < tokens->size(); i++) {
 		switch (tokens->at(i).type) {
+			case TokenType::polymorph: {
+				const auto start = i;
+				if (polyQualifier) {
+					add_error(
+					    "The condition to determine whether this skill can be a polymorph has already been provided",
+					    RangeAt(i));
+				}
+				if (not is_next(TokenType::assignment, i)) {
+					add_error("Expected = after this", RangeAt(i));
+				}
+				auto polyRes  = do_prerun_expression(preCtx, i + 1, None);
+				polyQualifier = polyRes.first;
+				i             = polyRes.second;
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected . after this", RangeSpan(start, i));
+				}
+				i++;
+				break;
+			}
 			case TokenType::Public: {
 				if (hasVisibSpec()) {
 					add_error("Visibility is already provided before this, found another visibility specifier here.",
@@ -2147,8 +2167,18 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 	if (i == tokens->size()) {
 		add_error("Could not find } to end the body of the skill after this", RangeSpan(from, i - 1));
 	}
-	return std::make_pair(ast::DefineSkill::create(std::move(name), std::move(generics), visibSpec, std::move(typeDefs),
-	                                               std::move(methods), entityMeta.defineChecker,
+	if (not polyQualifier) {
+		add_error(
+		    "Skill definitions require the condition to determine whether they can be polymorph or not. Please provide it like one of the options below:\n  " +
+		        color_error("poly = true.") + " if you want to enable polymorphs for this skill\n  " +
+		        color_error("poly = false.") + " if you don't want this skill to be a polymorph\n  " +
+		        color_error("poly = condition.") + " if it has to be conditional\n" +
+		        "If you are not sure what to do, just provide " + color_error("poly = true.") +
+		        " and make changes later accordingly when necessary",
+		    RangeSpan(from, i));
+	}
+	return std::make_pair(ast::DefineSkill::create(std::move(name), std::move(generics), visibSpec, polyQualifier,
+	                                               std::move(typeDefs), std::move(methods), entityMeta.defineChecker,
 	                                               entityMeta.genericConstraint, RangeSpan(from, i)),
 	                      i);
 }

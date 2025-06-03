@@ -2481,7 +2481,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						add_error("Expected { after this to start the body of the implementation", RangeSpan(start, i));
 					}
 					auto cClose = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
-					auto doneSk = ast::DoSkill::create(true, None, typeRes.first, RangeSpan(start, cClose.value()));
+					auto doneSk =
+					    ast::DoSkill::create(true, None, None, typeRes.first, RangeSpan(start, cClose.value()));
 					do_type_contents(preCtx, i + 1, cClose.value(), doneSk);
 					resultNodes.push_back(doneSk);
 					i = cClose.value();
@@ -2503,6 +2504,15 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					}
 					auto typeRes = do_type(preCtx, i + 1, None);
 					i            = typeRes.second;
+					Maybe<Identifier> implementationName;
+					if (is_next(TokenType::as, i)) {
+						if (not is_next(TokenType::identifier, i + 1)) {
+							add_error("Expected an identifier after this for the name of the implementation",
+							          RangeSpan(start, i));
+						}
+						implementationName = IdentifierAt(i + 2);
+						i += 2;
+					}
 					if (not is_next(TokenType::curlybraceOpen, i)) {
 						add_error("Expected { after this to start the body of the skill implementation",
 						          RangeSpan(start, i));
@@ -2516,7 +2526,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					                                                       .names    = std::move(symRes.first.name),
 					                                                       .range = std::move(symRes.first.fileRange),
 					                                                       .generics = std::move(generics)},
-					                                      typeRes.first, RangeSpan(start, cEnd.value()));
+					                                      std::move(implementationName), typeRes.first,
+					                                      RangeSpan(start, cEnd.value()));
 					do_type_contents(preCtx, i + 1, cEnd.value(), doneSkill);
 					resultNodes.push_back(doneSkill);
 					i = cEnd.value();

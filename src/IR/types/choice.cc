@@ -111,7 +111,15 @@ llvm::ConstantInt* ChoiceType::get_value_for(const String& name) const {
 	if (values.has_value()) {
 		return values.value().at(index);
 	} else {
-		return llvm::ConstantInt::get(llvm::Type::getIntNTy(llvmType->getContext(), bitwidth), index, false);
+		return llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(llvmType), index, false);
+	}
+}
+
+llvm::ConstantInt* ChoiceType::get_value_at(usize index) const {
+	if (values.has_value()) {
+		return values.value().at(index);
+	} else {
+		return llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(llvmType), index, false);
 	}
 }
 

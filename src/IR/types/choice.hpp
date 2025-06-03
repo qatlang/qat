@@ -75,6 +75,8 @@ class ChoiceType : public Type, public EntityOverview {
 
 	useit llvm::ConstantInt* get_value_for(const String& name) const;
 
+	useit llvm::ConstantInt* get_value_at(usize index) const;
+
 	useit usize get_variant_count() const { return fields.size(); }
 
 	useit llvm::ConstantInt* get_default() const;

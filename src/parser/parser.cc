@@ -31,6 +31,7 @@
 #include "../ast/expressions/function_call.hpp"
 #include "../ast/expressions/generic_entity.hpp"
 #include "../ast/expressions/get_intrinsic.hpp"
+#include "../ast/expressions/get_poly.hpp"
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/in.hpp"
 #include "../ast/expressions/index_access.hpp"
@@ -5168,6 +5169,90 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						}
 						i++;
 						setCachedExpr(ast::Cast::create(exp, targetTy.first, {exp->fileRange, RangeAt(i)}), i);
+					} else if (is_next(TokenType::polymorph, i)) {
+						const auto           start = i;
+						Maybe<ast::PtrOwner> ptrOwner;
+						bool                 isPtrPoly = false;
+						i++;
+						if (is_next(TokenType::colon, i) && is_next(TokenType::ptrType, i + 1)) {
+							isPtrPoly = true;
+							i += 2;
+						}
+						Maybe<FileRange> typeRange;
+						bool             isVar = false;
+						if (not is_next(TokenType::genericTypeStart, i)) {
+							add_error("Expected :[ after this to start the specifications of this polymorph",
+							          RangeSpan(start, i));
+						}
+						i++;
+						const auto specStart = i;
+						if (is_next(TokenType::Type, i)) {
+							typeRange = RangeAt(i + 1);
+							if (not is_next(TokenType::separator, i + 1)) {
+								add_error("Expected , after this", RangeSpan(start, i + 1));
+							}
+							i += 2;
+						}
+						if (is_next(TokenType::var, i)) {
+							isVar = true;
+							i++;
+						}
+						Vec<ast::PolySkillSpec> skillSpec;
+						while (not is_next(TokenType::genericTypeEnd, i)) {
+							const auto itStart = i + 1;
+							if (is_next(TokenType::from, i)) {
+								auto                   sym = do_symbol(preCtx, i + 2);
+								Vec<ast::FillGeneric*> generics;
+								i = sym.second;
+								if (is_next(TokenType::genericTypeStart, i)) {
+									auto gEndRes =
+									    get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+									if (not gEndRes.has_value()) {
+										add_error("Expected ] to end the generic specification", RangeAt(i + 1));
+									}
+									generics = do_generic_fill(preCtx, i + 1, gEndRes.value());
+									i        = gEndRes.value();
+								}
+								skillSpec.push_back(ast::PolySkillSpec::from_implementation(
+								    ast::DoneSkillEntity{.relative = sym.first.relative,
+								                         .names    = std::move(sym.first.name),
+								                         .generics = std::move(generics),
+								                         .range    = sym.first.fileRange},
+								    RangeSpan(itStart, i)));
+							} else {
+								auto                   sym = do_symbol(preCtx, i);
+								Vec<ast::FillGeneric*> generics;
+								i = sym.second;
+								if (is_next(TokenType::genericTypeStart, i)) {
+									auto gEndRes =
+									    get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+									if (not gEndRes.has_value()) {
+										add_error("Expected ] to end the generic specification", RangeAt(i + 1));
+									}
+									generics = do_generic_fill(preCtx, i + 1, gEndRes.value());
+									i        = gEndRes.value();
+								}
+								skillSpec.push_back(
+								    ast::PolySkillSpec::from_skill(ast::SkillEntity{.relative = sym.first.relative,
+								                                                    .names = std::move(sym.first.name),
+								                                                    .generics = std::move(generics),
+								                                                    .range    = sym.first.fileRange},
+								                                   RangeSpan(itStart, i)));
+							}
+							if (not is_next(TokenType::separator, i)) {
+								break;
+							}
+							i++;
+						}
+						if (not is_next(TokenType::genericTypeEnd, i)) {
+							add_error("Expected ] after this to end the polymorph specification",
+							          RangeSpan(specStart, i));
+						}
+						i++;
+						setCachedExpr(ast::GetPolymorph::create(exp, std::move(typeRange), std::move(skillSpec),
+						                                        std::move(ptrOwner), RangeSpan(start, i)),
+						              i);
+						break;
 					} else if ((is_next(TokenType::var, i) && is_next(TokenType::colon, i + 1) &&
 					            is_next(TokenType::identifier, i + 2)) ||
 					           is_next(TokenType::identifier, i)) {

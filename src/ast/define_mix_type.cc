@@ -76,7 +76,8 @@ void DefineMixType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) 
 
 void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	Vec<Pair<Identifier, Maybe<ir::Type*>>> subTypesIR;
-	bool                                    hasAssociatedType = false;
+	bool                                    hasAssociatedType         = false;
+	bool                                    allSubtypesHaveSimpleMove = true;
 	for (usize i = 0; i < subtypes.size(); i++) {
 		for (usize j = i + 1; j < subtypes.size(); j++) {
 			if (subtypes.at(i).first.value == subtypes.at(j).first.value) {
@@ -117,16 +118,36 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 				             subtypes.at(i).second.value()->fileRange);
 			}
 		}
+		if (subTypeTy && not subTypeTy->has_simple_move()) {
+			if (noneVariant.has_value()) {
+				irCtx->Error(
+				    "The variant " + irCtx->color(subtypes[i].first.value) + " has an associated type of " +
+				        irCtx->color(subtypes[i].second.value()->to_string()) +
+				        ", which does not have simple-move, but the " + irCtx->color("none") +
+				        " variant was requested to be created for this mix type. The " + irCtx->color("none") +
+				        " variant can only be created for a mix type if all of the associated types of its variants have simple-move",
+				    subtypes[i].second.value()->fileRange);
+			}
+			allSubtypesHaveSimpleMove = false;
+		}
 		subTypesIR.push_back(Pair<Identifier, Maybe<ir::Type*>>(
 		    subtypes.at(i).first, subtypes.at(i).second.has_value() ? Maybe<ir::Type*>(subTypeTy) : None));
+	}
+	if (allSubtypesHaveSimpleMove && not noneVariant.has_value()) {
+		irCtx->Warning(
+		    "Associated types of all variants of this mix type have simple-move. This means that this mix type can also have simple-move. But the " +
+		        irCtx->color("none") +
+		        " variant has not been requested to be created for this mix type. You can do that by adding " +
+		        irCtx->color("none") + " as the first variant",
+		    fileRange);
 	}
 	if (not hasAssociatedType) {
 		irCtx->Error("No types associated to any of the subfields of the mix type. "
 		             "Please change this type to a choice type",
 		             fileRange);
 	}
-	(void)ir::MixType::create(name, opaquedType, {}, mod, subTypesIR, defaultVal, irCtx, isPacked,
-	                          EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), fileRange, None);
+	(void)ir::MixType::create(name, opaquedType, {}, mod, subTypesIR, defaultVal, irCtx, noneVariant.has_value(),
+	                          isPacked, EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), fileRange, None);
 }
 
 Json DefineMixType::to_json() const {

@@ -22,7 +22,8 @@ namespace qat::ir {
 
 MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgument*> _generics, Mod* _parent,
                  Vec<Pair<Identifier, Maybe<Type*>>> _subtypes, Maybe<usize> _defaultVal, ir::Ctx* irCtx,
-                 bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange, Maybe<MetaInfo> _metaInfo)
+                 bool addNoneVariant, bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange,
+                 Maybe<MetaInfo> _metaInfo)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
       EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
       defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo), opaquedType(_opaquedTy) {
@@ -48,7 +49,10 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
 			}
 		}
 	}
-	findTagBitWidth();
+	if (not addNoneVariant) {
+		isSimpleMove = false;
+	}
+	find_tag_bitwidth();
 	SHOW("Opaqued type is: " << opaquedType)
 	SHOW("Tag bitwidth is " << tagBitWidth)
 	linkingName = opaquedType->get_name_for_linking();
@@ -120,9 +124,9 @@ void MixType::update_overview() {
 	}
 }
 
-void MixType::findTagBitWidth() {
+void MixType::find_tag_bitwidth() {
 	tagBitWidth = 1;
-	while (std::pow(2, tagBitWidth) <= (subtypes.size() + 1)) {
+	while (std::pow(2, tagBitWidth) <= (subtypes.size() + (isSimpleMove ? 1 : 0))) {
 		tagBitWidth++;
 	}
 }
@@ -130,10 +134,9 @@ void MixType::findTagBitWidth() {
 usize MixType::get_index_of(const String& name) const {
 	for (usize i = 0; i < subtypes.size(); i++) {
 		if (subtypes.at(i).first.value == name) {
-			return i + 1;
+			return i + (isSimpleMove ? 1 : 0);
 		}
 	}
-	// NOLINTNEXTLINE(clang-diagnostic-return-type)
 }
 
 bool MixType::has_default_variant() const { return defaultVal.has_value(); }
@@ -184,7 +187,7 @@ void MixType::get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing)
 	}
 }
 
-usize MixType::get_variant_count() const { return subtypes.size(); }
+usize MixType::get_variant_count() const { return subtypes.size() + (isSimpleMove ? 1 : 0); }
 
 bool MixType::is_packed() const { return isPack; }
 

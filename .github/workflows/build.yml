@@ -65,10 +65,9 @@ jobs:
           tar -xzf libxml2_linux_x86_64.tar.gz
           wget --no-verbose $CI_LIBS_LATEST/ncurses_linux_x86_64.tar.gz
           tar -xzf ncurses_linux_x86_64.tar.gz
-          ls -a .
 
       - name: CMake configuration for x86_64
-        run: cmake -S src/ -B build/ -DCMAKE_C_COMPILER="clang-19" -DCMAKE_CXX_COMPILER="clang++-19" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DLIBS_DIR="../libs" -DLLVM_DIR="../libs/llvm" -DBOOST_DIR="../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
+        run: cmake -S src/ -B build/ -DCMAKE_C_COMPILER="clang-19" -DCMAKE_CXX_COMPILER="clang++-19" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
 
       - name: Build project for x86_64
         run: cmake --build build --config Release --parallel 8 --target package

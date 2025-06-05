@@ -126,7 +126,7 @@ void MixType::update_overview() {
 
 void MixType::find_tag_bitwidth() {
 	tagBitWidth = 1;
-	while (std::pow(2, tagBitWidth) <= (subtypes.size() + (isSimpleMove ? 1 : 0))) {
+	while (std::pow(2, tagBitWidth) <= subtypes.size()) {
 		tagBitWidth++;
 	}
 }
@@ -134,14 +134,14 @@ void MixType::find_tag_bitwidth() {
 usize MixType::get_index_of(const String& name) const {
 	for (usize i = 0; i < subtypes.size(); i++) {
 		if (subtypes.at(i).first.value == name) {
-			return i + (isSimpleMove ? 1 : 0);
+			return i;
 		}
 	}
 }
 
 bool MixType::has_default_variant() const { return defaultVal.has_value(); }
 
-usize MixType::get_default_index() const { return defaultVal.value_or(0u); }
+usize MixType::get_default_index() const { return defaultVal.value(); }
 
 Pair<bool, bool> MixType::has_variant_with_name(const String& sname) const {
 	for (const auto& sTy : subtypes) {
@@ -187,7 +187,7 @@ void MixType::get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing)
 	}
 }
 
-usize MixType::get_variant_count() const { return subtypes.size() + (isSimpleMove ? 1 : 0); }
+usize MixType::get_variant_count() const { return subtypes.size(); }
 
 bool MixType::is_packed() const { return isPack; }
 

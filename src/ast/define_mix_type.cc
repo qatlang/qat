@@ -78,10 +78,13 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	Vec<Pair<Identifier, Maybe<ir::Type*>>> subTypesIR;
 	bool                                    hasAssociatedType         = false;
 	bool                                    allSubtypesHaveSimpleMove = true;
+	if (noneVariant.has_value()) {
+		subTypesIR.push_back(std::make_pair(Identifier("none", noneVariant.value()), None));
+	}
 	for (usize i = 0; i < subtypes.size(); i++) {
 		for (usize j = i + 1; j < subtypes.size(); j++) {
 			if (subtypes.at(i).first.value == subtypes.at(j).first.value) {
-				irCtx->Error("The name of the subtype of the mix is repeating here. Please "
+				irCtx->Error("The name of this variant of the mix is repeating here. Please "
 				             "check logic & make necessary changes",
 				             fRanges.at(j));
 			}
@@ -89,14 +92,11 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 		if (not hasAssociatedType && subtypes.at(i).second.has_value()) {
 			hasAssociatedType = true;
 		}
-		if (defaultVal.has_value()) {
-			if (defaultVal.value() == i) {
-				if (subtypes.at(i).second.has_value()) {
-					irCtx->Error("A subfield with a value associated with them cannot be "
-					             "used as a default value",
-					             FileRange{fRanges.at(i), subtypes.at(i).second.value()->fileRange});
-				}
-			}
+		if (defaultVal.has_value() && (defaultVal.value() == i) && (i != 0 || not noneVariant.has_value()) &&
+		    subtypes.at(i).second.has_value()) {
+			irCtx->Error("A variant with an associated type cannot be "
+			             "used as the default variant of a mix type",
+			             FileRange{fRanges.at(i), subtypes.at(i).second.value()->fileRange});
 		}
 		auto emitCtx = EmitCtx::get(irCtx, mod);
 		if (opaquedType) {
@@ -109,13 +109,16 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 				irCtx->Error(
 				    "Type nesting found. The variant " + irCtx->color(subtypes.at(i).first.value) + " of mix type " +
 				        irCtx->color(opaquedType->to_string()) +
-				        " has the same type associated with it as its parent. Check the code for mistakes or use a pointer or reference to the parent type as the variant type",
+				        " has the same type associated with it as its parent. Check the code for mistakes or use a pointer"
+				        " or reference to the parent type as the associated type",
 				    subtypes.at(i).second.value()->fileRange);
 			} else {
-				irCtx->Error("The variant " + irCtx->color(subtypes.at(i).first.value) + " of mix type " +
-				                 irCtx->color(opaquedType->to_string()) +
-				                 " has an incomplete type with an unknown size associated with it",
-				             subtypes.at(i).second.value()->fileRange);
+				irCtx->Error(
+				    "The variant " + irCtx->color(subtypes.at(i).first.value) + " of mix type " +
+				        irCtx->color(opaquedType->to_string()) +
+				        " has an incomplete type with an unknown size associated with it. Such types cannot be used as the"
+				        " associated type of a variant",
+				    subtypes.at(i).second.value()->fileRange);
 			}
 		}
 		if (subTypeTy && not subTypeTy->has_simple_move()) {
@@ -135,7 +138,8 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 	if (allSubtypesHaveSimpleMove && not noneVariant.has_value()) {
 		irCtx->Warning(
-		    "Associated types of all variants of this mix type have simple-move. This means that this mix type can also have simple-move. But the " +
+		    "Associated types of all variants of this mix type have simple-move. "
+		    "This means that this mix type can also have simple-move. But the " +
 		        irCtx->color("none") +
 		        " variant has not been requested to be created for this mix type. You can do that by adding " +
 		        irCtx->color("none") + " as the first variant",

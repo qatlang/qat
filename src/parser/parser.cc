@@ -2564,11 +2564,13 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				Vec<Pair<Identifier, Maybe<ast::Type*>>> subTypes;
 				Vec<FileRange>                           fileRanges;
 				Maybe<usize>                             defaultVal;
-				parse_mix_type(preCtx, i + 2, bClose, subTypes, fileRanges, defaultVal);
+				Maybe<FileRange>                         noneVariant;
+				parse_mix_type(preCtx, i + 2, bClose, subTypes, noneVariant, fileRanges, defaultVal);
 				// FIXME - Support packing
-				addNode(ast::DefineMixType::create(
-				    IdentifierAt(i + 1), entityMeta.defineChecker, entityMeta.genericConstraint, std::move(subTypes),
-				    std::move(fileRanges), defaultVal, false, get_visibility(), RangeSpan(i, bClose)));
+				addNode(ast::DefineMixType::create(IdentifierAt(i + 1), entityMeta.defineChecker,
+				                                   entityMeta.genericConstraint, std::move(subTypes),
+				                                   std::move(noneVariant), std::move(fileRanges), defaultVal, false,
+				                                   get_visibility(), RangeSpan(i, bClose)));
 				i = bClose;
 				break;
 			}
@@ -3647,8 +3649,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 }
 
 void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
-                            Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef, Vec<FileRange>& fileRanges,
-                            Maybe<usize>& defaultVal) {
+                            Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef, Maybe<FileRange>& noneVariant,
+                            Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal) {
 	using lexer::TokenType;
 
 	for (auto i = from + 1; i < upto; i++) {
@@ -3659,12 +3661,31 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 					if (is_next(TokenType::identifier, i)) {
 						defaultVal = uRef.size();
 						break;
+					} else if (is_next(TokenType::none, i)) {
+						defaultVal = 0;
+						break;
 					} else {
 						add_error("Invalid token found after default", RangeAt(i));
 					}
 				} else {
-					add_error("Default value for mix type already provided", RangeAt(i));
+					add_error("Default value for mix type has already been provided", RangeAt(i));
 				}
+			}
+			case TokenType::none: {
+				if (not uRef.empty()) {
+					add_error("The " + color_error("none") + " variant should be the first variant of a mix type",
+					          RangeAt(i));
+				}
+				noneVariant = is_previous(TokenType::Default, i) ? FileRange{tokens->at(i - 1).fileRange, RangeAt(i)}
+				                                                 : RangeAt(i);
+				if (is_next(TokenType::separator, i) || (is_next(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
+					i++;
+				} else {
+					add_error("Invalid token found after the " + color_error("none") +
+					              " variant in mix type definition",
+					          RangeAt(i));
+				}
+				break;
 			}
 			case TokenType::identifier: {
 				auto start = i;

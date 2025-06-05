@@ -72,7 +72,7 @@ class Parser {
 	void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* memberParent);
 
 	void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef,
-	                    Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
+	                    Maybe<FileRange>& noneVariant, Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
 
 	void do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,
 	                    Maybe<usize>& defaultVal);

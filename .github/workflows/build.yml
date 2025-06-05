@@ -74,3 +74,5 @@ jobs:
 
       - name: Uploading build for x86_64
         run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-linux-x86_64.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

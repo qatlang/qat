@@ -35,10 +35,15 @@ If you are facing issues with the language, [create an issue](https://github.com
 Requirements:
 
 - CMake 3.16.3 minimum - Latest recommended
-- LLVM 19 (llvm + lld + clang) - Static libraries
-- Boost 1.86 (Boost.Filesystem) - Static libraries
+- LLVM 20 (llvm + lld + clang) - Static libraries
+- Boost 1.86.0 (Boost.Filesystem) - Static libraries
+- icu4c 74.x (libicudata + libicuuc) - Static libraries
 
-Make sure that the LLVM & Boost builds are in release mode, if you are building those yourself.
+#### NOTICE FOR BUILDING
+
+> Building this project requires a specific build of LLVM. The build configuration of LLVM is broken when lld libraries are enabled - Dependencies like `zlib` and `zstd` are not found and linked properly when they are provided as static libraries. I had to modify the CMake configuration to build LLVM without errors.
+
+Make sure that the LLVM, Boost and icu4c builds are in release mode, if you are building those yourself.
 
 To configure the CMake project, run `cmake -DCMAKE_INSTALL_PREFIX="${HOME}/dev/qat" -DCMAKE_BUILD_TYPE=Release -DLLVM_DIR="/path/to/llvm" -DCMAKE_CXX_COMPILER="clang++-19" -DBOOST_DIR="/path/to/boost" -DCMAKE_C_COMPILER="clang-19" -DCMAKE_C_COMPILER_WORKS=1 -DCMAKE_CXX_COMPILER_WORKS=1 -DBUILD_SHARED_LIBS=false -GNinja -S src/ -B build/`
 

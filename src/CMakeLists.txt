@@ -350,7 +350,7 @@ install(DIRECTORY "${CMAKE_SOURCE_DIR}/std/" DESTINATION "std")
 install(DIRECTORY DESTINATION "toolchain")
 
 # CPack for bundling the release files
-if ((CMAKE_HOST_SYSTEM_NAME EQUAL "Linux") AND (is_os_linux))
+if (is_os_linux)
 	set(CPACK_GENERATOR "TGZ")
 else()
 	set(CPACK_GENERATOR "ZIP")

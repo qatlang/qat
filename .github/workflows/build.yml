@@ -47,11 +47,13 @@ jobs:
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_x86_64.tar.gz -OutFile llvm_windows_x86_64.tar.gz
           7z x -tgzip llvm_windows_x86_64.tar.gz
           7z x -ttar llvm_windows_x86_64.tar
-          Remove-Item -Path llvm_windows_x86_64.tar.gz llvm_windows_x86_64.tar
+          Remove-Item -Path llvm_windows_x86_64.tar.gz
+          Remove-Item -Path llvm_windows_x86_64.tar
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/boost_windows_x86_64.tar.gz -OutFile boost_windows_x86_64.tar.gz
           7z x -tgzip boost_windows_x86_64.tar.gz
           7z x -ttar boost_windows_x86_64.tar
-          Remove-Item -Path boost_windows_x86_64.tar.gz boost_windows_x86_64.tar
+          Remove-Item -Path boost_windows_x86_64.tar.gz
+          Remove-Item -Path boost_windows_x86_64.tar
 
       - name: Install Visual Studio Build Tools
         run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --no-includeRecommended --installWhileDownloading"

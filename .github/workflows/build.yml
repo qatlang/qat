@@ -45,9 +45,11 @@ jobs:
         working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_x86_64.tar.gz -OutFile llvm_windows_x86_64.tar.gz
-          7z x llvm_windows_x86_64.tar.gz
+          7z x -tgzip llvm_windows_x86_64.tar.gz
+          7z x -ttar llvm_windows_x86_64.tar
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/boost_windows_x86_64.tar.gz -OutFile boost_windows_x86_64.tar.gz
-          7z x boost_windows_x86_64.tar.gz
+          7z x -tgzip boost_windows_x86_64.tar.gz
+          7z x -ttar boost_windows_x86_64.tar
           Get-ChildItem -Path ${{ env.WINDOWS_LIBDIR }}
 
       - name: Install Visual Studio Build Tools

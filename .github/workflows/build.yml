@@ -40,9 +40,7 @@ jobs:
         run: New-Item -ItemType Directory -Path ${{ github.workspace }}/../libs
 
       - name: Install cmake & Visual Studio Build Tools
-        run: |
-          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
-          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --no-includeRecommended --installWhileDownloading"
+        run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --no-includeRecommended --installWhileDownloading"
         
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -50,9 +48,9 @@ jobs:
       - name: Download & extract dependencies
         working-directory: ../libs
         run: |
-          Invoke-WebRequest $CI_LIBS_LATEST/llvm_windows_x86_64.tar.gz -OutFile llvm_windows_x86_64.tar.gz
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_x86_64.tar.gz -OutFile llvm_windows_x86_64.tar.gz
           7z x llvm_windows_x86_64.tar.gz
-          Invoke-WebRequest $CI_LIBS_LATEST/boost_windows_x86_64.tar.gz -OutFile boost_windows_x86_64.tar.gz
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/boost_windows_x86_64.tar.gz -OutFile boost_windows_x86_64.tar.gz
           7z x boost_windows_x86_64.tar.gz
 
       - name: CMake configuration for x86_64
@@ -60,6 +58,9 @@ jobs:
 
       - name: Build project for x86_64
         run: cmake --build ./build/ --config Release --parallel 8 --target package
+
+      - name: Install GitHub CLI
+        run: choco install gh
 
       - name: Uploading build for x86_64
         run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-windows-x86_64.zip --clobber

@@ -39,7 +39,7 @@ jobs:
       - name: Create directories
         run: |
           New-Item -ItemType Directory -Path ${{ github.workspace }}/../libs
-          Write-Output "LIBDIR_PATH=$((Join-Path ${{ github.workspace }} ../libs) | Resolve-Path)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "LIBDIR_PATH=$((Join-Path ${{ github.workspace }} ../libs) | Resolve-Path)" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           Get-ChildItem -Path "${{ env.LIBDIR_PATH }}"
 
       - name: Install Visual Studio Build Tools

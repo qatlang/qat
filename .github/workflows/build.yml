@@ -28,51 +28,40 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "v${{ inputs.version }}" --title "v${{ inputs.version }}" --notes "Release notes are updated manually, so it is work in progress" --draft
-          
 
-  linux:
-    name: Linux
+  windows:
+    name: Windows
     needs: [create_release]
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Create directories
-        run: mkdir ../libs
+        run: New-Item -ItemType Directory -Path ${{ github.workspace }}/../libs
 
-      - name: Update apt cache
-        run: sudo apt update
+      - name: Install cmake & Visual Studio Build Tools
+        run: |
+          choco install cmake --installargs 'ADD_CMAKE_TO_PATH=System'
+          choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --no-includeRecommended --installWhileDownloading"
+        
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
 
-      - name: Install cmake, ninja-build, clang
-        run: sudo apt --yes install cmake ninja-build clang-19 lld-19
-
-      - name: Download & setup dependencies for x86_64
+      - name: Download & extract dependencies
         working-directory: ../libs
         run: |
-          wget --no-verbose $CI_LIBS_LATEST/llvm_linux_x86_64.tar.gz
-          tar -xzf llvm_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/boost_linux_x86_64.tar.gz
-          tar -xzf boost_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/icu4c_linux_x86_64.tar.gz
-          tar -xzf icu4c_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/zlib_linux_x86_64.tar.gz
-          tar -xzf zlib_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/zstd_linux_x86_64.tar.gz
-          tar -xzf zstd_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/libedit_linux_x86_64.tar.gz
-          tar -xzf libedit_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/libxml2_linux_x86_64.tar.gz
-          tar -xzf libxml2_linux_x86_64.tar.gz
-          wget --no-verbose $CI_LIBS_LATEST/ncurses_linux_x86_64.tar.gz
-          tar -xzf ncurses_linux_x86_64.tar.gz
+          Invoke-WebRequest $CI_LIBS_LATEST/llvm_windows_x86_64.tar.gz -OutFile llvm_windows_x86_64.tar.gz
+          7z x llvm_windows_x86_64.tar.gz
+          Invoke-WebRequest $CI_LIBS_LATEST/boost_windows_x86_64.tar.gz -OutFile boost_windows_x86_64.tar.gz
+          7z x boost_windows_x86_64.tar.gz
 
       - name: CMake configuration for x86_64
-        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="clang-19" -DCMAKE_CXX_COMPILER="clang++-19" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -G"Visual Studio 17 2022" -S ./src/ -B ./build/
 
       - name: Build project for x86_64
-        run: cmake --build build --config Release --parallel 8 --target package
+        run: cmake --build ./build/ --config Release --parallel 8 --target package
 
       - name: Uploading build for x86_64
-        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-linux-x86_64.tar.gz --clobber
+        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-windows-x86_64.zip --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

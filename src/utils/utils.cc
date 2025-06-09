@@ -165,15 +165,12 @@ Maybe<String> find_executable(StringView name) {
 		auto wherePath = find_executable("where");
 		if (wherePath.has_value()) {
 			auto res = run_command_get_output(wherePath.value(), {String(name)});
-			if (not res.has_value()) {
-				return None;
-			}
-			if (res->first == 0) {
-				if (res->second.ends_with('\n')) {
-					res->second.pop_back();
+			if (res.first == 0) {
+				if (res.second.ends_with('\n')) {
+					res.second.pop_back();
 				}
-				if (fs::is_regular_file(res->second)) {
-					return res->second;
+				if (fs::is_regular_file(res.second)) {
+					return res.second;
 				}
 			}
 		}

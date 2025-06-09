@@ -2,6 +2,7 @@
 #define QAT_AST_EXPRESSIONS_IN_HPP
 
 #include "../expression.hpp"
+#include <variant>
 
 namespace qat::ast {
 

@@ -100,7 +100,7 @@ void DefineFlagType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irC
 					}
 				}
 			}
-			variantsList.push_back(ir::FlagVariant{.isDefault = false, .names = variants[i].names});
+			variantsList.push_back(ir::FlagVariant{.names = variants[i].names, .isDefault = false});
 		}
 		(void)ir::FlagType::create(name, parent, std::move(variantsList),
 		                           foundOneValue ? Maybe<Vec<ir::PrerunValue*>>(valuesList) : None, underType,

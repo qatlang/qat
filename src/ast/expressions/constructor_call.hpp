@@ -3,6 +3,7 @@
 
 #include "../expression.hpp"
 #include "../type_like.hpp"
+#include "../../IR/emit_phase.hpp"
 
 namespace qat::ast {
 

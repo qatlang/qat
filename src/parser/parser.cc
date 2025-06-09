@@ -2078,9 +2078,10 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 				i++;
 				typeDefs.push_back(ast::SkillTypeDefinition{.visibSpec     = getVisibSpec(),
 				                                            .name          = std::move(tyDefName),
+				                                            .defineChecker = entMeta.defineChecker,
+															.type          = typeRes.first,
 				                                            .range         = RangeSpan(start, i),
-				                                            .type          = typeRes.first,
-				                                            .defineChecker = entMeta.defineChecker});
+				                                            });
 				break;
 			}
 			case TokenType::Static:
@@ -2141,11 +2142,11 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 					          RangeSpan(start, i));
 				}
 				i++;
-				methods.push_back(ast::SkillMethod{.name          = std::move(methodName),
+				methods.push_back(ast::SkillMethod{.visibSpec     = getVisibSpec(),
+				                                   .kind          = methodKind,
+				                                   .name          = std::move(methodName),
 				                                   .arguments     = std::move(arguments),
 				                                   .givenType     = givenType,
-				                                   .kind          = methodKind,
-				                                   .visibSpec     = getVisibSpec(),
 				                                   .defineChecker = entMeta.defineChecker,
 				                                   .fileRange     = RangeSpan(start, i)});
 				break;
@@ -3763,10 +3764,11 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 					i           = expRes.second;
 					value       = expRes.first;
 				}
-				variants.push_back(ast::FlagVariant{.isDefault = getDefault(),
-				                                    .names     = std::move(names),
-				                                    .range     = RangeSpan(idStart, i),
-				                                    .value     = value});
+				variants.push_back(ast::FlagVariant{.names     = std::move(names),
+				                                    .value     = value,
+													.isDefault = getDefault(),
+													.range     = RangeSpan(idStart, i),
+				                                    });
 				if (is_next(TokenType::separator, i)) {
 					i++;
 				}
@@ -5237,8 +5239,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								skillSpec.push_back(ast::PolySkillSpec::from_implementation(
 								    ast::DoneSkillEntity{.relative = sym.first.relative,
 								                         .names    = std::move(sym.first.name),
-								                         .generics = std::move(generics),
-								                         .range    = sym.first.fileRange},
+								                         .range    = sym.first.fileRange,
+														 .generics = std::move(generics),
+														 },
 								    RangeSpan(itStart, i)));
 							} else {
 								auto                   sym = do_symbol(preCtx, i);
@@ -5256,8 +5259,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								skillSpec.push_back(
 								    ast::PolySkillSpec::from_skill(ast::SkillEntity{.relative = sym.first.relative,
 								                                                    .names = std::move(sym.first.name),
-								                                                    .generics = std::move(generics),
-								                                                    .range    = sym.first.fileRange},
+								                                                    .range    = sym.first.fileRange,
+																					.generics = std::move(generics),
+								                                                    },
 								                                   RangeSpan(itStart, i)));
 							}
 							if (not is_next(TokenType::separator, i)) {

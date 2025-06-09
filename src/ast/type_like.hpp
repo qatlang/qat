@@ -36,7 +36,7 @@ class TypeLike {
 
 	useit String to_string() const;
 
-	useit operator JsonValue() const;
+	useit JsonValue to_json_value() const;
 };
 
 } // namespace qat::ast

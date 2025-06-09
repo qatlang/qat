@@ -4,6 +4,7 @@
 #include "../expression.hpp"
 #include "../skill_entity.hpp"
 #include "../types/pointer.hpp"
+#include <variant>
 
 namespace qat::ast {
 
@@ -88,7 +89,7 @@ class GetPolymorph final : public Expression {
 		    ._("nodeType", "getPolymorph")
 		    ._("value", value->to_json())
 		    ._("isType", isTypeRange.has_value())
-		    ._("typeRange", isTypeRange.has_value() ? (JsonValue)isTypeRange.value() : JsonValue())
+		    ._("typeRange", isTypeRange.has_value() ? isTypeRange.value().to_json_value() : JsonValue())
 		    ._("skillSpecifications", skillsJSON)
 		    ._("hasPointerOwner", owner.has_value())
 		    ._("pointerOwner", owner.has_value() ? owner.value().to_json() : JsonValue())

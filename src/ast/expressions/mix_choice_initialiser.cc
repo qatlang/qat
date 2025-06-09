@@ -160,7 +160,7 @@ Json MixOrChoiceInitialiser::to_json() const {
 	return Json()
 	    ._("nodeType", "mixTypeInitialiser")
 	    ._("hasType", (bool)type)
-	    ._("type", (JsonValue)type)
+	    ._("type", type.to_json_value())
 	    ._("subName", subName)
 	    ._("hasExpression", expression != nullptr)
 	    ._("expression", expression ? expression->to_json() : JsonValue())

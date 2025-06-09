@@ -140,7 +140,7 @@ Json PrerunPlainInit::to_json() const {
 	return Json()
 	    ._("nodeType", "prerunPlainInitialiser")
 	    ._("hasType", (bool)type)
-	    ._("type", type)
+	    ._("type", type.to_json_value())
 	    ._("hasFields", fields.has_value())
 	    ._("fields", fieldsJson)
 	    ._("fieldValues", fieldValsJson);

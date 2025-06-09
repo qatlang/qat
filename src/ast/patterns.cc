@@ -43,6 +43,7 @@ PatternFill* PatternFill::create_for_type(EmitCtx* ctx, ir::Type* type) {
 			res->fillType = PatternFillType::COMPLETE;
 		}
 	}
+	return res;
 }
 
 void PatternChild::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {

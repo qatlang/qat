@@ -19,7 +19,7 @@ String TypeLike::to_string() const {
 	return "";
 }
 
-TypeLike::operator JsonValue() const {
+JsonValue TypeLike::to_json_value() const {
 	if (data) {
 		if (kind == TypeLikeKind::TYPE) {
 			return ((Type*)data)->to_json();

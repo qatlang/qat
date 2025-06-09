@@ -188,7 +188,7 @@ Json ConstructorCall::to_json() const {
 	return Json()
 	    ._("nodeType", "constructorCall")
 	    ._("hasType", (bool)type)
-	    ._("type", (JsonValue)type)
+	    ._("type", type.to_json_value())
 	    ._("arguments", argsJson)
 	    ._("fileRange", fileRange);
 }

@@ -24,6 +24,7 @@ using u8                                     = uint8_t;
 using f32                                    = float;
 using f64                                    = double;
 using usize                                  = std::size_t;
+using uint                                   = unsigned int;
 using VoidPtr                                = void*;
 using String                                 = std::string;
 using StringView                             = std::string_view;

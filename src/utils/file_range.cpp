@@ -39,9 +39,17 @@ bool FileRange::is_before(FileRange another) const {
 	        ((end.line == another.start.line) && (end.byteOffset < another.start.byteOffset)));
 }
 
-FileRange::operator Json() const { return Json()._("path", file.string())._("start", start)._("end", end); }
+Json FileRange::to_json() const {
+	return Json()._("path", file.string())._("start", start)._("end", end);
+}
 
-FileRange::operator JsonValue() const { return (Json)(*this); }
+JsonValue FileRange::to_json_value() const {
+	return to_json();
+}
+
+FileRange::operator Json() const { return to_json(); }
+
+FileRange::operator JsonValue() const { return to_json(); }
 
 std::ostream& operator<<(std::ostream& os, FileRange const& range) {
 	return os << range.file.string() << ":" << range.start << " - " << range.end;

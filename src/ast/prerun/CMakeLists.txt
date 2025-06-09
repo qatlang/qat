@@ -29,6 +29,6 @@ add_library(QAT_AST_PRERUN
 
 target_link_directories(QAT_AST_PRERUN PUBLIC ../../utils)
 
-target_include_directories(QAT_AST_PRERUN PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_AST_PRERUN PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 target_link_libraries(QAT_AST_PRERUN QAT_UTILS)

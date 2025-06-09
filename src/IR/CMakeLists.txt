@@ -17,7 +17,7 @@ add_library(QAT_IR STATIC
 	type_id.cc
 	value.cc)
 
-target_include_directories(QAT_IR PUBLIC "${LLVM_ROOT_DIR}/include" "${BOOST_INCLUDE_DIR}")
+target_include_directories(QAT_IR PUBLIC "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}")
 
 add_subdirectory(types/)
 

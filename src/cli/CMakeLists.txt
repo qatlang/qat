@@ -6,7 +6,7 @@ add_library(QAT_CLI
 	display.cc
 	logger.cc)
 
-target_include_directories(QAT_CLI PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_CLI PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 target_link_directories(QAT_CLI PUBLIC ../utils)
 

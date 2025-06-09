@@ -32,7 +32,7 @@ add_library(QAT_AST STATIC
 	type_like.cc
 )
 
-target_include_directories(QAT_AST PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_AST PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 add_subdirectory(types/)
 add_subdirectory(expressions/)

@@ -30,7 +30,7 @@ add_library(QAT_IR_TYPES STATIC
 	void.cc
 )
 
-target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 target_link_directories(QAT_IR_TYPES PUBLIC ../../utils)
 

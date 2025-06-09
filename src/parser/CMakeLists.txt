@@ -4,7 +4,7 @@ add_library(QAT_PARSER
 	parser_context.cc
 	token_family.cc)
 
-target_include_directories(QAT_PARSER PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_PARSER PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 target_link_directories(QAT_PARSER
 	PUBLIC ../ast

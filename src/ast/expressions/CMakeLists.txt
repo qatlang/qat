@@ -37,6 +37,6 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 
 target_link_directories(QAT_AST_EXPRESSIONS PUBLIC ../../utils)
 
-target_include_directories(QAT_AST_EXPRESSIONS PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_AST_EXPRESSIONS PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 target_link_libraries(QAT_AST_EXPRESSIONS QAT_UTILS)

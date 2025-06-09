@@ -8,7 +8,7 @@ add_library(QAT_AST_PRERUN_SENTENCES
   say.cc
 )
 
-target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_ROOT_DIR}/include")
+target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_INCLUDE_DIRS}")
 
 target_link_directories(QAT_AST_SENTENCES PUBLIC ../../utils)
 

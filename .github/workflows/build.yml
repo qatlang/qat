@@ -205,13 +205,13 @@ jobs:
       - name: Remove x64 libraries
         working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
-          rmdir llvm /s /q
-          rmdir boost /s /q
-          rmdir icu4c /s /q
+          Remove-Item -Path .\llvm -Force -Recurse
+          Remove-Item -Path .\boost -Force -Recurse
+          Remove-Item -Path .\icu4c -Force -Recurse
 
       - name: Clean build directory
         run: |
-          rmdir build /s /q
+          Remove-Item -Path .\build -Force -Recurse
           mkdir build
 
       - name: Download and extract dependencies for 32-bit
@@ -244,13 +244,13 @@ jobs:
       - name: Remove 32-bit libraries
         working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
-          rmdir llvm /s /q
-          rmdir boost /s /q
-          rmdir icu4c /s /q
+          Remove-Item -Path .\llvm -Force -Recurse
+          Remove-Item -Path .\boost -Force -Recurse
+          Remove-Item -Path .\icu4c -Force -Recurse
 
       - name: Clean build directory
         run: |
-          rmdir build /s /q
+          Remove-Item -Path .\build -Force -Recurse
           mkdir build
 
       - name: Download and extract dependencies for arm64

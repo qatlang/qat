@@ -37,13 +37,15 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Create directories
-        run: mkdir ../libs
+        run: |
+          mkdir ../libs
+          mkdir ../cmake
 
       - name: Update apt cache
         run: sudo apt update
 
       - name: Install cmake, ninja-build, clang
-        run: sudo apt --yes install ninja-build clang-19 lld-19
+        run: sudo apt --yes install ninja-build clang-19 llvm-19 lld-19
 
       - name: Download & setup dependencies for x86_64
         working-directory: ../libs
@@ -54,9 +56,12 @@ jobs:
           tar -xzf boost_linux_x86_64.tar.gz
           wget --no-verbose $CI_LIBS_LATEST/icu4c_linux_x86_64.tar.gz
           tar -xzf icu4c_linux_x86_64.tar.gz
+          rm llvm_linux_x86_64.tar.gz
+          rm boost_linux_x86_64.tar.gz
+          rm icu4c_linux_x86_64.tar.gz
 
       - name: CMake configuration for x86_64
-        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="clang-19" -DCMAKE_CXX_COMPILER="clang++-19" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DTARGET_ARCHITECTURE="x86_64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="clang-19" -DCMAKE_CXX_COMPILER="clang++-19" -DTARGET_ARCHITECTURE="x86_64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
 
       - name: Build project for x86_64
         run: cmake --build build --config Release --parallel 8 --target package
@@ -199,6 +204,11 @@ jobs:
           rmdir /s /q boost
           rmdir /s /q icu4c
 
+      - name: Clean build directory
+        run: |
+          rmdir /s /q build
+          mkdir build
+
       - name: Download and extract dependencies for 32-bit
         run: |
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_i686.tar.gz -OutFile llvm_windows_i686.tar.gz
@@ -227,6 +237,11 @@ jobs:
           rmdir /s /q llvm
           rmdir /s /q boost
           rmdir /s /q icu4c
+
+      - name: Clean build directory
+        run: |
+          rmdir /s /q build
+          mkdir build
 
       - name: Download and extract dependencies for arm64
         run: |

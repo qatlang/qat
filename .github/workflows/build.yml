@@ -217,6 +217,7 @@ jobs:
           mkdir build
 
       - name: Download and extract dependencies for 32-bit
+        working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_i686.tar.gz -OutFile llvm_windows_i686.tar.gz
           7z x -tgzip llvm_windows_i686.tar.gz
@@ -257,6 +258,7 @@ jobs:
           mkdir build
 
       - name: Download and extract dependencies for arm64
+        working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_arm64.tar.gz -OutFile llvm_windows_arm64.tar.gz
           7z x -tgzip llvm_windows_arm64.tar.gz

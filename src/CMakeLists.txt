@@ -184,11 +184,12 @@ if(is_os_linux)
 elseif(is_os_macos)
 	target_link_libraries(${PROJECT_NAME}
 		${LLVM_LIB_PATHS} QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
-		"${CMAKE_SYSROOT}/usr/lib/libc++.tbd"
-		"${LIBS_DIR}/libiconv/lib/libiconv.a"
-		"${LIBS_DIR}/xz/lib/liblzma.a"
 		"${LIBS_DIR}/icu4c/lib/libicuuc.a" "${LIBS_DIR}/icu4c/lib/libicudata.a"
 	)
+	if (CMAKE_CROSSCOMPILING)
+		target_link_libraries(${PROJECT_NAME}
+		"${CMAKE_SYSROOT}/usr/lib/libc++.tbd")
+	endif()
 elseif(is_os_windows)
 	string(REPLACE " " ";" LLVM_LIBRARIES "${LLVM_LIBRARIES}")
 	string(REPLACE "-l" "" LLVM_LIBRARIES "${LLVM_LIBRARIES}")

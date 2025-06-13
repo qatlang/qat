@@ -140,3 +140,31 @@ jobs:
       - name: Uploading build for 32-bit
         run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-i686.zip --clobber
 
+      - name: Remove 32-bit libraries
+        working-directory: ${{ env.WINDOWS_LIBDIR }}
+        run: |
+          rmdir /s /q llvm
+          rmdir /s /q boost
+          rmdir /s /q icu4c
+
+      - name: Download and extract dependencies for arm64
+        run: |
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_arm64.tar.gz -OutFile llvm_windows_arm64.tar.gz
+          7z x -tgzip llvm_windows_arm64.tar.gz
+          7z x -ttar llvm_windows_arm64.tar
+          Remove-Item -Path llvm_windows_arm64.tar.gz
+          Remove-Item -Path llvm_windows_arm64.tar
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/boost_windows_arm64.tar.gz -OutFile boost_windows_arm64.tar.gz
+          7z x -tgzip boost_windows_arm64.tar.gz
+          7z x -ttar boost_windows_arm64.tar
+          Remove-Item -Path boost_windows_arm64.tar.gz
+          Remove-Item -Path boost_windows_arm64.tar
+
+      - name: CMake configuration for arm64
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DLIBS_DIR="${{ env.WINDOWS_LIBDIR }}" -DLLVM_DIR="${{ env.WINDOWS_LIBDIR }}\llvm" -DBOOST_DIR="${{ env.WINDOWS_LIBDIR }}\boost" -DTARGET_ARCHITECTURE="arm64" -G"Visual Studio 17 2022" -A ARM64 -S ./src -B ./build
+
+      - name: Build project for arm64
+        run: cmake --build ./build --config Release --parallel 8 --target package
+
+      - name: Uploading build for arm64
+        run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-arm64.zip --clobber

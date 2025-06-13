@@ -202,7 +202,10 @@ if(is_os_linux)
 		set(CMAKE_CXX_FLAGS "-g -O0 -Wall -Wunused ${CMAKE_CXX_FLAGS}")
 	endif()
 elseif(is_os_macos)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++20 -stdlib=libc++ -fuse-ld=lld -flto -w -s -L${CMAKE_SYSROOT}/usr/lib -funwind-tables -fno-rtti")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++20 -flto -w -s -funwind-tables -fno-rtti")
+	if (CMAKE_CROSSCOMPILING)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fuse-ld=lld -stdlib=libc++")
+	endif()
 elseif(is_os_windows)
 	if(MINGW)
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++20 -w -fpermissive ${LLVM_DEFINITIONS}")
@@ -234,10 +237,9 @@ target_link_directories(${PROJECT_NAME}
 	PRIVATE ${LLVM_ROOT_DIR}/lib ${LINK_DIRS}
 )
 
-if(is_os_macos)
-	if(NOT is_arch_x64)
-		target_link_directories(${PROJECT_NAME} ${CMAKE_SYSROOT}/usr/lib)
-	endif()
+if(is_os_macos AND CMAKE_CROSSCOMPILING)
+	target_include_directories(${PROJECT_NAME} ${CMAKE_SYSROOT}/usr/include)
+	target_link_directories(${PROJECT_NAME} ${CMAKE_SYSROOT}/usr/lib)
 endif()
 
 set(LLVM_LIB_PATHS "")
@@ -303,7 +305,7 @@ elseif(is_os_windows)
 	if(MINGW)
 		target_link_libraries(${PROJECT_NAME}
 			QAT_UTILS QAT_CLI QAT_AST QAT_LEXER QAT_PARSER QAT_IR
-			${LLVM_LIBRARIES} pthread "${LIBS_DIR}/libxml2/lib/libxml2.a"
+			${LLVM_LIBRARIES} pthread
 			"${LIBS_DIR}/icu4c/lib/libicuuc.a" "${LIBS_DIR}/icu4c/lib/libicudata.a"
 		)
 	else()

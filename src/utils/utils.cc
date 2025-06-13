@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <random>
 #include <set>
+#include <sstream>
 #include <unicode/brkiter.h>
 #include <unicode/uchar.h>
 #include <unicode/unistr.h>
@@ -62,7 +63,7 @@ String to_hex(u32 value, Maybe<u8> width) {
 }
 
 bool is_unicode_scalar_letter(u32 scalar) {
-	switch (u_charType_74(scalar)) {
+	switch (u_charType(scalar)) {
 		case U_UPPERCASE_LETTER:
 		case U_LOWERCASE_LETTER:
 		case U_TITLECASE_LETTER:
@@ -73,7 +74,7 @@ bool is_unicode_scalar_letter(u32 scalar) {
 }
 
 bool is_unicode_scalar_digit(u32 scalar) {
-	switch (u_charType_74(scalar)) {
+	switch (u_charType(scalar)) {
 		case U_DECIMAL_DIGIT_NUMBER:
 			return true;
 		default:
@@ -82,14 +83,14 @@ bool is_unicode_scalar_digit(u32 scalar) {
 }
 
 usize count_unicode_characters(String const& value) {
-	auto                                   str       = icu_74::UnicodeString::fromUTF8(value);
-	UErrorCode                             errorCode = U_ZERO_ERROR;
-	std::unique_ptr<icu_74::BreakIterator> iter(
-	    icu_74::BreakIterator::createCharacterInstance(icu_74::Locale::getDefault(), errorCode));
+	auto                                str       = icu::UnicodeString::fromUTF8(value);
+	UErrorCode                          errorCode = U_ZERO_ERROR;
+	std::unique_ptr<icu::BreakIterator> iter(
+	    icu::BreakIterator::createCharacterInstance(icu::Locale::getDefault(), errorCode));
 	if (U_SUCCESS(errorCode)) {
 		iter->setText(str);
 		usize count = 0;
-		while (iter->next() != icu_74::BreakIterator::DONE) {
+		while (iter->next() != icu::BreakIterator::DONE) {
 			count++;
 		}
 		return count;

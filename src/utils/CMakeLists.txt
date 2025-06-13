@@ -3,7 +3,7 @@ add_library(QAT_UTILS
 	identifier.cpp
 	json_parser.cpp
 	json.cpp
-   parse_boxes_identifier.cpp
+	parse_boxes_identifier.cpp
 	qat_region.cpp
 	run_command.cc
 	string_to_callingconv.cpp

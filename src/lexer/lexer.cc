@@ -6,6 +6,7 @@
 #include "./token_type.hpp"
 
 #include <chrono>
+#include <sstream>
 #include <string>
 
 #define NanosecondsInMicroseconds 1000

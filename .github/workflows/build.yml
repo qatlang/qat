@@ -29,6 +29,42 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "v${{ inputs.version }}" --title "v${{ inputs.version }}" --notes "Release notes are updated manually, so it is work in progress" --draft
+  linux:
+    name: Linux
+    needs: [create_release]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create directories
+        run: mkdir ../libs
+
+      - name: Update apt cache
+        run: sudo apt update
+
+      - name: Install cmake, ninja-build, clang
+        run: sudo apt --yes install ninja-build clang-19 lld-19
+
+      - name: Download & setup dependencies for x86_64
+        working-directory: ../libs
+        run: |
+          wget --no-verbose $CI_LIBS_LATEST/llvm_linux_x86_64.tar.gz
+          tar -xzf llvm_linux_x86_64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/boost_linux_x86_64.tar.gz
+          tar -xzf boost_linux_x86_64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/icu4c_linux_x86_64.tar.gz
+          tar -xzf icu4c_linux_x86_64.tar.gz
+
+      - name: CMake configuration for x86_64
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER="clang-19" -DCMAKE_CXX_COMPILER="clang++-19" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DTARGET_ARCHITECTURE="x86_64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
+
+      - name: Build project for x86_64
+        run: cmake --build build --config Release --parallel 8 --target package
+
+      - name: Uploading build for x86_64
+        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-linux-x86_64.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   windows:
     name: Windows
@@ -41,7 +77,7 @@ jobs:
         run: |
           New-Item -ItemType Directory -Path ${{ env.WINDOWS_LIBDIR }}
 
-      - name: Download & extract dependencies
+      - name: Download & extract dependencies for x64
         working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
           Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_x64.tar.gz -OutFile llvm_windows_x64.tar.gz

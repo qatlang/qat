@@ -279,3 +279,106 @@ jobs:
 
       - name: Uploading build for arm64
         run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-arm64.zip --clobber
+
+  macos:
+    name: MacOS
+    needs: [create_release]
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create directories
+        run: |
+          mkdir ../libs
+
+      - name: Download & setup dependencies for arm64
+        working-directory: ../libs
+        run: |
+          wget --no-verbose $CI_LIBS_LATEST/llvm_macos_arm64.tar.gz
+          tar -xzf llvm_macos_arm64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/boost_macos_arm64.tar.gz
+          tar -xzf boost_macos_arm64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/icu4c_macos_arm64.tar.gz
+          tar -xzf icu4c_macos_arm64.tar.gz
+          rm llvm_macos_arm64.tar.gz
+          rm boost_macos_arm64.tar.gz
+          rm icu4c_macos_arm64.tar.gz
+
+      - name: CMake configuration for arm64
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64" -DTARGET_ARCHITECTURE="arm64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DBUILD_SHARED_LIBS=false
+
+      - name: Build project for arm64
+        run: cmake --build build --config Release --parallel 8 --target package
+
+      - name: Uploading build for arm64
+        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-macos-arm64.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove arm64 libraries
+        working-directory: ../libs
+        run: |
+          rm -rf llvm
+          rm -rf boost
+          rm -rf icu4c
+
+      - name: Download & setup dependencies for x86_64
+        working-directory: ../libs
+        run: |
+          wget --no-verbose $CI_LIBS_LATEST/llvm_macos_x86_64.tar.gz
+          tar -xzf llvm_macos_x86_64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/boost_macos_x86_64.tar.gz
+          tar -xzf boost_macos_x86_64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/icu4c_macos_x86_64.tar.gz
+          tar -xzf icu4c_macos_x86_64.tar.gz
+          rm llvm_macos_x86_64.tar.gz
+          rm boost_macos_x86_64.tar.gz
+          rm icu4c_macos_x86_64.tar.gz
+
+      - name: Clean build directory
+        run: rm -rf build/*
+
+      - name: CMake configuration for x86_64
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="x86_64" -DTARGET_ARCHITECTURE="x86_64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DBUILD_SHARED_LIBS=false
+
+      - name: Build project for x86_64
+        run: cmake --build build --config Release --parallel 8 --target package
+
+      - name: Uploading build for x86_64
+        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-macos-x86_64.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove x86_64 libraries
+        working-directory: ../libs
+        run: |
+          rm -rf llvm
+          rm -rf boost
+          rm -rf icu4c
+
+      - name: Download & setup dependencies for universal (arm64 + x86_64)
+        working-directory: ../libs
+        run: |
+          wget --no-verbose $CI_LIBS_LATEST/llvm_macos_universal.tar.gz
+          tar -xzf llvm_macos_universal.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/boost_macos_universal.tar.gz
+          tar -xzf boost_macos_universal.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/icu4c_macos_universal.tar.gz
+          tar -xzf icu4c_macos_universal.tar.gz
+          rm llvm_macos_universal.tar.gz
+          rm boost_macos_universal.tar.gz
+          rm icu4c_macos_universal.tar.gz
+
+      - name: Clean build directory
+        run: rm -rf build/*
+
+      - name: CMake configuration for universal (arm64 + x86_64)
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" -DTARGET_ARCHITECTURE="universal" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DBUILD_SHARED_LIBS=false
+
+      - name: Build project for universal (arm64 + x86_64)
+        run: cmake --build build --config Release --parallel 8 --target package
+
+      - name: Uploading build for universal (arm64 + x86_64)
+        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-macos-universal.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -105,7 +105,7 @@ jobs:
         run: rm -rf build/*
 
       - name: CMake configuration for aarch64
-        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/../cmake/aarch64.cmake" -DTARGET_ARCHITECTURE="aarch64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DBUILD_SHARED_LIBS=false
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/../cmake/aarch64.cmake" -DTARGET_ARCHITECTURE="aarch64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
 
       - name: Build project for aarch64
         run: cmake --build build --config Release --parallel 8 --target package
@@ -142,7 +142,7 @@ jobs:
         run: rm -rf build/*
 
       - name: CMake configuration for riscv64
-        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/../cmake/riscv64.cmake" -DTARGET_ARCHITECTURE="riscv64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DBUILD_SHARED_LIBS=false
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/../cmake/riscv64.cmake" -DTARGET_ARCHITECTURE="riscv64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DCMAKE_CXX_FLAGS="-fuse-ld=lld" -DBUILD_SHARED_LIBS=false
 
       - name: Build project for riscv64
         run: cmake --build build --config Release --parallel 8 --target package
@@ -205,13 +205,13 @@ jobs:
       - name: Remove x64 libraries
         working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
-          rmdir /s /q llvm
-          rmdir /s /q boost
-          rmdir /s /q icu4c
+          rmdir llvm /s /q
+          rmdir boost /s /q
+          rmdir icu4c /s /q
 
       - name: Clean build directory
         run: |
-          rmdir /s /q build
+          rmdir build /s /q
           mkdir build
 
       - name: Download and extract dependencies for 32-bit
@@ -244,13 +244,13 @@ jobs:
       - name: Remove 32-bit libraries
         working-directory: ${{ env.WINDOWS_LIBDIR }}
         run: |
-          rmdir /s /q llvm
-          rmdir /s /q boost
-          rmdir /s /q icu4c
+          rmdir llvm /s /q
+          rmdir boost /s /q
+          rmdir icu4c /s /q
 
       - name: Clean build directory
         run: |
-          rmdir /s /q build
+          rmdir build /s /q
           mkdir build
 
       - name: Download and extract dependencies for arm64

@@ -110,3 +110,33 @@ jobs:
         run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-x64.zip --clobber
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Remove x64 libraries
+        working-directory: ${{ env.WINDOWS_LIBDIR }}
+        run: |
+          rmdir /s /q llvm
+          rmdir /s /q boost
+          rmdir /s /q icu4c
+
+      - name: Download and extract dependencies for 32-bit
+        run: |
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/llvm_windows_i686.tar.gz -OutFile llvm_windows_i686.tar.gz
+          7z x -tgzip llvm_windows_i686.tar.gz
+          7z x -ttar llvm_windows_i686.tar
+          Remove-Item -Path llvm_windows_i686.tar.gz
+          Remove-Item -Path llvm_windows_i686.tar
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/boost_windows_i686.tar.gz -OutFile boost_windows_i686.tar.gz
+          7z x -tgzip boost_windows_i686.tar.gz
+          7z x -ttar boost_windows_i686.tar
+          Remove-Item -Path boost_windows_i686.tar.gz
+          Remove-Item -Path boost_windows_i686.tar
+
+      - name: CMake configuration for 32-bit
+        run: cmake -DCMAKE_BUILD_TYPE=Release -DLIBS_DIR="${{ env.WINDOWS_LIBDIR }}" -DLLVM_DIR="${{ env.WINDOWS_LIBDIR }}\llvm" -DBOOST_DIR="${{ env.WINDOWS_LIBDIR }}\boost" -DTARGET_ARCHITECTURE="i686" -G"Visual Studio 17 2022" -A Win32 -S ./src -B ./build
+
+      - name: Build project for 32-bit
+        run: cmake --build ./build --config Release --parallel 8 --target package
+
+      - name: Uploading build for 32-bit
+        run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-i686.zip --clobber
+

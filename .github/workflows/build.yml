@@ -110,6 +110,43 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Remove aarch64 libraries
+        working-directory: ../libs
+        run: |
+          rm llvm
+          rm boost
+          rm icu4c
+
+      - name: Install riscv64 toolchain
+        run: sudo apt --yes install binutils-riscv64-linux-gnu cpp-14-riscv64-linux-gnu g++-14-riscv64-linux-gnu gcc-14-riscv64-linux-gnu gcc-riscv64-unknown-elf libc6-dev-riscv64-cross libc6-riscv64-cross libgcc-14-dev-riscv64-cross libstdc++6-riscv64-cross libstdc++-14-dev-riscv64-cross libstdc++-14-pic-riscv64-cross linux-libc-dev-riscv64-cross
+
+      - name: Download & setup dependencies for riscv64
+        working-directory: ../libs
+        run: |
+          wget --no-verbose $CI_LIBS_LATEST/llvm_linux_riscv64.tar.gz
+          tar -xzf llvm_linux_riscv64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/boost_linux_riscv64.tar.gz
+          tar -xzf boost_linux_riscv64.tar.gz
+          wget --no-verbose $CI_LIBS_LATEST/icu4c_linux_riscv64.tar.gz
+          tar -xzf icu4c_linux_riscv64.tar.gz
+          rm llvm_linux_riscv64.tar.gz
+          rm boost_linux_riscv64.tar.gz
+          rm icu4c_linux_riscv64.tar.gz
+
+      - name: Clean build directory
+        run: rm -rf build/*
+
+      - name: CMake configuration for riscv64
+        run: cmake -S src/ -B build/ -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/../cmake/riscv64.cmake" -DTARGET_ARCHITECTURE="riscv64" -DLIBS_DIR="${{ github.workspace }}/../libs" -DLLVM_DIR="${{ github.workspace }}/../libs/llvm" -DBOOST_DIR="${{ github.workspace }}/../libs/boost" -DBUILD_SHARED_LIBS=false
+
+      - name: Build project for riscv64
+        run: cmake --build build --config Release --parallel 8 --target package
+
+      - name: Uploading build for riscv64
+        run: gh release upload "v${{ inputs.version }}" ./build/qat-${{ inputs.version }}-linux-riscv64.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   windows:
     name: Windows
     needs: [create_release]

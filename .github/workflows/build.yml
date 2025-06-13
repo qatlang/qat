@@ -182,7 +182,6 @@ jobs:
           7z x -ttar icu4c_windows_x64.tar
           Remove-Item -Path icu4c_windows_x64.tar.gz
           Remove-Item -Path icu4c_windows_x64.tar
-          Get-ChildItem -Recurse -Directory
 
       - name: Install Visual Studio Build Tools
         run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --no-includeRecommended --installWhileDownloading"
@@ -234,7 +233,6 @@ jobs:
           7z x -ttar icu4c_windows_i686.tar
           Remove-Item -Path icu4c_windows_i686.tar.gz
           Remove-Item -Path icu4c_windows_i686.tar
-          Get-ChildItem -Recurse -Directory
 
       - name: CMake configuration for 32-bit
         run: cmake -DCMAKE_BUILD_TYPE=Release -DLIBS_DIR="${{ env.WINDOWS_LIBDIR }}" -DLLVM_DIR="${{ env.WINDOWS_LIBDIR }}\llvm" -DBOOST_DIR="${{ env.WINDOWS_LIBDIR }}\boost" -DTARGET_ARCHITECTURE="i686" -G"Visual Studio 17 2022" -A Win32 -S ./src -B ./build

@@ -29,9 +29,9 @@ set(is_arch_x32 OFF)
 set(is_arch_arm64 OFF)
 set(is_arch_riscv64 OFF)
 
-if((TARGET_ARCHITECTURE MATCHES "x32|x86|X86|X32") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "X86|x86"))
+if((TARGET_ARCHITECTURE MATCHES "x86|i686") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "X86|x86"))
 	set(is_arch_x32 ON)
-elseif((TARGET_ARCHITECTURE MATCHES "x64|X64|x86_64|X86_64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64"))
+elseif((TARGET_ARCHITECTURE MATCHES "x64|x86_64|amd64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64"))
 	set(is_arch_x64 ON)
 elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "AARCH64|ARM64|arm64|aarch64")
 	set(is_arch_arm64 ON)
@@ -101,87 +101,8 @@ endif()
 
 set(CMAKE_CXX_STANDARD 20)
 
-if(is_os_windows)
-	if(MINGW)
-		set(LIBLZMA_HAS_AUTO_DECODER 1)
-		set(LIBLZMA_HAS_EASY_DECODER 0)
-		set(LIBLZMA_HAS_LZMA_PRESET 1)
-		set(LIBLZMA_LIBRARY "${LIBS_DIR}/lzma/lib/liblzma.a")
-		set(LIBLZMA_INCLUDE_DIR "${LIBS_DIR}/lzma/include")
-		set(LIBLZMA_VERSION "5.6.3")
-		add_library(LibLZMA STATIC IMPORTED)
-		set_target_properties(LibLZMA PROPERTIES
-			IMPORTED_LOCATION "${LIBS_DIR}/lzma/lib/liblzma.a"
-			INTERFACE_INCLUDE_DIRECTORIES "${LIBS_DIR}/lzma/include"
-		)
-	endif()
-
-	find_package(LLVM REQUIRED CONFIG PATHS "${LLVM_ROOT_DIR}/lib/cmake/llvm" NO_DEFAULT_PATH)
-	find_package(Clang REQUIRED CONFIG PATHS "${LLVM_ROOT_DIR}/lib/cmake/clang" NO_DEFAULT_PATH)
-else()
-	if(is_os_macos)
-		add_library(ZLIB::ZLIB STATIC IMPORTED)
-		set_target_properties(ZLIB::ZLIB PROPERTIES
-			IMPORTED_LOCATION "${LIBS_DIR}/zlib/lib/libz.a"
-			INTERFACE_INCLUDE_DIRECTORIES "${LIBS_DIR}/zlib/include")
-		set(ZLIB_LIBRARY "${LIBS_DIR}/zlib/lib/libz.a")
-		set(ZLIB_INCLUDE_DIRS "${LIBS_DIR}/zlib/include")
-
-		add_library(zstd STATIC IMPORTED)
-		set_target_properties(zstd PROPERTIES
-			IMPORTED_LOCATION "${LIBS_DIR}/zstd/lib/libzstd.a"
-			INTERFACE_INCLUDE_DIRECTORIES "${LIBS_DIR}/zstd/include")
-
-		add_library(libxml2 STATIC IMPORTED)
-		set_target_properties(libxml2 PROPERTIES
-			IMPORTED_LOCATION "${LIBS_DIR}/libxml2/lib/libxml2.a"
-			INTERFACE_INCLUDE_DIRECTORIES "${LIBS_DIR}/libxml2/include")
-
-		add_library(LibEdit STATIC IMPORTED)
-		set_target_properties(LibEdit PROPERTIES
-			IMPORTED_LOCATION "${LIBS_DIR}/libedit/lib/libedit.a"
-			INTERFACE_INCLUDE_DIRECTORIES "${LIBS_DIR}/libedit/include")
-		set(LibEdit_LIBRARIES "${LIBS_DIR}/libedit/lib/libedit.a")
-		set(LibEdit_INCLUDE_DIRS "${LIBS_DIR}/libedit/include")
-
-		set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libtinfo.a")
-		set(NCURSES_INCLUDE "${LIBS_DIR}/ncurses/include")
-
-		if(NOT EXISTS ${TERMINFO_PATH})
-			if(EXISTS "${LIBS_DIR}/ncurses/lib/libncursesw.a")
-				set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libncursesw.a")
-			elseif(EXISTS "${LIBS_DIR}/ncurses/lib/libncurses.a")
-				set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libncurses.a")
-			elseif(EXISTS "${LIBS_DIR}/ncurses/lib/libcurses.a")
-				set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libcurses.a")
-			endif()
-		endif()
-
-		add_library(Terminfo::terminfo STATIC IMPORTED)
-		set_target_properties(Terminfo::terminfo PROPERTIES
-			IMPORTED_LOCATION ${TERMINFO_PATH}
-			INTERFACE_INCLUDE_DIRECTORIES ${NCURSES_INCLUDE})
-		set(Terminfo_LIBRARIES ${TERMINFO_PATH})
-		set(Terminfo_LINKABLE ${TERMINFO_PATH})
-		set(Terminfo_INCLUDE_DIRS ${NCURSES_INCLUDE})
-
-		set(Iconv_LIBRARY "${LIBS_DIR}/libiconv/lib/libiconv.a")
-
-		set(LIBLZMA_HAS_AUTO_DECODER 1)
-		set(LIBLZMA_HAS_EASY_DECODER 0)
-		set(LIBLZMA_HAS_LZMA_PRESET 1)
-		set(LIBLZMA_LIBRARY "${LIBS_DIR}/lzma/lib/liblzma.a")
-		set(LIBLZMA_INCLUDE_DIR "${LIBS_DIR}/lzma/include")
-		set(LIBLZMA_VERSION "5.6.3")
-		add_library(LibLZMA STATIC IMPORTED)
-		set_target_properties(LibLZMA PROPERTIES
-			IMPORTED_LOCATION "${LIBS_DIR}/lzma/lib/liblzma.a"
-			INTERFACE_INCLUDE_DIRECTORIES "${LIBS_DIR}/lzma/include")
-	endif()
-
-	find_package(LLVM REQUIRED CONFIG PATHS "${LLVM_ROOT_DIR}/lib/cmake/llvm" NO_DEFAULT_PATH)
-	find_package(Clang REQUIRED CONFIG PATHS "${LLVM_ROOT_DIR}/lib/cmake/clang" NO_DEFAULT_PATH)
-endif()
+find_package(LLVM REQUIRED CONFIG PATHS "${LLVM_ROOT_DIR}/lib/cmake/llvm" NO_DEFAULT_PATH)
+find_package(Clang REQUIRED CONFIG PATHS "${LLVM_ROOT_DIR}/lib/cmake/clang" NO_DEFAULT_PATH)
 
 message(STATUS "Found LLVM version ${LLVM_VERSION}")
 message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
@@ -190,7 +111,7 @@ set(Boost_USE_STATIC_LIBS ON)
 find_package(Boost REQUIRED COMPONENTS filesystem PATHS "${BOOST_DIR}/lib/cmake" NO_DEFAULT_PATH)
 
 if(is_os_linux)
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -I${LLVM_ROOT_DIR}/include -ftime-trace -fexceptions -fno-rtti ${LLVM_DEFINITIONS}")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -ftime-trace -fexceptions -fno-rtti ${LLVM_DEFINITIONS}")
 
 	if(NOT CMAKE_CROSSCOMPILING)
 		set(CMAKE_CXX_FLAGS "-fuse-ld=lld ${CMAKE_CXX_FLAGS}")
@@ -260,35 +181,6 @@ if(is_os_linux)
 		stdc++ rt pthread m
 		"${LIBS_DIR}/icu4c/lib/libicuuc.a" "${LIBS_DIR}/icu4c/lib/libicudata.a"
 	)
-
-	if(LLVM_ENABLE_ZLIB)
-		target_link_libraries(${PROJECT_NAME} "${LIBS_DIR}/zlib/lib/libz.a")
-	endif()
-
-	if(LLVM_ENABLE_ZSTD)
-		target_link_libraries(${PROJECT_NAME} "${LIBS_DIR}/zstd/lib/libzstd.a")
-	endif()
-
-	if(LLVM_ENABLE_LIBXML2)
-		target_link_libraries(${PROJECT_NAME} "${LIBS_DIR}/libxml2/lib/libxml2.a")
-	endif()
-
-	if(LLVM_ENABLE_LIBEDIT)
-		set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libtinfo.a")
-		set(NCURSES_INCLUDE "${LIBS_DIR}/ncurses/include")
-
-		if(NOT EXISTS ${TERMINFO_PATH})
-			if(EXISTS "${LIBS_DIR}/ncurses/lib/libncursesw.a")
-				set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libncursesw.a")
-			elseif(EXISTS "${LIBS_DIR}/ncurses/lib/libncurses.a")
-				set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libncurses.a")
-			elseif(EXISTS "${LIBS_DIR}/ncurses/lib/libcurses.a")
-				set(TERMINFO_PATH "${LIBS_DIR}/ncurses/lib/libcurses.a")
-			endif()
-		endif()
-
-		target_link_libraries(${PROJECT_NAME} "${LIBS_DIR}/libedit/lib/libedit.a" "${TERMINFO_PATH}")
-	endif()
 elseif(is_os_macos)
 	target_link_libraries(${PROJECT_NAME}
 		${LLVM_LIB_PATHS} QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
@@ -320,8 +212,6 @@ endif()
 if(is_os_linux AND(NOT CMAKE_CROSSCOMPILING))
 	include(GNUInstallDirs)
 endif()
-
-# Installing all files
 if(is_os_windows)
 	set(BIN_EXT ".exe")
 endif()

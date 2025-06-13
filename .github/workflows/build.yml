@@ -74,9 +74,9 @@ jobs:
       - name: Remove x86_64 libraries
         working-directory: ../libs
         run: |
-          rm llvm
-          rm boost
-          rm icu4c
+          rm -rf llvm
+          rm -rf boost
+          rm -rf icu4c
 
       - name: Download & extract cmake toolchain files
         working-directory: ../cmake
@@ -118,9 +118,9 @@ jobs:
       - name: Remove aarch64 libraries
         working-directory: ../libs
         run: |
-          rm llvm
-          rm boost
-          rm icu4c
+          rm -rf llvm
+          rm -rf boost
+          rm -rf icu4c
 
       - name: Install riscv64 toolchain
         run: sudo apt --yes install binutils-riscv64-linux-gnu cpp-14-riscv64-linux-gnu g++-14-riscv64-linux-gnu gcc-14-riscv64-linux-gnu gcc-riscv64-unknown-elf libc6-dev-riscv64-cross libc6-riscv64-cross libgcc-14-dev-riscv64-cross libstdc++6-riscv64-cross libstdc++-14-dev-riscv64-cross libstdc++-14-pic-riscv64-cross linux-libc-dev-riscv64-cross
@@ -176,6 +176,11 @@ jobs:
           7z x -ttar boost_windows_x64.tar
           Remove-Item -Path boost_windows_x64.tar.gz
           Remove-Item -Path boost_windows_x64.tar
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/icu4c_windows_x64.tar.gz -OutFile icu4c_windows_x64.tar.gz
+          7z x -tgzip icu4c_windows_x64.tar.gz
+          7z x -ttar icu4c_windows_x64.tar
+          Remove-Item -Path icu4c_windows_x64.tar.gz
+          Remove-Item -Path icu4c_windows_x64.tar
 
       - name: Install Visual Studio Build Tools
         run: choco install visualstudio2022buildtools --package-parameters "--add Microsoft.Component.MSBuild --add Microsoft.VisualStudio.Workload.VCTools --add Microsoft.VisualStudio.Component.VC.Tools.x86.x64 --add Microsoft.VisualStudio.Component.VC.Tools.ARM64 --no-includeRecommended --installWhileDownloading"
@@ -221,6 +226,11 @@ jobs:
           7z x -ttar boost_windows_i686.tar
           Remove-Item -Path boost_windows_i686.tar.gz
           Remove-Item -Path boost_windows_i686.tar
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/icu4c_windows_i686.tar.gz -OutFile icu4c_windows_i686.tar.gz
+          7z x -tgzip icu4c_windows_i686.tar.gz
+          7z x -ttar icu4c_windows_i686.tar
+          Remove-Item -Path icu4c_windows_i686.tar.gz
+          Remove-Item -Path icu4c_windows_i686.tar
 
       - name: CMake configuration for 32-bit
         run: cmake -DCMAKE_BUILD_TYPE=Release -DLIBS_DIR="${{ env.WINDOWS_LIBDIR }}" -DLLVM_DIR="${{ env.WINDOWS_LIBDIR }}\llvm" -DBOOST_DIR="${{ env.WINDOWS_LIBDIR }}\boost" -DTARGET_ARCHITECTURE="i686" -G"Visual Studio 17 2022" -A Win32 -S ./src -B ./build
@@ -255,6 +265,11 @@ jobs:
           7z x -ttar boost_windows_arm64.tar
           Remove-Item -Path boost_windows_arm64.tar.gz
           Remove-Item -Path boost_windows_arm64.tar
+          Invoke-WebRequest ${{ env.CI_LIBS_LATEST }}/icu4c_windows_arm64.tar.gz -OutFile icu4c_windows_arm64.tar.gz
+          7z x -tgzip icu4c_windows_arm64.tar.gz
+          7z x -ttar icu4c_windows_arm64.tar
+          Remove-Item -Path icu4c_windows_arm64.tar.gz
+          Remove-Item -Path icu4c_windows_arm64.tar
 
       - name: CMake configuration for arm64
         run: cmake -DCMAKE_BUILD_TYPE=Release -DLIBS_DIR="${{ env.WINDOWS_LIBDIR }}" -DLLVM_DIR="${{ env.WINDOWS_LIBDIR }}\llvm" -DBOOST_DIR="${{ env.WINDOWS_LIBDIR }}\boost" -DTARGET_ARCHITECTURE="arm64" -G"Visual Studio 17 2022" -A ARM64 -S ./src -B ./build

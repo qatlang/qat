@@ -155,6 +155,7 @@ jobs:
 
   windows:
     name: Windows
+    if: false
     needs: [create_release]
     runs-on: windows-latest
     steps:

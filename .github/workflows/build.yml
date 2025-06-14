@@ -242,6 +242,8 @@ jobs:
 
       - name: Uploading build for 32-bit
         run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-i686.zip --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Remove 32-bit libraries
         working-directory: ${{ env.WINDOWS_LIBDIR }}
@@ -282,6 +284,8 @@ jobs:
 
       - name: Uploading build for arm64
         run: gh release upload "v${{ inputs.version }}" ${{ github.workspace }}\build\qat-${{ inputs.version }}-windows-arm64.zip --clobber
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   macos:
     name: MacOS

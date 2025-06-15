@@ -29,8 +29,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release create "v${{ inputs.version }}" --title "v${{ inputs.version }}" --notes "Release notes are updated manually, so it is work in progress" --draft
+
   linux:
-    if: false
     name: Linux
     needs: [create_release]
     runs-on: ubuntu-latest
@@ -155,7 +155,6 @@ jobs:
 
   windows:
     name: Windows
-    if: false
     needs: [create_release]
     runs-on: windows-latest
     steps:

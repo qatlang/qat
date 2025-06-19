@@ -240,6 +240,8 @@ enum class EntityType {
 
 inline String entity_type_to_string(EntityType ty) {
 	switch (ty) {
+		case EntityType::assemblyBlock:
+			return "assembly block";
 		case EntityType::structType:
 			return "struct type";
 		case EntityType::choiceType:

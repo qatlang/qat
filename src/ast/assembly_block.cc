@@ -6,7 +6,6 @@
 namespace qat::ast {
 
 void AssemblyBlock::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
-	auto ctx    = EmitCtx::get(irCtx, mod);
 	entityState = mod->add_entity(None, ir::EntityType::assemblyBlock, this, ir::EmitPhase::phase_1);
 }
 

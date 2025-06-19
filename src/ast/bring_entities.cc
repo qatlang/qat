@@ -1,8 +1,7 @@
 #include "./bring_entities.hpp"
 #include "../IR/stdlib.hpp"
 #include "../IR/types/region.hpp"
-#include "emit_ctx.hpp"
-#include <utility>
+#include "./emit_ctx.hpp"
 
 namespace qat::ast {
 
@@ -198,7 +197,6 @@ void BringEntities::update_entity_dependencies(ir::Mod* currMod, ir::Ctx* irCtx)
 				ent->entityState->addDependency(ir::EntityDependency{mod->get_entity(entName.value),
 				                                                     ir::DependType::complete, ir::EmitPhase::phase_1});
 			} else {
-				bool                          foundIt    = false;
 				std::function<bool(ir::Mod*)> modHandler = [&](ir::Mod* module) -> bool {
 					for (auto sub : module->submodules) {
 						if ((not sub->should_be_named()) && sub->has_entity_with_name(entName.value)) {

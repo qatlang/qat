@@ -264,11 +264,11 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					memPtr = irCtx->builder.CreatePointerCast(
 					    irCtx->builder.CreateStructGEP(parentRefTy->get_subtype()->get_llvm_type(), self->get_llvm(),
 					                                   1u),
-					    parentRefTy->get_subtype()
-					        ->as_mix()
-					        ->get_variant_with_name(argIRTypes[i]->get_name())
-					        ->get_llvm_type()
-					        ->getPointerTo(irCtx->dataLayout.getProgramAddressSpace()));
+					    llvm::PointerType::get(parentRefTy->get_subtype()
+					                               ->as_mix()
+					                               ->get_variant_with_name(argIRTypes[i]->get_name())
+					                               ->get_llvm_type(),
+					                           irCtx->dataLayout.getProgramAddressSpace()));
 					fnEmit->add_init_member(
 					    {parentRefTy->get_subtype()->as_mix()->get_index_of(argIRTypes[i]->get_name()),
 					     prototype->arguments[i]->get_name().range});

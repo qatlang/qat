@@ -141,11 +141,10 @@
 #include <string>
 #include <utility>
 
-#define IdentifierAt(ind) Identifier(tokens->at(ind).value, tokens->at(ind).fileRange)
-#define ValueAt(ind)      tokens->at(ind).value
-#define RangeAt(ind)      tokens->at(ind).fileRange
-#define RangeSpan(ind1, ind2)                                                                                          \
-	{ tokens->at(ind1).fileRange, tokens->at(ind2).fileRange }
+#define IdentifierAt(ind)     Identifier(tokens->at(ind).value, tokens->at(ind).fileRange)
+#define ValueAt(ind)          tokens->at(ind).value
+#define RangeAt(ind)          tokens->at(ind).fileRange
+#define RangeSpan(ind1, ind2) {tokens->at(ind1).fileRange, tokens->at(ind2).fileRange}
 
 #define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(val))
 
@@ -170,7 +169,7 @@
 
 namespace qat::parser {
 
-Parser::Parser(ir::Ctx* _irCtx) : irCtx(_irCtx){};
+Parser::Parser(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
 
 Parser* Parser::get(ir::Ctx* irCtx) { return new Parser(irCtx); }
 
@@ -2076,12 +2075,13 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 					add_error("Expected . after this to end the type definition", RangeSpan(start, i));
 				}
 				i++;
-				typeDefs.push_back(ast::SkillTypeDefinition{.visibSpec     = getVisibSpec(),
-				                                            .name          = std::move(tyDefName),
-				                                            .defineChecker = entMeta.defineChecker,
-															.type          = typeRes.first,
-				                                            .range         = RangeSpan(start, i),
-				                                            });
+				typeDefs.push_back(ast::SkillTypeDefinition{
+				    .visibSpec     = getVisibSpec(),
+				    .name          = std::move(tyDefName),
+				    .defineChecker = entMeta.defineChecker,
+				    .type          = typeRes.first,
+				    .range         = RangeSpan(start, i),
+				});
 				break;
 			}
 			case TokenType::Static:
@@ -3015,7 +3015,6 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 
 	Maybe<Pair<ast::VisibilitySpec, FileRange>> visibility;
 	auto setVisibility = [&](Pair<ast::VisibilitySpec, FileRange> kind) { visibility = kind; };
-	auto hasVisibility = [&]() { return visibility.has_value(); };
 	auto getVisibility = [&]() {
 		auto res   = visibility;
 		visibility = None;
@@ -3764,11 +3763,12 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 					i           = expRes.second;
 					value       = expRes.first;
 				}
-				variants.push_back(ast::FlagVariant{.names     = std::move(names),
-				                                    .value     = value,
-													.isDefault = getDefault(),
-													.range     = RangeSpan(idStart, i),
-				                                    });
+				variants.push_back(ast::FlagVariant{
+				    .names     = std::move(names),
+				    .value     = value,
+				    .isDefault = getDefault(),
+				    .range     = RangeSpan(idStart, i),
+				});
 				if (is_next(TokenType::separator, i)) {
 					i++;
 				}
@@ -5237,11 +5237,12 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 									i        = gEndRes.value();
 								}
 								skillSpec.push_back(ast::PolySkillSpec::from_implementation(
-								    ast::DoneSkillEntity{.relative = sym.first.relative,
-								                         .names    = std::move(sym.first.name),
-								                         .range    = sym.first.fileRange,
-														 .generics = std::move(generics),
-														 },
+								    ast::DoneSkillEntity{
+								        .relative = sym.first.relative,
+								        .names    = std::move(sym.first.name),
+								        .range    = sym.first.fileRange,
+								        .generics = std::move(generics),
+								    },
 								    RangeSpan(itStart, i)));
 							} else {
 								auto                   sym = do_symbol(preCtx, i);
@@ -5256,13 +5257,14 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 									generics = do_generic_fill(preCtx, i + 1, gEndRes.value());
 									i        = gEndRes.value();
 								}
-								skillSpec.push_back(
-								    ast::PolySkillSpec::from_skill(ast::SkillEntity{.relative = sym.first.relative,
-								                                                    .names = std::move(sym.first.name),
-								                                                    .range    = sym.first.fileRange,
-																					.generics = std::move(generics),
-								                                                    },
-								                                   RangeSpan(itStart, i)));
+								skillSpec.push_back(ast::PolySkillSpec::from_skill(
+								    ast::SkillEntity{
+								        .relative = sym.first.relative,
+								        .names    = std::move(sym.first.name),
+								        .range    = sym.first.fileRange,
+								        .generics = std::move(generics),
+								    },
+								    RangeSpan(itStart, i)));
 							}
 							if (not is_next(TokenType::separator, i)) {
 								break;
@@ -6160,7 +6162,6 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				Vec<std::tuple<ast::Expression*, Vec<ast::Sentence*>, FileRange>> chain;
 				Maybe<Pair<Vec<ast::Sentence*>, FileRange>>                       elseCase;
 				FileRange                                                         fileRange = token.fileRange;
-				auto                                                              start     = i;
 				usize                                                             index     = 0;
 				while (true) {
 					auto altPos = first_primary_position(TokenType::fatArrow, i);

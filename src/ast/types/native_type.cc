@@ -65,6 +65,7 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 	}
 	ctx->Error("Compiler Internal Error - Cannot retrieve native type for kind " + std::to_string((int)nativeKind),
 	           fileRange);
+	return nullptr;
 }
 
 Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {

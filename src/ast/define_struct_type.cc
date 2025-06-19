@@ -100,8 +100,8 @@ void DefineStructType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 
 void DefineStructType::create_type_definitions(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto methodParent = ir::MethodParent::create_expanded_type(resultTy);
-	auto emitCtx      = EmitCtx::get(irCtx, mod)->with_member_parent(methodParent);
-	auto parentState  = get_state_for(methodParent);
+	// auto emitCtx      = EmitCtx::get(irCtx, mod)->with_member_parent(methodParent);
+	auto parentState = get_state_for(methodParent);
 	parentState->definitions.reserve(typeDefinitions.size());
 	for (auto* def : typeDefinitions) {
 		auto tyState = TypeInParentState{.isParentSkill = false, .parent = methodParent};
@@ -259,7 +259,7 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 void DefineStructType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("Emitted generics")
 	if (not is_generic()) {
-		create_type({}, mod, irCtx);
+		(void)create_type({}, mod, irCtx);
 	} else {
 		auto emitCtx = EmitCtx::get(irCtx, mod);
 		for (auto* gen : generics) {

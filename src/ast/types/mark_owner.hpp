@@ -11,7 +11,7 @@ class Type;
 
 namespace qat::ast {
 
-class EmitCtx;
+struct EmitCtx;
 class Type;
 
 enum class PtrOwnType {

@@ -9,9 +9,8 @@ namespace qat::ast {
 void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
                                     EmitCtx* ctx) {
 	//
-	auto currentMod = ctx->mod;
-	auto mod        = ctx->mod;
-	auto reqInfo    = ctx->get_access_info();
+	auto mod     = ctx->mod;
+	auto reqInfo = ctx->get_access_info();
 	if (relative != 0) {
 		if (ctx->mod->has_nth_parent(relative)) {
 			mod = ctx->mod->get_nth_parent(relative);
@@ -62,8 +61,7 @@ void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 }
 
 ir::Type* NamedType::emit(EmitCtx* ctx) {
-	auto* mod        = ctx->mod;
-	auto* currentMod = mod;
+	auto* mod = ctx->mod;
 	SHOW("Getting access info")
 	auto reqInfo = ctx->get_access_info();
 	SHOW("Got req info")

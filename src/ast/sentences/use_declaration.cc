@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-void UseDeclaration::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void UseDeclaration::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                          EmitCtx* ctx) {
 	UPDATE_DEPS(value);
 }

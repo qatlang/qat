@@ -116,9 +116,9 @@ void PatternChild::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 					                                   resVal->get_llvm()),
 					    resVal->get_ir_type()->as_ref()->get_subtype(), false);
 				}
-				arm.as_block()->create_use_value(bind.name.value, resVal->get_llvm(), fill->type, bind.range);
+				(void)arm.as_block()->create_use_value(bind.name.value, resVal->get_llvm(), fill->type, bind.range);
 			} else {
-				arm.as_block()->create_use_value(
+				(void)arm.as_block()->create_use_value(
 				    bind.name.value, value->get_llvm(),
 				    ir::RefType::get(bind.bindType == BindingType::VARIATION, fill->type, ctx->irCtx), bind.range);
 			}
@@ -151,17 +151,17 @@ void PatternArray::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, E
 			           ellipsis.value().second);
 		}
 		if (ellipsis.value().first == patterns.size()) {
-			for (auto i = patterns.size(); i < arrTy->get_length(); i++) {
+			for (usize i = patterns.size(); i < arrTy->get_length(); i++) {
 				fill->childFills[i]->fillType = PatternFillType::COMPLETE;
 			}
-			for (auto i = 0; i < patterns.size(); i++) {
+			for (usize i = 0; i < patterns.size(); i++) {
 				patternIndices.push_back(i);
 			}
 		} else if (ellipsis.value().first == 0) {
-			for (auto i = 0; i < (arrTy->get_length() - patterns.size()); i++) {
+			for (usize i = 0; i < (arrTy->get_length() - patterns.size()); i++) {
 				fill->childFills[i]->fillType = PatternFillType::COMPLETE;
 			}
-			for (auto i = (arrTy->get_length() - patterns.size()); i < arrTy->get_length(); i++) {
+			for (usize i = (arrTy->get_length() - patterns.size()); i < arrTy->get_length(); i++) {
 				patternIndices.push_back(i);
 			}
 		} else {
@@ -169,14 +169,14 @@ void PatternArray::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, E
 			// patterns.size() - ellipsis.value().first is the number of patterns after the ellipsis
 			// We subtract the above from the total array length to figure out the extent upto which the patterns should
 			// be marked as completed
-			for (auto i = ellipsis.value().first; i < (arrTy->get_length() - patterns.size() + ellipsis.value().first);
+			for (usize i = ellipsis.value().first; i < (arrTy->get_length() - patterns.size() + ellipsis.value().first);
 			     i++) {
 				fill->childFills[i]->fillType = PatternFillType::COMPLETE;
 			}
-			for (auto i = 0; i < ellipsis.value().first; i++) {
+			for (usize i = 0; i < ellipsis.value().first; i++) {
 				patternIndices.push_back(i);
 			}
-			for (auto i = (arrTy->get_length() - patterns.size() + ellipsis.value().first); i < arrTy->get_length();
+			for (usize i = (arrTy->get_length() - patterns.size() + ellipsis.value().first); i < arrTy->get_length();
 			     i++) {
 				patternIndices.push_back(i);
 			}
@@ -195,7 +195,7 @@ void PatternArray::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, E
 			               " patterns instead. Please remove the additional patterns, or check the logic",
 			           range);
 		}
-		for (auto i = 0; i < patterns.size(); i++) {
+		for (usize i = 0; i < patterns.size(); i++) {
 			patternIndices.push_back(i);
 		}
 	}
@@ -272,7 +272,7 @@ String PatternArray::to_string() const {
 	return res;
 }
 
-void PatternChoice::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+void PatternChoice::check(PatternFill* fill, bool, MatchArm&, EmitCtx* ctx) const {
 	if (not fill->type->is_choice()) {
 		ctx->Error("A choice pattern is used here, but the type of the expression to be matched for this pattern is " +
 		               ctx->color(fill->type->to_string()) + ", which is not a choice type." +
@@ -403,7 +403,7 @@ void PatternMix::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitC
 	} else {
 		tagVal = ctx->irCtx->builder.CreateExtractValue(value->get_llvm(), {0u});
 	}
-	auto mxTy = fill->type->as_mix();
+	// auto mxTy = fill->type->as_mix();
 	auto index =
 	    llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, fill->type->as_mix()->get_tag_bitwidth()),
 	                           fill->type->as_mix()->get_index_of(name.value));
@@ -415,7 +415,7 @@ void PatternMix::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitC
 	}
 }
 
-void PatternChain::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+void PatternChain::check(PatternFill* fill, bool, MatchArm& arm, EmitCtx* ctx) const {
 	for (auto& it : patterns) {
 		if (not pattern_supports_chaining(it.type)) {
 			ctx->Error("This pattern cannot be used in a pattern chain", it.range);
@@ -428,7 +428,7 @@ void PatternChain::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 	Vec<llvm::Value*> mainConditions;
 	bool              areMainCondsPre  = true;
 	bool              mainPreCondValue = false;
-	for (auto i = 0; i < patterns.size(); i++) {
+	for (usize i = 0; i < patterns.size(); i++) {
 		if (arm.get_condition_block()) {
 			arm.get_condition_block()->set_active(ctx->irCtx->builder);
 		}
@@ -481,7 +481,7 @@ void PatternChain::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 	}
 }
 
-void PatternFlag::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+void PatternFlag::check(PatternFill* fill, bool, MatchArm&, EmitCtx* ctx) const {
 	if (not fill->type->is_flag()) {
 		ctx->Error("A flag pattern is used here, but the type of the expression to be matched at this point is " +
 		               ctx->color(fill->type->to_string()),
@@ -555,7 +555,7 @@ void PatternFlag::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emit
 	}
 }
 
-void PatternRest::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const {
+void PatternRest::check(PatternFill* fill, bool, MatchArm&, EmitCtx* ctx) const {
 	if (fill->fillType == PatternFillType::COMPLETE) {
 		ctx->Error("All possible patterns for the type " + ctx->color(fill->type->to_string()) +
 		               " has been matched already at this point, so there is no need for this pattern",

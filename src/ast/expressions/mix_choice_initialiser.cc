@@ -102,7 +102,7 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					ctx->irCtx->builder.CreateStore(
 					    exp, ctx->irCtx->builder.CreatePointerCast(
 					             ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 1),
-					             mixTy->get_variant_with_name(subName.value)->get_llvm_type()->getPointerTo()));
+					             llvm::PointerType::get(mixTy->get_variant_with_name(subName.value)->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
 				}
 				return get_creation_result(ctx->irCtx, mixTy, fileRange);
 			} else {

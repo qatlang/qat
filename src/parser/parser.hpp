@@ -82,7 +82,7 @@ class Parser {
 
 	void parse_match_contents(ParserContext& prev_ctx, usize from, usize upto,
 	                          Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
-	                          Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch);
+	                          Maybe<Pair<Vec<ast::Sentence*>, FileRange>>&           elseCase);
 
 	void add_error(const String& message, const FileRange& fileRange);
 
@@ -130,7 +130,7 @@ class Parser {
 
 	Pair<ast::DefineSkill*, usize> do_skill(Maybe<ast::VisibilitySpec> visibSpec, usize from);
 
-	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = -1);
+	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = 0);
 
 	useit Pair<CacheSymbol, usize> do_symbol(ParserContext& prevCtx, usize start);
 

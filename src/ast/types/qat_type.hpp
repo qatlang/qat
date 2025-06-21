@@ -25,10 +25,9 @@ class Type {
 
 	FileRange fileRange;
 
-	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-	                                 EmitCtx* ctx) {}
+	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 
-	useit virtual Maybe<usize> get_type_bitsize(EmitCtx* ctx) const { return None; }
+	useit virtual Maybe<usize> get_type_bitsize(EmitCtx*) const { return None; }
 
 	useit virtual ir::Type* emit(EmitCtx* ctx) = 0;
 

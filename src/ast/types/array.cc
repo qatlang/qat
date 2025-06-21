@@ -1,5 +1,6 @@
 #include "./array.hpp"
 #include "../../IR/types/array.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../expression.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
@@ -8,7 +9,7 @@ namespace qat::ast {
 
 #define ARRAY_LENGTH_BITWIDTH 64u
 
-void ArrayType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void ArrayType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                     EmitCtx* ctx) {
 	lengthExp->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	elementType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
@@ -54,6 +55,7 @@ ir::Type* ArrayType::emit(EmitCtx* ctx) {
 		               ctx->color(lengthIR->get_ir_type()->to_string()),
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 AstTypeKind ArrayType::type_kind() const { return AstTypeKind::ARRAY; }

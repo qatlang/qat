@@ -3,12 +3,9 @@
 
 #include "../IR/context.hpp"
 #include "../IR/types/struct_type.hpp"
-#include "./argument.hpp"
 #include "./sentence.hpp"
-#include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
 #include "meta_info.hpp"
-#include <string>
 
 namespace qat::ast {
 
@@ -36,7 +33,7 @@ class DestructorDefinition {
 		                         std::move(_sentences), fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);
 		}

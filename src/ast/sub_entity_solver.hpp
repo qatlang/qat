@@ -13,7 +13,7 @@ class DoneSkill;
 
 namespace qat::ast {
 
-class EmitCtx;
+struct EmitCtx;
 
 enum class SubEntityParentKind {
 	DONE_SKILL,

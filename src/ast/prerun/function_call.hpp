@@ -18,7 +18,7 @@ class PrerunFunctionCall : public PrerunExpression {
 		return std::construct_at(OwnNormal(PrerunFunctionCall), function, std::move(arguments), std::move(fileRange));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(funcExp);
 		for (auto arg : arguments) {
 			UPDATE_DEPS(arg);

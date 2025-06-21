@@ -27,7 +27,7 @@ class ArrayLiteral final : public Expression,
 	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		for (auto it : values) {
 			UPDATE_DEPS(it);
 		}
@@ -35,7 +35,8 @@ class ArrayLiteral final : public Expression,
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::ARRAY_LITERAL; }
+
+	useit NodeType nodeType() const final { return NodeType::ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

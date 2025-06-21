@@ -15,13 +15,13 @@ class BooleanLiteral final : public PrerunExpression {
 		return std::construct_at(OwnNormal(BooleanLiteral), _value, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-	}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 	useit Json             to_json() const final;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const final { return NodeType::BOOLEAN_LITERAL; }
+
+	useit NodeType nodeType() const final { return NodeType::BOOLEAN_LITERAL; }
 };
 
 } // namespace qat::ast

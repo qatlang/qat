@@ -16,7 +16,7 @@
 namespace qat::ir {
 
 StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
-                       Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+                       Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext&,
                        Maybe<MetaInfo> _metaInfo, bool isPacked)
     : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("structType", Json(), _name.range),
       opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
@@ -163,6 +163,7 @@ usize StructType::get_field_index(String const& memName) const {
 			return i;
 		}
 	}
+	std::unreachable();
 }
 
 Type* StructType::get_type_of_field(const String& member) const {
@@ -413,7 +414,7 @@ void StructType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
 }
 
 void StructType::add_static_member(Identifier const& name, Type* type, bool variability, Value* initial,
-                                   VisibilityInfo const& visibility, llvm::LLVMContext& llctx) {
+                                   VisibilityInfo const& visibility, llvm::LLVMContext&) {
 	staticMembers.push_back(StaticMember::get(this, name, type, variability, initial, visibility));
 }
 

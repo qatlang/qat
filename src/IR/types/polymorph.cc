@@ -9,10 +9,10 @@
 namespace qat::ir {
 
 Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner, ir::Ctx* ctx)
-    : isTyped(_isTyped), isVar(_isVar), skills(std::move(skills)), owner(std::move(_owner)) {
+    : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)) {
 	auto objPtrTy    = ir::PtrType::get(isVar, ir::UnsignedType::create(8u, ctx), true,
 	                                    owner.value_or(PtrOwner::of_anonymous()), false, ctx);
-	auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
+	//auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
 	auto globalPtrTy = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 
 	Vec<llvm::Type*> subTys = {objPtrTy->get_llvm_type()};

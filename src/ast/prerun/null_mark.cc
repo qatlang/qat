@@ -1,5 +1,7 @@
 #include "./null_mark.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 
 #include <llvm/IR/Constants.h>
 

@@ -1,4 +1,5 @@
 #include "./boolean_literal.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 namespace qat::ast {
 

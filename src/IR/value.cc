@@ -40,7 +40,7 @@ ir::Type* Value::get_pass_type() const {
 bool Value::is_prerun_function() const { return is_prerun_value() && get_ir_type()->is_function(); }
 
 Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> _localID,
-                   Mod* mod) { // NOLINT(misc-unused-parameters)
+                   Mod*) {
 	llvm::FunctionType* fnTy  = nullptr;
 	ir::FunctionType*   funTy = nullptr;
 	if (type->is_ptr() && type->as_ptr()->get_subtype()->is_function()) {

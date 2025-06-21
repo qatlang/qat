@@ -2,6 +2,7 @@
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/flag.hpp"
 #include "../../IR/types/region.hpp"
+#include "../../IR/types/struct_type.hpp"
 #include "../types/generic_abstract.hpp"
 #include "../types/prerun_generic.hpp"
 #include "../types/typed_generic.hpp"

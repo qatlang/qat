@@ -18,6 +18,7 @@
 #include "./types/tuple.hpp"
 #include "./types/unsigned.hpp"
 #include "./value.hpp"
+#include "llvm/IR/BasicBlock.h"
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
@@ -169,8 +170,8 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 1u)));
 				printVals.push_back(ctx->irCtx->builder.CreateLoad(
-				    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-				        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+				    llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+				                           ctx->irCtx->dataLayout.getProgramAddressSpace()),
 				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), val->get_llvm(), 0u)));
 			} else {
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
@@ -199,11 +200,11 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), nameVal, 1u)));
 				printVals.push_back(ctx->irCtx->builder.CreateLoad(
-				    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-				        ->getPointerTo(ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace()),
+				    llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+				                           ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace()),
 				    ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), nameVal, 0u)));
 			}
-		} else if (valTy->is_native_type() && valTy->as_native_type()->is_cstring()) {
+		} else if (valTy->is_native_type() && valTy->as_native_type()->is_bytestring()) {
 			formatString += "%s";
 			if (val->is_ref() || val->is_ghost_ref()) {
 				val->load_ghost_ref(ctx->irCtx->builder);
@@ -307,8 +308,8 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 						}
 						val = ir::Value::get(
 						    ctx->irCtx->builder.CreateLoad(
-						        valTy->as_ptr()->get_subtype()->get_llvm_type()->getPointerTo(
-						            ctx->irCtx->dataLayout.getProgramAddressSpace()),
+						        llvm::PointerType::get(valTy->as_ptr()->get_subtype()->get_llvm_type(),
+						                               ctx->irCtx->dataLayout.getProgramAddressSpace()),
 						        ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u)),
 						    ir::PtrType::get(false, valTy->as_ptr()->get_subtype(), false, PtrOwner::of_anonymous(),
 						                     false, ctx->irCtx),
@@ -435,8 +436,8 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 					    ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(),
 					    ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 1u)));
 					printVals.push_back(ctx->irCtx->builder.CreateLoad(
-					    llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-					        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+					    llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+					                           ctx->irCtx->dataLayout.getProgramAddressSpace()),
 					    ctx->irCtx->builder.CreateStructGEP(
 					        stringTy->get_llvm_type()->getStructElementType(0u),
 					        ctx->irCtx->builder.CreateStructGEP(stringTy->get_llvm_type(), val->get_llvm(), 0u), 0u)));
@@ -463,7 +464,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 	return {formatString, printVals};
 }
 
-void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal) {
+void Logic::exit_thread(ir::Function*, ast::EmitCtx* ctx, FileRange rangeVal) {
 	auto triple = ctx->irCtx->clangTargetInfo->getTriple();
 	if (triple.isWindowsMSVCEnvironment()) {
 		auto exitFnName =
@@ -479,12 +480,12 @@ void Logic::exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal
 		auto pthreadExitFn = ctx->mod->get_llvm_module()->getFunction(exitFnName);
 		ctx->irCtx->builder.CreateCall(
 		    pthreadExitFn->getFunctionType(), pthreadExitFn,
-		    {llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-		                                        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()))});
+		    {llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+		                                                           ctx->irCtx->dataLayout.getProgramAddressSpace()))});
 	}
 }
 
-void Logic::exit_program(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal) {
+void Logic::exit_program(ir::Function*, ast::EmitCtx* ctx, FileRange rangeVal) {
 	auto exitFnName = ctx->mod->link_internal_dependency(InternalDependency::exitProgram, ctx->irCtx, rangeVal);
 	auto exitFun    = ctx->mod->get_llvm_module()->getFunction(exitFnName);
 	ctx->irCtx->builder.CreateCall(exitFun->getFunctionType(), exitFun,
@@ -502,11 +503,11 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
 	auto  printFn      = mod->get_llvm_module()->getFunction(printfName);
 	auto  formatRes    = format_values(ctx, values, ranges, fileRange);
 
-	Vec<llvm::Value*> printVals{ctx->irCtx->builder.CreateGlobalStringPtr(
-	                                "%.*s" + formatRes.first + "\n\n", ctx->irCtx->get_global_string_name(),
-	                                ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace()),
-	                            startMessage->get_llvm_constant()->getAggregateElement(1u),
-	                            startMessage->get_llvm_constant()->getAggregateElement(0u)};
+	Vec<llvm::Value*> printVals{
+	    ctx->irCtx->builder.CreateGlobalString("%.*s" + formatRes.first + "\n\n", ctx->irCtx->get_global_string_name(),
+	                                           ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace()),
+	    startMessage->get_llvm_constant()->getAggregateElement(1u),
+	    startMessage->get_llvm_constant()->getAggregateElement(0u)};
 	for (auto* val : formatRes.second) {
 		printVals.push_back(val);
 	}
@@ -578,28 +579,23 @@ llvm::AllocaInst* Logic::newAlloca(ir::Function* fun, Maybe<String> name, llvm::
 	if (func->getEntryBlock().empty()) {
 		result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
 	} else {
-		llvm::Instruction* inst = nullptr;
+		llvm::BasicBlock::iterator instr = func->getEntryBlock().end();
 		// NOLINTNEXTLINE(modernize-loop-convert)
-		for (auto instr = func->getEntryBlock().begin(); instr != func->getEntryBlock().end(); instr++) {
+		for (auto item = func->getEntryBlock().begin(); item != func->getEntryBlock().end(); item++) {
 			if (llvm::isa<llvm::AllocaInst>(&*instr)) {
 				continue;
 			} else {
-				inst = &*instr;
+				instr = item;
 				break;
 			}
 		}
-		if (inst) {
-			result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), inst);
-		} else {
-			result =
-			    new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), &func->getEntryBlock());
-		}
+		result = new llvm::AllocaInst(type, 0U, name.value_or(fun->get_random_alloca_name()), instr);
 	}
 	return result;
 }
 
 bool Logic::compare_prerun_text(llvm::Constant* lhsBuff, llvm::Constant* lhsCount, llvm::Constant* rhsBuff,
-                                llvm::Constant* rhsCount, llvm::LLVMContext& llCtx) {
+                                llvm::Constant* rhsCount, llvm::LLVMContext&) {
 	if ((*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()) ==
 	    (*llvm::cast<llvm::ConstantInt>(rhsCount)->getValue().getRawData())) {
 		if ((*llvm::cast<llvm::ConstantInt>(lhsCount)->getValue().getRawData()) == 0u) {
@@ -632,7 +628,7 @@ useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Va
 			lhsEmit = lhsEmit->make_local(ctx, None, lhsRange);
 		}
 		lhsBuff = ctx->irCtx->builder.CreateLoad(
-		    int8Type->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+		    llvm::PointerType::get(int8Type, ctx->irCtx->dataLayout.getProgramAddressSpace()),
 		    ctx->irCtx->builder.CreateStructGEP(textTy->get_llvm_type(), lhsEmit->get_llvm(), 0u));
 		lhsCount = ctx->irCtx->builder.CreateLoad(
 		    int64Type, ctx->irCtx->builder.CreateStructGEP(textTy->get_llvm_type(), lhsEmit->get_llvm(), 1u));
@@ -648,7 +644,7 @@ useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Va
 			rhsEmit = rhsEmit->make_local(ctx, None, rhsRange);
 		}
 		rhsBuff = ctx->irCtx->builder.CreateLoad(
-		    int8Type->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+		    llvm::PointerType::get(int8Type, ctx->irCtx->dataLayout.getProgramAddressSpace()),
 		    ctx->irCtx->builder.CreateStructGEP(textTy->get_llvm_type(), rhsEmit->get_llvm(), 0u));
 		rhsCount = ctx->irCtx->builder.CreateLoad(
 		    int64Type, ctx->irCtx->builder.CreateStructGEP(textTy->get_llvm_type(), rhsEmit->get_llvm(), 1u));

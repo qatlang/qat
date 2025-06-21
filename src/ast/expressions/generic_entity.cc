@@ -85,8 +85,8 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 			}
 		}
 	}
-	auto* oldFn = ctx->get_fn();
-	auto* curr  = ctx->has_fn() ? ctx->get_fn()->get_block() : nullptr;
+	// auto* oldFn = ctx->get_fn();
+	auto* curr = ctx->has_fn() ? ctx->get_fn()->get_block() : nullptr;
 	if (mod->has_generic_function(entityName.value, reqInfo) ||
 	    mod->has_brought_generic_function(entityName.value, ctx->get_access_info()) ||
 	    mod->has_generic_function_in_imports(entityName.value, reqInfo).first) {
@@ -119,8 +119,8 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 		for (usize i = 0; i < genericTypes.size(); i++) {
 			auto* gen = genericTypes.at(i);
 			if (gen->is_prerun() && (gen->as_prerun()->nodeType() == NodeType::PRERUN_DEFAULT)) {
-				SHOW("Generic is prerun and prerun generic is default expression")
-				((ast::PrerunDefault*)(genericTypes.at(i)->as_prerun()))
+				SHOW("Generic is prerun and prerun generic is default expression")(
+				    (ast::PrerunDefault*)(genericTypes.at(i)->as_prerun()))
 				    ->setGenericAbstract(genericFn->getGenericAt(i));
 			} else if (genericFn->getGenericAt(i)->is_prerun() &&
 			           (genericFn->getGenericAt(i)->as_prerun()->getType() != nullptr)) {

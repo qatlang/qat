@@ -12,11 +12,11 @@ class PrerunLoopTo final : public PrerunSentence {
 	Vec<PrerunSentence*> sentences;
 
   public:
-	PrerunLoopTo(PrerunExpression* _count, Maybe<Identifier> _tag, Vec<PrerunSentence*> _sentences,
+	PrerunLoopTo(PrerunExpression* _count, Maybe<Identifier>, Vec<PrerunSentence*> _sentences,
 	             FileRange _fileRange)
 	    : PrerunSentence(_fileRange), count(_count), sentences(std::move(_sentences)) {}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		UPDATE_DEPS(count);
 		for (auto* snt : sentences) {
 			UPDATE_DEPS(snt);

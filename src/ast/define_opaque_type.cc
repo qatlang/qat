@@ -17,7 +17,7 @@ void DefineOpaqueType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) 
 	}
 }
 
-void DefineOpaqueType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) {
+void DefineOpaqueType::do_phase(ir::EmitPhase, ir::Mod* parent, ir::Ctx* irCtx) {
 	SHOW("Defining opaque type " << name.value << " with visibility "
 	                             << (visibSpec.has_value() ? visibSpec.value().to_string() : ""))
 	auto emitCtx = EmitCtx::get(irCtx, parent);

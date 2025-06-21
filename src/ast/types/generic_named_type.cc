@@ -1,5 +1,6 @@
 #include "./generic_named_type.hpp"
 #include "../../IR/stdlib.hpp"
+#include "../../IR/types/struct_type.hpp"
 #include "../../show.hpp"
 #include "../prerun/default.hpp"
 #include "../types/prerun_generic.hpp"

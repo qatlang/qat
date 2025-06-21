@@ -15,7 +15,7 @@ bool ReturnType::is_return_self() const { return isReturnSelfRef; }
 
 String ReturnType::to_string() const { return isReturnSelfRef ? "''" : retTy->to_string(); }
 
-FunctionType::FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& llctx)
+FunctionType::FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext&)
     : returnType(_retType), argTypes(std::move(_argTypes)),
       isVariadicArgs((not argTypes.empty()) && (argTypes.back()->is_variadic_argument())) {
 	SHOW("Creating function type")

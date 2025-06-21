@@ -22,7 +22,7 @@ ir::Value* SayLike::emit(EmitCtx* ctx) {
 			fmtRes.first += "\n";
 		}
 		Vec<llvm::Value*> values;
-		values.push_back(ctx->irCtx->builder.CreateGlobalStringPtr(fmtRes.first, ctx->irCtx->get_global_string_name()));
+		values.push_back(ctx->irCtx->builder.CreateGlobalString(fmtRes.first, ctx->irCtx->get_global_string_name()));
 		for (auto* val : fmtRes.second) {
 			values.push_back(val);
 		}

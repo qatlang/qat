@@ -25,7 +25,7 @@ class IfElse final : public Sentence {
 		return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		for (auto& ch : chain) {
 			UPDATE_DEPS(std::get<0>(ch));
 			for (auto snt : std::get<1>(ch)) {

@@ -1,6 +1,7 @@
 #include "./get_intrinsic.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/function.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../../IR/value.hpp"
 
@@ -134,7 +135,7 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				         .getRawData(),
 				    ir::VectorKind::fixed, ctx->irCtx);
 				auto mod    = ctx->mod;
-				auto intrFn = llvm::Intrinsic::getDeclaration(
+				auto intrFn = llvm::Intrinsic::getOrInsertDeclaration(
 				    mod->get_llvm_module(), llvm::Intrinsic::matrix_multiply,
 				    {retTy->get_llvm_type(), oneTy->get_llvm_type(), twoTy->get_llvm_type()});
 				auto fnTy =
@@ -160,6 +161,7 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 		ctx->Error("The first parameter should be the ID of the intrinsic of type " + ctx->color(intrChTy->to_string()),
 		           args[0]->fileRange);
 	}
+	std::unreachable();
 }
 
 Json GetIntrinsic::to_json() const {

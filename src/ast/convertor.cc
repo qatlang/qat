@@ -4,7 +4,6 @@
 #include "./sentence.hpp"
 #include "./sentences/member_initialisation.hpp"
 
-#include <algorithm>
 #include <llvm/IR/Function.h>
 #include <llvm/IR/Instructions.h>
 
@@ -320,7 +319,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 		if (state.parent->get_parent_type()->is_struct()) {
 			Vec<Pair<String, FileRange>> missingMembers;
 			auto                         cTy = state.parent->get_parent_type()->as_struct();
-			for (auto ind = 0; ind < cTy->get_field_count(); ind++) {
+			for (u64 ind = 0; ind < cTy->get_field_count(); ind++) {
 				auto memCheck = fnEmit->is_member_initted(ind);
 				if (not memCheck.has_value()) {
 					missingMembers.push_back({cTy->get_field_at(ind)->name.value, fileRange});

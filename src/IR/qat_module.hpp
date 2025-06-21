@@ -369,6 +369,7 @@ struct EntityState {
 				return ch;
 			}
 		}
+		std::unreachable();
 	}
 
 	void add_child(Pair<EntityChildType, String> child) { children.insert(child); }

@@ -1,5 +1,6 @@
 #include "./loop_to.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/types/native_type.hpp"
 #include "../../utils/unique_id.hpp"
 
 namespace qat::ast {
@@ -61,8 +62,8 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 		SHOW("loop times cond block " << ctx->get_fn()->get_full_name() << "." << condBlock->get_name())
 		auto* restBlock = ir::Block::create(ctx->get_fn(), loopBlock->get_parent()->get_parent());
 		restBlock->link_previous_block(loopBlock->get_parent());
-		SHOW("loop times rest block " << ctx->get_fn()->get_full_name() << "." << restBlock->get_name())
-		(void)ir::add_branch(ctx->irCtx->builder, loopBlock->get_bb());
+		SHOW("loop times rest block " << ctx->get_fn()->get_full_name() << "." << restBlock->get_name())(void)
+		    ir::add_branch(ctx->irCtx->builder, loopBlock->get_bb());
 		loopBlock->set_active(ctx->irCtx->builder);
 		ctx->irCtx->builder.CreateCondBr(
 		    (countTy->is_unsigned()

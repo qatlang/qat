@@ -1,9 +1,9 @@
 #ifndef QAT_EXPRESSIONS_CONSTRUCTOR_CALL_HPP
 #define QAT_EXPRESSIONS_CONSTRUCTOR_CALL_HPP
 
+#include "../../IR/emit_phase.hpp"
 #include "../expression.hpp"
 #include "../type_like.hpp"
-#include "../../IR/emit_phase.hpp"
 
 namespace qat::ast {
 
@@ -29,7 +29,7 @@ class ConstructorCall final : public Expression,
 	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		type.update_dependencies(phase, ir::DependType::childrenPartial, ent, ctx);
 		for (auto arg : args) {
 			UPDATE_DEPS(arg);

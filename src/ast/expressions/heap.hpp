@@ -19,7 +19,7 @@ class HeapGet final : public Expression {
 		return std::construct_at(OwnNormal(HeapGet), _type, _count, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(type);
 		if (count) {
 			UPDATE_DEPS(count);
@@ -27,8 +27,10 @@ class HeapGet final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::HEAP_GET; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::HEAP_GET; }
+
+	useit Json to_json() const final;
 };
 
 class HeapPut final : public Expression {
@@ -42,13 +44,15 @@ class HeapPut final : public Expression {
 		return std::construct_at(OwnNormal(HeapPut), _pointer, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(ptr);
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::HEAP_PUT; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::HEAP_PUT; }
+
+	useit Json to_json() const final;
 };
 
 class HeapGrow final : public Expression {
@@ -66,15 +70,17 @@ class HeapGrow final : public Expression {
 		return std::construct_at(OwnNormal(HeapGrow), type, ptr, count, fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(type);
 		UPDATE_DEPS(ptr);
 		UPDATE_DEPS(count);
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::HEAP_GROW; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::HEAP_GROW; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

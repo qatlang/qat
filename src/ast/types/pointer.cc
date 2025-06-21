@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-void PtrType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void PtrType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                   EmitCtx* ctx) {
 	type->update_dependencies(phase, ir::DependType::partial, ent, ctx);
 	if (owner.candidate) {

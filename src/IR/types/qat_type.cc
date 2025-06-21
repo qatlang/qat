@@ -1,5 +1,4 @@
 #include "./qat_type.hpp"
-#include "../../show.hpp"
 #include "./array.hpp"
 #include "./choice.hpp"
 #include "./definition.hpp"
@@ -17,6 +16,7 @@
 #include "./reference.hpp"
 #include "./region.hpp"
 #include "./result.hpp"
+#include "./slice.hpp"
 #include "./struct_type.hpp"
 #include "./text.hpp"
 #include "./tuple.hpp"
@@ -103,11 +103,11 @@ bool Type::can_be_prerun_generic() const { return false; }
 
 bool Type::can_be_prerun() const { return false; }
 
-Maybe<String> Type::to_prerun_generic_string(ir::PrerunValue* val) const { return None; }
+Maybe<String> Type::to_prerun_generic_string(ir::PrerunValue*) const { return None; }
 
 bool Type::is_type_sized() const { return false; }
 
-Maybe<bool> Type::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const { return None; }
+Maybe<bool> Type::equality_of(ir::Ctx*, ir::PrerunValue*, ir::PrerunValue*) const { return None; }
 
 bool Type::isCompatible(Type* other) {
 	if (is_ptr() && other->is_ptr()) {
@@ -263,30 +263,13 @@ bool Type::is_same(Type* other) {
 				}
 				return true;
 			}
-			case TypeKind::STRUCT: {
-				auto* thisVal  = (StructType*)this;
-				auto* otherVal = (StructType*)other;
-				return thisVal->get_id() == otherVal->get_id();
-			}
-			case TypeKind::REGION: {
-				auto* thisVal  = (Region*)this;
-				auto* otherVal = (Region*)this;
-				return thisVal->get_id() == otherVal->get_id();
-			}
-			case TypeKind::CHOICE: {
-				auto* thisVal  = (ChoiceType*)this;
-				auto* otherVal = (ChoiceType*)other;
-				return thisVal->get_id() == otherVal->get_id();
-			}
-			case TypeKind::MIX: {
-				auto* thisVal  = (MixType*)this;
-				auto* otherVal = (MixType*)other;
-				return thisVal->get_id() == otherVal->get_id();
-			}
-			case TypeKind::FLAG: {
-				auto* thisVal  = (FlagType*)this;
-				auto* otherVal = (FlagType*)other;
-				return thisVal->get_id() == otherVal->get_id();
+			case TypeKind::FLAG:
+			case TypeKind::MIX:
+			case TypeKind::CHOICE:
+			case TypeKind::REGION:
+			case TypeKind::STRUCT:
+			case TypeKind::TOGGLE: {
+				return this->get_id() == other->get_id();
 			}
 			case TypeKind::RESULT: {
 				auto* thisVal  = (ResultType*)this;
@@ -316,6 +299,12 @@ bool Type::is_same(Type* other) {
 				} else {
 					return false;
 				}
+			}
+			case TypeKind::SLICE: {
+				auto* thisType  = (SliceType*)this;
+				auto* otherType = (SliceType*)other;
+				return thisType->get_subtype()->is_same(otherType->get_subtype()) &&
+				       (thisType->has_var() == otherType->has_var());
 			}
 		}
 	}
@@ -355,22 +344,23 @@ bool Type::has_simple_move() const { return false; }
 
 bool Type::has_prerun_default_value() const { return false; }
 
-ir::PrerunValue* Type::get_prerun_default_value(ir::Ctx* irCtx) { return nullptr; }
+ir::PrerunValue* Type::get_prerun_default_value(ir::Ctx*) { return nullptr; }
 
 bool Type::is_default_constructible() const { return has_prerun_default_value(); }
 
-void Type::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
+void Type::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*) {
 	if (has_prerun_default_value()) {
 		auto* defVal = get_prerun_default_value(irCtx);
 		irCtx->builder.CreateStore(defVal->get_llvm(), instance->get_llvm());
 	} else {
 		irCtx->Error("Could not default construct an instance of type " + irCtx->color(to_string()), None);
 	}
+	std::unreachable();
 }
 
 bool Type::is_copy_constructible() const { return has_simple_copy(); }
 
-void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
 	if (not has_simple_copy()) {
 		irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()) +
 		                 " as it does not support simple-copy",
@@ -381,7 +371,7 @@ void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* sec
 
 bool Type::is_copy_assignable() const { return has_simple_copy(); }
 
-void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
 	if (not has_simple_copy()) {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()) +
 		                 " as it does not support simple-copy",
@@ -392,7 +382,7 @@ void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second
 
 bool Type::is_move_constructible() const { return has_simple_move(); }
 
-void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
 	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
@@ -405,7 +395,7 @@ void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* sec
 
 bool Type::is_move_assignable() const { return has_simple_move(); }
 
-void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
 	if (has_simple_move()) {
 		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
@@ -418,7 +408,7 @@ void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second
 
 bool Type::is_destructible() const { return has_simple_move(); }
 
-void Type::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
+void Type::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*) {
 	if (has_simple_move()) {
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), instance->get_llvm());
 	} else {

@@ -62,7 +62,7 @@ class TypeDefinition : public IsEntity {
 
 	// FOR TYPE DEFINITIONS INSIDE TYPES & SKILLS
 
-	void update_dependencies_for_parent(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+	void update_dependencies_for_parent(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
 	                                    EmitCtx* ctx) {
 		UPDATE_DEPS(subType);
 	}

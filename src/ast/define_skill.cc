@@ -7,15 +7,14 @@
 
 namespace qat::ast {
 
-void SkillTypeDefinition::update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent,
-                                              EmitCtx* ctx) {
+void SkillTypeDefinition::update_dependencies(ir::EmitPhase phase, ir::DependType, ir::EntityState* ent, EmitCtx* ctx) {
 	if (defineChecker != nullptr) {
 		UPDATE_DEPS(defineChecker);
 	}
 	UPDATE_DEPS(type);
 }
 
-void SkillMethod::update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent, EmitCtx* ctx) {
+void SkillMethod::update_dependencies(ir::EmitPhase phase, ir::DependType, ir::EntityState* ent, EmitCtx* ctx) {
 	if (givenType != nullptr) {
 		UPDATE_DEPS(givenType);
 	}

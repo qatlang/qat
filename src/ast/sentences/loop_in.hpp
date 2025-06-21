@@ -25,7 +25,7 @@ class LoopIn : public Sentence {
 		                         std::move(indexName), std::move(fileRange));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		UPDATE_DEPS(candidate);
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);

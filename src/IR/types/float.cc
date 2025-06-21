@@ -56,7 +56,7 @@ FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {
 	return std::construct_at(OwnNormal(FloatType), _kind, llctx);
 }
 
-PrerunValue* FloatType::get_prerun_default_value(ir::Ctx* irCtx) {
+PrerunValue* FloatType::get_prerun_default_value(ir::Ctx*) {
 	return ir::PrerunValue::get(llvm::ConstantFP::getZero(llvmType), this);
 }
 
@@ -103,7 +103,7 @@ Maybe<String> FloatType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	}
 }
 
-Maybe<bool> FloatType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> FloatType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	if (first->get_ir_type()->is_same(second->get_ir_type()) && first->get_ir_type()->is_float()) {
 		return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::FCMP_OEQ,
 		                                                                          first->get_llvm_constant(),

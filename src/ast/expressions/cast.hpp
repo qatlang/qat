@@ -18,13 +18,14 @@ class Cast final : public Expression {
 		return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(destination);
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::CAST; }
+
+	useit NodeType nodeType() const final { return NodeType::CAST; }
 };
 
 } // namespace qat::ast

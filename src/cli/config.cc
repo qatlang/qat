@@ -95,7 +95,7 @@ void Config::find_stdlib_and_toolchain() {
 	log->say("Toolchain Directory := " + (toolchainPath.has_value() ? toolchainPath.value().string() : "(Not Found)"));
 }
 
-void Config::setup_path_in_env(bool isSetupCmd) {
+void Config::setup_path_in_env(bool) {
 	auto&      log                = Logger::get();
 	auto       qatPathEnv         = find_executable("qat");
 	const auto foundInPathAlready = qatPathEnv.has_value();

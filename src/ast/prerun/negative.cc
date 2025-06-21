@@ -1,4 +1,5 @@
 #include "./negative.hpp"
+#include "../../IR/types/native_type.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 

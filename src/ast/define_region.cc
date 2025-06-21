@@ -1,6 +1,7 @@
 #include "./define_region.hpp"
 #include "../IR/logic.hpp"
 #include "../IR/types/region.hpp"
+#include "../IR/types/unsigned.hpp"
 #include "./emit_ctx.hpp"
 #include "./expression.hpp"
 #include "./node.hpp"
@@ -20,7 +21,7 @@ void DefineRegion::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 }
 
-void DefineRegion::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineRegion::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	usize blockSizeResult = 4096;
 	auto  ctx             = EmitCtx::get(irCtx, mod);
 	if (blockSize) {

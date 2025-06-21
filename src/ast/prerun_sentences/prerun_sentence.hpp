@@ -12,8 +12,7 @@ class PrerunSentence {
   public:
 	PrerunSentence(FileRange _fileRange) : fileRange(_fileRange) {}
 
-	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-	                                 EmitCtx* ctx) {}
+	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 
 	virtual void emit(EmitCtx* ctx) = 0;
 };

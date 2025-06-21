@@ -71,6 +71,7 @@ class ChoiceType : public Type, public EntityOverview {
 				}
 			}
 		}
+		std::unreachable();
 	}
 
 	useit llvm::ConstantInt* get_value_for(const String& name) const;

@@ -24,7 +24,7 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public I
 	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		for (auto mem : members) {
 			UPDATE_DEPS(mem);
 		}

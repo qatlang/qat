@@ -9,7 +9,7 @@
 namespace qat::ir {
 
 Maybe<NativeTypeKind> native_type_kind_from_string(String const& val) {
-	if (val == "cstring") {
+	if (val == "bytestring") {
 		return NativeTypeKind::String;
 	} else if (val == "int") {
 		return NativeTypeKind::Int;
@@ -116,7 +116,7 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 		case NativeTypeKind::SigAtomic:
 			return "sigatomic";
 		case NativeTypeKind::String:
-			return "cstring";
+			return "bytestring";
 		case NativeTypeKind::Bool:
 			return "widebool";
 	}

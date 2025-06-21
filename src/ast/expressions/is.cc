@@ -1,5 +1,6 @@
 #include "./is.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/integer.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../IR/types/void.hpp"
 

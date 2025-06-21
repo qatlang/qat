@@ -14,10 +14,10 @@ class CharType final : public Type {
 		return std::construct_at(OwnNormal(CharType), std::move(fileRange));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-	                         EmitCtx* ctx) final {}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*,
+	                         EmitCtx*) final {}
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final { return 21u; }
+	useit Maybe<usize> get_type_bitsize(EmitCtx*) const final { return 21u; }
 
 	useit ir::Type* emit(EmitCtx* ctx);
 

@@ -1,5 +1,9 @@
 #include "./plain_initialiser.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/struct_type.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 
 #include <llvm/IR/Constants.h>

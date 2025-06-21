@@ -2,8 +2,7 @@
 
 namespace qat::ast {
 
-void ConfirmRef::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-                                     EmitCtx* ctx) {
+void ConfirmRef::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	UPDATE_DEPS(subExpr);
 }
 
@@ -43,6 +42,7 @@ ir::Value* ConfirmRef::emit(EmitCtx* ctx) {
 		        ctx->color(expr->get_ir_type()->to_string()),
 		    subExpr->fileRange);
 	}
+	std::unreachable();
 }
 
 Json ConfirmRef::to_json() const {

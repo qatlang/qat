@@ -90,7 +90,7 @@ FileRange MethodParent::get_type_range() const {
 	return is_done_skill() ? as_done_skill()->get_type_range() : as_expanded()->get_name().range;
 }
 
-LinkNames Method::get_link_names_from(MethodParent* parent, bool isStatic, Identifier name, bool isVar,
+LinkNames Method::get_link_names_from(MethodParent* parent, bool, Identifier name, bool isVar,
                                       MethodType fnType, Vec<Argument> args, Type* retTy) {
 	// FIXME - Update foreignID using meta info
 	auto linkNames =

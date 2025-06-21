@@ -22,7 +22,7 @@ class StringLiteral final : public PrerunExpression {
 
 	useit String get_value() const;
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;

@@ -27,7 +27,7 @@ ir::PrerunValue* TextType::create_value(ir::Ctx* irCtx, ir::Mod* mod, String val
 	auto strTy = ir::TextType::get(irCtx);
 	return ir::PrerunValue::get(
 	    llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(strTy->get_llvm_type()),
-	                              {irCtx->builder.CreateGlobalStringPtr(
+	                              {irCtx->builder.CreateGlobalString(
 	                                   value, irCtx->get_global_string_name(),
 	                                   irCtx->dataLayout.getDefaultGlobalsAddressSpace(), mod->get_llvm_module()),
 	                               llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), value.length())}),

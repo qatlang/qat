@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-void PrerunSay::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void PrerunSay::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                     EmitCtx* ctx) {
 	for (auto* val : values) {
 		UPDATE_DEPS(val);

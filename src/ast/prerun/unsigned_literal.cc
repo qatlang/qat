@@ -1,4 +1,6 @@
 #include "./unsigned_literal.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 namespace qat::ast {
 

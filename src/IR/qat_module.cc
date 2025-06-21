@@ -11,8 +11,10 @@
 #include "./global_entity.hpp"
 #include "./link_names.hpp"
 #include "./prerun_function.hpp"
+#include "./types/array.hpp"
 #include "./types/definition.hpp"
 #include "./types/flag.hpp"
+#include "./types/native_type.hpp"
 #include "./types/opaque.hpp"
 #include "./types/qat_type.hpp"
 #include "./types/region.hpp"
@@ -3509,7 +3511,7 @@ void Mod::bundle_modules(Ctx* ctx) {
 				 *  Windows Linker
 				 */
 				// FIXME - Check if this should be used
-				auto msvcRes      = find_windows_sdk_paths(ctx);
+				// auto msvcRes      = find_windows_sdk_paths(ctx);
 				auto outSharedArg = "/OUT:" + outPathShared;
 
 				Vec<String>      allArgs{"/OUT:" + outPath};
@@ -3872,20 +3874,20 @@ llvm::Function* Mod::link_intrinsic(IntrinsicID intr) {
 	auto& llCtx = llvmModule->getContext();
 	switch (intr) {
 		case IntrinsicID::varArgStart:
-			return llvm::Intrinsic::getDeclaration(
+			return llvm::Intrinsic::getOrInsertDeclaration(
 			    llvmModule, llvm::Intrinsic::vastart,
 			    {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
 		case IntrinsicID::varArgCopy:
-			return llvm::Intrinsic::getDeclaration(
+			return llvm::Intrinsic::getOrInsertDeclaration(
 			    llvmModule, llvm::Intrinsic::vacopy,
 			    {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
 		case IntrinsicID::varArgEnd:
-			return llvm::Intrinsic::getDeclaration(
+			return llvm::Intrinsic::getOrInsertDeclaration(
 			    llvmModule, llvm::Intrinsic::vaend,
 			    {llvm::PointerType::get(llCtx, llvmModule->getDataLayout().getProgramAddressSpace())});
 		case IntrinsicID::vectorScale:
-			return llvm::Intrinsic::getDeclaration(llvmModule, llvm::Intrinsic::vscale,
-			                                       {llvm::IntegerType::get(llCtx, 64u)});
+			return llvm::Intrinsic::getOrInsertDeclaration(llvmModule, llvm::Intrinsic::vscale,
+			                                               {llvm::IntegerType::get(llCtx, 64u)});
 	}
 }
 
@@ -3930,44 +3932,57 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 	switch (nval) {
 		case InternalDependency::printf: {
 			if (not llvmModule->getFunction("printf")) {
-				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, true),
-				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
+				llvm::Function::Create(
+				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
+				                            {llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx),
+				                                                    irCtx->dataLayout.getProgramAddressSpace())},
+				                            true),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "printf", llvmModule);
 			}
 			return "printf";
 		}
 		case InternalDependency::malloc: {
 			if (not llvmModule->getFunction("malloc")) {
 				SHOW("Creating malloc function")
-				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
-				                                               {llvm::Type::getInt64Ty(llCtx)}, false),
-				                       llvm::GlobalValue::ExternalLinkage, "malloc", llvmModule);
+				llvm::Function::Create(
+				    llvm::FunctionType::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx),
+				                                                   irCtx->dataLayout.getProgramAddressSpace()),
+				                            {llvm::Type::getInt64Ty(llCtx)}, false),
+				    llvm::GlobalValue::ExternalLinkage, "malloc", llvmModule);
 			}
 			return "malloc";
 		}
 		case InternalDependency::free: {
 			if (not llvmModule->getFunction("free")) {
-				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
-				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
+				llvm::Function::Create(
+				    llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+				                            {llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx),
+				                                                    irCtx->dataLayout.getProgramAddressSpace())},
+				                            false),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "free", llvmModule);
 			}
 			return "free";
 		}
 		case InternalDependency::realloc: {
 			if (not llvmModule->getFunction("realloc")) {
-				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
-				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo(),
-				                                                llvm::Type::getInt64Ty(llCtx)},
-				                                               false),
-				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "realloc", llvmModule);
+				llvm::Function::Create(
+				    llvm::FunctionType::get(llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx),
+				                                                   irCtx->dataLayout.getProgramAddressSpace()),
+				                            {llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx),
+				                                                    irCtx->dataLayout.getProgramAddressSpace()),
+				                             llvm::Type::getInt64Ty(llCtx)},
+				                            false),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "realloc", llvmModule);
 			}
 			return "realloc";
 		}
 		case InternalDependency::pthreadCreate: {
 			if (not llvmModule->getFunction("pthread_create")) {
-				llvm::Type* pthreadPtrTy = llvm::Type::getInt64Ty(llCtx)->getPointerTo();
-				llvm::Type* voidPtrTy    = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
-				auto*       pthreadFnTy  = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
+				llvm::Type* pthreadPtrTy =
+				    llvm::PointerType::get(llvm::Type::getInt64Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace());
+				llvm::Type* voidPtrTy =
+				    llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace());
+				auto* pthreadFnTy = llvm::FunctionType::get(voidPtrTy, {voidPtrTy}, false);
 				if (not llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")) {
 					llvm::StructType::create(
 					    llCtx, {llvm::Type::getInt64Ty(llCtx), llvm::ArrayType::get(llvm::Type::getInt8Ty(llCtx), 48u)},
@@ -3976,8 +3991,8 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 				llvm::Function::Create(
 				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
 				                            {pthreadPtrTy,
-				                             llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo(),
-				                             pthreadFnTy->getPointerTo(), voidPtrTy},
+				                             llvm::PointerType::get(llvm::StructType::getTypeByName(llCtx, "pthread_attr_t"), irCtx->dataLayout.getProgramAddressSpace()),
+				                             llvm::PointerType::get(pthreadFnTy, irCtx->dataLayout.getProgramAddressSpace()), voidPtrTy},
 				                            false),
 				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_create", llvmModule);
 				linkPthread = true;
@@ -3987,9 +4002,9 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::pthreadJoin: {
 			if (not llvmModule->getFunction("pthread_join")) {
 				llvm::Type* pthreadTy = llvm::Type::getInt64Ty(llCtx);
-				llvm::Type* voidPtrTy = llvm::Type::getInt8Ty(llCtx)->getPointerTo();
+				llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace());
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-				                                               {pthreadTy, voidPtrTy->getPointerTo()}, false),
+				                                               {pthreadTy, llvm::PointerType::get(voidPtrTy, irCtx->dataLayout.getProgramAddressSpace())}, false),
 				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
 				linkPthread = true;
 			}
@@ -3998,7 +4013,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::pthreadExit: {
 			if (not llvmModule->getFunction("pthread_exit")) {
 				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-				                                               {llvm::Type::getInt8Ty(llCtx)->getPointerTo()}, false),
+				                                               {llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace())}, false),
 				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
 				linkPthread = true;
 			}
@@ -4025,7 +4040,7 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 				}
 				llvm::Function::Create(
 				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-				                            {llvm::StructType::getTypeByName(llCtx, "pthread_attr_t")->getPointerTo()},
+				                            {llvm::PointerType::get(llvm::StructType::getTypeByName(llCtx, "pthread_attr_t"), irCtx->dataLayout.getProgramAddressSpace())},
 				                            false),
 				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_attr_init", llvmModule);
 				linkPthread = true;

@@ -5,7 +5,7 @@
 
 namespace qat::ir {
 
-VectorType::VectorType(ir::Type* _subType, usize _count, VectorKind _kind, ir::Ctx* irCtx)
+VectorType::VectorType(ir::Type* _subType, usize _count, VectorKind _kind, ir::Ctx*)
     : subType(_subType), count(_count), kind(_kind) {
 	llvmType = kind == VectorKind::fixed ? (llvm::Type*)llvm::FixedVectorType::get(subType->get_llvm_type(), count)
 	                                     : llvm::ScalableVectorType::get(subType->get_llvm_type(), count);

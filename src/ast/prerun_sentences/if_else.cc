@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-void PrerunIfElse::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void PrerunIfElse::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                        EmitCtx* ctx) {
 	UPDATE_DEPS(ifBlock.first);
 	for (auto* snt : ifBlock.second) {

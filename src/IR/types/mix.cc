@@ -137,6 +137,7 @@ usize MixType::get_index_of(const String& name) const {
 			return i;
 		}
 	}
+	std::unreachable();
 }
 
 bool MixType::has_default_variant() const { return defaultVal.has_value(); }

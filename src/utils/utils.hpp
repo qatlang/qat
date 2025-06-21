@@ -38,7 +38,7 @@ useit inline String number_to_position(u64 number) {
 
 useit inline Vec<String> split_string(const String& value, const String& slice) {
 	Vec<String> result;
-	int         index = 0;
+	usize       index = 0;
 	while (index < value.length()) {
 		auto pos = value.find(slice, index);
 		if (pos != String::npos) {

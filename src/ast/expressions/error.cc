@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-void ErrorExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void ErrorExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                           EmitCtx* ctx) {
 	if (errorValue) {
 		UPDATE_DEPS(errorValue);
@@ -107,7 +107,7 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 		errorValue->asInPlaceCreatable()->setCreateIn(
 		    ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
 		                       ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
-		                       errTy->get_llvm_type()->getPointerTo(0u)),
+		                       llvm::PointerType::get(errTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
 		                   ir::RefType::get(true, errTy, ctx->irCtx), false));
 	}
 	auto* errVal = errorValue ? errorValue->emit(ctx) : nullptr;
@@ -132,7 +132,7 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	ctx->irCtx->builder.CreateStore(
 	    finalErr->get_llvm(),
 	    ctx->irCtx->builder.CreatePointerCast(ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
-	                                          errTy->get_llvm_type()->getPointerTo(0u)));
+	                                          llvm::PointerType::get(errTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
 	if (canCreateIn()) {
 		return get_creation_result(ctx->irCtx, resTy, fileRange);
 	}

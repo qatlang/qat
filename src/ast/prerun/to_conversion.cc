@@ -1,11 +1,15 @@
 #include "./to_conversion.hpp"
+#include "../../IR/types/integer.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 #include <llvm/IR/ConstantFold.h>
 #include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 
-void PrerunTo::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+void PrerunTo::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	value->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	targetType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
@@ -73,7 +77,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                            usableTarget);
 		}
 	} else if (valTy->is_text()) {
-		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_cstring()) {
+		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_bytestring()) {
 			return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
 		} else if (valTy->is_ptr() &&
 		           (valTy->as_ptr()->get_subtype()->is_unsigned() ||
@@ -118,6 +122,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 	ctx->Error("Conversion from " + ctx->color(val->get_ir_type()->to_string()) + " to " +
 	               ctx->color(usableTarget->to_string()) + " is not supported. Try casting instead",
 	           fileRange);
+	std::unreachable();
 }
 
 String PrerunTo::to_string() const { return value->to_string() + " to " + targetType->to_string(); }

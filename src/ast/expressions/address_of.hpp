@@ -15,13 +15,14 @@ class AddressOf final : public Expression {
 		return std::construct_at(OwnNormal(AddressOf), _instance, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(instance);
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::ADDRESS_OF; }
+
+	useit NodeType nodeType() const final { return NodeType::ADDRESS_OF; }
 };
 
 } // namespace qat::ast

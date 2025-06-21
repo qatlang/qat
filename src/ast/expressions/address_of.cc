@@ -1,4 +1,6 @@
 #include "./address_of.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/reference.hpp"
 
 namespace qat::ast {
 

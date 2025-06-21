@@ -1,4 +1,5 @@
 #include "./array_literal.hpp"
+#include "../../IR/types/array.hpp"
 
 #include <llvm/IR/Constants.h>
 

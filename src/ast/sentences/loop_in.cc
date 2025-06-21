@@ -1,5 +1,8 @@
 #include "./loop_in.hpp"
 #include "../../IR/control_flow.hpp"
+#include "../../IR/types/array.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../expression.hpp"
@@ -57,17 +60,17 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 	auto candType =
 	    candExp->get_ir_type()->is_ref() ? candExp->get_ir_type()->as_ref()->get_subtype() : candExp->get_ir_type();
 	auto const isTyArray = candType->is_array();
-	auto const isTyMulti =
-	    candType->is_ptr() && candType->as_ptr()->is_multi(); // TODO Disallow multi-pointers and allow slices
-	auto const isTyCString = candType->is_native_type() && candType->as_native_type()->is_cstring();
-	auto const isTyText    = candType->is_text();
-	auto const isTyVec     = candType->is_vector();
+	// auto const isTyMulti =
+	//     candType->is_ptr() && candType->as_ptr()->is_multi(); // TODO Disallow multi-pointers and allow slices
+	auto const isTyByteString = candType->is_native_type() && candType->as_native_type()->is_bytestring();
+	auto const isTyText       = candType->is_text();
+	auto const isTyVec        = candType->is_vector();
 	if (candExp->get_ir_type()->is_ref()) {
 		candExp->load_ghost_ref(ctx->irCtx->builder);
 	} else if (candExp->is_ghost_ref()) {
 		isRefUnder = true;
 	}
-	if (isTyArray || isTyText || isTyCString || isTyText || isTyVec) {
+	if (isTyArray || isTyText || isTyByteString || isTyText || isTyVec) {
 		ir::Type*    elemTy  = nullptr;
 		ir::Type*    countTy = ir::NativeType::get_usize(ctx->irCtx);
 		llvm::Value* ptrVal  = nullptr;
@@ -95,7 +98,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 				lenVal = ctx->irCtx->builder.CreateExtractValue(candExp->get_llvm(), {1u});
 			}
 			candHasVar = candType->as_ptr()->is_subtype_variable();
-		} else if (isTyCString) {
+		} else if (isTyByteString) {
 			elemTy = ir::UnsignedType::create(8, ctx->irCtx);
 			if (isRefUnder) {
 				candExp = ir::Value::get(ctx->irCtx->builder.CreateLoad(candType->get_llvm_type(), candExp->get_llvm()),
@@ -157,7 +160,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),
 		                                indexVar->get_llvm());
 		ctx->irCtx->builder.CreateCondBr(
-		    isTyCString
+		    isTyByteString
 		        ? ctx->irCtx->builder.CreateAnd(
 		              ctx->irCtx->builder.CreateICmpNE(
 		                  ctx->irCtx->builder.CreatePtrDiff(
@@ -196,7 +199,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		condBlock->set_active(ctx->irCtx->builder);
 		// Condition
 		llvm::Value* loopCond = nullptr;
-		if (isTyCString) {
+		if (isTyByteString) {
 			loopCond = ctx->irCtx->builder.CreateICmpNE(
 			    ctx->irCtx->builder.CreateLoad(
 			        zeroU8->getType(), ctx->irCtx->builder.CreateInBoundsGEP(

@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-void AssemblyBlock::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
+void AssemblyBlock::create_entity(ir::Mod* mod, ir::Ctx*) {
 	entityState = mod->add_entity(None, ir::EntityType::assemblyBlock, this, ir::EmitPhase::phase_1);
 }
 
@@ -17,7 +17,7 @@ void AssemblyBlock::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	content->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 }
 
-void AssemblyBlock::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
+void AssemblyBlock::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, mod);
 	if (defineChecker) {
 		auto defCond = defineChecker->emit(ctx);

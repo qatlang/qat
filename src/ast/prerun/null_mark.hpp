@@ -17,7 +17,7 @@ class NullPointer final : public PrerunExpression, public TypeInferrable {
 		return std::construct_at(OwnNormal(NullPointer), _providedType, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		if (providedType.has_value()) {
 			UPDATE_DEPS(providedType.value());
 		}

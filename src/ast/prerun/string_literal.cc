@@ -17,7 +17,7 @@ ir::PrerunValue* StringLiteral::emit(EmitCtx* ctx) {
 	    llvm::ConstantStruct::get(
 	        llvm::cast<llvm::StructType>(ir::TextType::get(ctx->irCtx)->get_llvm_type()),
 	        // NOTE - This usage of llvm::IRBuilder is allowed as it creates a constant without requiring a function
-	        {ctx->irCtx->builder.CreateGlobalStringPtr(value, ctx->irCtx->get_global_string_name(), 0U,
+	        {ctx->irCtx->builder.CreateGlobalString(value, ctx->irCtx->get_global_string_name(), 0U,
 	                                                   ctx->mod->get_llvm_module()),
 	         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), value.length())}),
 	    ir::TextType::get(ctx->irCtx));

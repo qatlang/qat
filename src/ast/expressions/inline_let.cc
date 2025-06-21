@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-void InlineLet::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void InlineLet::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                     EmitCtx* ctx) {
 	UPDATE_DEPS(expression);
 }

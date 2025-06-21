@@ -152,9 +152,8 @@ String GenericArgument::to_string() const {
 		    .value();
 	} else if (is_typed()) {
 		return as_typed()->get_type()->to_string();
-	} else {
-		// FIXME - Do something here
 	}
+	std::unreachable();
 }
 
 TypedGeneric::TypedGeneric(Identifier _name, ir::Type* _type, FileRange _range)

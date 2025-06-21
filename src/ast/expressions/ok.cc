@@ -5,7 +5,7 @@
 
 namespace qat::ast {
 
-void OkExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void OkExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                        EmitCtx* ctx) {
 	if (subExpr) {
 		UPDATE_DEPS(subExpr);
@@ -102,7 +102,7 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 			subExpr->asInPlaceCreatable()->setCreateIn(ir::Value::get(
 			    ctx->irCtx->builder.CreatePointerCast(
 			        ctx->irCtx->builder.CreateStructGEP(usableType->get_llvm_type(), createIn->get_llvm(), 1u),
-			        valTy->get_llvm_type()->getPointerTo(0u)),
+			        llvm::PointerType::get(valTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			    ir::RefType::get(true, valTy, ctx->irCtx), false));
 		}
 		auto* validVal = subExpr ? subExpr->emit(ctx) : nullptr;
@@ -129,7 +129,7 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 		ctx->irCtx->builder.CreateStore(finalVal->get_llvm(), ctx->irCtx->builder.CreatePointerCast(
 		                                                          ctx->irCtx->builder.CreateStructGEP(
 		                                                              resTy->get_llvm_type(), createIn->get_llvm(), 1u),
-		                                                          valTy->get_llvm_type()->getPointerTo(0u)));
+		                                                          llvm::PointerType::get(valTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
 		return get_creation_result(ctx->irCtx, resTy, fileRange);
 	} else {
 		ctx->Error("No inferred type found for this expression, and no type were provided. "

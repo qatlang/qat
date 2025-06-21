@@ -31,7 +31,7 @@ IntegerType* IntegerType::get(u64 bits, ir::Ctx* irCtx) {
 
 String IntegerType::to_string() const { return "i" + std::to_string(bitWidth); }
 
-ir::PrerunValue* IntegerType::get_prerun_default_value(ir::Ctx* irCtx) {
+ir::PrerunValue* IntegerType::get_prerun_default_value(ir::Ctx*) {
 	return ir::PrerunValue::get(llvm::ConstantInt::get(get_llvm_type(), 0u, true), this);
 }
 
@@ -88,7 +88,7 @@ Maybe<String> IntegerType::to_prerun_generic_string(ir::PrerunValue* val) const 
 	return resStr;
 }
 
-Maybe<bool> IntegerType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> IntegerType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	if (first->get_ir_type()->is_same(second->get_ir_type())) {
 		return (llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_EQ,
 		                                                                           first->get_llvm_constant(),

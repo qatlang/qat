@@ -22,7 +22,7 @@ void GlobalDeclaration::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irC
 	}
 }
 
-void GlobalDeclaration::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) { define(parent, irCtx); }
+void GlobalDeclaration::do_phase(ir::EmitPhase, ir::Mod* parent, ir::Ctx* irCtx) { define(parent, irCtx); }
 
 void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 	auto emitCtx = EmitCtx::get(irCtx, mod);

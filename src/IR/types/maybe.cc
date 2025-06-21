@@ -36,7 +36,7 @@ bool MaybeType::is_type_sized() const { return true; }
 
 bool MaybeType::is_type_packed() const { return isPacked; }
 
-bool MaybeType::has_sized_sub_type(ir::Ctx* irCtx) const { return subTy->is_type_sized(); }
+bool MaybeType::has_sized_sub_type(ir::Ctx*) const { return subTy->is_type_sized(); }
 
 Type* MaybeType::get_subtype() const { return subTy; }
 

@@ -515,7 +515,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 		_cacheExp_ = retVal;                                                                                           \
 	}
 
-	auto i = 0;
+	usize i = 0;
 	for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size()); i++) {
 		auto& token = tokens->at(i);
 		switch (token.type) {
@@ -890,6 +890,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						setCachedPreExp(ast::IntegerLiteral::create(token.value, None, token.fileRange), i);
 					}
 				}
+				SHOW("Done parsing integer literal")
 				break;
 			}
 			case TokenType::floatLiteral: {
@@ -2217,7 +2218,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 	using lexer::Token;
 	using lexer::TokenType;
 
-	if (upto == -1) {
+	if (upto == 0) {
 		upto = tokens->size();
 	}
 
@@ -2855,7 +2856,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 							auto bClose    = bCloseRes.value();
 							auto sentences = do_sentences(fnCtx, i + 1, bClose);
 							addNode(ast::FunctionPrototype::create(
-							    IdentifierAt(start), argResult.first, argResult.second, retType,
+							    IdentifierAt(start), argResult.first, retType,
 							    entityMeta.defineChecker, entityMeta.genericConstraint, entityMeta.metaInfo,
 							    get_visibility(),
 							    RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
@@ -2868,7 +2869,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						}
 					} else if (is_next(TokenType::stop, i)) {
 						addNode(ast::FunctionPrototype::create(
-						    IdentifierAt(start), argResult.first, argResult.second, retType, entityMeta.defineChecker,
+						    IdentifierAt(start), argResult.first, retType, entityMeta.defineChecker,
 						    entityMeta.genericConstraint, entityMeta.metaInfo, get_visibility(),
 						    RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
 						    genericList, None));
@@ -2912,7 +2913,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						auto bClose    = bCloseResult.value();
 						auto sentences = do_sentences(thisCtx, pClose + 1, bClose);
 						addNode(ast::FunctionPrototype::create(
-						    cacheSym.name.front(), argResult.first, argResult.second, retType, meta.defineChecker,
+						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker,
 						    nullptr, meta.metaInfo, get_visibility(),
 						    FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
 						    Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
@@ -2920,7 +2921,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						continue;
 					} else if (is_next(TokenType::stop, i)) {
 						addNode(ast::FunctionPrototype::create(
-						    cacheSym.name.front(), argResult.first, argResult.second, retType, meta.defineChecker,
+						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker,
 						    nullptr, meta.metaInfo, get_visibility(),
 						    FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {}, None));
 						i++;
@@ -2978,7 +2979,8 @@ Pair<ast::VisibilitySpec, usize> Parser::do_visibility_kind(usize from) {
 	} else {
 		return {{VisibilityKind::pub, RangeAt(from)}, from};
 	}
-} // NOLINT(clang-diagnostic-return-type)
+	std::unreachable();
+}
 
 // FIXME - Finish functionality for parsing type contents
 void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast::MemberParentLike* memParent) {
@@ -2989,8 +2991,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 	bool foundFirstMember      = false;
 	bool haveNonMemberEntities = false;
 
-	bool isConst  = false;
-	auto setConst = [&]() { isConst = true; };
+	bool isConst = false;
+	// auto setConst = [&]() { isConst = true; };
 	auto getConst = [&]() {
 		bool res = isConst;
 		isConst  = false;
@@ -3873,7 +3875,7 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Ma
 
 void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
                                   Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
-                                  Maybe<Pair<Vec<ast::Sentence*>, FileRange>>& elseCase, bool isTypeMatch) {
+                                  Maybe<Pair<Vec<ast::Sentence*>, FileRange>>&           elseCase) {
 	using lexer::TokenType;
 
 	for (usize i = from + 1; i < upto; i++) {
@@ -4167,6 +4169,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         } else {
             add_error("Internal error : No cached symbol found, but it is requested here", RangeAt(i));
         }
+        std::unreachable();
 	};
 	auto setSymbol = [&](const CacheSymbol& other) {
 		if (_cachedSymbol_.has_value()) {
@@ -4197,6 +4200,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 		} else {
 			add_error("Internal error: No cached type found, but it is requested here", RangeAt(i));
 		}
+		std::unreachable();
 	};
 
 	Maybe<Expression*> _cachedExpressions_(_cachedExps);
@@ -4212,6 +4216,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
         } else {
             add_error("Internal error : No cached expression found, but it is requested here", RangeAt(i));
         }
+        std::unreachable();
 	};
 #define setCachedExpr(other, returnIndexValue)                                                                             \
 	if (_cachedExpressions_.has_value()) {                                                                                 \
@@ -5266,7 +5271,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								    },
 								    RangeSpan(itStart, i)));
 							}
-							if (not is_next(TokenType::separator, i)) {
+							if (not (is_next(TokenType::binaryOperator, i) && (ValueAt(i + 1) == "+"))) {
 								break;
 							}
 							i++;
@@ -5276,7 +5281,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							          RangeSpan(specStart, i));
 						}
 						i++;
-						setCachedExpr(ast::GetPolymorph::create(exp, std::move(typeRange), std::move(skillSpec),
+						if (not ptrOwner.has_value() && isPtrPoly) {
+							ptrOwner = ast::PtrOwner::of_anonymous(RangeSpan(start, i));
+						}
+						setCachedExpr(ast::GetPolymorph::create(exp, isVar, std::move(typeRange), std::move(skillSpec),
 						                                        std::move(ptrOwner), RangeSpan(start, i)),
 						              i);
 						break;
@@ -5457,7 +5465,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 	} else {
 		return {consumeCachedExpr(), (upto.has_value() && (i == upto.value())) ? (i - 1) : i};
 	}
-} // NOLINT(clang-diagnostic-return-type)
+	std::unreachable();
+}
 
 Vec<ast::PrerunExpression*> Parser::do_separated_prerun_expressions(ParserContext& preCtx, usize from, usize to) {
 	Vec<ast::PrerunExpression*> result;
@@ -5531,7 +5540,7 @@ Vec<ast::Type*> Parser::do_separated_types(ParserContext& preCtx, usize from, us
 	return result;
 }
 
-Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext& preCtx, const usize start) {
+Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext&, const usize start) {
 	using lexer::TokenType;
 
 	Vec<Identifier> name;
@@ -5750,6 +5759,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 		}
 	}
 	add_error("Could not find ] to end the current scope of sentences", RangeSpan(from, i));
+	std::unreachable();
 }
 
 Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usize upto) {
@@ -5774,13 +5784,13 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 		}
 	};
 
-	Vec<ast::Sentence*> result;
+	Vec<ast::Sentence*> resultSentences;
 	auto                addSentence = [&](ast::Sentence* sentence) {
         if (sentence->isCommentable() && totalComment.has_value()) {
             sentence->asCommentable()->commentValue = {std::get<1>(totalComment.value()),
                                                        std::get<2>(totalComment.value())};
         }
-        result.push_back(sentence);
+        resultSentences.push_back(sentence);
 	};
 
 	Maybe<CacheSymbol> _cacheSymbol_;
@@ -5802,6 +5812,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 		} else {
 			add_error("Internal error : No cached symbol found, but was requested here", RangeAt(i));
 		}
+		std::unreachable();
 	};
 	auto retrieveCachedSymbol = [&]() {
 		if (_cacheSymbol_.has_value()) {
@@ -5832,6 +5843,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 		} else {
 			add_error("Internal error : No cached expression is found, but was requested here", RangeAt(i));
 		}
+		std::unreachable();
 	};
 	auto retrieveCachedExpr = [&]() {
 		if (_cachedExpression_.has_value()) {
@@ -5855,7 +5867,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					if (is_next(TokenType::parenthesisOpen, i + 2)) {
 						if (is_next(TokenType::parenthesisClose, i + 3)) {
 							if (is_next(TokenType::stop, i + 4)) {
-								result.push_back(ast::MetaTodo::create(None, RangeSpan(i, i + 5)));
+								addSentence(ast::MetaTodo::create(None, RangeSpan(i, i + 5)));
 								i = i + 5;
 							} else {
 								add_error("Expected . after this to end the sentence", RangeSpan(i, i + 4));
@@ -5863,7 +5875,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						} else if (is_next(TokenType::StringLiteral, i + 3)) {
 							if (is_next(TokenType::parenthesisClose, i + 4)) {
 								if (is_next(TokenType::stop, i + 5)) {
-									result.push_back(ast::MetaTodo::create(ValueAt(i + 4), RangeSpan(i, i + 6)));
+									addSentence(ast::MetaTodo::create(ValueAt(i + 4), RangeSpan(i, i + 6)));
 									i = i + 6;
 								} else {
 									add_error("Expected . after this to end the sentence", RangeSpan(i, i + 5));
@@ -5880,8 +5892,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				} else {
 					auto expRes = do_expression(preCtx, None, i - 1, None);
 					if (tokens->at(expRes.second + 1).type == TokenType::stop) {
-						result.push_back(
-						    ast::ExpressionSentence::create(expRes.first, RangeSpan(i, expRes.second + 1)));
+						addSentence(ast::ExpressionSentence::create(expRes.first, RangeSpan(i, expRes.second + 1)));
 						i = expRes.second + 1;
 					} else {
 						setCachedExprForSentences(expRes.first);
@@ -5918,8 +5929,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 								add_error("Expression for member initialisation did not span till .",
 								          RangeSpan(expRes.second + 1, stop.value()));
 							}
-							result.push_back(ast::MemberInit::create(IdentifierAt(i + 1), expRes.first, false,
-							                                         RangeSpan(i, stop.value())));
+							addSentence(ast::MemberInit::create(IdentifierAt(i + 1), expRes.first, false,
+							                                    RangeSpan(i, stop.value())));
 							i = stop.value();
 							break;
 						} else {
@@ -5935,7 +5946,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				} else if (is_next(TokenType::is, i)) {
 					if (is_next(TokenType::identifier, i + 1)) {
 						if (is_next(TokenType::stop, i + 2)) {
-							result.push_back(
+							addSentence(
 							    ast::MemberInit::create(IdentifierAt(i + 2), nullptr, true, RangeSpan(i, i + 3)));
 							i += 3;
 							break;
@@ -5969,8 +5980,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 					auto  symbol = consumeCachedSymbol();
 					auto* lhs    = ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange);
-					result.push_back(
-					    ast::Assignment::create(lhs, expRes.first, FileRange(symbol.fileRange, RangeAt(end))));
+					addSentence(ast::Assignment::create(lhs, expRes.first, FileRange(symbol.fileRange, RangeAt(end))));
 					i = end;
 				} else if (hasCachedExpr()) {
 					SHOW("Assignment has cached expression")
@@ -5983,7 +5993,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 							add_error("Expression to assign did not span till the .",
 							          RangeSpan(expRes.second + 1, end));
 						}
-						result.push_back(ast::Assignment::create(lhs, expRes.first, {lhs->fileRange, RangeAt(end)}));
+						addSentence(ast::Assignment::create(lhs, expRes.first, {lhs->fileRange, RangeAt(end)}));
 						i = end;
 					} else {
 						add_error("Invalid end of sentence", {consumeCachedExpr()->fileRange, token.fileRange});
@@ -6015,7 +6025,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				}
 				auto end  = end_res.value();
 				auto exps = do_separated_expressions(ctx, i, end);
-				result.push_back(ast::SayLike::create(sayTy, exps, token.fileRange));
+				addSentence(ast::SayLike::create(sayTy, exps, token.fileRange));
 				i = end;
 				break;
 			}
@@ -6023,21 +6033,16 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				SHOW("Parsed expression sentence")
 				if (hasCachedExpr()) {
 					auto* expr = consumeCachedExpr();
-					result.push_back(ast::ExpressionSentence::create(expr, {expr->fileRange, token.fileRange}));
+					addSentence(ast::ExpressionSentence::create(expr, {expr->fileRange, token.fileRange}));
 				} else if (hasCachedSymbol()) {
 					auto symbol = consumeCachedSymbol();
-					result.push_back(ast::ExpressionSentence::create(
+					addSentence(ast::ExpressionSentence::create(
 					    ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange), symbol.fileRange));
 				}
 				break;
 			}
 			case TokenType::match: {
-				auto start       = i;
-				bool isTypeMatch = false;
-				if (is_next(TokenType::Type, i)) {
-					isTypeMatch = true;
-					i++;
-				}
+				auto start  = i;
 				auto expRes = do_expression(preCtx, None, i, None);
 				if (is_next(TokenType::fatArrow, expRes.second)) {
 					i = expRes.second + 1;
@@ -6046,10 +6051,9 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						if (bCloseRes) {
 							Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>> chain;
 							Maybe<Pair<Vec<ast::Sentence*>, FileRange>>           elseCase;
-							parse_match_contents(preCtx, i + 1, bCloseRes.value(), chain, elseCase, isTypeMatch);
-							result.push_back(ast::Match::create(isTypeMatch, expRes.first, std::move(chain),
-							                                    std::move(elseCase),
-							                                    RangeSpan(start, bCloseRes.value())));
+							parse_match_contents(preCtx, i + 1, bCloseRes.value(), chain, elseCase);
+							addSentence(ast::Match::create(expRes.first, std::move(chain), std::move(elseCase),
+							                               RangeSpan(start, bCloseRes.value())));
 							i = bCloseRes.value();
 						} else {
 							add_error("Expected end for [", RangeAt(i + 1));
@@ -6088,7 +6092,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						add_error("Expected . after this to end the use-value declaration", RangeSpan(start, i));
 					}
 					i++;
-					result.push_back(
+					addSentence(
 					    ast::UseDeclaration::create(std::move(name), declType, expRes.first, RangeSpan(start, i)));
 				} else {
 					SHOW("Found new")
@@ -6113,8 +6117,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 							i           = expRes.second;
 							if (is_next(TokenType::stop, i)) {
 								i++;
-								result.push_back(ast::LocalDeclaration::create(nullptr, isRef, name, expRes.first,
-								                                               isVarDecl, RangeSpan(start, i)));
+								addSentence(ast::LocalDeclaration::create(nullptr, isRef, name, expRes.first, isVarDecl,
+								                                          RangeSpan(start, i)));
 							} else {
 								add_error("Expected . to end the local declaration", RangeSpan(start, i));
 							}
@@ -6125,15 +6129,15 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 									auto  asgnPos = first_primary_position(TokenType::assignment, i + 2).value();
 									auto* typeRes = do_type(preCtx, i + 2, asgnPos).first;
 									auto* exp     = do_expression(preCtx, None, asgnPos, endRes.value()).first;
-									result.push_back(ast::LocalDeclaration::create(typeRes, isRef, IdentifierAt(i + 1),
-									                                               exp, isVarDecl,
-									                                               RangeSpan(start, endRes.value())));
+									addSentence(ast::LocalDeclaration::create(typeRes, isRef, IdentifierAt(i + 1), exp,
+									                                          isVarDecl,
+									                                          RangeSpan(start, endRes.value())));
 								} else {
 									// No value for the assignment
 									auto* typeRes = do_type(preCtx, i + 2, endRes.value()).first;
-									result.push_back(ast::LocalDeclaration::create(typeRes, isRef, IdentifierAt(i + 1),
-									                                               None, isVarDecl,
-									                                               RangeSpan(start, endRes.value())));
+									addSentence(ast::LocalDeclaration::create(typeRes, isRef, IdentifierAt(i + 1), None,
+									                                          isVarDecl,
+									                                          RangeSpan(start, endRes.value())));
 								}
 								i = endRes.value();
 								break;
@@ -6222,7 +6226,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						          RangeAt(i));
 					}
 				}
-				result.push_back(ast::IfElse::create(chain, elseCase, fileRange));
+				addSentence(ast::IfElse::create(chain, elseCase, fileRange));
 				break;
 			}
 			case TokenType::Do: {
@@ -6252,8 +6256,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 									              " did not span till the .",
 									          RangeSpan(condRes.second + 1, stopPos.value()));
 								}
-								result.push_back(ast::LoopIf::create(true, condRes.first, sentences, tagVal,
-								                                     RangeSpan(start, stopPos.value())));
+								addSentence(ast::LoopIf::create(true, condRes.first, sentences, tagVal,
+								                                RangeSpan(start, stopPos.value())));
 								i = stopPos.value();
 							} else {
 								add_error("Expected . to end the condition for the " + color_error("do-loop-if"),
@@ -6292,7 +6296,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						if (bCloseRes.has_value()) {
 							auto bClose    = bCloseRes.value();
 							auto sentences = do_sentences(preCtx, i + 1, bClose);
-							result.push_back(ast::LoopInfinite::create(sentences, tagValue, RangeSpan(start, bClose)));
+							addSentence(ast::LoopInfinite::create(sentences, tagValue, RangeSpan(start, bClose)));
 							i = bClose;
 						} else {
 							add_error("Expected end for [", RangeAt(i + 2));
@@ -6338,8 +6342,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 					auto sentences = do_sentences(preCtx, i + 1, bClose.value());
 					i              = bClose.value();
-					result.push_back(ast::LoopIn::create(exp.first, std::move(sentences), std::move(itemName.value()),
-					                                     std::move(indexName), RangeSpan(start, i)));
+					addSentence(ast::LoopIn::create(exp.first, std::move(sentences), std::move(itemName.value()),
+					                                std::move(indexName), RangeSpan(start, i)));
 					break;
 				} else if (is_next(TokenType::If, i)) {
 					auto start = i;
@@ -6364,8 +6368,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 							auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 							if (bCloseRes.has_value()) {
 								auto snts = do_sentences(preCtx, i + 1, bCloseRes.value());
-								result.push_back(ast::LoopIf::create(false, cond.first, snts, tagValue,
-								                                     RangeSpan(start, bCloseRes.value())));
+								addSentence(ast::LoopIf::create(false, cond.first, snts, tagValue,
+								                                RangeSpan(start, bCloseRes.value())));
 								i = bCloseRes.value();
 								break;
 							} else {
@@ -6406,9 +6410,9 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 						if (bCloseRes.has_value()) {
 							auto snts = do_sentences(preCtx, i + 1, bCloseRes.value());
-							result.push_back(ast::LoopTo::create(countRes.first,
-							                                     do_sentences(preCtx, i + 1, bCloseRes.value()),
-							                                     loopTag, RangeSpan(i, bCloseRes.value())));
+							addSentence(ast::LoopTo::create(countRes.first,
+							                                do_sentences(preCtx, i + 1, bCloseRes.value()), loopTag,
+							                                RangeSpan(i, bCloseRes.value())));
 							i = bCloseRes.value();
 						} else {
 							add_error("Expected end for [", RangeAt(i + 1));
@@ -6425,7 +6429,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				SHOW("give sentence found")
 				if (is_next(TokenType::stop, i)) {
 					i++;
-					result.push_back(ast::GiveSentence::create(None, FileRange(token.fileRange, RangeAt(i + 1))));
+					addSentence(ast::GiveSentence::create(None, FileRange(token.fileRange, RangeAt(i + 1))));
 				} else {
 					auto end = first_primary_position(TokenType::stop, i);
 					if (not end.has_value()) {
@@ -6435,20 +6439,20 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 					auto* exp = do_expression(ctx, None, i, end.value()).first;
 					i         = end.value();
-					result.push_back(ast::GiveSentence::create(exp, FileRange(token.fileRange, RangeAt(end.value()))));
+					addSentence(ast::GiveSentence::create(exp, FileRange(token.fileRange, RangeAt(end.value()))));
 				}
 				break;
 			}
 			case TokenType::Break: {
 				if (is_next(TokenType::child, i)) {
 					if (is_next(TokenType::identifier, i + 1)) {
-						result.push_back(ast::Break::create(IdentifierAt(i + 2), RangeSpan(i, i + 2)));
+						addSentence(ast::Break::create(IdentifierAt(i + 2), RangeSpan(i, i + 2)));
 						i += 2;
 					} else {
 						add_error("Expected an identifier after break'", RangeSpan(i, i + 2));
 					}
 				} else if (is_next(TokenType::stop, i)) {
-					result.push_back(ast::Break::create(None, token.fileRange));
+					addSentence(ast::Break::create(None, token.fileRange));
 					i++;
 				} else {
 					add_error("Unexpected token found after break", token.fileRange);
@@ -6458,13 +6462,13 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 			case TokenType::Continue: {
 				if (is_next(TokenType::child, i)) {
 					if (is_next(TokenType::identifier, i + 1)) {
-						result.push_back(ast::Continue::create(IdentifierAt(i + 2), RangeSpan(i, i + 2)));
+						addSentence(ast::Continue::create(IdentifierAt(i + 2), RangeSpan(i, i + 2)));
 						i += 2;
 					} else {
 						add_error("Expected an identifier after continue'", RangeSpan(i, i + 2));
 					}
 				} else if (is_next(TokenType::stop, i)) {
-					result.push_back(ast::Continue::create(None, token.fileRange));
+					addSentence(ast::Continue::create(None, token.fileRange));
 					i++;
 				} else {
 					add_error("Unexpected token found after continue", token.fileRange);
@@ -6481,7 +6485,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					auto rhs     = do_expression(preCtx, None, i, end_res, None).first;
 					auto bin_exp =
 					    ast::BinaryExpression::create(lhs, token.value, rhs, FileRange{lhs->fileRange, rhs->fileRange});
-					result.push_back(
+					addSentence(
 					    ast::ExpressionSentence::create(bin_exp, FileRange{bin_exp->fileRange, RangeAt(end_res)}));
 				} else {
 					add_error("Detected " + token.value +
@@ -6507,13 +6511,13 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				i = expRes.second;
 				if (is_next(TokenType::stop, i)) {
 					auto expr = consumeCachedExpr();
-					result.push_back(ast::ExpressionSentence::create(expr, expr->fileRange));
+					addSentence(ast::ExpressionSentence::create(expr, expr->fileRange));
 					i++;
 				}
 			}
 		}
 	}
-	return result;
+	return resultSentences;
 }
 
 Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& preCtx, usize from, usize upto) {

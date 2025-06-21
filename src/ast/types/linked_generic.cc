@@ -36,6 +36,7 @@ ir::Type* LinkedGeneric::emit(EmitCtx* ctx) {
 	} else {
 		ctx->Error("Invalid generic kind", fileRange);
 	}
+	std::unreachable();
 }
 
 AstTypeKind LinkedGeneric::type_kind() const { return AstTypeKind::LINKED_GENERIC; }

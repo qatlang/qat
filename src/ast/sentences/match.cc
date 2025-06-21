@@ -164,9 +164,8 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					        ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {1u})
 					        : ctx->irCtx->builder.CreatePointerCast(
 					              ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), expEmit->get_llvm(), 1),
-					              mTy->get_variant_with_name(uMatch->get_name().value)
-					                  ->get_llvm_type()
-					                  ->getPointerTo()),
+					              llvm::PointerType::get(mTy->get_variant_with_name(uMatch->get_name().value)
+					                  ->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
 					    loc->get_alloca());
 				}
 			}
@@ -325,8 +324,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			strBuff  = expEmit->is_value()
 			               ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {0u})
 			               : ctx->irCtx->builder.CreateLoad(
-                                llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-                                    ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+                                llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
                                 ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), expEmit->get_llvm(), 0u));
 			strCount = expEmit->is_value()
 			               ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {1u})
@@ -418,8 +416,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 						caseStrBuff  = caseIR->is_value()
 						                   ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})
 						                   : ctx->irCtx->builder.CreateLoad(
-                                                llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-                                                    ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+                                                llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
                                                 ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(),
 						                                                             caseIR->get_llvm(), 0u));
 						caseStrCount = ctx->irCtx->builder.CreateLoad(

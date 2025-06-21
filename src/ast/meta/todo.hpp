@@ -29,12 +29,13 @@ class MetaTodo : public Sentence {
 		return std::construct_at(OwnNormal(MetaTodo), message, fileRange);
 	}
 
-	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-	                                 EmitCtx* ctx) {}
+	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::META_TODO; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::META_TODO; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

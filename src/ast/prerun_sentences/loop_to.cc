@@ -1,4 +1,5 @@
 #include "./loop_to.hpp"
+#include "../../IR/types/integer.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "./internal_exceptions.hpp"
 
@@ -68,7 +69,7 @@ void PrerunLoopTo::emit(EmitCtx* ctx) {
 			                                         index, countExp->get_llvm_constant()))
 			           ->getValue()
 			           .getBoolValue();
-			     [&]() {
+			     ([&]() {
 				     index = llvm::ConstantFoldConstant(
 				         llvm::ConstantExpr::getAdd(
 				             index, llvm::ConstantInt::get(countTy->get_llvm_type(), 1u, not isUnsigned)),
@@ -76,7 +77,7 @@ void PrerunLoopTo::emit(EmitCtx* ctx) {
 				     if (indexLocal != nullptr) {
 					     indexLocal->change_value(index);
 				     }
-			     }) {
+			     })()) {
 				PRERUN_LOOP_BASIC_CONTENTS
 			}
 		}

@@ -1,9 +1,11 @@
 #include "./generic_integer.hpp"
+#include "../../IR/types/integer.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../expression.hpp"
 
 namespace qat::ast {
 
-void GenericIntegerType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* entity,
+void GenericIntegerType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* entity,
                                              EmitCtx* ctx) {
 	bitValue->update_dependencies(phase, ir::DependType::complete, entity, ctx);
 	if (isUnsignedExp) {

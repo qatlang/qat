@@ -1,5 +1,7 @@
 #include "./heap.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../IR/types/void.hpp"
 
 #include <llvm/IR/Constants.h>
@@ -117,7 +119,9 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 	auto* freeFn   = mod->get_llvm_module()->getFunction(freeName);
 	ctx->irCtx->builder.CreateCall(
 	    freeFn->getFunctionType(), freeFn,
-	    {ctx->irCtx->builder.CreatePointerCast(candExp, llvm::Type::getInt8Ty(ctx->irCtx->llctx)->getPointerTo())});
+	    {ctx->irCtx->builder.CreatePointerCast(
+	        candExp, llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+	                                        ctx->irCtx->dataLayout.getProgramAddressSpace()))});
 	return ir::Value::get(nullptr, ir::VoidType::get(ctx->irCtx->llctx), false);
 }
 
@@ -217,7 +221,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
                          ptrVal->is_value()
 		                          ? ctx->irCtx->builder.CreateExtractValue(ptrVal->get_llvm(), {0u})
 		                          : ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), ptrVal->get_llvm(), 0u)),
-                     llvm::Type::getInt8Ty(ctx->irCtx->llctx)->getPointerTo()),
+                     llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace())),
 		              ctx->irCtx->builder.CreateMul(
                      countVal->get_llvm(),
                      llvm::ConstantInt::get(
@@ -238,6 +242,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		               ctx->color(ir::NativeType::get_usize(ctx->irCtx)->to_string()) + " type",
 		           count->fileRange);
 	}
+	std::unreachable();
 }
 
 Json HeapGrow::to_json() const {

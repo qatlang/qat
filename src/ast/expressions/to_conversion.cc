@@ -1,8 +1,11 @@
 #include "./to_conversion.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/integer.hpp"
 #include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../IR/types/text.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 #include <llvm/IR/Instructions.h>
 
@@ -130,7 +133,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			}
 		} else if (valType->is_text()) {
 			auto destValTy = destTy->is_native_type() ? destTy->as_native_type()->get_subtype() : destTy;
-			if (destTy->is_native_type() && destTy->as_native_type()->is_cstring()) {
+			if (destTy->is_native_type() && destTy->as_native_type()->is_bytestring()) {
 				if (val->is_prerun_value()) {
 					return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), destTy);
 				} else {
@@ -314,6 +317,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 	}
+	std::unreachable();
 }
 
 Json ToConversion::to_json() const {

@@ -5,7 +5,7 @@
 
 namespace qat::ir {
 
-SliceType::SliceType(bool _isVar, Type* _subType, ir::Ctx* ctx) : isVar(_isVar), subType(_subType) {
+SliceType::SliceType(bool _isVar, Type* _subType, ir::Ctx* ctx) : subType(_subType), isVar(_isVar) {
 	linkingName = "qat'slice:[" + String(isVar ? "var " : "") + subType->get_name_for_linking() + "]";
 	llvmType    = llvm::StructType::create(
         {llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace()),

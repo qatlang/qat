@@ -25,7 +25,7 @@ class Default final : public Expression, public LocalDeclCompatible, public InPl
 	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		if (providedType) {
 			providedType->update_dependencies(phase, ir::DependType::childrenPartial, ent, ctx);
 		}

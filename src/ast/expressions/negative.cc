@@ -1,4 +1,5 @@
 #include "./negative.hpp"
+#include "../../IR/types/native_type.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 
@@ -79,6 +80,7 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 		               " operator",
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 Json Negative::to_json() const {

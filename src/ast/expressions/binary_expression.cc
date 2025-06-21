@@ -1,8 +1,10 @@
 #include "binary_expression.hpp"
-#include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/flag.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../IR/types/reference.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "operator.hpp"
 
 #include <llvm/IR/Constant.h>
@@ -619,7 +621,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				rhsType = rhsValueType;
 				rhsVal  = rhsEmit->get_llvm();
 			}
-			auto ptrTy = lhsValueType->as_ptr();
+			// auto ptrTy = lhsValueType->as_ptr();
 			if (op == OperatorKind::EQUAL_TO) {
 				SHOW("Pointer is normal")
 				auto finalComparison = ctx->irCtx->builder.CreateICmpEQ(

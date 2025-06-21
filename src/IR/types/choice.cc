@@ -22,6 +22,7 @@ ChoiceType::ChoiceType(Identifier _name, Mod* _parent, Vec<Vec<Identifier>> _fie
                      Json()
                          ._("moduleID", _parent->get_id())
                          ._("hasValues", _values.has_value())
+						 ._("areValuesUnsigned", areValuesUnsigned)
                          ._("hasDefault", _defaultVal.has_value())
                          ._("visibility", _visibility),
                      _name.range),
@@ -235,7 +236,7 @@ Maybe<String> ChoiceType::to_prerun_generic_string(ir::PrerunValue* val) const {
 
 bool ChoiceType::is_type_sized() const { return true; }
 
-Maybe<bool> ChoiceType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> ChoiceType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	if (first->get_ir_type()->is_same(second->get_ir_type())) {
 		return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ,
 		                                                                          first->get_llvm_constant(),

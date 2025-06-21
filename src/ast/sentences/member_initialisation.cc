@@ -1,4 +1,5 @@
 #include "./member_initialisation.hpp"
+#include "../../IR/types/struct_type.hpp"
 
 namespace qat::ast {
 
@@ -51,7 +52,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 						               ctx->color(parentTy->to_string()),
 						           memName.range);
 					}
-					for (auto ind = 0; ind < parentTy->as_mix()->get_variant_count(); ind++) {
+					for (usize ind = 0; ind < parentTy->as_mix()->get_variant_count(); ind++) {
 						auto memCheckRes = memFn->is_member_initted(ind);
 						if (memCheckRes.has_value()) {
 							ctx->Error("The mix type instance has already been initialised at " +
@@ -220,6 +221,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 		ctx->Error("This function is not a constructor of any type and hence cannot use member initialisation",
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 Json MemberInit::to_json() const {

@@ -1,8 +1,8 @@
 #include "./define_flag_type.hpp"
 #include "../IR/types/flag.hpp"
+#include "../IR/types/unsigned.hpp"
 #include "./expression.hpp"
 #include "./types/qat_type.hpp"
-#include "types/unsigned.hpp"
 
 namespace qat::ast {
 

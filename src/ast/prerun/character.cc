@@ -21,7 +21,7 @@ ir::PrerunValue* Character::emit(EmitCtx* ctx) {
 			for (u8 i = 0; i < 4; i++) {
 				result += " " + utils::to_hex(bytes[i], 2);
 			}
-			return std::move(result);
+			return result;
 		};
 		auto charTy = ir::CharType::get(ctx->irCtx->llctx);
 		auto valRes = utils::utf8_to_unicode_scalar(bytes);
@@ -51,7 +51,7 @@ String Character::to_string() const {
 			result.push_back(bytes[i]);
 		}
 		result += "`";
-		return std::move(result);
+		return result;
 	}
 }
 

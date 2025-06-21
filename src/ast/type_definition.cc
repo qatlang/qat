@@ -38,7 +38,7 @@ void TypeDefinition::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) {
 	subType->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 }
 
-void TypeDefinition::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
+void TypeDefinition::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	auto emitCtx = EmitCtx::get(irCtx, mod);
 	if (checker) {
 		auto* checkRes = checker->emit(emitCtx);
@@ -155,12 +155,12 @@ void TypeDefinition::create_type_in_parent(TypeInParentState& state, ir::Mod* mo
 	}
 	if (state.isParentSkill) {
 		auto emitCtx = EmitCtx::get(irCtx, mod)->with_skill((ir::Skill*)state.parent);
-		ir::DefinitionType::create(name, subType->emit(emitCtx), {},
+		(void)ir::DefinitionType::create(name, subType->emit(emitCtx), {},
 		                           ir::TypeDefParent::from_skill((ir::Skill*)state.parent), mod,
 		                           emitCtx->get_visibility_info(visibSpec));
 	} else {
 		auto emitCtx = EmitCtx::get(irCtx, mod)->with_member_parent((ir::MethodParent*)state.parent);
-		ir::DefinitionType::create(name, subType->emit(emitCtx), {},
+		(void)ir::DefinitionType::create(name, subType->emit(emitCtx), {},
 		                           ir::TypeDefParent::from_method_parent((ir::MethodParent*)state.parent), mod,
 		                           emitCtx->get_visibility_info(visibSpec));
 	}

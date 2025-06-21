@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-void SubType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void SubType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                   EmitCtx* ctx) {
 	if (parentType != nullptr) {
 		UPDATE_DEPS(parentType);
@@ -46,6 +46,7 @@ ir::Type* SubType::emit(EmitCtx* ctx) {
 		               ctx->color(((ir::PrerunValue*)subRes.data)->get_ir_type()->to_string()),
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 } // namespace qat::ast

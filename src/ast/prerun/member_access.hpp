@@ -17,14 +17,15 @@ class PrerunMemberAccess final : public PrerunExpression {
 		return std::construct_at(OwnNormal(PrerunMemberAccess), _expr, _member, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(expr);
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx);
 	useit Json             to_json() const;
 	useit String           to_string() const;
-	useit NodeType         nodeType() const { return NodeType::PRERUN_MEMBER_ACCESS; }
+
+	useit NodeType nodeType() const { return NodeType::PRERUN_MEMBER_ACCESS; }
 };
 
 } // namespace qat::ast

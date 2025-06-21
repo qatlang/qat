@@ -25,6 +25,7 @@ ir::Value* SelfInstance::emit(EmitCtx* ctx) {
 		ctx->Error("The current function is not a method of any type and hence the parent instance cannot be retrieved",
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 Json SelfInstance::to_json() const { return Json()._("nodeType", "selfInstance")._("fileRange", fileRange); }

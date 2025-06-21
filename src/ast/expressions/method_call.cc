@@ -1,5 +1,6 @@
 #include "./method_call.hpp"
 #include "../../IR/qat_module.hpp"
+#include "../../IR/types/struct_type.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../prerun/method_call.hpp"
 
@@ -7,8 +8,7 @@
 
 namespace qat::ast {
 
-void MethodCall::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
-                                     EmitCtx* ctx) {
+void MethodCall::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	UPDATE_DEPS(instance);
 	for (auto arg : arguments) {
 		UPDATE_DEPS(arg);

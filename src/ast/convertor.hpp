@@ -3,7 +3,6 @@
 
 #include "../IR/context.hpp"
 #include "../IR/types/struct_type.hpp"
-#include "./argument.hpp"
 #include "./node.hpp"
 #include "./types/qat_type.hpp"
 #include "member_parent_like.hpp"
@@ -11,7 +10,6 @@
 #include "sentence.hpp"
 
 #include <llvm/IR/GlobalValue.h>
-#include <string>
 
 namespace qat::ast {
 
@@ -54,7 +52,7 @@ class ConvertorPrototype {
 		                         _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		if (candidateType) {
 			UPDATE_DEPS(candidateType);
 		}
@@ -89,7 +87,7 @@ class ConvertorDefinition {
 		return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);
 		}

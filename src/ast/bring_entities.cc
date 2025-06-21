@@ -1,6 +1,7 @@
 #include "./bring_entities.hpp"
 #include "../IR/stdlib.hpp"
 #include "../IR/types/region.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "./emit_ctx.hpp"
 
 namespace qat::ast {
@@ -238,7 +239,7 @@ void BringEntities::update_entity_dependencies(ir::Mod* currMod, ir::Ctx* irCtx)
 	}
 }
 
-void BringEntities::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) { handle_brings(mod, irCtx); }
+void BringEntities::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) { handle_brings(mod, irCtx); }
 
 void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 	auto emitCtx = EmitCtx::get(irCtx, currentMod);

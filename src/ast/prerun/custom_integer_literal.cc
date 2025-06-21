@@ -1,5 +1,9 @@
 #include "./custom_integer_literal.hpp"
+#include "../../IR/types/integer.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../../utils/json.hpp"
+
 #include <string>
 
 namespace qat::ast {

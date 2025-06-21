@@ -1,6 +1,7 @@
 #include "./define_choice_type.hpp"
+#include "../IR/types/native_type.hpp"
+#include "./expression.hpp"
 #include "./types/qat_type.hpp"
-#include "expression.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 
@@ -25,7 +26,7 @@ void DefineChoiceType::update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) 
 	}
 }
 
-void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineChoiceType::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	Vec<Vec<Identifier>>           fieldNames;
 	Maybe<Vec<llvm::ConstantInt*>> fieldValues;
 	ir::Type*                      variantValueType = nullptr;
@@ -168,10 +169,9 @@ void DefineChoiceType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			}
 		}
 	}
-	SHOW("Creating choice type in the IR")
-	(void)ir::ChoiceType::create(name, mod, std::move(fieldNames), std::move(fieldValues), providedType,
-	                             areValuesUnsigned, defaultVal, emitCtx->get_visibility_info(visibSpec), irCtx,
-	                             fileRange, None);
+	SHOW("Creating choice type in the IR")(void) ir::ChoiceType::create(
+	    name, mod, std::move(fieldNames), std::move(fieldValues), providedType, areValuesUnsigned, defaultVal,
+	    emitCtx->get_visibility_info(visibSpec), irCtx, fileRange, None);
 	SHOW("Created choice type")
 }
 

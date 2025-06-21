@@ -17,13 +17,14 @@ class Negative final : public Expression, public TypeInferrable {
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(value);
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::NEGATIVE; }
+
+	useit NodeType nodeType() const final { return NodeType::NEGATIVE; }
 };
 
 } // namespace qat::ast

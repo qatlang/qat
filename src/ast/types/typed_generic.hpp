@@ -27,7 +27,7 @@ class TypedGenericAbstract final : public GenericAbstractType {
 	useit ast::Type* getDefaultAST() const { return defaultTypeAST.value(); }
 	useit ir::Type* getDefault() const;
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
 	                         EmitCtx* ctx) final {
 		if (defaultTypeAST.has_value()) {
 			UPDATE_DEPS(defaultTypeAST.value());

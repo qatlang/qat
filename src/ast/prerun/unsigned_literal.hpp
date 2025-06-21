@@ -21,7 +21,7 @@ class UnsignedLiteral final : public PrerunExpression, public TypeInferrable {
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;

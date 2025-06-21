@@ -16,7 +16,7 @@ class ExpressionSentence final : public Sentence {
 		return std::construct_at(OwnNormal(ExpressionSentence), _expr, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(expr);
 	}
 

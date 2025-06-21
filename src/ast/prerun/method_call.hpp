@@ -20,7 +20,7 @@ class PrerunMemberFnCall final : public PrerunExpression {
 		return std::construct_at(OwnNormal(PrerunMemberFnCall), instance, memberName, arguments, fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(instance);
 		for (auto arg : arguments) {
 			UPDATE_DEPS(arg);
@@ -30,7 +30,8 @@ class PrerunMemberFnCall final : public PrerunExpression {
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 	useit Json             to_json() const final;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_METHOD_CALL; }
+
+	useit NodeType nodeType() const final { return NodeType::PRERUN_METHOD_CALL; }
 };
 
 useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expression*> const& arguments,

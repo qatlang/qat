@@ -1,5 +1,8 @@
 #include "./default.hpp"
+#include "../../IR/types/integer.hpp"
 #include "../../IR/types/maybe.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 namespace qat::ast {
 
@@ -58,8 +61,8 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 		} else if (useTy->is_ref()) {
 			ctx->Error("Cannot get default value for a reference type", fileRange);
 		} else if (useTy->is_maybe()) {
-			auto* mTy   = useTy->as_maybe();
-			auto* block = ctx->get_fn()->get_block();
+			auto* mTy = useTy->as_maybe();
+			// auto* block = ctx->get_fn()->get_block();
 			if (canCreateIn()) {
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(mTy->get_llvm_type()),
 				                                createIn->get_llvm());

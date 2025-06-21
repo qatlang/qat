@@ -25,7 +25,7 @@ TypedType* TypedType::get(ir::Ctx* ctx) {
 	return instance;
 }
 
-Maybe<bool> TypedType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> TypedType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	return TypeInfo::get_for(first->get_llvm_constant())
 	    ->type->is_same(TypeInfo::get_for(second->get_llvm_constant())->type);
 }

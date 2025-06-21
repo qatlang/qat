@@ -1,13 +1,15 @@
 #include "./in.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/integer.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../IR/types/region.hpp"
 #include "../types/qat_type.hpp"
 #include "llvm/IR/Constants.h"
 
 namespace qat::ast {
 
-void InExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void InExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                        EmitCtx* ctx) {
 	UPDATE_DEPS(candidate);
 	if (is_target_expression()) {
@@ -160,7 +162,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 		currBlock->set_active(ctx->irCtx->builder);
 		ctx->irCtx->builder.CreateStore(finalVal->get_llvm(), result->get_llvm());
 	}
-	ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
+	(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 	restBlock->set_active(ctx->irCtx->builder);
 	return result->with_range(fileRange);
 }

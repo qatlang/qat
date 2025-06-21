@@ -43,6 +43,8 @@ useit inline ir::SkillMethodKind get_skill_method_kind_for(MethodType type) {
 			return ir::SkillMethodKind::NORMAL;
 		case MethodType::variation:
 			return ir::SkillMethodKind::VARIATION;
+		default:
+			std::unreachable();
 	}
 }
 
@@ -103,7 +105,7 @@ class MethodPrototype {
 		ent->add_child({fn_type_to_child_type(), name.value});
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		if (defineChecker) {
 			UPDATE_DEPS(defineChecker);
 		}
@@ -143,7 +145,7 @@ class MethodDefinition {
 		return std::construct_at(OwnNormal(MethodDefinition), _prototype, _sentences, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);
 		}

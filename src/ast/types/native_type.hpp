@@ -16,7 +16,7 @@ class NativeType final : public Type {
 		return std::construct_at(OwnNormal(NativeType), _cTypeKind, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 
 	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 	useit ir::Type* emit(EmitCtx* ctx) final;

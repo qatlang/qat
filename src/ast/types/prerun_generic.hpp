@@ -31,8 +31,7 @@ class PrerunGenericAbstract final : public GenericAbstractType {
 	useit ast::PrerunExpression* getDefaultAST() { return defaultValueAST.value(); }
 	useit ir::PrerunValue* getDefault() const;
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-	                         EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(expTy);
 		if (defaultValueAST.has_value()) {
 			UPDATE_DEPS(defaultValueAST.value());

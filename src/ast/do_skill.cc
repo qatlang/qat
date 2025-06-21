@@ -96,7 +96,11 @@ void DoSkill::define_types(ir::DoneSkill* skillImp, ir::Mod* mod, ir::Ctx* irCtx
 	auto parentState  = get_state_for(methodParent);
 	parentState->definitions.reserve(typeDefinitions.size());
 	for (auto* def : typeDefinitions) {
-		auto tyState = TypeInParentState{.isParentSkill = false, .parent = methodParent};
+		auto tyState = TypeInParentState{.isParentSkill   = false,
+		                                 .parent          = methodParent,
+		                                 .result          = nullptr,
+		                                 .defineCondition = None,
+		                                 .metaInfo        = None};
 		def->create_type_in_parent(tyState, mod, irCtx);
 		parentState->definitions.push_back(tyState);
 	}

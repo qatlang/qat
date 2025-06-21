@@ -305,6 +305,8 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 			ctx->Error("This entity cannot have children entities", fileRange);
 		}
 	}
+	ctx->Error("Could not find the sub-entity", fileRange);
+	std::unreachable();
 }
 
 } // namespace qat::ast

@@ -39,7 +39,7 @@ UnsignedType* UnsignedType::create_bool(ir::Ctx* irCtx) {
 	return std::construct_at(OwnNormal(UnsignedType), 1u, irCtx, true);
 }
 
-ir::PrerunValue* UnsignedType::get_prerun_default_value(ir::Ctx* irCtx) {
+ir::PrerunValue* UnsignedType::get_prerun_default_value(ir::Ctx*) {
 	return ir::PrerunValue::get(llvm::ConstantInt::get(get_llvm_type(), 0u, false), this);
 }
 

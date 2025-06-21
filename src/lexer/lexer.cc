@@ -401,12 +401,10 @@ Token Lexer::tokeniser() {
 			}
 		}
 		case '`': {
-			auto              start  = byteNumber;
-			std::array<u8, 4> bytes  = {0, 0, 0, 0};
-			bool              escape = false;
+			auto              start = byteNumber;
+			std::array<u8, 4> bytes = {0, 0, 0, 0};
 			read();
 			if (current == '\\') {
-				escape = true;
 				read();
 				if (current == '0') {
 					bytes[0] = '\0';
@@ -645,7 +643,7 @@ Token Lexer::tokeniser() {
 						if (current != '}') {
 							throw_error("Expected } to end the ASCII byte");
 						}
-						auto charVal = (char)std::stoul(hex);
+						auto charVal = (unsigned char)std::stoul(hex);
 						if (charVal >= 0x80) {
 							throw_error(
 							    "The byte " + hex +
@@ -1301,7 +1299,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_VALUED_Keyword("ptrdiff", nativeType);
 	else Check_VALUED_Keyword("uptrdiff", nativeType);
 	else Check_VALUED_Keyword("sigatomic", nativeType);
-	else Check_VALUED_Keyword("cstring", nativeType);
+	else Check_VALUED_Keyword("bytestring", nativeType);
 	else Check_VALUED_Keyword("widebool", nativeType);
 	else if (wordValue.substr(0, 1) == "u" &&
 	         ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {

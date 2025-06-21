@@ -1,4 +1,9 @@
 #include "./method_call.hpp"
+#include "../../IR/types/array.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/tuple.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 
 namespace qat::ast {
@@ -61,8 +66,8 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 		return ir::PrerunValue::get(
 		    llvm::ConstantStruct::get(
 		        llvm::cast<llvm::StructType>(ir::TextType::get(ctx->irCtx)->get_llvm_type()),
-		        {ctx->irCtx->builder.CreateGlobalStringPtr(result, ctx->irCtx->get_global_string_name(), 0U,
-		                                                   ctx->mod->get_llvm_module()),
+		        {ctx->irCtx->builder.CreateGlobalString(result, ctx->irCtx->get_global_string_name(), 0U,
+		                                                ctx->mod->get_llvm_module()),
 		         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), result.length())}),
 		    ir::TextType::get(ctx->irCtx));
 	} else if (memberName.value == "is_packed") {

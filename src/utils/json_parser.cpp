@@ -434,7 +434,7 @@ Maybe<Vec<Pair<String, JsonValue>>> JsonParser::parsePairs(usize from, usize upt
 
 Maybe<Json> JsonParser::parse(usize from, usize upto) const {
 	auto result = Json();
-	if (upto == -1) {
+	if (upto == 0) {
 		upto = toks.size();
 	}
 	for (usize i = from + 1; i < upto; i++) {

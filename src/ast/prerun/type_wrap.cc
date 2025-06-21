@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-void TypeWrap::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+void TypeWrap::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	theType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
 

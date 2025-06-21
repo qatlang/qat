@@ -16,7 +16,7 @@ void PrerunGlobal::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 	value->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, emitCtx);
 }
 
-void PrerunGlobal::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) { define(parent, irCtx); }
+void PrerunGlobal::do_phase(ir::EmitPhase, ir::Mod* parent, ir::Ctx* irCtx) { define(parent, irCtx); }
 
 void PrerunGlobal::define(ir::Mod* mod, ir::Ctx* irCtx) const {
 	auto emitCtx = EmitCtx::get(irCtx, mod);

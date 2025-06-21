@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-void MaybeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void MaybeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                     EmitCtx* ctx) {
 	subTyp->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }

@@ -26,7 +26,7 @@ class LocalDeclaration final : public Sentence {
 		return std::construct_at(OwnNormal(LocalDeclaration), _type, _isRef, _name, _value, _variability, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		if (type) {
 			UPDATE_DEPS(type);
 		}

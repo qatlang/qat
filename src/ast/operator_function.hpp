@@ -45,7 +45,7 @@ class OperatorPrototype {
 		                         _visibSpec, _fileRange, _argName, _defineChecker, std::move(_metaInfo));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		if (defineChecker) {
 			UPDATE_DEPS(defineChecker);
 		}
@@ -84,7 +84,7 @@ class OperatorDefinition {
 		return std::construct_at(OwnNormal(OperatorDefinition), _prototype, _sentences, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);
 		}

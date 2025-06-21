@@ -4,8 +4,7 @@
 
 namespace qat::ast {
 
-void ResultType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-                                     EmitCtx* ctx) {
+void ResultType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	validType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	errorType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }

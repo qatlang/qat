@@ -36,7 +36,7 @@ void SkillEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>
 
 String SkillEntity::to_string() const {
 	String result;
-	for (auto i = 0; i < relative; i++) {
+	for (u32 i = 0; i < relative; i++) {
 		result += "up:";
 	}
 	for (usize i = 0; i < names.size(); i++) {
@@ -235,7 +235,7 @@ ir::DoneSkill* DoneSkillEntity::find_done_skill(EmitCtx* ctx) const {
 
 String DoneSkillEntity::to_string() const {
 	String result;
-	for (auto i = 0; i < relative; i++) {
+	for (u32 i = 0; i < relative; i++) {
 		result += "up:";
 	}
 	for (usize i = 0; i < names.size(); i++) {

@@ -1,5 +1,6 @@
 #include "./dereference.hpp"
-#include "operator.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "./operator.hpp"
 
 namespace qat::ast {
 
@@ -54,6 +55,7 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 					return imp->get_unary_operator(opStr);
 				}
 			}
+			std::unreachable();
 		};
 		if ((expTy->is_expanded() && expTy->as_expanded()->has_unary_operator(opStr)) || hasDerefOperator()) {
 			auto localID = expEmit->get_local_id();

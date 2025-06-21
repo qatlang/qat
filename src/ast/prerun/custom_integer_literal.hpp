@@ -1,7 +1,6 @@
 #ifndef QAT_AST_PRERUN_CUSTOM_INTEGER_LITERAL_HPP
 #define QAT_AST_PRERUN_CUSTOM_INTEGER_LITERAL_HPP
 
-#include "../../IR/context.hpp"
 #include "../../utils/helpers.hpp"
 #include "../expression.hpp"
 
@@ -32,8 +31,7 @@ class CustomIntegerLiteral final : public PrerunExpression, public TypeInferrabl
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
-	}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	ir::PrerunValue* emit(EmitCtx* ctx) final;
 

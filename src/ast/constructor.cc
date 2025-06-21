@@ -401,7 +401,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	if (state.parent->get_parent_type()->is_struct()) {
 		Vec<Pair<String, FileRange>> missingMembers;
 		auto                         cTy = state.parent->get_parent_type()->as_struct();
-		for (auto ind = 0; ind < cTy->get_field_count(); ind++) {
+		for (u64 ind = 0; ind < cTy->get_field_count(); ind++) {
 			auto memCheck = fnEmit->is_member_initted(ind);
 			if (not memCheck.has_value()) {
 				missingMembers.push_back({cTy->get_field_at(ind)->name.value, fileRange});

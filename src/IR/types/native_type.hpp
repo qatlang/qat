@@ -111,7 +111,7 @@ class NativeType : public Type {
 
 	useit bool is_sig_atomic() const { return nativeKind == NativeTypeKind::SigAtomic; }
 
-	useit bool is_cstring() const { return nativeKind == NativeTypeKind::String; }
+	useit bool is_bytestring() const { return nativeKind == NativeTypeKind::String; }
 
 	useit bool is_long_double() const { return nativeKind == NativeTypeKind::LongDouble; }
 

@@ -1,5 +1,6 @@
 #include "./tuple_value.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/tuple.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
 

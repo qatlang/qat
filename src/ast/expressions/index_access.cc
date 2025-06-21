@@ -1,6 +1,11 @@
 #include "./index_access.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/array.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/tuple.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/Constants.h>
@@ -205,15 +210,17 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                                                    inst->get_llvm(), 0u);
 			SHOW("Got string data")
 			SHOW("Got first element")
-			return ir::Value::get(
-			    ctx->irCtx->builder.CreateInBoundsGEP(
-			        llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-			        ctx->irCtx->builder.CreateLoad(llvm::Type::getInt8Ty(ctx->irCtx->llctx)->getPointerTo(), strData),
-			        Vec<llvm::Value*>({ind->get_llvm()})),
-			    ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
-			                                    : inst->is_variable(),
-			                     ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
-			    false);
+			return ir::Value::get(ctx->irCtx->builder.CreateInBoundsGEP(
+			                          llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+			                          ctx->irCtx->builder.CreateLoad(
+			                              llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+			                                                     ctx->irCtx->dataLayout.getProgramAddressSpace()),
+			                              strData),
+			                          Vec<llvm::Value*>({ind->get_llvm()})),
+			                      ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
+			                                                      : inst->is_variable(),
+			                                       ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
+			                      false);
 		} else if (inst->is_prerun_value() && ind->is_prerun_value()) {
 			if (llvm::cast<llvm::ConstantInt>(
 			        llvm::ConstantFoldCompareInstruction(llvm::CmpInst::Predicate::ICMP_ULT, ind->get_llvm_constant(),
@@ -241,7 +248,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				           index->fileRange);
 			}
 		} else {
-			auto* strTy              = ir::TextType::get(ctx->irCtx);
+			// auto* strTy              = ir::TextType::get(ctx->irCtx);
 			auto* strLen             = ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {1u});
 			auto* currBlock          = ctx->get_fn()->get_block();
 			auto* lenExceedTrueBlock = ir::Block::create(ctx->get_fn(), currBlock);
@@ -265,7 +272,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                     ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
 			    false);
 		}
-	} else if (instType->is_native_type() && instType->as_native_type()->is_cstring()) {
+	} else if (instType->is_native_type() && instType->as_native_type()->is_bytestring()) {
 		ind->load_ghost_ref(ctx->irCtx->builder);
 		inst->load_ghost_ref(ctx->irCtx->builder);
 		auto* instVal = inst->get_llvm();
@@ -365,6 +372,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		ctx->Error("The expression of type " + instType->to_string() + " cannot be used for index access",
 		           instance->fileRange);
 	}
+	std::unreachable();
 }
 
 Json IndexAccess::to_json() const {

@@ -2,6 +2,7 @@
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/choice.hpp"
 #include "../../IR/types/region.hpp"
+#include "../../IR/types/struct_type.hpp"
 #include "../type_definition.hpp"
 
 namespace qat::ast {

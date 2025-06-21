@@ -1,6 +1,7 @@
 #ifndef QAT_AST_EXPRESSION_HPP
 #define QAT_AST_EXPRESSION_HPP
 
+#include "../IR/types/reference.hpp"
 #include "./emit_ctx.hpp"
 #include "./node.hpp"
 

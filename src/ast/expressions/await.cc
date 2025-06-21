@@ -1,6 +1,7 @@
 #include "./await.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/types/future.hpp"
+#include "../../IR/types/reference.hpp"
 #include "../../IR/types/void.hpp"
 
 #include <llvm/IR/BasicBlock.h>
@@ -31,12 +32,12 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 		            ctx->irCtx->builder.CreateInBoundsGEP(
 		                llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 		                ctx->irCtx->builder.CreateLoad(
-		                    llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-		                        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+		                    llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+		                                           ctx->irCtx->dataLayout.getProgramAddressSpace()),
 		                    ctx->irCtx->builder.CreateStructGEP(futureTy->get_llvm_type(), expEmit->get_llvm(), 1u)),
 		                {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-		            llvm::Type::getInt1Ty(ctx->irCtx->llctx)
-		                ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()))),
+		            llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+		                                   ctx->irCtx->dataLayout.getProgramAddressSpace()))),
 		    trueBlock->get_bb(), falseBlock->get_bb());
 		trueBlock->set_active(ctx->irCtx->builder);
 		(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
@@ -48,12 +49,10 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 		            ctx->irCtx->builder.CreateInBoundsGEP(
 		                llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 		                ctx->irCtx->builder.CreateLoad(
-		                    llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-		                        ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+		                    llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
 		                    ctx->irCtx->builder.CreateStructGEP(futureTy->get_llvm_type(), expEmit->get_llvm(), 1u)),
 		                {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-		            llvm::Type::getInt1Ty(ctx->irCtx->llctx)
-		                ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()))),
+		            llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()))),
 		    restBlock->get_bb(), falseBlock->get_bb());
 		(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 		restBlock->set_active(ctx->irCtx->builder);
@@ -68,16 +67,13 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 			                       ctx->irCtx->builder.CreateInBoundsGEP(
 			                           llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 			                           ctx->irCtx->builder.CreateLoad(
-			                               llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-			                                   ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+			                               llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
 			                               ctx->irCtx->builder.CreateStructGEP(futureTy->get_llvm_type(),
 			                                                                   expEmit->get_llvm(), 1u)),
 			                           {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-			                       llvm::Type::getInt8Ty(ctx->irCtx->llctx)
-			                           ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			                       llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			                   {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-			               futureTy->get_subtype()->get_llvm_type()->getPointerTo(
-			                   ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			               llvm::PointerType::get(futureTy->get_subtype()->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			           ir::RefType::get(expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->has_variability()
 			                                              : expEmit->is_variable(),
 			                            futureTy->get_subtype(), ctx->irCtx),

@@ -1,6 +1,11 @@
 #include "./member_access.hpp"
+#include "../../IR/types/array.hpp"
 #include "../../IR/types/future.hpp"
-#include "../../IR/types/text.hpp"
+#include "../../IR/types/integer.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/struct_type.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../../utils/helpers.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
@@ -100,21 +105,22 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			inst = inst->make_local(ctx, None, instance->fileRange);
 		}
 		if (name.value == "isDone") {
-			return ir::Value::get(ctx->irCtx->builder.CreateLoad(
-			                          llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-			                          ctx->irCtx->builder.CreatePointerCast(
-			                              ctx->irCtx->builder.CreateInBoundsGEP(
-			                                  llvm::Type::getInt64Ty(ctx->irCtx->llctx),
-			                                  ctx->irCtx->builder.CreateLoad(
-			                                      llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-			                                          ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
-			                                      ctx->irCtx->builder.CreateStructGEP(
-			                                          instType->as_future()->get_llvm_type(), inst->get_llvm(), 1u)),
-			                                  {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-			                              llvm::Type::getInt1Ty(ctx->irCtx->llctx)
-			                                  ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
-			                          true),
-			                      ir::UnsignedType::create_bool(ctx->irCtx), false);
+			return ir::Value::get(
+			    ctx->irCtx->builder.CreateLoad(
+			        llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			        ctx->irCtx->builder.CreatePointerCast(
+			            ctx->irCtx->builder.CreateInBoundsGEP(
+			                llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+			                ctx->irCtx->builder.CreateLoad(
+			                    llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+			                                           ctx->irCtx->dataLayout.getProgramAddressSpace()),
+			                    ctx->irCtx->builder.CreateStructGEP(instType->as_future()->get_llvm_type(),
+			                                                        inst->get_llvm(), 1u)),
+			                {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
+			            llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			                                   ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			        true),
+			    ir::UnsignedType::create_bool(ctx->irCtx), false);
 		} else if (name.value == "isNotDone") {
 			return ir::Value::get(
 			    ctx->irCtx->builder.CreateICmpEQ(
@@ -124,13 +130,13 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			                ctx->irCtx->builder.CreateInBoundsGEP(
 			                    llvm::Type::getInt64Ty(ctx->irCtx->llctx),
 			                    ctx->irCtx->builder.CreateLoad(
-			                        llvm::Type::getInt64Ty(ctx->irCtx->llctx)
-			                            ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace()),
+			                        llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+			                                               ctx->irCtx->dataLayout.getProgramAddressSpace()),
 			                        ctx->irCtx->builder.CreateStructGEP(instType->as_future()->get_llvm_type(),
 			                                                            inst->get_llvm(), 1u)),
 			                    {llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), 1u)}),
-			                llvm::Type::getInt1Ty(ctx->irCtx->llctx)
-			                    ->getPointerTo(ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			                llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			                                       ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			            true),
 			        llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u)),
 			    ir::UnsignedType::create_bool(ctx->irCtx), false);

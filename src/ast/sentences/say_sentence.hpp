@@ -21,7 +21,7 @@ class SayLike final : public Sentence {
 		return std::construct_at(OwnNormal(SayLike), _sayTy, _expressions, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		for (auto exp : expressions) {
 			UPDATE_DEPS(exp);
 		}

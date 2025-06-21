@@ -25,7 +25,7 @@ Maybe<String> CharType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	return "`" + str + "`";
 }
 
-Maybe<bool> CharType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> CharType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
 	    llvm::CmpInst::ICMP_EQ, first->get_llvm_constant(), second->get_llvm_constant()));
 }

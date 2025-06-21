@@ -21,16 +21,18 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		if (theType.has_value()) {
 			UPDATE_DEPS(theType.value());
 		}
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_DEFAULT; }
-	useit String           to_string() const final;
-	useit Json             to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::PRERUN_DEFAULT; }
+
+	useit String to_string() const final;
+	useit Json   to_json() const final;
 };
 
 } // namespace qat::ast

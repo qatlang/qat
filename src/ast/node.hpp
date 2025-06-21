@@ -2,20 +2,9 @@
 #define QAT_AST_NODE_HPP
 
 #include "../IR/context.hpp"
-#include "../IR/types/array.hpp"
 #include "../IR/types/choice.hpp"
-#include "../IR/types/float.hpp"
-#include "../IR/types/function.hpp"
-#include "../IR/types/integer.hpp"
 #include "../IR/types/mix.hpp"
-#include "../IR/types/native_type.hpp"
-#include "../IR/types/pointer.hpp"
-#include "../IR/types/reference.hpp"
-#include "../IR/types/struct_type.hpp"
 #include "../IR/types/text.hpp"
-#include "../IR/types/tuple.hpp"
-#include "../IR/types/unsigned.hpp"
-#include "../show.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
 #include "../utils/json.hpp"
@@ -82,9 +71,9 @@ class Node {
 
 	useit virtual bool isPrerunNode() const { return false; }
 
-	virtual void create_module(ir::Mod* mod, ir::Ctx* irCtx) const {}
+	virtual void create_module(ir::Mod*, ir::Ctx*) const {}
 
-	virtual void handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {}
+	virtual void handle_fs_brings(ir::Mod*, ir::Ctx*) const {}
 
 	useit virtual bool is_entity() const { return false; }
 

@@ -1,4 +1,5 @@
 #include "./operator.hpp"
+#include <utility>
 
 namespace qat::ast {
 
@@ -90,7 +91,8 @@ OperatorKind operator_from_string(const String& str) {
 	} else if (str == "~") {
 		return OperatorKind::BITWISE_NOT;
 	}
-} // NOLINT(clang-diagnostic-return-type)
+	std::unreachable();
+}
 
 String operator_to_string(OperatorKind opr) {
 	switch (opr) {

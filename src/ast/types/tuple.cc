@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-void TupleType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void TupleType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                     EmitCtx* ctx) {
 	for (auto typ : types) {
 		typ->update_dependencies(phase, ir::DependType::complete, ent, ctx);

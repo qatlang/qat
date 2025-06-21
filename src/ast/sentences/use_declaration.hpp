@@ -1,6 +1,7 @@
 #ifndef QAT_AST_SENTENCES_USE_DECLARATION_HPP
 #define QAT_AST_SENTENCES_USE_DECLARATION_HPP
 
+#include "../expression.hpp"
 #include "../sentence.hpp"
 
 namespace qat::ast {

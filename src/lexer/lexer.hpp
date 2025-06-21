@@ -5,6 +5,7 @@
 #include "./token.hpp"
 #include <filesystem>
 #include <fstream>
+#include <utility>
 
 namespace qat::ir {
 class Ctx;
@@ -82,6 +83,7 @@ class Lexer {
 			case '\r':
 				return "\\r";
 		}
+		std::unreachable();
 	}
 
 	useit FileRange get_position(u64 length);

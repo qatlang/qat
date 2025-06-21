@@ -70,6 +70,7 @@ useit inline bool expect_same_operand_types(OperatorKind opr) {
 		case OperatorKind::OR:
 		case OperatorKind::INDEX:
 		case OperatorKind::MINUS:
+		case OperatorKind::BITWISE_NOT:
 		case OperatorKind::NOT:
 		case OperatorKind::COPY_ASSIGNMENT:
 		case OperatorKind::MOVE_ASSIGNMENT:

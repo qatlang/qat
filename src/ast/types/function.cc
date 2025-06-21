@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-void FunctionType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
+void FunctionType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                        EmitCtx* ctx) {
 	returnType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	for (auto arg : argTypes) {

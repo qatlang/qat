@@ -28,7 +28,7 @@ class PolymorphType final : public Type {
 		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), owner, std::move(range));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto& sk : skills) {
 			sk.update_dependencies(phase, ir::DependType::complete, ent, ctx);
 		}

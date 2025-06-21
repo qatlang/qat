@@ -20,7 +20,7 @@ class PrerunBinaryOperator final : public PrerunExpression {
 		return std::construct_at(OwnNormal(PrerunBinaryOperator), _lhs, _opr, _rhs, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(lhs);
 		UPDATE_DEPS(rhs);
 	}

@@ -62,6 +62,7 @@ PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx
 	} else {
 		irCtx->Error("This prerun function did not give any value", fileRange);
 	}
+	std::unreachable();
 }
 
 void PrerunFunction::update_overview() {

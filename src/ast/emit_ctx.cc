@@ -1,5 +1,6 @@
 #include "./emit_ctx.hpp"
 #include "../IR/context.hpp"
+#include "../IR/types/struct_type.hpp"
 #include "../cli/config.hpp"
 #include "./node.hpp"
 #include "./types/generic_abstract.hpp"
@@ -313,8 +314,8 @@ VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
 			case VisibilityKind::pub: {
 				return VisibilityInfo::pub();
 			}
-			default:
-				break;
+			case VisibilityKind::parent:
+				std::unreachable();
 		}
 	} else {
 		if (has_member_parent() && get_member_parent()->is_expanded()) {
@@ -335,8 +336,8 @@ VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
 			}
 		}
 	}
-	SHOW("No visibility info found")
-} // NOLINT(clang-diagnostic-return-type)
+	std::unreachable();
+}
 
 void EmitCtx::Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo) {
 	irCtx->Error(mod, message, fileRange, pointTo);

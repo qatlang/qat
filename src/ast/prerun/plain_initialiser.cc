@@ -1,4 +1,5 @@
 #include "./plain_initialiser.hpp"
+#include "../../IR/types/struct_type.hpp"
 
 namespace qat::ast {
 
@@ -105,6 +106,7 @@ ir::PrerunValue* PrerunPlainInit::emit(EmitCtx* ctx) {
 		               " is not a struct type and hence cannot be plain initialised",
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 String PrerunPlainInit::to_string() const {

@@ -23,7 +23,7 @@ class LoopIf final : public Sentence {
 		return std::construct_at(OwnNormal(LoopIf), _isDoAndLoop, _condition, _sentences, _tag, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(condition);
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);

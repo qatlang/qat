@@ -1,5 +1,6 @@
 #include "./assembly.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/array.hpp"
 #include "../../IR/types/function.hpp"
 #include "../../IR/types/void.hpp"
 #include "../expression.hpp"
@@ -11,7 +12,7 @@
 
 namespace qat::ast {
 
-void InlineAssembly::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void InlineAssembly::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                          EmitCtx* ctx) {
 	if (functionType) {
 		functionType->update_dependencies(phase, ir::DependType::complete, ent, ctx);

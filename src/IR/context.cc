@@ -46,7 +46,7 @@ QatError& QatError::add(String value) {
 
 QatError& QatError::colored(String value) {
 	auto* cfg = cli::Config::get();
-	message.append(ColoredOr(cli::Color::yellow, "`") + message + ColoredOr(cli::Color::white, "`"));
+	message.append(ColoredOr(cli::Color::yellow, "`") + value + ColoredOr(cli::Color::white, "`"));
 	return *this;
 }
 
@@ -348,7 +348,7 @@ void Ctx::Warning(const String& message, const FileRange& fileRange) {
 	codeProblems.push_back(CodeProblem(
 	    false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
 	    fileRange));
-	auto* cfg = cli::Config::get();
+	//auto* cfg = cli::Config::get();
 	std::cout << "\n"
 	          << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
 	          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)

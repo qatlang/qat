@@ -1,5 +1,8 @@
 #include "./binary_op.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/ConstantFold.h>
@@ -582,6 +585,7 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 		               " and the right hand side is of type " + ctx->color(rhsType->to_string()),
 		           fileRange);
 	}
+	std::unreachable();
 }
 
 String PrerunBinaryOperator::to_string() const {

@@ -1,4 +1,6 @@
 #include "./function_call.hpp"
+#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../utils/utils.hpp"
 
 #include <llvm/IR/DerivedTypes.h>

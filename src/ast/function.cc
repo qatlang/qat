@@ -1,6 +1,8 @@
 #include "./function.hpp"
 #include "../IR/internal.hpp"
 #include "../IR/qat_module.hpp"
+#include "../IR/types/native_type.hpp"
+#include "../IR/types/pointer.hpp"
 #include "../IR/types/slice.hpp"
 #include "../IR/types/void.hpp"
 #include "../show.hpp"
@@ -159,14 +161,14 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 					if (generatedTypes.at(0)->as_slice()->has_var()) {
 						irCtx->Error("Type of the argument of the " + irCtx->color("main") +
 						                 " function, cannot be a slice with variability. It should be of type " +
-						                 irCtx->color("slice:[cstring]"),
+						                 irCtx->color("slice:[bytestring]"),
 						             arguments[0]->get_type()->fileRange);
 					}
 					mod->set_has_main_function();
 					irCtx->hasMain = true;
 				} else {
 					irCtx->Error("Type of the argument of the " + irCtx->color("main") + " function should be " +
-					                 irCtx->color("slice:[cstring]"),
+					                 irCtx->color("slice:[bytestring]"),
 					             arguments[0]->get_type()->fileRange);
 				}
 			} else if (generatedTypes.empty()) {

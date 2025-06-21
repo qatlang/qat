@@ -1,5 +1,5 @@
 #include "./vector.hpp"
-#include "../../IR/types/native_type.hpp"
+#include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../expression.hpp"
 
@@ -7,8 +7,7 @@
 
 namespace qat::ast {
 
-void VectorType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
-                                     EmitCtx* ctx) {
+void VectorType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	subType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	count->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }

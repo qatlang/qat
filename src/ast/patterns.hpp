@@ -21,7 +21,7 @@ class Block;
 
 namespace qat::ast {
 
-class EmitCtx;
+struct EmitCtx;
 
 enum class PatternType {
 	ARRAY,
@@ -256,6 +256,8 @@ struct PatternChain final : public Pattern {
 	PatternChain(Vec<Pattern> _patterns, FileRange _fileRange)
 	    : Pattern(PatternType::CHAIN, std::move(_fileRange)), patterns(std::move(_patterns)) {}
 
+	~PatternChain() {}
+
 	useit static PatternChain* create(Vec<Pattern> patterns, FileRange range) {
 		return std::construct_at(OwnNormal(PatternChain), std::move(patterns), std::move(range));
 	}
@@ -266,7 +268,7 @@ struct PatternChain final : public Pattern {
 
 	useit String to_string() const final {
 		String res;
-		for (auto i = 0; i < patterns.size(); i++) {
+		for (usize i = 0; i < patterns.size(); i++) {
 			res += patterns[i].to_string();
 			if (i != (patterns.size() - 1)) {
 				res += " | ";
@@ -288,7 +290,7 @@ struct PatternFlag final : public Pattern {
 
   public:
 	PatternFlag(Vec<Identifier> _names, FlagPatternKind _flagKind, FileRange _fileRange)
-	    : Pattern(PatternType::FLAG, std::move(_fileRange)), names(std::move(names)), flagKind(_flagKind) {}
+	    : Pattern(PatternType::FLAG, std::move(_fileRange)), names(std::move(_names)), flagKind(_flagKind) {}
 
 	useit static PatternFlag* create(Vec<Identifier> names, FlagPatternKind flagKind, FileRange fileRange) {
 		return std::construct_at(OwnNormal(PatternFlag), std::move(names), flagKind, std::move(fileRange));
@@ -317,6 +319,7 @@ struct PatternFlag final : public Pattern {
 				res += " }";
 			}
 		}
+		std::unreachable();
 	}
 };
 
@@ -330,7 +333,7 @@ struct PatternRest final : public Pattern {
 
 	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const final;
 
-	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final {}
+	void match(PatternFill*, ir::Value*, MatchArm&, EmitCtx*) const final {}
 
 	useit String to_string() const final { return "..."; }
 };

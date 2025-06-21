@@ -1,8 +1,9 @@
 #include "./tuple_value.hpp"
+#include "../../IR/types/tuple.hpp"
 
 namespace qat::ast {
 
-void PrerunTupleValue::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
+void PrerunTupleValue::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
                                            EmitCtx* ctx) {
 	for (auto mem : members) {
 		mem->update_dependencies(phase, ir::DependType::complete, ent, ctx);

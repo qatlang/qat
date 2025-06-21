@@ -1,4 +1,5 @@
 #include "./custom_float_literal.hpp"
+#include "../../IR/types/native_type.hpp"
 
 #include <llvm/ADT/APFloat.h>
 

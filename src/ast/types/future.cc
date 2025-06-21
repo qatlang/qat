@@ -13,9 +13,9 @@ void FutureType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> 
 
 Maybe<usize> FutureType::get_type_bitsize(EmitCtx* ctx) const {
 	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
-	    {llvm::Type::getInt64Ty(ctx->irCtx->llctx), llvm::Type::getInt64Ty(ctx->irCtx->llctx)->getPointerTo(),
-	     llvm::Type::getInt1Ty(ctx->irCtx->llctx)->getPointerTo(),
-	     llvm::Type::getInt8Ty(ctx->irCtx->llctx)->getPointerTo()})));
+	    {llvm::Type::getInt64Ty(ctx->irCtx->llctx), llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
+	     llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
+	     llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace())})));
 }
 
 ir::Type* FutureType::emit(EmitCtx* ctx) { return ir::FutureType::get(subType->emit(ctx), isPacked, ctx->irCtx); }

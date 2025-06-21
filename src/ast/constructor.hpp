@@ -70,7 +70,7 @@ class ConstructorPrototype {
 		                         visibSpec, std::move(fileRange), _argName, defineChecker, metaInfo);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto arg : arguments) {
 			if (arg->get_type()) {
 				UPDATE_DEPS(arg->get_type());
@@ -103,7 +103,7 @@ class ConstructorDefinition {
 		return std::construct_at(OwnNormal(ConstructorDefinition), _prototype, _sentences, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto snt : sentences) {
 			UPDATE_DEPS(snt);
 		}

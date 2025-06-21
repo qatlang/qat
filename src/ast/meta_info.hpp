@@ -1,7 +1,8 @@
 #ifndef QAT_AST_META_INFO_HPP
 #define QAT_AST_META_INFO_HPP
 
-#include "expression.hpp"
+#include "../IR/types/unsigned.hpp"
+#include "./expression.hpp"
 
 namespace qat::ast {
 

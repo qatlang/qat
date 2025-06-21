@@ -3,7 +3,7 @@
 
 #include "../expression.hpp"
 #include "../skill_entity.hpp"
-#include "../types/pointer.hpp"
+#include "../types/mark_owner.hpp"
 #include <variant>
 
 namespace qat::ast {
@@ -52,18 +52,18 @@ class GetPolymorph final : public Expression {
 	Maybe<PtrOwner> owner;
 
   public:
-	GetPolymorph(Expression* _value, Maybe<FileRange> _isTypeRange, Vec<PolySkillSpec> _skills, Maybe<PtrOwner> _owner,
-	             FileRange _fileRange)
-	    : Expression(std::move(_fileRange)), value(_value), isTypeRange(std::move(_isTypeRange)),
+	GetPolymorph(Expression* _value, bool _isVar, Maybe<FileRange> _isTypeRange, Vec<PolySkillSpec> _skills,
+	             Maybe<PtrOwner> _owner, FileRange _fileRange)
+	    : Expression(std::move(_fileRange)), value(_value), isVar(_isVar), isTypeRange(std::move(_isTypeRange)),
 	      skills(std::move(_skills)), owner(std::move(_owner)) {}
 
-	useit static GetPolymorph* create(Expression* value, Maybe<FileRange> isTypeRange, Vec<PolySkillSpec> skills,
-	                                  Maybe<PtrOwner> owner, FileRange fileRange) {
-		return std::construct_at(OwnNormal(GetPolymorph), value, std::move(isTypeRange), std::move(skills), owner,
-		                         std::move(fileRange));
+	useit static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRange> isTypeRange,
+	                                  Vec<PolySkillSpec> skills, Maybe<PtrOwner> owner, FileRange fileRange) {
+		return std::construct_at(OwnNormal(GetPolymorph), value, isVar, std::move(isTypeRange), std::move(skills),
+		                         owner, std::move(fileRange));
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		for (auto& sk : skills) {
 			if (sk.is_skill()) {
 				sk.as_skill().update_dependencies(phase, ir::DependType::complete, ent, ctx);
@@ -88,6 +88,7 @@ class GetPolymorph final : public Expression {
 		return Json()
 		    ._("nodeType", "getPolymorph")
 		    ._("value", value->to_json())
+		    ._("isVar", isVar)
 		    ._("isType", isTypeRange.has_value())
 		    ._("typeRange", isTypeRange.has_value() ? isTypeRange.value().to_json_value() : JsonValue())
 		    ._("skillSpecifications", skillsJSON)

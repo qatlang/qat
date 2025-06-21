@@ -49,7 +49,7 @@ class Polymorph final : public Type {
 		}
 		for (usize i = 0; i < skills.size(); i++) {
 			if (skills[i] == skill) {
-				return i;
+				return i + offset;
 			}
 		}
 		return 0;

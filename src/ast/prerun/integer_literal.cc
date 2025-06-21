@@ -1,4 +1,6 @@
 #include "./integer_literal.hpp"
+#include "../../IR/types/integer.hpp"
+#include "../../IR/types/native_type.hpp"
 
 namespace qat::ast {
 

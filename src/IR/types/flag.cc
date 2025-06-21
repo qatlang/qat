@@ -29,10 +29,10 @@ FlagType::FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, M
 
 String FlagType::get_full_name() const { return parent->get_fullname_with_child(name.value); }
 
-PrerunValue* FlagType::get_prerun_default_value(ir::Ctx* irCtx) {
+PrerunValue* FlagType::get_prerun_default_value(ir::Ctx*) {
 	if (hasDefaultVariants) {
 		String defValStr = "";
-		for (auto i = 0; i < variants.size(); i++) {
+		for (usize i = 0; i < variants.size(); i++) {
 			if (variants[i].isDefault) {
 				defValStr += "1";
 			} else {
@@ -82,7 +82,7 @@ Maybe<usize> FlagType::get_index_of(String name) const {
 	return None;
 }
 
-Maybe<bool> FlagType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> FlagType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	return llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(llvm::CmpInst::ICMP_EQ,
 	                                                                          first->get_llvm_constant(),
 	                                                                          second->get_llvm_constant()))

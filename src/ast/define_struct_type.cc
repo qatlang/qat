@@ -104,7 +104,11 @@ void DefineStructType::create_type_definitions(ir::StructType* resultTy, ir::Mod
 	auto parentState = get_state_for(methodParent);
 	parentState->definitions.reserve(typeDefinitions.size());
 	for (auto* def : typeDefinitions) {
-		auto tyState = TypeInParentState{.isParentSkill = false, .parent = methodParent};
+		auto tyState = TypeInParentState{.isParentSkill   = false,
+		                                 .parent          = methodParent,
+		                                 .result          = nullptr,
+		                                 .defineCondition = None,
+		                                 .metaInfo        = None};
 		def->create_type_in_parent(tyState, mod, irCtx);
 		parentState->definitions.push_back(tyState);
 	}
@@ -270,7 +274,7 @@ void DefineStructType::setup_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	}
 }
 
-void DefineStructType::do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx) {
+void DefineStructType::do_define(ir::StructType* resultTy, ir::Mod*, ir::Ctx* irCtx) {
 	if (checkResult.has_value() && not checkResult.value()) {
 		return;
 	}

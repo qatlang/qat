@@ -1,4 +1,6 @@
 #include "./member_access.hpp"
+#include "../../IR/types/array.hpp"
+#include "../../IR/types/unsigned.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/Constants.h>

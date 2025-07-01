@@ -19,6 +19,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	heap.cc
 	in.cc
 	inline_let.cc
+	inline_match.cc
 	is.cc
 	method_call.cc
 	index_access.cc

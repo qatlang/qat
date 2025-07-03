@@ -1,11 +1,11 @@
 #include "./inline_match.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/native_type.hpp"
 
 namespace qat::ast {
 
-void InlineMatch::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-                                      EmitCtx* ctx) {
+void InlineMatch::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	for (auto val : values) {
 		UPDATE_DEPS(val);
 	}
@@ -20,7 +20,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	auto                                       currBlock = ctx->get_fn()->get_block();
 	auto                                       resBlock  = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 	resBlock->link_previous_block(currBlock);
-	if (valTy->is_bool()) {
+	if (valTy->is_bool() || (valTy->is_native_type() || valTy->as_native_type()->is_cbool())) {
 		if (values.size() != 2) {
 			ctx->Error("Inline matching a " + String(isRef ? "reference " : "value ") + "of type " +
 			               ctx->color(valTy->to_string()) +
@@ -37,7 +37,12 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		}
 		auto trueBlock  = ir::Block::create(ctx->get_fn(), currBlock);
 		auto falseBlock = ir::Block::create(ctx->get_fn(), currBlock);
-		ctx->irCtx->builder.CreateCondBr(cand, trueBlock->get_bb(), falseBlock->get_bb());
+		ctx->irCtx->builder.CreateCondBr(
+		    valTy->is_bool()
+		        ? cand
+		        : ctx->irCtx->builder.CreateICmpNE(
+		              cand, llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(valTy->get_llvm_type()), 0u)),
+		    trueBlock->get_bb(), falseBlock->get_bb());
 		trueBlock->set_active(ctx->irCtx->builder);
 		auto tVal = values[0]->emit(ctx);
 		if (resTy == nullptr) {
@@ -58,8 +63,9 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		}
 		auto fVal = values[1]->emit(ctx);
 		if (not fVal->get_pass_type()->is_same(resTy)) {
-			ctx->Error("The first expression is of type " + ctx->color(resTy->to_string()) +
-			               " but the second expression is of type " + ctx->color(fVal->get_pass_type()->to_string()),
+			ctx->Error("The expression provided for the previous variant in this inline match is of type " +
+			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(fVal->get_pass_type()->to_string()),
 			           values[1]->fileRange);
 		}
 		fVal = ir::Logic::handle_pass_semantics(ctx, fVal->get_pass_type(), fVal, values[1]->fileRange);
@@ -68,8 +74,8 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	} else if (valTy->is_choice()) {
 		auto chTy = valTy->as_choice();
 		if (values.size() != chTy->get_variant_count()) {
-			ctx->Error("The expression being matched is of type " + ctx->color(chTy->to_string()) + " which has " +
-			               ctx->color(std::to_string(chTy->get_variant_count())) + ", but only " +
+			ctx->Error("The expression being matched is of choice type " + ctx->color(chTy->to_string()) +
+			               " which has " + ctx->color(std::to_string(chTy->get_variant_count())) + ", but only " +
 			               ctx->color(std::to_string(values.size())) + " values are provided here",
 			           fileRange);
 		}

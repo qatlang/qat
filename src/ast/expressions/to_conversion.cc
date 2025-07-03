@@ -118,8 +118,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 					return ir::Value::get(
 					    ctx->irCtx->builder.CreatePointerCast(val->get_llvm(), destTy->get_llvm_type()), destTy, false);
 				}
-			} else if (destTy->is_native_type() &&
-			           (destTy->as_native_type()->is_intptr() || destTy->as_native_type()->is_intptr_unsigned())) {
+			} else if (destTy->is_native_type() && (destTy->as_native_type()->is_native_intptr() ||
+			                                        destTy->as_native_type()->is_native_uintptr())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateBitCast(
 				                          valType->as_ptr()->is_multi()
@@ -133,7 +133,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			}
 		} else if (valType->is_text()) {
 			auto destValTy = destTy->is_native_type() ? destTy->as_native_type()->get_subtype() : destTy;
-			if (destTy->is_native_type() && destTy->as_native_type()->is_bytestring()) {
+			if (destTy->is_native_type() && destTy->as_native_type()->is_native_bytestring()) {
 				if (val->is_prerun_value()) {
 					return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), destTy);
 				} else {

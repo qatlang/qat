@@ -174,7 +174,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 						    false);
 					}
 				}
-				if (lenType->is_native_type() && lenType->as_native_type()->is_usize()) {
+				if (lenType->is_native_type() && lenType->as_native_type()->is_native_usize()) {
 					if (strLen->is_ghost_ref() || strLen->is_ref()) {
 						strLen =
 						    ir::Value::get(ctx->irCtx->builder.CreateLoad(lenType->get_llvm_type(), strLen->get_llvm()),

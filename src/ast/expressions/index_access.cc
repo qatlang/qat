@@ -86,7 +86,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		if (ind->get_ir_type()->is_ref()) {
 			indType = indType->as_ref()->get_subtype();
 		}
-		if (indType->is_unsigned() || (indType->is_native_type() && indType->as_native_type()->is_usize())) {
+		if (indType->is_unsigned() || (indType->is_native_type() && indType->as_native_type()->is_native_usize())) {
 			if (inst->get_ir_type()->is_ref() &&
 			    (inst->get_ir_type()->as_ref()->get_subtype()->is_ptr() &&
 			     not inst->get_ir_type()->as_ref()->get_subtype()->as_ptr()->is_multi())) {
@@ -177,7 +177,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			}
 		}
 		if (not ind->get_ir_type()->is_native_type() ||
-		    (ind->get_ir_type()->is_native_type() && not ind->get_ir_type()->as_native_type()->is_usize())) {
+		    (ind->get_ir_type()->is_native_type() && not ind->get_ir_type()->as_native_type()->is_native_usize())) {
 			ctx->Error(ctx->color(ind->get_ir_type()->to_string()) + " is an invalid type for the index of " +
 			               ctx->color("text") + ". The index should be of type " + ctx->color("usize"),
 			           fileRange);
@@ -272,7 +272,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                     ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
 			    false);
 		}
-	} else if (instType->is_native_type() && instType->as_native_type()->is_bytestring()) {
+	} else if (instType->is_native_type() && instType->as_native_type()->is_native_bytestring()) {
 		ind->load_ghost_ref(ctx->irCtx->builder);
 		inst->load_ghost_ref(ctx->irCtx->builder);
 		auto* instVal = inst->get_llvm();

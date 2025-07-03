@@ -62,7 +62,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 	auto const isTyArray = candType->is_array();
 	// auto const isTyMulti =
 	//     candType->is_ptr() && candType->as_ptr()->is_multi(); // TODO Disallow multi-pointers and allow slices
-	auto const isTyByteString = candType->is_native_type() && candType->as_native_type()->is_bytestring();
+	auto const isTyByteString = candType->is_native_type() && candType->as_native_type()->is_native_bytestring();
 	auto const isTyText       = candType->is_text();
 	auto const isTyVec        = candType->is_vector();
 	if (candExp->get_ir_type()->is_ref()) {

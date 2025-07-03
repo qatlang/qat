@@ -77,7 +77,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                            usableTarget);
 		}
 	} else if (valTy->is_text()) {
-		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_bytestring()) {
+		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_native_bytestring()) {
 			return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
 		} else if (valTy->is_ptr() &&
 		           (valTy->as_ptr()->get_subtype()->is_unsigned() ||

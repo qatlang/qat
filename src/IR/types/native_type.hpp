@@ -63,57 +63,57 @@ class NativeType : public Type {
 
 	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-	useit bool is_int() const { return nativeKind == NativeTypeKind::Int; }
+	useit bool is_native_int() const { return nativeKind == NativeTypeKind::Int; }
 
-	useit bool is_uint() const { return nativeKind == NativeTypeKind::Uint; }
+	useit bool is_native_uint() const { return nativeKind == NativeTypeKind::Uint; }
 
-	useit bool is_cbool() const { return nativeKind == NativeTypeKind::Bool; }
+	useit bool is_native_bool() const { return nativeKind == NativeTypeKind::Bool; }
 
-	useit bool is_byte() const { return nativeKind == NativeTypeKind::Byte; }
+	useit bool is_native_byte() const { return nativeKind == NativeTypeKind::Byte; }
 
-	useit bool is_byte_unsigned() const { return nativeKind == NativeTypeKind::UByte; }
+	useit bool is_native_ubyte() const { return nativeKind == NativeTypeKind::UByte; }
 
-	useit bool is_short() const { return nativeKind == NativeTypeKind::Short; }
+	useit bool is_native_short() const { return nativeKind == NativeTypeKind::Short; }
 
-	useit bool is_short_unsigned() const { return nativeKind == NativeTypeKind::Short; }
+	useit bool is_native_ushort() const { return nativeKind == NativeTypeKind::Short; }
 
-	useit bool is_wide_char() const { return nativeKind == NativeTypeKind::WideChar; }
+	useit bool is_native_wide_char() const { return nativeKind == NativeTypeKind::WideChar; }
 
-	useit bool is_wide_char_unsigned() const { return nativeKind == NativeTypeKind::UWideChar; }
+	useit bool is_native_wide_uchar() const { return nativeKind == NativeTypeKind::UWideChar; }
 
-	useit bool is_long_int() const { return nativeKind == NativeTypeKind::LongInt; }
+	useit bool is_native_long_int() const { return nativeKind == NativeTypeKind::LongInt; }
 
-	useit bool is_long_int_unsigned() const { return nativeKind == NativeTypeKind::ULongInt; }
+	useit bool is_native_long_int_unsigned() const { return nativeKind == NativeTypeKind::ULongInt; }
 
-	useit bool is_long_long() const { return nativeKind == NativeTypeKind::LongLong; }
+	useit bool is_native_long_long() const { return nativeKind == NativeTypeKind::LongLong; }
 
-	useit bool is_long_long_unsigned() const { return nativeKind == NativeTypeKind::ULongLong; }
+	useit bool is_native_long_long_unsigned() const { return nativeKind == NativeTypeKind::ULongLong; }
 
-	useit bool is_usize() const { return nativeKind == NativeTypeKind::Usize; }
+	useit bool is_native_usize() const { return nativeKind == NativeTypeKind::Usize; }
 
-	useit bool is_isize() const { return nativeKind == NativeTypeKind::Isize; }
+	useit bool is_native_isize() const { return nativeKind == NativeTypeKind::Isize; }
 
-	useit bool is_cfloat() const { return nativeKind == NativeTypeKind::Float; }
+	useit bool is_native_float() const { return nativeKind == NativeTypeKind::Float; }
 
-	useit bool is_double() const { return nativeKind == NativeTypeKind::Double; }
+	useit bool is_native_double() const { return nativeKind == NativeTypeKind::Double; }
 
-	useit bool is_int_max() const { return nativeKind == NativeTypeKind::IntMax; }
+	useit bool is_native_int_max() const { return nativeKind == NativeTypeKind::IntMax; }
 
-	useit bool is_int_max_unsigned() const { return nativeKind == NativeTypeKind::UintMax; }
+	useit bool is_native_uint_max() const { return nativeKind == NativeTypeKind::UintMax; }
 
-	useit bool is_intptr() const { return nativeKind == NativeTypeKind::IntPtr; }
+	useit bool is_native_intptr() const { return nativeKind == NativeTypeKind::IntPtr; }
 
-	useit bool is_intptr_unsigned() const { return nativeKind == NativeTypeKind::UintPtr; }
+	useit bool is_native_uintptr() const { return nativeKind == NativeTypeKind::UintPtr; }
 
-	useit bool is_ptrdiff() const { return nativeKind == NativeTypeKind::PtrDiff; }
+	useit bool is_native_ptrdiff() const { return nativeKind == NativeTypeKind::PtrDiff; }
 
-	useit bool is_ptrdiff_unsigned() const { return nativeKind == NativeTypeKind::UPtrDiff; }
+	useit bool is_native_uptrdiff() const { return nativeKind == NativeTypeKind::UPtrDiff; }
 
-	useit bool is_sig_atomic() const { return nativeKind == NativeTypeKind::SigAtomic; }
+	useit bool is_native_sig_atomic() const { return nativeKind == NativeTypeKind::SigAtomic; }
 
-	useit bool is_bytestring() const { return nativeKind == NativeTypeKind::String; }
+	useit bool is_native_bytestring() const { return nativeKind == NativeTypeKind::String; }
 
-	useit bool is_long_double() const { return nativeKind == NativeTypeKind::LongDouble; }
+	useit bool is_native_long_double() const { return nativeKind == NativeTypeKind::LongDouble; }
 
 	useit static NativeType* get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx);
 	useit static NativeType* get_int(ir::Ctx* irCtx);

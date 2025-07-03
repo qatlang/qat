@@ -20,7 +20,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	auto                                       currBlock = ctx->get_fn()->get_block();
 	auto                                       resBlock  = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 	resBlock->link_previous_block(currBlock);
-	if (valTy->is_bool() || (valTy->is_native_type() || valTy->as_native_type()->is_cbool())) {
+	if (valTy->is_bool() || (valTy->is_native_type() || valTy->as_native_type()->is_widebool())) {
 		if (values.size() != 2) {
 			ctx->Error("Inline matching a " + String(isRef ? "reference " : "value ") + "of type " +
 			               ctx->color(valTy->to_string()) +

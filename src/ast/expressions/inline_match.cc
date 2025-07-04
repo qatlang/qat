@@ -208,6 +208,53 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
 		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
 		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+	} else if (valTy->is_result()) {
+		auto rTy = valTy->as_result();
+		if (values.size() != 2) {
+			ctx->Error(
+			    "The expression being matched is of the result type " + ctx->color(rTy->to_string()) +
+			        " which requires 2 values to be provided, the first value to match to the value variant, and the second value to match to the error variant",
+			    fileRange);
+		}
+		llvm::Value* cand = nullptr;
+		if (isRef || expr->is_ghost_ref()) {
+			if (isRef) {
+				expr->load_ghost_ref(ctx->irCtx->builder);
+			}
+			cand = ctx->irCtx->builder.CreateLoad(
+			    llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			    ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), expr->get_llvm(), 0u));
+		} else {
+			cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
+		}
+		auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		ctx->irCtx->builder.CreateCondBr(cand, trueBlock->get_bb(), falseBlock->get_bb());
+		trueBlock->set_active(ctx->irCtx->builder);
+		auto trueVal = values[0]->emit(ctx);
+		if (resTy == nullptr) {
+			resTy = trueVal->get_pass_type();
+		}
+		if (not trueVal->get_pass_type()->is_same(resTy)) {
+			ctx->Error("The type inferred from scope for the result of this inline match is " +
+			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(trueVal->get_pass_type()->to_string()),
+			           values[0]->fileRange);
+		}
+		trueVal = ir::Logic::handle_pass_semantics(ctx, trueVal->get_pass_type(), trueVal, values[0]->fileRange);
+		branchVals.push_back(std::make_pair(trueVal->get_llvm(), trueBlock->get_bb()));
+		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		falseBlock->set_active(ctx->irCtx->builder);
+		auto falseVal = values[1]->emit(ctx);
+		if (not falseVal->get_pass_type()->is_same(resTy)) {
+			ctx->Error("Expression provided for the previous variant of this inline match is of type " +
+			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(falseVal->get_pass_type()->to_string()),
+			           values[1]->fileRange);
+		}
+		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
+		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
+		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
 	}
 	//
 	resBlock->set_active(ctx->irCtx->builder);

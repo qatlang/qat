@@ -3,6 +3,7 @@
 #include "../../IR/logic.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../IR/types/native_type.hpp"
+#include "../../IR/types/pointer.hpp"
 
 namespace qat::ast {
 
@@ -249,6 +250,73 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		if (not falseVal->get_pass_type()->is_same(resTy)) {
 			ctx->Error("Expression provided for the previous variant of this inline match is of type " +
 			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(falseVal->get_pass_type()->to_string()),
+			           values[1]->fileRange);
+		}
+		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
+		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
+		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+	} else if (valTy->is_ptr()) {
+		auto ptrTy = valTy->as_ptr();
+		if (ptrTy->is_non_nullable()) {
+			ctx->Error(
+			    "Cannot inline match a value of the non-nullable pointer type " + ctx->color(ptrTy->to_string()) +
+			        ". Inline matching for pointers expects 2 values to match the first value to non-null variants and the second value to the null variant, so expected an expression to be provided with a nullable pointer type",
+			    expression->fileRange);
+		}
+		if (values.size() != 2) {
+			ctx->Error("The expression being matched is of the pointer type " + ctx->color(valTy->to_string()) +
+			               " which expects 2 values to be provided",
+			           fileRange);
+		}
+		llvm::Value* cand = nullptr;
+		if (ptrTy->is_multi()) {
+			if (isRef || expr->is_ghost_ref()) {
+				if (isRef) {
+					expr->load_ghost_ref(ctx->irCtx->builder);
+				}
+				cand = ctx->irCtx->builder.CreateLoad(
+				    llvm::cast<llvm::StructType>(ptrTy->get_llvm_type())->getElementType(0u),
+				    ctx->irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), expr->get_llvm(), 0u));
+			} else {
+				cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
+			}
+		} else {
+			expr->load_ghost_ref(ctx->irCtx->builder);
+			cand = expr->get_llvm();
+			if (isRef) {
+				cand = ctx->irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), cand);
+			}
+		}
+		auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		ctx->irCtx->builder.CreateCondBr(
+		    ctx->irCtx->builder.CreateICmpNE(
+		        ctx->irCtx->builder.CreatePtrDiff(
+		            llvm::IntegerType::get(ctx->irCtx->llctx, 8u), cand,
+		            llvm::ConstantPointerNull::get(
+		                llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()))),
+		        llvm::ConstantInt::get(ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(), 0u)),
+		    trueBlock->get_bb(), falseBlock->get_bb());
+		trueBlock->set_active(ctx->irCtx->builder);
+		auto trueVal = values[0]->emit(ctx);
+		if (resTy == nullptr) {
+			resTy = trueVal->get_pass_type();
+		}
+		if (not trueVal->get_pass_type()->is_same(resTy)) {
+			ctx->Error("The type inferred from scope for the result of this inline match is " +
+			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(trueVal->get_pass_type()->to_string()),
+			           values[0]->fileRange);
+		}
+		trueVal = ir::Logic::handle_pass_semantics(ctx, trueVal->get_pass_type(), trueVal, values[0]->fileRange);
+		branchVals.push_back(std::make_pair(trueVal->get_llvm(), trueBlock->get_bb()));
+		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		falseBlock->set_active(ctx->irCtx->builder);
+		auto falseVal = values[1]->emit(ctx);
+		if (not falseVal->get_pass_type()->is_same(resTy)) {
+			ctx->Error("Expression provided for the previous variant of this inline match is of type " +
+			               ctx->color(resTy->to_string()) + ", but this expressin is of type " +
 			               ctx->color(falseVal->get_pass_type()->to_string()),
 			           values[1]->fileRange);
 		}

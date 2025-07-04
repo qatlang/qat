@@ -1,6 +1,7 @@
 #include "./inline_match.hpp"
 #include "../../IR/control_flow.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/maybe.hpp"
 #include "../../IR/types/native_type.hpp"
 
 namespace qat::ast {
@@ -20,7 +21,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	auto                                       currBlock = ctx->get_fn()->get_block();
 	auto                                       resBlock  = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
 	resBlock->link_previous_block(currBlock);
-	if (valTy->is_bool() || (valTy->is_native_type() || valTy->as_native_type()->is_widebool())) {
+	if (valTy->is_bool() || (valTy->is_native_type() || valTy->as_native_type()->is_native_bool())) {
 		if (values.size() != 2) {
 			ctx->Error("Inline matching a " + String(isRef ? "reference " : "value ") + "of type " +
 			               ctx->color(valTy->to_string()) +
@@ -160,6 +161,53 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		// The following will be inserted into the false block of the last variant in the mix type, which should
 		// never be reached
 		ctx->irCtx->builder.CreateUnreachable();
+	} else if (valTy->is_maybe()) {
+		auto mTy = valTy->as_maybe();
+		if (values.size() != 2) {
+			ctx->Error(
+			    "The expression being matched is of the maybe type " + ctx->color(mTy->to_string()) +
+			        " which requires 2 values to be provided, the first value to match to the value variant, and the second value to match to the none variant",
+			    fileRange);
+		}
+		llvm::Value* cand = nullptr;
+		if (isRef || expr->is_ghost_ref()) {
+			if (isRef) {
+				expr->load_ghost_ref(ctx->irCtx->builder);
+			}
+			cand = ctx->irCtx->builder.CreateLoad(
+			    llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+			    ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), expr->get_llvm(), 0u));
+		} else {
+			cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
+		}
+		auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		ctx->irCtx->builder.CreateCondBr(cand, trueBlock->get_bb(), falseBlock->get_bb());
+		trueBlock->set_active(ctx->irCtx->builder);
+		auto trueVal = values[0]->emit(ctx);
+		if (resTy == nullptr) {
+			resTy = trueVal->get_pass_type();
+		}
+		if (not trueVal->get_pass_type()->is_same(resTy)) {
+			ctx->Error("The type inferred from scope for the result of this inline match is " +
+			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(trueVal->get_pass_type()->to_string()),
+			           values[0]->fileRange);
+		}
+		trueVal = ir::Logic::handle_pass_semantics(ctx, trueVal->get_pass_type(), trueVal, values[0]->fileRange);
+		branchVals.push_back(std::make_pair(trueVal->get_llvm(), trueBlock->get_bb()));
+		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		falseBlock->set_active(ctx->irCtx->builder);
+		auto falseVal = values[1]->emit(ctx);
+		if (not falseVal->get_pass_type()->is_same(resTy)) {
+			ctx->Error("Expression provided for the previous variant of this inline match is of type " +
+			               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+			               ctx->color(falseVal->get_pass_type()->to_string()),
+			           values[1]->fileRange);
+		}
+		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
+		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
+		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
 	}
 	//
 	resBlock->set_active(ctx->irCtx->builder);

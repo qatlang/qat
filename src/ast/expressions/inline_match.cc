@@ -110,6 +110,56 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		// The following will be inserted into the false block of the last variant in the choice type, which should
 		// never be reached
 		ctx->irCtx->builder.CreateUnreachable();
+	} else if (valTy->is_mix()) {
+		auto mxTy = valTy->as_mix();
+		if (values.size() != mxTy->get_variant_count()) {
+			ctx->Error("The expression being matched is of mix type " + ctx->color(mxTy->to_string()) + " which has " +
+			               ctx->color(std::to_string(mxTy->get_variant_count())) + ", but only " +
+			               ctx->color(std::to_string(values.size())) + " values are provided here",
+			           fileRange);
+		}
+		llvm::Value* cand = nullptr;
+		if (isRef || expr->is_ghost_ref()) {
+			if (isRef) {
+				expr->load_ghost_ref(ctx->irCtx->builder);
+			}
+			cand = ctx->irCtx->builder.CreateLoad(
+			    llvm::cast<llvm::IntegerType>(llvm::cast<llvm::StructType>(mxTy->get_llvm_type())->getElementType(0u)),
+			    ctx->irCtx->builder.CreateStructGEP(mxTy->get_llvm_type(), expr->get_llvm(), 0u));
+		} else {
+			cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
+		}
+		for (usize i = 0; i < values.size(); i++) {
+			auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
+			auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+			ctx->irCtx->builder.CreateCondBr(
+			    ctx->irCtx->builder.CreateICmpEQ(
+			        cand,
+			        llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(
+			                                   llvm::cast<llvm::StructType>(mxTy->get_llvm_type())->getElementType(0u)),
+			                               0u)),
+			    trueBlock->get_bb(), falseBlock->get_bb());
+			trueBlock->set_active(ctx->irCtx->builder);
+			auto itVal = values[i]->emit(ctx);
+			if (resTy == nullptr) {
+				resTy = itVal->get_pass_type();
+			}
+			if (not itVal->get_pass_type()->is_same(resTy)) {
+				ctx->Error((i == 0
+				                ? "The type inferred from scope for the result of this inline match is "
+				                : "Expressions provided for the previous variants in this inline match is of type ") +
+				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+				               ctx->color(itVal->get_pass_type()->to_string()),
+				           values[i]->fileRange);
+			}
+			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+			branchVals.push_back(std::make_pair(itVal->get_llvm(), trueBlock->get_bb()));
+			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+			falseBlock->set_active(ctx->irCtx->builder);
+		}
+		// The following will be inserted into the false block of the last variant in the mix type, which should
+		// never be reached
+		ctx->irCtx->builder.CreateUnreachable();
 	}
 	//
 	resBlock->set_active(ctx->irCtx->builder);

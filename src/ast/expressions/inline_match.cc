@@ -21,9 +21,9 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	Vec<Pair<llvm::Value*, llvm::BasicBlock*>> branchVals;
 	ir::Type*                                  resTy     = is_type_inferred() ? inferredType : nullptr;
 	auto                                       currBlock = ctx->get_fn()->get_block();
-	auto                                       resBlock  = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
-	resBlock->link_previous_block(currBlock);
 	if (valTy->is_bool() || (valTy->is_native_type() || valTy->as_native_type()->is_native_bool())) {
+		auto resBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
+		resBlock->link_previous_block(currBlock);
 		if (values.size() != 2) {
 			ctx->Error("Inline matching a " + String(isRef ? "reference " : "value ") + "of type " +
 			               ctx->color(valTy->to_string()) +
@@ -74,6 +74,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		fVal = ir::Logic::handle_pass_semantics(ctx, fVal->get_pass_type(), fVal, values[1]->fileRange);
 		branchVals.push_back(std::make_pair(fVal->get_llvm(), falseBlock->get_bb()));
 		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		resBlock->set_active(ctx->irCtx->builder);
 	} else if (valTy->is_choice()) {
 		auto chTy = valTy->as_choice();
 		if (values.size() != chTy->get_variant_count()) {
@@ -82,46 +83,55 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 			               ctx->color(std::to_string(values.size())) + " values are provided here",
 			           fileRange);
 		}
-		expr->load_ghost_ref(ctx->irCtx->builder);
-		auto cand = expr->get_llvm();
-		if (isRef) {
-			cand = ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), cand);
-		}
-		for (usize i = 0; i < (values.size() - 1); i++) {
-			auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
-			auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
-			ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpEQ(cand, chTy->get_value_at(i)),
-			                                 trueBlock->get_bb(), falseBlock->get_bb());
-			trueBlock->set_active(ctx->irCtx->builder);
-			auto itVal = values[i]->emit(ctx);
-			if (resTy == nullptr) {
-				resTy = itVal->get_pass_type();
+		if (chTy->get_variant_count() == 1) {
+			auto itVal = values[0]->emit(ctx);
+			itVal      = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[0]->fileRange);
+			branchVals.push_back(std::make_pair(itVal->get_llvm(), currBlock->get_bb()));
+		} else {
+			auto resBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
+			resBlock->link_previous_block(currBlock);
+			expr->load_ghost_ref(ctx->irCtx->builder);
+			auto cand = expr->get_llvm();
+			if (isRef) {
+				cand = ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), cand);
 			}
-			if (not itVal->get_pass_type()->is_same(resTy)) {
-				ctx->Error((i == 0
-				                ? "The type inferred from scope for the result of this inline match is "
-				                : "Expressions provided for the previous variants in this inline match is of type ") +
-				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
-				               ctx->color(itVal->get_pass_type()->to_string()),
-				           values[i]->fileRange);
+			for (usize i = 0; i < (values.size() - 1); i++) {
+				auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
+				auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+				ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpEQ(cand, chTy->get_value_at(i)),
+				                                 trueBlock->get_bb(), falseBlock->get_bb());
+				trueBlock->set_active(ctx->irCtx->builder);
+				auto itVal = values[i]->emit(ctx);
+				if (resTy == nullptr) {
+					resTy = itVal->get_pass_type();
+				}
+				if (not itVal->get_pass_type()->is_same(resTy)) {
+					ctx->Error(
+					    (i == 0 ? "The type inferred from scope for the result of this inline match is "
+					            : "Expressions provided for the previous variants in this inline match is of type ") +
+					        ctx->color(resTy->to_string()) + ", but this expression is of type " +
+					        ctx->color(itVal->get_pass_type()->to_string()),
+					    values[i]->fileRange);
+				}
+				itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+				branchVals.push_back(std::make_pair(itVal->get_llvm(), trueBlock->get_bb()));
+				(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+				falseBlock->set_active(ctx->irCtx->builder);
 			}
-			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
-			branchVals.push_back(std::make_pair(itVal->get_llvm(), trueBlock->get_bb()));
-			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
-			falseBlock->set_active(ctx->irCtx->builder);
-		}
-		{ // Last case is automatically placed in the false block of the previous variant
-			const auto i     = values.size() - 1;
-			auto       itVal = values[i]->emit(ctx);
-			if (not itVal->get_pass_type()->is_same(resTy)) {
-				ctx->Error("Expressions provided for the previous variants in this inline match is of type " +
-				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
-				               ctx->color(itVal->get_pass_type()->to_string()),
-				           values[i]->fileRange);
+			{ // Last case is automatically placed in the false block of the previous variant
+				const auto i     = values.size() - 1;
+				auto       itVal = values[i]->emit(ctx);
+				if (not itVal->get_pass_type()->is_same(resTy)) {
+					ctx->Error("Expressions provided for the previous variants in this inline match is of type " +
+					               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+					               ctx->color(itVal->get_pass_type()->to_string()),
+					           values[i]->fileRange);
+				}
+				itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+				branchVals.push_back(std::make_pair(itVal->get_llvm(), ctx->fn->get_block()->get_bb()));
+				(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+				resBlock->set_active(ctx->irCtx->builder);
 			}
-			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
-			branchVals.push_back(std::make_pair(itVal->get_llvm(), ctx->fn->get_block()->get_bb()));
-			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
 		}
 	} else if (valTy->is_mix()) {
 		auto mxTy = valTy->as_mix();
@@ -131,59 +141,71 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 			               ctx->color(std::to_string(values.size())) + " values are provided here",
 			           fileRange);
 		}
-		llvm::Value* cand = nullptr;
-		if (isRef || expr->is_ghost_ref()) {
-			if (isRef) {
-				expr->load_ghost_ref(ctx->irCtx->builder);
-			}
-			cand = ctx->irCtx->builder.CreateLoad(
-			    llvm::cast<llvm::IntegerType>(llvm::cast<llvm::StructType>(mxTy->get_llvm_type())->getElementType(0u)),
-			    ctx->irCtx->builder.CreateStructGEP(mxTy->get_llvm_type(), expr->get_llvm(), 0u));
+		if (mxTy->get_variant_count() == 1) {
+			auto itVal = values[0]->emit(ctx);
+			itVal      = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[0]->fileRange);
+			branchVals.push_back(std::make_pair(itVal->get_llvm(), currBlock->get_bb()));
 		} else {
-			cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
-		}
-		for (usize i = 0; i < (values.size() - 1); i++) {
-			auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
-			auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
-			ctx->irCtx->builder.CreateCondBr(
-			    ctx->irCtx->builder.CreateICmpEQ(
-			        cand,
-			        llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(
-			                                   llvm::cast<llvm::StructType>(mxTy->get_llvm_type())->getElementType(0u)),
-			                               0u)),
-			    trueBlock->get_bb(), falseBlock->get_bb());
-			trueBlock->set_active(ctx->irCtx->builder);
-			auto itVal = values[i]->emit(ctx);
-			if (resTy == nullptr) {
-				resTy = itVal->get_pass_type();
+			auto resBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
+			resBlock->link_previous_block(currBlock);
+			llvm::Value* cand = nullptr;
+			if (isRef || expr->is_ghost_ref()) {
+				if (isRef) {
+					expr->load_ghost_ref(ctx->irCtx->builder);
+				}
+				cand = ctx->irCtx->builder.CreateLoad(
+				    llvm::cast<llvm::IntegerType>(
+				        llvm::cast<llvm::StructType>(mxTy->get_llvm_type())->getElementType(0u)),
+				    ctx->irCtx->builder.CreateStructGEP(mxTy->get_llvm_type(), expr->get_llvm(), 0u));
+			} else {
+				cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
 			}
-			if (not itVal->get_pass_type()->is_same(resTy)) {
-				ctx->Error((i == 0
-				                ? "The type inferred from scope for the result of this inline match is "
-				                : "Expressions provided for the previous variants in this inline match is of type ") +
-				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
-				               ctx->color(itVal->get_pass_type()->to_string()),
-				           values[i]->fileRange);
+			for (usize i = 0; i < (values.size() - 1); i++) {
+				auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
+				auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+				ctx->irCtx->builder.CreateCondBr(
+				    ctx->irCtx->builder.CreateICmpEQ(
+				        cand, llvm::ConstantInt::get(
+				                  llvm::cast<llvm::IntegerType>(
+				                      llvm::cast<llvm::StructType>(mxTy->get_llvm_type())->getElementType(0u)),
+				                  0u)),
+				    trueBlock->get_bb(), falseBlock->get_bb());
+				trueBlock->set_active(ctx->irCtx->builder);
+				auto itVal = values[i]->emit(ctx);
+				if (resTy == nullptr) {
+					resTy = itVal->get_pass_type();
+				}
+				if (not itVal->get_pass_type()->is_same(resTy)) {
+					ctx->Error(
+					    (i == 0 ? "The type inferred from scope for the result of this inline match is "
+					            : "Expressions provided for the previous variants in this inline match is of type ") +
+					        ctx->color(resTy->to_string()) + ", but this expression is of type " +
+					        ctx->color(itVal->get_pass_type()->to_string()),
+					    values[i]->fileRange);
+				}
+				itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+				branchVals.push_back(std::make_pair(itVal->get_llvm(), trueBlock->get_bb()));
+				(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+				falseBlock->set_active(ctx->irCtx->builder);
 			}
-			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
-			branchVals.push_back(std::make_pair(itVal->get_llvm(), trueBlock->get_bb()));
-			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
-			falseBlock->set_active(ctx->irCtx->builder);
-		}
-		{ // Last case is automatically placed in the false block of the previous variant
-			const auto i     = values.size() - 1;
-			auto       itVal = values[i]->emit(ctx);
-			if (not itVal->get_pass_type()->is_same(resTy)) {
-				ctx->Error("Expressions provided for the previous variants in this inline match is of type " +
-				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
-				               ctx->color(itVal->get_pass_type()->to_string()),
-				           values[i]->fileRange);
+			{ // Last case is automatically placed in the false block of the previous variant
+				const auto i     = values.size() - 1;
+				auto       itVal = values[i]->emit(ctx);
+				if (not itVal->get_pass_type()->is_same(resTy)) {
+					ctx->Error("Expressions provided for the previous variants in this inline match is of type " +
+					               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+					               ctx->color(itVal->get_pass_type()->to_string()),
+					           values[i]->fileRange);
+				}
+				itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+				branchVals.push_back(std::make_pair(itVal->get_llvm(), ctx->fn->get_block()->get_bb()));
+				(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+				resBlock->set_active(ctx->irCtx->builder);
 			}
-			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
-			branchVals.push_back(std::make_pair(itVal->get_llvm(), ctx->fn->get_block()->get_bb()));
-			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
 		}
 	} else if (valTy->is_maybe()) {
+		auto resBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
+		resBlock->link_previous_block(currBlock);
 		auto mTy = valTy->as_maybe();
 		if (values.size() != 2) {
 			ctx->Error("The expression being matched is of the maybe type " + ctx->color(mTy->to_string()) +
@@ -230,7 +252,10 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
 		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
 		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		resBlock->set_active(ctx->irCtx->builder);
 	} else if (valTy->is_result()) {
+		auto resBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
+		resBlock->link_previous_block(currBlock);
 		auto rTy = valTy->as_result();
 		if (values.size() != 2) {
 			ctx->Error("The expression being matched is of the result type " + ctx->color(rTy->to_string()) +
@@ -277,7 +302,10 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
 		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
 		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		resBlock->set_active(ctx->irCtx->builder);
 	} else if (valTy->is_ptr()) {
+		auto resBlock = ir::Block::create(ctx->get_fn(), currBlock->get_parent());
+		resBlock->link_previous_block(currBlock);
 		auto ptrTy = valTy->as_ptr();
 		if (ptrTy->is_non_nullable()) {
 			ctx->Error(
@@ -345,14 +373,18 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		falseVal = ir::Logic::handle_pass_semantics(ctx, falseVal->get_pass_type(), falseVal, values[1]->fileRange);
 		branchVals.push_back(std::make_pair(falseVal->get_llvm(), falseBlock->get_bb()));
 		(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		resBlock->set_active(ctx->irCtx->builder);
 	}
 	//
-	resBlock->set_active(ctx->irCtx->builder);
-	auto phi = ctx->irCtx->builder.CreatePHI(resTy->get_llvm_type(), branchVals.size());
-	for (auto& it : branchVals) {
-		phi->addIncoming(it.first, it.second);
+	if (branchVals.size() == 1) {
+		return ir::Value::get(branchVals[0].first, resTy, not resTy->is_ref());
+	} else {
+		auto phi = ctx->irCtx->builder.CreatePHI(resTy->get_llvm_type(), branchVals.size());
+		for (auto& it : branchVals) {
+			phi->addIncoming(it.first, it.second);
+		}
+		return ir::Value::get(phi, resTy, not resTy->is_ref());
 	}
-	return ir::Value::get(phi, resTy, not resTy->is_ref());
 }
 
 Json InlineMatch::to_json() const {

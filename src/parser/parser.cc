@@ -36,6 +36,7 @@
 #include "../ast/expressions/in.hpp"
 #include "../ast/expressions/index_access.hpp"
 #include "../ast/expressions/inline_let.hpp"
+#include "../ast/expressions/inline_match.hpp"
 #include "../ast/expressions/is.hpp"
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/method_call.hpp"
@@ -2856,9 +2857,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 							auto bClose    = bCloseRes.value();
 							auto sentences = do_sentences(fnCtx, i + 1, bClose);
 							addNode(ast::FunctionPrototype::create(
-							    IdentifierAt(start), argResult.first, retType,
-							    entityMeta.defineChecker, entityMeta.genericConstraint, entityMeta.metaInfo,
-							    get_visibility(),
+							    IdentifierAt(start), argResult.first, retType, entityMeta.defineChecker,
+							    entityMeta.genericConstraint, entityMeta.metaInfo, get_visibility(),
 							    RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
 							    genericList, Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
 							i = bClose;
@@ -2913,17 +2913,15 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						auto bClose    = bCloseResult.value();
 						auto sentences = do_sentences(thisCtx, pClose + 1, bClose);
 						addNode(ast::FunctionPrototype::create(
-						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker,
-						    nullptr, meta.metaInfo, get_visibility(),
-						    FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
+						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker, nullptr, meta.metaInfo,
+						    get_visibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
 						    Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
 						i = bClose;
 						continue;
 					} else if (is_next(TokenType::stop, i)) {
 						addNode(ast::FunctionPrototype::create(
-						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker,
-						    nullptr, meta.metaInfo, get_visibility(),
-						    FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {}, None));
+						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker, nullptr, meta.metaInfo,
+						    get_visibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {}, None));
 						i++;
 					} else {
 						add_error(
@@ -5102,6 +5100,30 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					} else if (is_next(TokenType::let, i)) {
 						setCachedExpr(ast::InlineLet::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
 						i++;
+					} else if (is_next(TokenType::match, i)) {
+						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
+							add_error(
+							    "Expected a ( after this to start the list of values to be matched to the respective variants",
+							    RangeSpan(start, i + 1));
+						}
+						i += 2;
+						Vec<ast::Expression*> values;
+						while ((i + 1 < tokens->size()) && not is_next(TokenType::parenthesisClose, i)) {
+							auto itExp = do_expression(preCtx, None, i, None, None);
+							values.push_back(itExp.first);
+							i = itExp.second;
+							if (is_next(TokenType::separator, i)) {
+								i += 1;
+							} else if (not is_next(TokenType::parenthesisClose, i)) {
+								break;
+							}
+						}
+						if (not is_next(TokenType::parenthesisClose, i)) {
+							add_error("Expected a ) after this to end the inline match expression",
+							          RangeSpan(start, i));
+						}
+						i++;
+						setCachedExpr(ast::InlineMatch::create(exp, values, RangeSpan(start, i)), i);
 					} else if (is_next(TokenType::referenceType, i)) {
 						i++;
 						bool isVar = false;
@@ -5271,7 +5293,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								    },
 								    RangeSpan(itStart, i)));
 							}
-							if (not (is_next(TokenType::binaryOperator, i) && (ValueAt(i + 1) == "+"))) {
+							if (not(is_next(TokenType::binaryOperator, i) && (ValueAt(i + 1) == "+"))) {
 								break;
 							}
 							i++;

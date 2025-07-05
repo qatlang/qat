@@ -4,6 +4,7 @@
 #include "../../IR/types/maybe.hpp"
 #include "../../IR/types/native_type.hpp"
 #include "../../IR/types/pointer.hpp"
+#include "../../IR/types/result.hpp"
 
 namespace qat::ast {
 
@@ -86,7 +87,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		if (isRef) {
 			cand = ctx->irCtx->builder.CreateLoad(chTy->get_llvm_type(), cand);
 		}
-		for (usize i = 0; i < values.size(); i++) {
+		for (usize i = 0; i < (values.size() - 1); i++) {
 			auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
 			auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
 			ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpEQ(cand, chTy->get_value_at(i)),
@@ -109,9 +110,19 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
 			falseBlock->set_active(ctx->irCtx->builder);
 		}
-		// The following will be inserted into the false block of the last variant in the choice type, which should
-		// never be reached
-		ctx->irCtx->builder.CreateUnreachable();
+		{ // Last case is automatically placed in the false block of the previous variant
+			const auto i     = values.size() - 1;
+			auto       itVal = values[i]->emit(ctx);
+			if (not itVal->get_pass_type()->is_same(resTy)) {
+				ctx->Error("Expressions provided for the previous variants in this inline match is of type " +
+				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+				               ctx->color(itVal->get_pass_type()->to_string()),
+				           values[i]->fileRange);
+			}
+			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+			branchVals.push_back(std::make_pair(itVal->get_llvm(), ctx->fn->get_block()->get_bb()));
+			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		}
 	} else if (valTy->is_mix()) {
 		auto mxTy = valTy->as_mix();
 		if (values.size() != mxTy->get_variant_count()) {
@@ -131,7 +142,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		} else {
 			cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
 		}
-		for (usize i = 0; i < values.size(); i++) {
+		for (usize i = 0; i < (values.size() - 1); i++) {
 			auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
 			auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
 			ctx->irCtx->builder.CreateCondBr(
@@ -159,16 +170,26 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
 			falseBlock->set_active(ctx->irCtx->builder);
 		}
-		// The following will be inserted into the false block of the last variant in the mix type, which should
-		// never be reached
-		ctx->irCtx->builder.CreateUnreachable();
+		{ // Last case is automatically placed in the false block of the previous variant
+			const auto i     = values.size() - 1;
+			auto       itVal = values[i]->emit(ctx);
+			if (not itVal->get_pass_type()->is_same(resTy)) {
+				ctx->Error("Expressions provided for the previous variants in this inline match is of type " +
+				               ctx->color(resTy->to_string()) + ", but this expression is of type " +
+				               ctx->color(itVal->get_pass_type()->to_string()),
+				           values[i]->fileRange);
+			}
+			itVal = ir::Logic::handle_pass_semantics(ctx, itVal->get_pass_type(), itVal, values[i]->fileRange);
+			branchVals.push_back(std::make_pair(itVal->get_llvm(), ctx->fn->get_block()->get_bb()));
+			(void)ir::add_branch(ctx->irCtx->builder, resBlock->get_bb());
+		}
 	} else if (valTy->is_maybe()) {
 		auto mTy = valTy->as_maybe();
 		if (values.size() != 2) {
-			ctx->Error(
-			    "The expression being matched is of the maybe type " + ctx->color(mTy->to_string()) +
-			        " which requires 2 values to be provided, the first value to match to the value variant, and the second value to match to the none variant",
-			    fileRange);
+			ctx->Error("The expression being matched is of the maybe type " + ctx->color(mTy->to_string()) +
+			               " which requires 2 values to be provided, the first value to match to the value variant,"
+			               " and the second value to match to the none variant",
+			           fileRange);
 		}
 		llvm::Value* cand = nullptr;
 		if (isRef || expr->is_ghost_ref()) {
@@ -212,10 +233,10 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	} else if (valTy->is_result()) {
 		auto rTy = valTy->as_result();
 		if (values.size() != 2) {
-			ctx->Error(
-			    "The expression being matched is of the result type " + ctx->color(rTy->to_string()) +
-			        " which requires 2 values to be provided, the first value to match to the value variant, and the second value to match to the error variant",
-			    fileRange);
+			ctx->Error("The expression being matched is of the result type " + ctx->color(rTy->to_string()) +
+			               " which requires 2 values to be provided, the first value to match to the value variant,"
+			               " and the second value to match to the error variant",
+			           fileRange);
 		}
 		llvm::Value* cand = nullptr;
 		if (isRef || expr->is_ghost_ref()) {
@@ -224,7 +245,7 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 			}
 			cand = ctx->irCtx->builder.CreateLoad(
 			    llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-			    ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), expr->get_llvm(), 0u));
+			    ctx->irCtx->builder.CreateStructGEP(rTy->get_llvm_type(), expr->get_llvm(), 0u));
 		} else {
 			cand = ctx->irCtx->builder.CreateExtractValue(expr->get_llvm(), {0u});
 		}
@@ -261,7 +282,8 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		if (ptrTy->is_non_nullable()) {
 			ctx->Error(
 			    "Cannot inline match a value of the non-nullable pointer type " + ctx->color(ptrTy->to_string()) +
-			        ". Inline matching for pointers expects 2 values to match the first value to non-null variants and the second value to the null variant, so expected an expression to be provided with a nullable pointer type",
+			        ". Inline matching for pointers expects 2 values to match the first value to non-null variants and the"
+			        " second value to the null variant, so expected an expression to be provided with a nullable pointer type",
 			    expression->fileRange);
 		}
 		if (values.size() != 2) {

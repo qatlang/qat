@@ -291,9 +291,9 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 					floatVal = val->get_llvm();
 				}
 				if (floatTy->get_float_kind() != ir::FloatTypeKind::_64) {
-					floatVal = ctx->irCtx->builder.CreateFPCast(floatVal, llvm::Type::getInt64Ty(ctx->irCtx->llctx));
+					floatVal = ctx->irCtx->builder.CreateFPCast(floatVal, llvm::Type::getDoubleTy(ctx->irCtx->llctx));
 				}
-				formatString += "%u";
+				formatString += "%f";
 				printVals.push_back(floatVal);
 			}
 		} else if (valTy->is_ptr() || (valTy->is_native_type() && valTy->as_native_type()->get_subtype()->is_ptr())) {

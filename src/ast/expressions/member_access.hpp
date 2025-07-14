@@ -7,20 +7,21 @@
 namespace qat::ast {
 
 class MemberAccess final : public Expression {
-	Expression* instance;
-	bool        isExpSelf = false;
-	Maybe<bool> isVariationAccess;
-	Identifier  name;
+	Expression*                  instance;
+	bool                         isExpSelf = false;
+	Maybe<Pair<bool, FileRange>> isVarRange;
+	Identifier                   name;
 
   public:
-	MemberAccess(Expression* _instance, bool _isExpSelf, Maybe<bool> _isVariationAccess, Identifier _name,
+	MemberAccess(Expression* _instance, bool _isExpSelf, Maybe<Pair<bool, FileRange>> _isVarRange, Identifier _name,
 	             FileRange _fileRange)
 	    : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
-	      isVariationAccess(_isVariationAccess), name(std::move(_name)) {}
+	      isVarRange(std::move(_isVarRange)), name(std::move(_name)) {}
 
-	useit static MemberAccess* create(Expression* _instance, bool isExpSelf, Maybe<bool> _isVariationAccess,
+	useit static MemberAccess* create(Expression* _instance, bool isExpSelf, Maybe<Pair<bool, FileRange>> _isVarRange,
 	                                  Identifier _name, FileRange _fileRange) {
-		return std::construct_at(OwnNormal(MemberAccess), _instance, isExpSelf, _isVariationAccess, _name, _fileRange);
+		return std::construct_at(OwnNormal(MemberAccess), _instance, isExpSelf, std::move(_isVarRange), _name,
+		                         _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {

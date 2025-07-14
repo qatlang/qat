@@ -31,14 +31,18 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 		if (instance->nodeType() == NodeType::SELF) {
 			ctx->Error("Do not use this syntax for accessing members of the parent instance. Use " +
 			               ctx->color(String("''") +
-			                          (isVariationAccess.has_value() && isVariationAccess.value()
-			                               ? "var:"
-			                               : (isVariationAccess.has_value() ? "const:" : "")) +
+			                          (isVarRange.has_value() ? (isVarRange.value().first ? "var:" : "const:") : "") +
 			                          name.value) +
 			               " instead",
 			           fileRange);
 		}
 	}
+	if (isVarRange.has_value()) {
+		ctx->Error("Found " + ctx->color("var:") +
+		               " in the member access, but it is only allowed for calling variation methods",
+		           isVarRange.value().second);
+	}
+
 	auto* inst     = instance->emit(ctx);
 	auto* instType = inst->get_ir_type();
 	bool  isVar    = inst->is_variable();
@@ -192,23 +196,13 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 	} else if (instType->is_expanded()) {
-		if ((instType->is_struct() && not instType->as_struct()->has_field_with_name(name.value)) &&
-		    ((isVariationAccess.has_value() && isVariationAccess.value())
-		         ? not instType->as_expanded()->has_variation(name.value)
-		         : not instType->as_expanded()->has_normal_method(name.value))) {
+		if (instType->is_struct() && not instType->as_struct()->has_field_with_name(name.value)) {
 			ctx->Error("Struct type " + ctx->color(instType->as_struct()->to_string()) +
-			               " does not have a member field, member function or variation function named " +
-			               ctx->color(name.value) + ". Please check the logic",
+			               " does not have a member field named " + ctx->color(name.value) + ". Please check the logic",
 			           name.range);
 		}
 		auto* eTy = instType->as_expanded();
 		if (eTy->is_struct() && eTy->as_struct()->has_field_with_name(name.value)) {
-			if (isVariationAccess.has_value() && isVariationAccess.value()) {
-				ctx->Error(ctx->color(name.value) + " is a member field of type " + ctx->color(eTy->get_full_name()) +
-				               " and hence variation access cannot be used. Please change " +
-				               ctx->color("'var:" + name.value) + " to " + ctx->color("'" + name.value),
-				           fileRange);
-			}
 			auto* mem = eTy->as_struct()->get_field_at(instType->as_struct()->get_index_of(name.value).value());
 			mem->add_mention(name.range);
 			if (isExpSelf) {
@@ -220,7 +214,8 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 							ctx->Error(
 							    "Member field " + ctx->color(name.value) + " of parent type " +
 							        ctx->color(eTy->to_string()) +
-							        " is not initialised yet and hence cannot be used. The field has a default value provided, which will be used to initialise it only at the end of this constructor",
+							        " is not initialised yet and hence cannot be used. The field has a default value provided,"
+							        " which will be used to initialise it only at the end of this constructor",
 							    fileRange);
 						} else {
 							ctx->Error("Member field " + ctx->color(name.value) + " of parent type " +
@@ -260,13 +255,8 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				}
 				return ir::Value::get(llVal, ir::RefType::get(isVar, memValTy, ctx->irCtx), false);
 			}
-		} else if (not(isVariationAccess.has_value() && isVariationAccess.value()) &&
-		           eTy->has_normal_method(name.value)) {
-			// FIXME - Implement
-			ctx->Error("Referencing member function is not supported", fileRange);
-		} else if ((isVariationAccess.has_value() && isVariationAccess.value()) && eTy->has_variation(name.value)) {
-			// FIXME - Implement
-			ctx->Error("Referencing variation function is not supported", fileRange);
+		} else if (eTy->has_normal_method(name.value) || eTy->has_variation(name.value)) {
+			ctx->Error("Extracting pointers to normal and variation methods are not supported", fileRange);
 		} else {
 			ctx->Error("Member access of " + ctx->color(name.value) + " is not supported for expression of type " +
 			               ctx->color(instType->to_string()),

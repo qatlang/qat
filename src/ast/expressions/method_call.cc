@@ -80,7 +80,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		}
 		auto* eTy = instType->as_expanded();
 		if (callNature.has_value()) {
-			if (callNature.value()) {
+			if (callNature.value().first) {
 				if (not eTy->has_variation(memberName.value)) {
 					if (eTy->has_normal_method(memberName.value)) {
 						ctx->Error(ctx->color(memberName.value) + " is not a variation method of type " +
@@ -140,7 +140,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 			}
 		}
 		auto* memFn =
-		    (((callNature.has_value() && callNature.value()) || isVar) && eTy->has_variation(memberName.value))
+		    (((callNature.has_value() && callNature.value().first) || isVar) && eTy->has_variation(memberName.value))
 		        ? eTy->get_variation(memberName.value)
 		        : (eTy->has_valued_method(memberName.value) ? eTy->get_valued_method(memberName.value)
 		                                                    : eTy->get_normal_method(memberName.value));
@@ -475,7 +475,9 @@ Json MethodCall::to_json() const {
 	    ._("function", memberName)
 	    ._("arguments", args)
 	    ._("hasCallNature", callNature.has_value())
-	    ._("callNature", callNature.has_value() ? callNature.value() : JsonValue())
+	    ._("callNature", callNature.has_value()
+	                         ? Json()._("isVar", callNature.value().first)._("range", callNature.value().second)
+	                         : JsonValue())
 	    ._("fileRange", fileRange);
 }
 

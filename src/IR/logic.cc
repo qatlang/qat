@@ -333,13 +333,18 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(val->get_llvm());
 			}
 		} else if (valTy->is_tuple()) {
-			// FIXME - Update when named tuple members are allowed
 			formatString += "(";
-			auto subTypes = valTy->as_tuple()->get_all_types();
+			auto&      subTypes = valTy->as_tuple()->get_all_types();
+			auto&      names    = valTy->as_tuple()->get_element_names();
+			const bool hasNames = valTy->as_tuple()->has_named_elements();
 			if (val->is_ref() || val->is_ghost_ref()) {
 				val->load_ghost_ref(ctx->irCtx->builder);
 			}
 			for (usize i = 0; i < subTypes.size(); i++) {
+				if (hasNames) {
+					formatValue(ir::TextType::create_value(ctx->irCtx, ctx->mod, names[i].value), valRange);
+					formatString += " := ";
+				}
 				auto* subVal = val->get_llvm();
 				subVal =
 				    (val->is_ref() || val->is_ghost_ref())

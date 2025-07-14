@@ -3,7 +3,7 @@
 
 #include "../expression.hpp"
 #include "../skill_entity.hpp"
-#include "../types/mark_owner.hpp"
+#include "../types/pointer_owner.hpp"
 #include <variant>
 
 namespace qat::ast {

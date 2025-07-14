@@ -24,7 +24,6 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	method_call.cc
 	index_access.cc
 	member_access.cc
-	mix_choice_initialiser.cc
 	move.cc
 	negative.cc
 	not.cc
@@ -34,7 +33,8 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	self_instance.cc
 	sub_entity.cc
 	to_conversion.cc
-	tuple_value.cc)
+	tuple_value.cc
+	variant_initialiser.cc)
 
 target_link_directories(QAT_AST_EXPRESSIONS PUBLIC ../../utils)
 

@@ -1,4 +1,4 @@
-#include "./null_mark.hpp"
+#include "./null_pointer.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/native_type.hpp"
 #include "../../IR/types/pointer.hpp"

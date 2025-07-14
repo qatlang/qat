@@ -9,12 +9,12 @@ add_library(QAT_AST_TYPES
 	generic_integer.cc
 	integer.cc
 	linked_generic.cc
-	mark_owner.cc
 	maybe.cc
 	named.cc
 	native_type.cc
 	reference.cc
 	pointer.cc
+	pointer_owner.cc
 	polymorph.cc
 	prerun_generic.cc
 	qat_type.cc

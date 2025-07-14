@@ -1,4 +1,4 @@
-#include "./mix_choice_initialiser.hpp"
+#include "./variant_initialiser.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/toggle.hpp"
 

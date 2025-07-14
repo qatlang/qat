@@ -3,7 +3,7 @@
 
 #include "../node.hpp"
 #include "../skill_entity.hpp"
-#include "./mark_owner.hpp"
+#include "./pointer_owner.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
 

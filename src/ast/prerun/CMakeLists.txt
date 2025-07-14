@@ -14,10 +14,9 @@ add_library(QAT_AST_PRERUN
 	integer_literal.cc
 	member_access.cc
 	method_call.cc
-	mix_choice_init.cc
 	negative.cc
 	none.cc
-	null_mark.cc
+	null_pointer.cc
 	plain_initialiser.cc
 	prerun_global.cc
 	string_literal.cc
@@ -25,7 +24,8 @@ add_library(QAT_AST_PRERUN
 	to_conversion.cc
 	tuple_value.cc
 	type_wrap.cc
-	unsigned_literal.cc)
+	unsigned_literal.cc
+	variant_initialiser.cc)
 
 target_link_directories(QAT_AST_PRERUN PUBLIC ../../utils)
 

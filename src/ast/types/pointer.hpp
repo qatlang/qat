@@ -1,7 +1,7 @@
 #ifndef QAT_TYPES_POINTER_HPP
 #define QAT_TYPES_POINTER_HPP
 
-#include "./mark_owner.hpp"
+#include "./pointer_owner.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {

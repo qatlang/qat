@@ -5,6 +5,7 @@
 #include "../../IR/types/native_type.hpp"
 #include "../../IR/types/pointer.hpp"
 #include "../../IR/types/struct_type.hpp"
+#include "../../IR/types/toggle.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "../../utils/helpers.hpp"
 
@@ -194,6 +195,56 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			ctx->Error("Invalid name " + ctx->color(name.value) + " for member access of type " +
 			               ctx->color(instType->to_string()),
 			           fileRange);
+		}
+	} else if (instType->is_toggle()) {
+		auto tgTy = instType->as_toggle();
+		if (not tgTy->has_variant(name.value)) {
+			if (tgTy->has_normal_method(name.value) || tgTy->has_variation(name.value)) {
+				ctx->Error("Found a " + String(tgTy->has_normal_method(name.value) ? "normal" : "variation") +
+				               " method named " + ctx->color(name.value) + " for the toggle type " +
+				               ctx->color(tgTy->to_string()) +
+				               ", but extracting a pointer to a normal or variation method is not allowed",
+				           name.range);
+			} else if (tgTy->has_static_method(name.value)) {
+				ctx->Error(
+				    "Found a static method named " + ctx->color(name.value) + " for the toggle type " +
+				        ctx->color(tgTy->to_string()) +
+				        ", but extracting a pointer to a static method is not allowed through this syntax. Use " +
+				        ctx->color(tgTy->to_string() + ":" + name.value) + " instead",
+				    name.range);
+			} else {
+				ctx->Error("The toggle type " + ctx->color(tgTy->to_string()) + " has no variant named " +
+				               ctx->color(name.value),
+				           name.range);
+			}
+		}
+		auto varTy        = tgTy->get_variant_type_of(name.value);
+		bool isDefaultVar = tgTy->is_default_variant(name.value);
+		if (isDefaultVar) {
+			if (inst->is_value()) {
+				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}), varTy, true);
+			} else {
+				return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), inst->get_llvm(), 0u),
+				                      ir::RefType::get(isVar, varTy, ctx->irCtx), false);
+			}
+		} else {
+			if (inst->is_value()) {
+				return ir::Value::get(
+				    ctx->irCtx->builder.CreateExtractValue(
+				        ctx->irCtx->builder.CreateTruncOrBitCast(
+				            inst->get_llvm(),
+				            llvm::StructType::get(ctx->irCtx->llctx, {varTy->get_llvm_type()},
+				                                  llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->isPacked())),
+				        {0u}),
+				    varTy, true);
+			} else {
+				return ir::Value::get(
+				    ctx->irCtx->builder.CreatePointerCast(
+				        ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), inst->get_llvm(), 0u),
+				        llvm::PointerType::get(varTy->get_llvm_type(),
+				                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
+				    ir::RefType::get(isVar, varTy, ctx->irCtx), false);
+			}
 		}
 	} else if (instType->is_expanded()) {
 		if (instType->is_struct() && not instType->as_struct()->has_field_with_name(name.value)) {

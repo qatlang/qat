@@ -6,8 +6,8 @@
 #include "./logic.hpp"
 #include "./method.hpp"
 #include "./qat_module.hpp"
+#include "./types/definition.hpp"
 #include "./types/qat_type.hpp"
-#include "./types/reference.hpp"
 
 namespace qat::ir {
 

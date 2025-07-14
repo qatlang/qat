@@ -1,6 +1,7 @@
 #include "./expanded_type.hpp"
 #include "../generics.hpp"
 #include "../qat_module.hpp"
+#include "./definition.hpp"
 #include "./function.hpp"
 #include "./reference.hpp"
 

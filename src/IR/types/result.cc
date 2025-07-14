@@ -1,5 +1,6 @@
 #include "./result.hpp"
 #include "../context.hpp"
+#include "./opaque.hpp"
 
 namespace qat::ir {
 

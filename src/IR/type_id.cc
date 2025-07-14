@@ -1,11 +1,13 @@
 #include "./type_id.hpp"
 #include "./context.hpp"
+#include "./link_names.hpp"
 #include "./qat_module.hpp"
 #include "./types/choice.hpp"
+#include "./types/definition.hpp"
 #include "./types/flag.hpp"
+#include "./types/mix.hpp"
 #include "./types/region.hpp"
 #include "./types/struct_type.hpp"
-#include "link_names.hpp"
 
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Type.h>

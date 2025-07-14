@@ -20,6 +20,7 @@
 #include "./types/region.hpp"
 #include "./types/struct_type.hpp"
 #include "./types/text.hpp"
+#include "./types/toggle.hpp"
 #include "./types/void.hpp"
 #include "./value.hpp"
 
@@ -780,6 +781,14 @@ void Mod::bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInf
 	}
 }
 
+void Mod::bring_generic_toggle_type(GenericToggleType* genTogg, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+	if (bName.has_value()) {
+		broughtGenericToggleTypes.push_back(Brought<GenericToggleType>(bName.value(), genTogg, visib));
+	} else {
+		broughtGenericToggleTypes.push_back(Brought<GenericToggleType>(genTogg, visib));
+	}
+}
+
 void Mod::bring_generic_type_definition(GenericDefinitionType* gTyDef, const VisibilityInfo& visib,
                                         Maybe<Identifier> bName) {
 	if (bName.has_value()) {
@@ -810,6 +819,14 @@ void Mod::bring_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identi
 		broughtMixTypes.push_back(Brought<MixType>(bName.value(), mTy, visib));
 	} else {
 		broughtMixTypes.push_back(Brought<MixType>(mTy, visib));
+	}
+}
+
+void Mod::bring_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+	if (bName.has_value()) {
+		broughtToggleTypes.push_back(Brought<ToggleType>(bName.value(), mTy, visib));
+	} else {
+		broughtToggleTypes.push_back(Brought<ToggleType>(mTy, visib));
 	}
 }
 
@@ -1696,6 +1713,85 @@ MixType* Mod::get_mix_type(const String& name, const AccessInfo& reqInfo) const 
 	return nullptr;
 }
 
+// TOGGLE TYPE
+
+bool Mod::has_toggle_type(const String& name, AccessInfo reqInfo) const {
+	for (auto* typ : toggleTypes) {
+		if ((typ->get_name().value == name) && typ->is_accessible(reqInfo)) {
+			return true;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_toggle_type(name, reqInfo) || sub->has_brought_toggle_type(name, reqInfo) ||
+			    sub->has_toggle_type_in_imports(name, reqInfo).first) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mod::has_brought_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : broughtToggleTypes) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Pair<bool, String> Mod::has_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named() &&
+			    (bMod->has_toggle_type(name, reqInfo) || bMod->has_brought_toggle_type(name, reqInfo) ||
+			     bMod->has_toggle_type_in_imports(name, reqInfo).first)) {
+				if (bMod->get_toggle_type(name, reqInfo)->is_accessible(reqInfo)) {
+					return {true, bMod->filePath.string()};
+				}
+			}
+		}
+	}
+	return {false, ""};
+}
+
+ToggleType* Mod::get_toggle_type(const String& name, const AccessInfo& reqInfo) const {
+	for (auto* tgTy : toggleTypes) {
+		if ((tgTy->get_name().value == name) && tgTy->is_accessible(reqInfo)) {
+			return tgTy;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_toggle_type(name, reqInfo) || sub->has_brought_toggle_type(name, reqInfo) ||
+			    sub->has_toggle_type_in_imports(name, reqInfo).first) {
+				return sub->get_toggle_type(name, reqInfo);
+			}
+		}
+	}
+	for (const auto& brought : broughtToggleTypes) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return brought.get();
+		}
+	}
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_toggle_type(name, reqInfo) || bMod->has_brought_toggle_type(name, reqInfo) ||
+				    bMod->has_toggle_type_in_imports(name, reqInfo).first) {
+					if (bMod->get_toggle_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return bMod->get_toggle_type(name, reqInfo);
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
 // CHOICE TYPE
 
 bool Mod::has_choice_type(const String& name, AccessInfo reqInfo) const {
@@ -1931,6 +2027,87 @@ GenericStructType* Mod::get_generic_struct_type(const String& name, const Access
 				    bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_struct_type(name, reqInfo);
+					}
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
+// GENERIC TOGGLE TYPE
+
+bool Mod::has_generic_toggle_type(const String& name, AccessInfo reqInfo) const {
+	for (auto* tgTy : genericToggleTypes) {
+		if ((tgTy->get_name().value == name) && tgTy->get_visibility().is_accessible(reqInfo)) {
+			return true;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_generic_toggle_type(name, reqInfo) || sub->has_brought_generic_toggle_type(name, reqInfo) ||
+			    sub->has_generic_toggle_type_in_imports(name, reqInfo).first) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool Mod::has_brought_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : broughtGenericToggleTypes) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return true;
+		}
+	}
+	return false;
+}
+
+Pair<bool, String> Mod::has_generic_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_generic_toggle_type(name, reqInfo) ||
+				    bMod->has_brought_generic_toggle_type(name, reqInfo) ||
+				    bMod->has_generic_toggle_type_in_imports(name, reqInfo).first) {
+					if (bMod->get_generic_toggle_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return {true, bMod->filePath.string()};
+					}
+				}
+			}
+		}
+	}
+	return {false, ""};
+}
+
+GenericToggleType* Mod::get_generic_toggle_type(const String& name, const AccessInfo& reqInfo) {
+	for (auto* tgTy : genericToggleTypes) {
+		if ((tgTy->get_name().value == name) && tgTy->get_visibility().is_accessible(reqInfo)) {
+			return tgTy;
+		}
+	}
+	for (auto sub : submodules) {
+		if (not sub->should_be_named()) {
+			if (sub->has_generic_toggle_type(name, reqInfo)) {
+				return sub->get_generic_toggle_type(name, reqInfo);
+			}
+		}
+	}
+	for (const auto& brought : broughtGenericToggleTypes) {
+		if (matchBroughtEntity(brought, name, reqInfo)) {
+			return brought.get();
+		}
+	}
+	for (const auto& brought : broughtModules) {
+		if (not brought.is_named()) {
+			auto* bMod = brought.get();
+			if (not bMod->should_be_named()) {
+				if (bMod->has_generic_toggle_type(name, reqInfo) ||
+				    bMod->has_brought_generic_toggle_type(name, reqInfo) ||
+				    bMod->has_generic_toggle_type_in_imports(name, reqInfo).first) {
+					if (bMod->get_generic_toggle_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+						return bMod->get_generic_toggle_type(name, reqInfo);
 					}
 				}
 			}
@@ -3989,11 +4166,13 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 					    "pthread_attr_t");
 				}
 				llvm::Function::Create(
-				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-				                            {pthreadPtrTy,
-				                             llvm::PointerType::get(llvm::StructType::getTypeByName(llCtx, "pthread_attr_t"), irCtx->dataLayout.getProgramAddressSpace()),
-				                             llvm::PointerType::get(pthreadFnTy, irCtx->dataLayout.getProgramAddressSpace()), voidPtrTy},
-				                            false),
+				    llvm::FunctionType::get(
+				        llvm::Type::getInt32Ty(llCtx),
+				        {pthreadPtrTy,
+				         llvm::PointerType::get(llvm::StructType::getTypeByName(llCtx, "pthread_attr_t"),
+				                                irCtx->dataLayout.getProgramAddressSpace()),
+				         llvm::PointerType::get(pthreadFnTy, irCtx->dataLayout.getProgramAddressSpace()), voidPtrTy},
+				        false),
 				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_create", llvmModule);
 				linkPthread = true;
 			}
@@ -4002,19 +4181,26 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 		case InternalDependency::pthreadJoin: {
 			if (not llvmModule->getFunction("pthread_join")) {
 				llvm::Type* pthreadTy = llvm::Type::getInt64Ty(llCtx);
-				llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace());
-				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-				                                               {pthreadTy, llvm::PointerType::get(voidPtrTy, irCtx->dataLayout.getProgramAddressSpace())}, false),
-				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
+				llvm::Type* voidPtrTy =
+				    llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace());
+				llvm::Function::Create(
+				    llvm::FunctionType::get(
+				        llvm::Type::getInt32Ty(llCtx),
+				        {pthreadTy, llvm::PointerType::get(voidPtrTy, irCtx->dataLayout.getProgramAddressSpace())},
+				        false),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_join", llvmModule);
 				linkPthread = true;
 			}
 			return "pthread_join";
 		}
 		case InternalDependency::pthreadExit: {
 			if (not llvmModule->getFunction("pthread_exit")) {
-				llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
-				                                               {llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx), irCtx->dataLayout.getProgramAddressSpace())}, false),
-				                       llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
+				llvm::Function::Create(
+				    llvm::FunctionType::get(llvm::Type::getVoidTy(llCtx),
+				                            {llvm::PointerType::get(llvm::Type::getInt8Ty(llCtx),
+				                                                    irCtx->dataLayout.getProgramAddressSpace())},
+				                            false),
+				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_exit", llvmModule);
 				linkPthread = true;
 			}
 			return "pthread_exit";
@@ -4039,9 +4225,11 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 					    "pthread_attr_t");
 				}
 				llvm::Function::Create(
-				    llvm::FunctionType::get(llvm::Type::getInt32Ty(llCtx),
-				                            {llvm::PointerType::get(llvm::StructType::getTypeByName(llCtx, "pthread_attr_t"), irCtx->dataLayout.getProgramAddressSpace())},
-				                            false),
+				    llvm::FunctionType::get(
+				        llvm::Type::getInt32Ty(llCtx),
+				        {llvm::PointerType::get(llvm::StructType::getTypeByName(llCtx, "pthread_attr_t"),
+				                                irCtx->dataLayout.getProgramAddressSpace())},
+				        false),
 				    llvm::GlobalValue::LinkageTypes::ExternalLinkage, "pthread_attr_init", llvmModule);
 				linkPthread = true;
 			}

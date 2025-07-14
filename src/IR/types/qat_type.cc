@@ -226,9 +226,13 @@ bool Type::is_same(Type* other) {
 			case TypeKind::TUPLE: {
 				auto* thisVal  = (TupleType*)this;
 				auto* otherVal = (TupleType*)other;
-				if ((thisVal->is_packed_tuple() == otherVal->is_packed_tuple()) &&
+				if ((thisVal->has_named_elements() == otherVal->has_named_elements()) &&
+				    (thisVal->is_packed_tuple() == otherVal->is_packed_tuple()) &&
 				    thisVal->get_element_count() == otherVal->get_element_count()) {
 					for (usize i = 0; i < thisVal->get_element_count(); i++) {
+						if (thisVal->has_named_elements() && (thisVal->get_name_at(i) != otherVal->get_name_at(i))) {
+							return false;
+						}
 						if (not thisVal->get_type_at(i)->is_same(otherVal->get_type_at(i))) {
 							return false;
 						}
@@ -619,6 +623,18 @@ MixType* Type::as_mix() const {
 	return (type_kind() == TypeKind::DEFINITION)
 	           ? ((DefinitionType*)this)->get_subtype()->as_mix()
 	           : (is_opaque() ? as_opaque()->get_subtype()->as_mix() : (MixType*)this);
+}
+
+bool Type::is_toggle() const {
+	return (type_kind() == TypeKind::TOGGLE) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_toggle()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_toggle());
+}
+
+ToggleType* Type::as_toggle() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_toggle()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_toggle() : (ToggleType*)this);
 }
 
 bool Type::is_choice() const {

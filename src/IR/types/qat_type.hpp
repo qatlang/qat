@@ -30,6 +30,7 @@ class TextType;
 class StructType;
 class DefinitionType;
 class MixType;
+class ToggleType;
 class FutureType;
 class MaybeType;
 class Region;
@@ -163,6 +164,9 @@ class Type : public Uniq {
 
 	useit bool     is_mix() const;
 	useit MixType* as_mix() const;
+
+	useit bool        is_toggle() const;
+	useit ToggleType* as_toggle() const;
 
 	useit bool        is_choice() const;
 	useit ChoiceType* as_choice() const;

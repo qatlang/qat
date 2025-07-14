@@ -430,8 +430,7 @@ GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractT
                          ._("name", _name.value)
                          ._("fullName", _parent->get_fullname_with_child(_name.value))
                          ._("visibility", _visibInfo)
-                         ._("moduleID", _parent->get_id())
-                         ._("visibility", _visibInfo),
+                         ._("moduleID", _parent->get_id()),
                      _name.range),
       name(std::move(_name)), generics(_generics), defineStructType(_defineStructType), parent(_parent),
       visibility(_visibInfo), constraint(_constraint) {
@@ -531,10 +530,8 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 		irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
 		                   " generated while creating generic variant " + irCtx->highlightWarning(variantName),
 		               range);
-		irCtx->remove_active_generic();
-	} else {
-		irCtx->remove_active_generic();
 	}
+	irCtx->remove_active_generic();
 	SHOW("Returning struct type")
 	return resultTy;
 }

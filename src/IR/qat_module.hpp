@@ -8,17 +8,15 @@
 #include "../utils/visibility.hpp"
 #include "./brought.hpp"
 #include "./emit_phase.hpp"
+#include "./entity_overview.hpp"
 #include "./function.hpp"
 #include "./global_entity.hpp"
+#include "./link_names.hpp"
+#include "./meta_info.hpp"
 #include "./types/float.hpp"
-#include "./types/mix.hpp"
-#include "entity_overview.hpp"
-#include "link_names.hpp"
-#include "lld/Common/Driver.h"
-#include "meta_info.hpp"
-#include "types/definition.hpp"
-#include "value.hpp"
+#include "./value.hpp"
 
+#include <lld/Common/Driver.h>
 #include <llvm/IR/LLVMContext.h>
 #include <set>
 
@@ -49,6 +47,9 @@ class Entity;
 namespace qat::ir {
 
 class Ctx;
+class GenericDefinitionType;
+class GenericToggleType;
+class GenericSkill;
 
 enum class ModuleType { lib, file, folder };
 
@@ -221,10 +222,13 @@ enum class EntityType {
 	choiceType,
 	flagType,
 	mixType,
+	toggleType,
 	function,
 	prerunFunction,
 	genericFunction,
 	genericStructType,
+	genericMixType,
+	genericToggleType,
 	genericTypeDef,
 	typeDefinition,
 	region,
@@ -250,6 +254,8 @@ inline String entity_type_to_string(EntityType ty) {
 			return "flag type";
 		case EntityType::mixType:
 			return "mix type";
+		case EntityType::toggleType:
+			return "toggle type";
 		case EntityType::function:
 			return "function";
 		case EntityType::prerunFunction:
@@ -258,6 +264,10 @@ inline String entity_type_to_string(EntityType ty) {
 			return "generic function";
 		case EntityType::genericStructType:
 			return "generic struct type";
+		case EntityType::genericMixType:
+			return "generic mix type";
+		case EntityType::genericToggleType:
+			return "generic toggle type";
 		case EntityType::genericTypeDef:
 			return "generic type definition";
 		case EntityType::typeDefinition:
@@ -426,6 +436,7 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class OpaqueType;
 	friend class StructType;
 	friend class MixType;
+	friend class ToggleType;
 	friend class ChoiceType;
 	friend class FlagType;
 	friend class DefinitionType;
@@ -505,6 +516,9 @@ class Mod final : public Uniq, public EntityOverview {
 	Vec<MixType*>         mixTypes;
 	Vec<Brought<MixType>> broughtMixTypes;
 
+	Vec<ToggleType*>         toggleTypes;
+	Vec<Brought<ToggleType>> broughtToggleTypes;
+
 	Vec<DefinitionType*>         typeDefs;
 	Vec<Brought<DefinitionType>> broughtTypeDefs;
 
@@ -519,6 +533,9 @@ class Mod final : public Uniq, public EntityOverview {
 
 	Vec<GenericStructType*>         genericStructTypes;
 	Vec<Brought<GenericStructType>> broughtGenericStructTypes;
+
+	Vec<GenericToggleType*>         genericToggleTypes;
+	Vec<Brought<GenericToggleType>> broughtGenericToggleTypes;
 
 	Vec<GenericDefinitionType*>         genericTypeDefinitions;
 	Vec<Brought<GenericDefinitionType>> broughtGenericTypeDefinitions;
@@ -806,6 +823,13 @@ class Mod final : public Uniq, public EntityOverview {
 	useit Pair<bool, String> has_mix_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit MixType*           get_mix_type(const String& name, const AccessInfo& reqInfo) const;
 
+	// TOGGLE TYPE
+
+	useit bool has_toggle_type(const String& name, AccessInfo reqInfo) const;
+	useit bool has_brought_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit Pair<bool, String> has_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	useit ToggleType*        get_toggle_type(const String& name, const AccessInfo& reqInfo) const;
+
 	// CHOICE TYPE
 
 	useit bool has_choice_type(const String& name, AccessInfo reqInfo) const;
@@ -820,12 +844,19 @@ class Mod final : public Uniq, public EntityOverview {
 	useit Pair<bool, String> has_flag_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit FlagType*          get_flag_type(const String& name, const AccessInfo& reqInfo) const;
 
-	// GENERIC STRUCT TYPES
+	// GENERIC STRUCT TYPE
 
 	useit bool has_generic_struct_type(const String& name, AccessInfo reqInfo) const;
 	useit bool has_brought_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_generic_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit GenericStructType* get_generic_struct_type(const String& name, const AccessInfo& reqInfo);
+
+	// GENERIC TOGGLE TYPE
+
+	useit bool has_generic_toggle_type(const String& name, AccessInfo reqInfo) const;
+	useit bool has_brought_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit Pair<bool, String> has_generic_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	useit GenericToggleType* get_generic_toggle_type(const String& name, const AccessInfo& reqInfo);
 
 	// GENERIC TYPEDEFS
 
@@ -888,6 +919,7 @@ class Mod final : public Uniq, public EntityOverview {
 	void bring_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void bring_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_type_definition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_function(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
@@ -896,6 +928,8 @@ class Mod final : public Uniq, public EntityOverview {
 	void bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_prerun_global(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib,
+	                               Maybe<Identifier> bName = None);
+	void bring_generic_toggle_type(GenericToggleType* gCTy, const VisibilityInfo& visib,
 	                               Maybe<Identifier> bName = None);
 	void bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_generic_type_definition(GenericDefinitionType* gTDef, VisibilityInfo const& visib,

@@ -2,6 +2,7 @@
 #include "../../show.hpp"
 #include "../context.hpp"
 #include "../qat_module.hpp"
+#include "./expanded_type.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
 
@@ -16,7 +17,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
                      ? "structType"
                      : (_subtypeKind.value() == OpaqueSubtypeKind::MIX
                             ? "mixType"
-                            : (_subtypeKind.value() == OpaqueSubtypeKind::Union ? "unionType" : "opaqueType")))
+                            : (_subtypeKind.value() == OpaqueSubtypeKind::TOGGLE ? "toggleType" : "opaqueType")))
               : "opaqueType",
           Json(), _name.range),
       name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
@@ -33,7 +34,7 @@ OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<
 	auto linkNames = parent->get_link_names().newWith(
 	    LinkNameUnit(name.value, (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::MIX)
 	                                 ? LinkUnitType::mix
-	                                 : (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::Union
+	                                 : (subtypeKind.has_value() && subtypeKind.value() == OpaqueSubtypeKind::TOGGLE
 	                                        ? LinkUnitType::toggle
 	                                        : LinkUnitType::type)),
 	    foreignID);

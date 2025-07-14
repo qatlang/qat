@@ -36,6 +36,7 @@ enum class GenericEntityType {
 	method,
 	structType,
 	mixType,
+	toggleType,
 	typeDefinition,
 	skill,
 };

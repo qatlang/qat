@@ -1,16 +1,23 @@
 #include "./toggle.hpp"
+#include "../../ast/define_toggle_type.hpp"
+#include "../../ast/expression.hpp"
+#include "../../ast/types/generic_abstract.hpp"
 #include "../context.hpp"
+#include "../logic.hpp"
 
 namespace qat::ir {
 
-ToggleType::ToggleType(Identifier _name, Vec<Pair<Identifier, Type*>> _variants, ir::Mod* _parent,
-                       VisibilityInfo _visibility, Maybe<MetaInfo> _metaInfo, ir::Ctx* irCtx)
-    : ExpandedType(_name, {}, _parent, _visibility), variants(_variants), metaInfo(_metaInfo) {
-	usize maxSizeInBytes = 0;
-
+ToggleType::ToggleType(Identifier _name, Vec<GenericArgument*> _generics, Vec<Pair<Vec<Identifier>, Type*>> _variants,
+                       ir::OpaqueType* _opaqueType, ir::Mod* _parent, VisibilityInfo const& _visibility,
+                       Maybe<MetaInfo> _metaInfo, ir::Ctx* irCtx)
+    : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
+      EntityOverview(_generics.empty() ? "toggleType" : "genericToggleType", Json()._("name", _name), _name.range),
+      variants(std::move(_variants)), metaInfo(std::move(_metaInfo)) {
+	opaqueEquivalent                 = _opaqueType;
 	usize       candidateSizeInBytes = 0;
 	usize       candidateAlign       = 1024;
 	llvm::Type* candidateType        = nullptr;
+	usize       typeIndex            = 0;
 	for (auto& it : variants) {
 		auto typeSize  = (usize)irCtx->dataLayout.getTypeStoreSize(it.second->get_llvm_type());
 		auto typeAlign = irCtx->dataLayout.getPrefTypeAlign(it.second->get_llvm_type()).value();
@@ -18,28 +25,29 @@ ToggleType::ToggleType(Identifier _name, Vec<Pair<Identifier, Type*>> _variants,
 			candidateSizeInBytes = typeSize;
 			candidateAlign       = typeAlign;
 			candidateType        = it.second->get_llvm_type();
+			underlyingTypeIndex  = typeIndex;
 		}
-		if (typeSize > maxSizeInBytes) {
-			maxSizeInBytes = typeSize;
+		if (typeSize > maxVariantByteSize) {
+			maxVariantByteSize = typeSize;
 		}
+		typeIndex++;
 	}
-	Maybe<String> foreignID;
-	Maybe<String> linkAs;
-	if (metaInfo.has_value()) {
-		if (metaInfo.value().has_key(MetaInfo::linkAsKey)) {
-			linkAs = metaInfo.value().get_value_as_string_for(MetaInfo::linkAsKey);
-		}
-		foreignID = metaInfo.value().get_foreign_id();
-	}
-	auto linkNames = _parent->get_link_names().newWith(LinkNameUnit(_name.value, LinkUnitType::toggle), foreignID);
-	linkingName    = linkNames.toName();
+	linkingName = get_link_names().toName();
 	Vec<llvm::Type*> elements;
 	elements.push_back(candidateType);
-	if (maxSizeInBytes > candidateSizeInBytes) {
+	if (maxVariantByteSize > candidateSizeInBytes) {
 		elements.push_back(
-		    llvm::ArrayType::get(llvm::Type::getInt8Ty(irCtx->llctx), maxSizeInBytes - candidateSizeInBytes));
+		    llvm::ArrayType::get(llvm::Type::getInt8Ty(irCtx->llctx), maxVariantByteSize - candidateSizeInBytes));
 	}
 	llvmType = llvm::StructType::create(irCtx->llctx, elements, linkingName);
+	opaqueEquivalent->set_sub_type(this);
+	if (generics.empty()) {
+		parent->toggleTypes.push_back(this);
+	}
+}
+
+ir::PrerunValue* ToggleType::get_prerun_default_value(ir::Ctx*) {
+	return ir::PrerunValue::get(llvm::ConstantAggregateZero::get(llvmType), this);
 }
 
 LinkNames ToggleType::get_link_names() const {
@@ -73,6 +81,115 @@ LinkNames ToggleType::get_link_names() const {
 	}
 	linkNames.setLinkAlias(linkAlias);
 	return linkNames;
+}
+
+void ToggleType::update_overview() {
+	Vec<JsonValue> genericArgumentsJSON;
+	for (auto gen : generics) {
+		genericArgumentsJSON.push_back(gen->to_json());
+	}
+	Vec<JsonValue> variantsJSON;
+	for (auto& var : variants) {
+		Vec<JsonValue> namesJSON;
+		for (auto& it : var.first) {
+			namesJSON.push_back(it);
+		}
+		variantsJSON.push_back(
+		    Json()._("names", namesJSON)._("typeID", var.second->get_id())._("type", var.second->to_string()));
+	}
+	ovInfo = Json()
+	             ._("typeID", get_id())
+	             ._("fullName", get_full_name())
+	             ._("genericArguments", genericArgumentsJSON)
+	             ._("moduleID", parent->get_id())
+	             ._("variants", variantsJSON)
+	             ._("visibility", visibility);
+}
+
+GenericToggleType::GenericToggleType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
+                                     ast::PrerunExpression* _constraint, ast::DefineToggleType* _defineToggleType,
+                                     Mod* _parent, VisibilityInfo const& _visibInfo)
+    : EntityOverview("genericToggleType",
+                     Json()
+                         ._("name", _name.value)
+                         ._("fullName", _parent->get_fullname_with_child(_name.value))
+                         ._("visibility", _visibInfo)
+                         ._("moduleID", _parent->get_id()),
+                     _name.range),
+      name(std::move(_name)), generics(std::move(_generics)), defineToggleType(_defineToggleType), parent(_parent),
+      visibility(_visibInfo), constraint(_constraint) {}
+
+bool GenericToggleType::all_parameters_have_default() const {
+	for (auto* gen : generics) {
+		if (not gen->hasDefault()) {
+			return false;
+		}
+	}
+	return true;
+}
+
+Type* GenericToggleType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+	for (auto& oVar : opaqueVariants) {
+		if (oVar.check(irCtx, [&](String const& msg, FileRange const& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+			return oVar.get();
+		}
+	}
+	for (auto& var : variants) {
+		if (var.check(irCtx, [&](String const& msg, FileRange const& rng) { irCtx->Error(msg, rng); }, toFillTypes))
+			return var.get();
+	}
+	auto* ctx = ast::EmitCtx::get(irCtx, parent);
+	ir::fill_generics(ctx, generics, toFillTypes, range);
+	if (constraint != nullptr) {
+		auto checkVal = constraint->emit(ctx);
+		if (not checkVal->get_ir_type()->is_bool()) {
+			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
+			                 " type. Got an expression of " + irCtx->color(checkVal->get_ir_type()->to_string()),
+			             constraint->fileRange);
+		}
+		if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
+			irCtx->Error("The provided parameters for the generic struct type do not satisfy the constraints", range,
+			             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
+		}
+	}
+	Vec<ir::GenericArgument*> genParams;
+	for (auto genAb : generics) {
+		genParams.push_back(genAb->toIRGenericType());
+	}
+	auto variantName = ir::Logic::get_generic_variant_name(name.value, toFillTypes);
+	if (variantNames.contains(variantName)) {
+		irCtx->Error("Repeating variant name: " + variantName, range);
+	}
+	variantNames.insert(variantName);
+	irCtx->add_active_generic(
+	    ir::GenericEntityMarker{variantName, ir::GenericEntityType::toggleType, range, 0u, genParams}, true);
+	auto* resultTy = defineToggleType->create_type(toFillTypes, parent, irCtx);
+	for (auto* temp : generics) {
+		temp->unset();
+	}
+	if (irCtx->get_active_generic().warningCount > 0) {
+		auto count = irCtx->get_active_generic().warningCount;
+		irCtx->Warning(std::to_string(count) + " warning" + (count > 1 ? "s" : "") +
+		                   " generated while creating generic variant" + irCtx->highlightWarning(variantName),
+		               range);
+	}
+	irCtx->remove_active_generic();
+	return resultTy;
+}
+
+void GenericToggleType::update_overview() {
+	Vec<JsonValue> genericParamsJSON;
+	for (auto* param : generics) {
+		genericParamsJSON.push_back(param->to_json());
+	}
+	Vec<JsonValue> variantsJSON;
+	for (auto var : variants) {
+		variantsJSON.push_back(var.get()->overviewToJson());
+	}
+	ovInfo._("genericParameters", genericParamsJSON)
+	    ._("hasConstraint", constraint != nullptr)
+	    ._("constraint", constraint ? constraint->to_string() : JsonValue())
+	    ._("variants", variantsJSON);
 }
 
 } // namespace qat::ir

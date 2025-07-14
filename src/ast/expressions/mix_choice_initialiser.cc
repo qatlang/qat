@@ -1,5 +1,8 @@
 #include "./mix_choice_initialiser.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/types/toggle.hpp"
+
+#include <llvm/Analysis/ConstantFolding.h>
 
 namespace qat::ast {
 
@@ -102,7 +105,8 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 					ctx->irCtx->builder.CreateStore(
 					    exp, ctx->irCtx->builder.CreatePointerCast(
 					             ctx->irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), createIn->get_llvm(), 1),
-					             llvm::PointerType::get(mixTy->get_variant_with_name(subName.value)->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
+					             llvm::PointerType::get(mixTy->get_variant_with_name(subName.value)->get_llvm_type(),
+					                                    ctx->irCtx->dataLayout.getProgramAddressSpace())));
 				}
 				return get_creation_result(ctx->irCtx, mixTy, fileRange);
 			} else {
@@ -150,8 +154,106 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 			               ctx->color(subName.value),
 			           subName.range);
 		}
+	} else if (typeEmit->is_toggle()) {
+		auto tgTy = typeEmit->as_toggle();
+		if (not tgTy->has_variant(subName.value)) {
+			ctx->Error("Toggle type " + ctx->color(tgTy->to_string()) + " does not have a variant named " +
+			               ctx->color(subName.value),
+			           subName.range);
+		}
+		const bool isDefaultVar = tgTy->is_default_variant(subName.value);
+		auto       varType      = tgTy->get_variant_type_of(subName.value);
+
+		if (not expression) {
+			ctx->Error("The variant " + ctx->color(subName.value) + " of the toggle type " +
+			               ctx->color(typeEmit->to_string()) + " expects an expression of type " +
+			               ctx->color(varType->to_string()) + ". Please change this expression to " +
+			               ctx->color(type.to_string() + "::" + subName.value + "(variantExpression)"),
+			           subName.range);
+		}
+		if (expression->has_type_inferrance()) {
+			expression->as_type_inferrable()->set_inference_type(varType);
+		}
+		if (isLocalDecl() || not canCreateIn()) {
+			createIn = ctx->get_fn()->get_block()->new_local(
+			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
+			    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+		}
+		if (expression->isInPlaceCreatable()) {
+
+			auto elemPtr = ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), createIn->get_llvm(), 0u);
+			expression->asInPlaceCreatable()->setCreateIn(ir::Value::get(
+			    isDefaultVar ? elemPtr
+			                 : ctx->irCtx->builder.CreatePointerCast(
+			                       elemPtr, llvm::PointerType::get(varType->get_llvm_type(),
+			                                                       ctx->irCtx->dataLayout.getProgramAddressSpace())),
+			    ir::RefType::get(true, varType, ctx->irCtx), true));
+			(void)expression->emit(ctx);
+			if (llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getNumElements() == 2) {
+				ctx->irCtx->builder.CreateStore(
+				    llvm::ConstantAggregateZero::get(
+				        llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getElementType(1u)),
+				    ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), createIn->get_llvm(), 1u));
+			}
+			return get_creation_result(ctx->irCtx, tgTy, fileRange);
+		} else {
+			auto subVal = expression->emit(ctx);
+			if (not subVal->get_pass_type()->is_same(varType)) {
+				ctx->Error("The variant " + ctx->color(subName.value) + " of the toggle type " +
+				               ctx->color(tgTy->to_string()) + " have the type " + ctx->color(varType->to_string()) +
+				               " associated with it, but found an expression of type " +
+				               ctx->color(subVal->get_pass_type()->to_string()),
+				           expression->fileRange);
+			}
+			subVal = ir::Logic::handle_pass_semantics(ctx, subVal->get_pass_type(), subVal, expression->fileRange);
+			if (subVal->is_prerun_value()) {
+				if (isDefaultVar) {
+					Vec<llvm::Constant*> toggleElems;
+					toggleElems.reserve(2);
+					toggleElems.push_back(subVal->get_llvm_constant());
+					if (llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getNumElements() == 2) {
+						toggleElems.push_back(llvm::ConstantAggregateZero::get(
+						    llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getElementType(1)));
+					}
+					return ir::PrerunValue::get(
+					    llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(tgTy->get_llvm_type()), toggleElems),
+					    tgTy);
+				} else {
+					auto toggleSize   = (usize)ctx->irCtx->dataLayout.getTypeStoreSize(tgTy->get_llvm_type());
+					auto variantSize  = (usize)ctx->irCtx->dataLayout.getTypeStoreSize(varType->get_llvm_type());
+					auto variantArray = llvm::cast<llvm::ConstantArray>(llvm::ConstantFoldConstant(
+					    llvm::ConstantExpr::getBitCast(
+					        subVal->as_prerun()->get_llvm_constant(),
+					        llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), variantSize)),
+					    ctx->irCtx->dataLayout));
+					Vec<llvm::Constant*> toggleArrElems(
+					    toggleSize, llvm::ConstantInt::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), 0u));
+					for (usize i = 0; i < variantSize; i++) {
+						toggleArrElems[i] = variantArray->getAggregateElement(i);
+					}
+					return ir::PrerunValue::get(
+					    llvm::ConstantFoldConstant(
+					        llvm::ConstantExpr::getBitCast(
+					            llvm::ConstantArray::get(
+					                llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), toggleSize),
+					                toggleArrElems),
+					            tgTy->get_llvm_type()),
+					        ctx->irCtx->dataLayout),
+					    tgTy);
+				}
+			}
+			ctx->irCtx->builder.CreateStore(subVal->get_llvm(), ctx->irCtx->builder.CreateStructGEP(
+			                                                        tgTy->get_llvm_type(), createIn->get_llvm(), 0u));
+			if (llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getNumElements() == 2) {
+				ctx->irCtx->builder.CreateStore(
+				    llvm::ConstantAggregateZero::get(
+				        llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getElementType(1u)),
+				    ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), createIn->get_llvm(), 1u));
+			}
+			return get_creation_result(ctx->irCtx, tgTy, fileRange);
+		}
 	} else {
-		ctx->Error(ctx->color(typeEmit->to_string()) + " is not a mix type or a choice type", fileRange);
+		ctx->Error(ctx->color(typeEmit->to_string()) + " is not a mix, choice or toggle type", fileRange);
 	}
 	return nullptr;
 }

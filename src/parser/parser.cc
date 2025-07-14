@@ -4572,13 +4572,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				} else if (((is_next(TokenType::var, i) || is_next(TokenType::constant, i)) &&
 				            is_next(TokenType::colon, i + 1) && is_next(TokenType::identifier, i + 2)) ||
 				           is_next(TokenType::identifier, i)) {
-					auto        start = i;
-					Maybe<bool> callNature;
-					if (is_next(TokenType::var, i)) {
-						callNature = true;
-						i += 2;
-					} else if (is_next(TokenType::constant, i)) {
-						callNature = false;
+					auto                         start = i;
+					Maybe<Pair<bool, FileRange>> callNature;
+					if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
+						callNature = std::make_pair(true, RangeAt(i + 1));
 						i += 2;
 					}
 					// FIXME - Support generic member function calls
@@ -5373,13 +5370,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					} else if ((is_next(TokenType::var, i) && is_next(TokenType::colon, i + 1) &&
 					            is_next(TokenType::identifier, i + 2)) ||
 					           is_next(TokenType::identifier, i)) {
-						auto        start = i;
-						Maybe<bool> callNature;
-						if (is_next(TokenType::var, i)) {
-							callNature = true;
-							i += 2;
-						} else if (is_next(TokenType::constant, i)) {
-							callNature = false;
+						auto                         start = i;
+						Maybe<Pair<bool, FileRange>> callNature;
+						if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
+							callNature = std::make_pair(tokens->at(i + 1).type == TokenType::var, RangeAt(i + 1));
 							i += 2;
 						}
 						// FIXME - Support generic member function calls

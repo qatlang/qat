@@ -2,6 +2,7 @@
 #include "../IR/stdlib.hpp"
 #include "../IR/types/region.hpp"
 #include "../IR/types/struct_type.hpp"
+#include "../IR/types/toggle.hpp"
 #include "./emit_ctx.hpp"
 
 namespace qat::ast {
@@ -363,6 +364,18 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 				currentMod->bring_mix_type(mTy, emitCtx->get_visibility_info(visibSpec), ent->alias);
 				mTy->add_bring_mention(currentMod, ent->entity.back().range);
 				ent->bring();
+			} else if (mod->has_toggle_type(entName.value, reqInfo) ||
+			           mod->has_brought_toggle_type(entName.value, reqInfo) ||
+			           mod->has_toggle_type_in_imports(entName.value, reqInfo).first) {
+				auto* tgTy = mod->get_toggle_type(entName.value, reqInfo);
+				if (not tgTy->is_accessible(reqInfo)) {
+					irCtx->Error("Toggle type " + irCtx->color(entName.value) +
+					                 " is not accessible in the current scope",
+					             entName.range);
+				}
+				currentMod->bring_toggle_type(tgTy, emitCtx->get_visibility_info(visibSpec), ent->alias);
+				tgTy->add_bring_mention(currentMod, ent->entity.back().range);
+				ent->bring();
 			} else if (mod->has_type_definition(entName.value, reqInfo) ||
 			           mod->has_brought_type_definition(entName.value, reqInfo) ||
 			           mod->has_type_definition_in_imports(entName.value, reqInfo).first) {
@@ -410,14 +423,26 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 			} else if (mod->has_generic_struct_type(entName.value, reqInfo) ||
 			           mod->has_brought_generic_struct_type(entName.value, reqInfo) ||
 			           mod->has_generic_struct_type_in_imports(entName.value, reqInfo).first) {
-				auto* gnCTy = mod->get_generic_struct_type(entName.value, reqInfo);
-				if (not gnCTy->get_visibility().is_accessible(reqInfo)) {
+				auto* genStruct = mod->get_generic_struct_type(entName.value, reqInfo);
+				if (not genStruct->get_visibility().is_accessible(reqInfo)) {
 					irCtx->Error("Generic struct type " + irCtx->color(entName.value) +
 					                 " is not accessible in the current scope",
 					             entName.range);
 				}
-				currentMod->bring_generic_struct_type(gnCTy, emitCtx->get_visibility_info(visibSpec), ent->alias);
-				gnCTy->add_bring_mention(currentMod, ent->entity.back().range);
+				currentMod->bring_generic_struct_type(genStruct, emitCtx->get_visibility_info(visibSpec), ent->alias);
+				genStruct->add_bring_mention(currentMod, ent->entity.back().range);
+				ent->bring();
+			} else if (mod->has_generic_toggle_type(entName.value, reqInfo) ||
+			           mod->has_brought_generic_toggle_type(entName.value, reqInfo) ||
+			           mod->has_generic_toggle_type_in_imports(entName.value, reqInfo).first) {
+				auto* genTogg = mod->get_generic_toggle_type(entName.value, reqInfo);
+				if (not genTogg->get_visibility().is_accessible(reqInfo)) {
+					irCtx->Error("Generic toggle type " + irCtx->color(entName.value) +
+					                 " is not accessible in the current scope",
+					             entName.range);
+				}
+				currentMod->bring_generic_toggle_type(genTogg, emitCtx->get_visibility_info(visibSpec), ent->alias);
+				genTogg->add_bring_mention(currentMod, ent->entity.back().range);
 				ent->bring();
 			} else if (mod->has_global(entName.value, reqInfo) || mod->has_brought_global(entName.value, reqInfo) ||
 			           mod->has_global_in_imports(entName.value, reqInfo).first) {

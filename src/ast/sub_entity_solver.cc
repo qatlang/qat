@@ -1,6 +1,6 @@
 #include "./sub_entity_solver.hpp"
-#include "../IR/context.hpp"
 #include "../IR/types/array.hpp"
+#include "../IR/types/definition.hpp"
 #include "../IR/types/expanded_type.hpp"
 #include "../IR/types/integer.hpp"
 #include "../IR/types/maybe.hpp"

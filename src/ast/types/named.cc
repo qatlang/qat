@@ -3,6 +3,7 @@
 #include "../../IR/types/choice.hpp"
 #include "../../IR/types/region.hpp"
 #include "../../IR/types/struct_type.hpp"
+#include "../../IR/types/toggle.hpp"
 #include "../type_definition.hpp"
 
 namespace qat::ast {
@@ -219,6 +220,18 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		}
 		mTy->add_mention(entityName.range);
 		return mTy;
+	} else if (mod->has_toggle_type(entityName.value, reqInfo) ||
+	           mod->has_brought_toggle_type(entityName.value, ctx->get_access_info()) ||
+	           mod->has_toggle_type_in_imports(entityName.value, reqInfo).first) {
+		SHOW("Has toggle type")
+		auto* tgTy = mod->get_toggle_type(entityName.value, reqInfo);
+		if (not tgTy->get_visibility().is_accessible(reqInfo)) {
+			ctx->Error("Toggle type " + ctx->color(tgTy->get_full_name()) + " inside module " +
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
+			           entityName.range);
+		}
+		tgTy->add_mention(entityName.range);
+		return tgTy;
 	} else if (mod->has_choice_type(entityName.value, reqInfo) ||
 	           mod->has_brought_choice_type(entityName.value, ctx->get_access_info()) ||
 	           mod->has_choice_type_in_imports(entityName.value, reqInfo).first) {

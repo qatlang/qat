@@ -1,4 +1,6 @@
 #include "./self_type.hpp"
+#include "../../IR/method.hpp"
+#include "../../IR/types/opaque.hpp"
 #include "../../IR/types/reference.hpp"
 
 namespace qat::ast {

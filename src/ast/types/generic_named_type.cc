@@ -1,6 +1,7 @@
 #include "./generic_named_type.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/struct_type.hpp"
+#include "../../IR/types/toggle.hpp"
 #include "../../show.hpp"
 #include "../prerun/default.hpp"
 #include "../types/prerun_generic.hpp"
@@ -157,6 +158,56 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 			}
 		}
 		auto tyRes = genericTypeDef->fill_generics(types, ctx->irCtx, fileRange);
+		if (curr) {
+			curr->set_active(ctx->irCtx->builder);
+		}
+		return tyRes;
+	} else if (mod->has_generic_toggle_type(entityName.value, reqInfo) ||
+	           mod->has_brought_generic_toggle_type(entityName.value, reqInfo) ||
+	           mod->has_generic_toggle_type_in_imports(entityName.value, reqInfo).first) {
+		auto* genericToggle = mod->get_generic_toggle_type(entityName.value, reqInfo);
+		if (not genericToggle->get_visibility().is_accessible(reqInfo)) {
+			auto fullName = Identifier::fullName(names);
+			ctx->Error("Generic toggle type " + ctx->color(fullName.value) + " is not accessible here", fullName.range);
+		}
+		genericToggle->add_mention(entityName.range);
+		Vec<ir::GenericToFill*> types;
+		if (genericTypes.empty()) {
+			SHOW("Checking if all generic abstracts have defaults")
+			if (not genericToggle->all_parameters_have_default()) {
+				ctx->Error(
+				    "Not all generic parameters in this type have a default value associated with it, and hence the generic parameter list cannot be empty. Use " +
+				        ctx->color("default") + " to use the default type or value of the generic parameter.",
+				    fileRange);
+			}
+			SHOW("Check complete")
+		} else if (genericToggle->get_parameter_count() != genericTypes.size()) {
+			ctx->Error(
+			    "Generic toggle type " + ctx->color(genericToggle->get_name().value) + " has " +
+			        ctx->color(std::to_string(genericToggle->get_parameter_count())) + " generic parameters. But " +
+			        ((genericToggle->get_parameter_count() > genericTypes.size()) ? "only " : "") +
+			        ctx->color(std::to_string(genericTypes.size())) +
+			        " values were provided. Not all generic parameters have default values, and hence the number of values provided must match. Use " +
+			        ctx->color("default") + " to use the default type or value of the generic parameter.",
+			    fileRange);
+		} else {
+			for (usize i = 0; i < genericTypes.size(); i++) {
+				if (genericTypes.at(i)->is_prerun()) {
+					auto* gen = genericTypes.at(i);
+					if (gen->is_prerun() && (gen->as_prerun()->nodeType() == NodeType::PRERUN_DEFAULT)) {
+						((ast::PrerunDefault*)(gen->as_prerun()))->setGenericAbstract(genericToggle->get_generic_at(i));
+					} else if (genericToggle->get_generic_at(i)->as_typed() &&
+					           (genericToggle->get_generic_at(i)->as_prerun()->getType() != nullptr)) {
+						if (gen->as_prerun()->has_type_inferrance()) {
+							gen->as_prerun()->as_type_inferrable()->set_inference_type(
+							    genericToggle->get_generic_at(i)->as_prerun()->getType());
+						}
+					}
+				}
+				types.push_back(genericTypes.at(i)->toFill(ctx));
+			}
+		}
+		auto tyRes = genericToggle->fill_generics(types, ctx->irCtx, fileRange);
 		if (curr) {
 			curr->set_active(ctx->irCtx->builder);
 		}

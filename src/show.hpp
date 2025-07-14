@@ -4,7 +4,7 @@
 #include "./cli/color.hpp"
 #include <iostream>
 
-#if !NDEBUG
+#if NDEBUG
 #define SHOW(val)
 #define HIGHLIGHT(val)
 #else

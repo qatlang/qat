@@ -114,6 +114,7 @@ enum class NodeType {
 	USE_DECLARATION,
 	INLINE_LET,
 	GET_POLYMORPH,
+	DEFINE_TOGGLE_TYPE,
 };
 
 } // namespace qat::ast

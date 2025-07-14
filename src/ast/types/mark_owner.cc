@@ -1,4 +1,5 @@
 #include "./mark_owner.hpp"
+#include "../../IR/method.hpp"
 #include "../emit_ctx.hpp"
 #include "./qat_type.hpp"
 

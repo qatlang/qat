@@ -6,6 +6,7 @@
 namespace qat::ast {
 
 class Expression;
+class Type;
 
 enum class TypeLikeKind { TYPE, PRERUN, EXPRESSION };
 

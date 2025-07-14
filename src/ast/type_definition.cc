@@ -1,4 +1,5 @@
 #include "./type_definition.hpp"
+#include "../IR/types/definition.hpp"
 #include "./expression.hpp"
 #include "./member_parent_like.hpp"
 #include "./types/generic_abstract.hpp"
@@ -156,13 +157,13 @@ void TypeDefinition::create_type_in_parent(TypeInParentState& state, ir::Mod* mo
 	if (state.isParentSkill) {
 		auto emitCtx = EmitCtx::get(irCtx, mod)->with_skill((ir::Skill*)state.parent);
 		(void)ir::DefinitionType::create(name, subType->emit(emitCtx), {},
-		                           ir::TypeDefParent::from_skill((ir::Skill*)state.parent), mod,
-		                           emitCtx->get_visibility_info(visibSpec));
+		                                 ir::TypeDefParent::from_skill((ir::Skill*)state.parent), mod,
+		                                 emitCtx->get_visibility_info(visibSpec));
 	} else {
 		auto emitCtx = EmitCtx::get(irCtx, mod)->with_member_parent((ir::MethodParent*)state.parent);
 		(void)ir::DefinitionType::create(name, subType->emit(emitCtx), {},
-		                           ir::TypeDefParent::from_method_parent((ir::MethodParent*)state.parent), mod,
-		                           emitCtx->get_visibility_info(visibSpec));
+		                                 ir::TypeDefParent::from_method_parent((ir::MethodParent*)state.parent), mod,
+		                                 emitCtx->get_visibility_info(visibSpec));
 	}
 }
 

@@ -1,5 +1,6 @@
 #include "./define_skill.hpp"
 #include "../IR/skill.hpp"
+#include "../IR/types/definition.hpp"
 #include "../IR/types/void.hpp"
 #include "./types/generic_abstract.hpp"
 

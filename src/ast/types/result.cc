@@ -1,6 +1,7 @@
 #include "./result.hpp"
+#include "../../IR/types/opaque.hpp"
 #include "../../IR/types/result.hpp"
-#include "qat_type.hpp"
+#include "./qat_type.hpp"
 
 namespace qat::ast {
 

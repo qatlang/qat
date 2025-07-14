@@ -1,13 +1,13 @@
 #include "./maybe.hpp"
 #include "../../IR/types/maybe.hpp"
-#include "qat_type.hpp"
+#include "../../IR/types/opaque.hpp"
+#include "./qat_type.hpp"
 
 #include <llvm/IR/Module.h>
 
 namespace qat::ast {
 
-void MaybeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-                                    EmitCtx* ctx) {
+void MaybeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	subTyp->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
 

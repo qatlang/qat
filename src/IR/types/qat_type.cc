@@ -230,7 +230,8 @@ bool Type::is_same(Type* other) {
 				    (thisVal->is_packed_tuple() == otherVal->is_packed_tuple()) &&
 				    thisVal->get_element_count() == otherVal->get_element_count()) {
 					for (usize i = 0; i < thisVal->get_element_count(); i++) {
-						if (thisVal->has_named_elements() && (thisVal->get_name_at(i) != otherVal->get_name_at(i))) {
+						if (thisVal->has_named_elements() &&
+						    (thisVal->get_name_at(i).value != otherVal->get_name_at(i).value)) {
 							return false;
 						}
 						if (not thisVal->get_type_at(i)->is_same(otherVal->get_type_at(i))) {

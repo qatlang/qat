@@ -59,42 +59,16 @@ void DefineStructType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 				allMemEqTys.push_back(llvm::Type::getIntNTy(irCtx->llctx, memSize.value()));
 			}
 		}
-		Maybe<ir::MetaInfo> irMeta;
-		bool                isTypeNatureUnion = false;
-		if (metaInfo.has_value()) {
-			irMeta = metaInfo.value().toIR(EmitCtx::get(irCtx, mod));
-			if (irMeta->has_key(ir::MetaInfo::unionKey)) {
-				if (not irMeta->has_key("foreign") && not mod->get_relevant_foreign_id().has_value()) {
-					irCtx->Error(
-					    "This type is not a foreign entity and is not part of any foreign module, and hence cannot be considered as a " +
-					        irCtx->color(ir::MetaInfo::unionKey),
-					    metaInfo.value().fileRange);
-				}
-				auto typeNatVal = irMeta->get_value_for(ir::MetaInfo::unionKey);
-				if (not typeNatVal->get_ir_type()->is_bool()) {
-					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::unionKey) + " expects a value of type " +
-					                 irCtx->color("bool"),
-					             metaInfo.value().fileRange);
-				}
-				isTypeNatureUnion =
-				    llvm::cast<llvm::ConstantInt>(typeNatVal->get_llvm_constant())->getValue().getBoolValue();
-			}
-			if (irMeta->has_key(ir::MetaInfo::packedKey)) {
-				auto packVal = irMeta->get_value_for(ir::MetaInfo::packedKey);
-				if (not packVal->get_ir_type()->is_bool()) {
-					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
-					                 irCtx->color("bool"),
-					             metaInfo.value().fileRange);
-				}
-				isPackedStruct = llvm::cast<llvm::ConstantInt>(packVal->get_llvm_constant())->getValue().getBoolValue();
-			}
-		}
 		auto eqStructTy =
-		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
-		setOpaque(ir::OpaqueType::get(
-		    name, {}, None, isTypeNatureUnion ? ir::OpaqueSubtypeKind::Union : ir::OpaqueSubtypeKind::STRUCT, mod,
-		    eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
-		    EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, irMeta));
+		    hasAllMems
+		        ? llvm::StructType::get(
+		              irCtx->llctx, allMemEqTys,
+		              metaIR.has_value() ? metaIR->get_value_as_bool(ir::MetaInfo::packedKey).value_or(false) : false)
+		        : nullptr;
+		setOpaque(
+		    ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::STRUCT, mod,
+		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
+		                        EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), irCtx->llctx, metaIR));
 	}
 }
 
@@ -123,12 +97,12 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 	for (auto* gen : generics) {
 		if (not gen->isSet()) {
 			if (gen->is_typed()) {
-				irCtx->Error("No type is set for the generic type " + irCtx->color(gen->get_name().value) +
+				irCtx->Error("No type is set for the generic type parameter " + irCtx->color(gen->get_name().value) +
 				                 " and there is no default type provided",
 				             gen->get_range());
 			} else if (gen->is_prerun()) {
-				irCtx->Error("No value is set for the generic prerun expression " +
-				                 irCtx->color(gen->get_name().value) + " and there is no default expression provided",
+				irCtx->Error("No value is set for the generic prerun parameter " + irCtx->color(gen->get_name().value) +
+				                 " and there is no default expression provided",
 				             gen->get_range());
 			} else {
 				irCtx->Error("Invalid generic kind", gen->get_range());
@@ -150,28 +124,19 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 				allMemEqTys.push_back(llvm::Type::getIntNTy(irCtx->llctx, memSize.value()));
 			}
 		}
-		Maybe<ir::MetaInfo> irMeta;
-		if (metaInfo.has_value()) {
-			irMeta = metaInfo.value().toIR(globalEmitCtx);
-			if (irMeta->has_key(ir::MetaInfo::packedKey)) {
-				auto packVal = irMeta->get_value_for(ir::MetaInfo::packedKey);
-				if (not packVal->get_ir_type()->is_bool()) {
-					irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
-					                 irCtx->color("bool"),
-					             metaInfo.value().fileRange);
-				}
-				isPackedStruct = llvm::cast<llvm::ConstantInt>(packVal->get_llvm_constant())->getValue().getBoolValue();
-			}
-		}
 		auto eqStructTy =
-		    hasAllMems ? llvm::StructType::get(irCtx->llctx, allMemEqTys, isPackedStruct.value_or(false)) : nullptr;
+		    hasAllMems
+		        ? llvm::StructType::get(
+		              irCtx->llctx, allMemEqTys,
+		              metaIR.has_value() ? metaIR->get_value_as_bool(ir::MetaInfo::packedKey).value_or(false) : false)
+		        : nullptr;
 		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericStructType is "
 		                                       << genericStructType)
 		setOpaque(
 		    ir::OpaqueType::get(cTyName, genericsIR, is_generic() ? Maybe<u64>(genericStructType->get_id()) : None,
 		                        ir::OpaqueSubtypeKind::STRUCT, mod,
 		                        eqStructTy ? Maybe<usize>(irCtx->dataLayout.getTypeAllocSizeInBits(eqStructTy)) : None,
-		                        mainVisibility, irCtx->llctx, irMeta));
+		                        mainVisibility, irCtx->llctx, metaIR));
 	}
 	SHOW("Set opaque")
 	if (genericStructType) {
@@ -204,8 +169,9 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 		                                       typeEmitCtx->get_visibility_info(mem->visibSpec)));
 	}
 	SHOW("Creating struct type: " << cTyName.value)
-	auto resultType = ir::StructType::create(mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx,
-	                                         None, isPackedStruct.value_or(false));
+	auto resultType = ir::StructType::create(
+	    mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
+	    metaIR.has_value() ? metaIR->get_value_as_bool(ir::MetaInfo::packedKey).value_or(false) : false);
 	if (genericStructType) {
 		genericStructType->variants.push_back(ir::GenericVariant<ir::StructType>(resultType, genericsToFill));
 	}
@@ -434,6 +400,17 @@ void DefineStructType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 			irCtx->Error("The condition for defining this struct type should be of " + irCtx->color("bool") +
 			                 " type. Got an expression of type " + irCtx->color(checkRes->get_ir_type()->to_string()),
 			             defineChecker->fileRange);
+		}
+	}
+	if (metaInfo.has_value() && (not metaIR.has_value())) {
+		metaIR = metaInfo->toIR(EmitCtx::get(irCtx, mod));
+		if (metaIR->has_key(ir::MetaInfo::packedKey)) {
+			auto packVal = metaIR->get_value_for(ir::MetaInfo::packedKey);
+			if (not packVal->get_ir_type()->is_bool()) {
+				irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
+				                 irCtx->color("bool"),
+				             metaInfo.value().fileRange);
+			}
 		}
 	}
 	if (is_generic()) {

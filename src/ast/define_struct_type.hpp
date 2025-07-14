@@ -79,7 +79,7 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	mutable ir::GenericStructType* genericStructType = nullptr;
 	mutable ir::StructType*        resultType        = nullptr;
 	mutable Maybe<bool>            checkResult;
-	mutable Maybe<bool>            isPackedStruct;
+	Maybe<ir::MetaInfo>            metaIR;
 
   public:
 	DefineStructType(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec,

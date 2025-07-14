@@ -4,6 +4,10 @@
 #include "../IR/prerun_function.hpp"
 #include "../IR/qat_module.hpp"
 
+namespace qat::ir {
+class MethodParent;
+}
+
 namespace qat::ast {
 
 struct VisibilitySpec;
@@ -116,21 +120,27 @@ struct EmitCtx {
 	useit AccessInfo get_access_info() const;
 
 	useit bool has_member_parent() const { return memberParent != nullptr; }
+
 	useit ir::MethodParent* get_member_parent() const { return memberParent; }
 
 	useit bool has_fn() const { return fn != nullptr; }
+
 	useit ir::Function* get_fn() const { return fn; }
 
 	useit bool has_pre_call_state() const { return prerunCallState != nullptr; }
+
 	useit ir::PrerunCallState* get_pre_call_state() const { return prerunCallState; }
 
 	useit bool has_opaque_parent() const { return parentOpaque != nullptr; }
+
 	useit ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
 
 	useit bool has_skill() const { return skill != nullptr; }
+
 	useit ir::Skill* get_skill() const { return skill; }
 
-	useit bool                 has_generics() const { return not generics.empty(); }
+	useit bool has_generics() const { return not generics.empty(); }
+
 	useit bool                 has_generic_with_name(String const& name) const;
 	useit GenericAbstractType* get_generic_with_name(String const& name) const;
 

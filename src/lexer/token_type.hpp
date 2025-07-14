@@ -120,6 +120,7 @@ enum class TokenType {
 	characterLiteral,
 	byteLiteral,
 	polymorph,
+	toggle,
 };
 
 } // namespace qat::lexer

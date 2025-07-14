@@ -13,6 +13,7 @@ add_library(QAT_AST STATIC
 	define_region.cc
 	define_skill.cc
 	define_struct_type.cc
+	define_toggle_type.cc
 	destructor.cc
 	do_skill.cc
 	emit_ctx.cc

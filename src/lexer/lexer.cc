@@ -1261,6 +1261,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_VALUED_Keyword("bool", unsignedIntegerType);
 	else Check_Normal_Keyword("slice", sliceType);
 	else Check_Normal_Keyword("struct", structType);
+	else Check_Normal_Keyword("toggle", toggle);
 	else Check_Normal_Keyword("vec", vectorType);
 	else Check_Normal_Keyword("is", is);
 	else Check_Normal_Keyword("in", in);

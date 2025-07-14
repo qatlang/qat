@@ -13,6 +13,7 @@
 #include "../ast/define_region.hpp"
 #include "../ast/define_skill.hpp"
 #include "../ast/define_struct_type.hpp"
+#include "../ast/define_toggle_type.hpp"
 #include "../ast/destructor.hpp"
 #include "../ast/do_skill.hpp"
 #include "../ast/expressions/address_of.hpp"
@@ -2711,7 +2712,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				break;
 			}
 			case TokenType::structType: {
-				auto start = i;
+				const auto start = i;
 				if (is_next(TokenType::identifier, i)) {
 					auto                           name = IdentifierAt(i + 1);
 					Vec<ast::GenericAbstractType*> genericList;
@@ -2755,8 +2756,67 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				}
 				break;
 			}
+			case TokenType::toggle: {
+				const auto start = i;
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this for the name of the toggle type", RangeAt(i));
+				}
+				auto name = IdentifierAt(i + 1);
+				i++;
+				auto                           typeCtx = ParserContext();
+				Vec<ast::GenericAbstractType*> genericAbs;
+				if (is_next(TokenType::genericTypeStart, i)) {
+					auto endRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+					if (not endRes.has_value()) {
+						add_error("Could not find ] to end the generic parameter list", RangeAt(i + 1));
+					}
+					genericAbs = do_generic_abstracts(typeCtx, i + 1, endRes.value());
+					i          = endRes.value();
+				}
+				auto entMeta = do_entity_metadata(
+				    typeCtx, i, genericAbs.empty() ? "toggle type" : "generic toggle type", genericAbs.size());
+				i = entMeta.lastIndex;
+				if (not is_next(TokenType::curlybraceOpen, i)) {
+					add_error("Could not find { to start the definition of the toggle type", RangeSpan(start, i));
+				}
+				i++;
+				Vec<Pair<Vec<Identifier>, ast::Type*>> variants;
+				while ((i + 1 < tokens->size()) && is_next(TokenType::identifier, i)) {
+					Vec<Identifier> names;
+					while (is_next(TokenType::identifier, i)) {
+						names.push_back(IdentifierAt(i + 1));
+						if (is_next(TokenType::binaryOperator, i + 1) && (ValueAt(i + 2) == "&")) {
+							i += 2;
+						} else {
+							i++;
+							break;
+						}
+					}
+					if (not is_next(TokenType::typeSeparator, i)) {
+						add_error("Expected :: after this to precede the associated type of this variant",
+						          RangeSpan(start, i));
+					}
+					i++;
+					auto typeRes = do_type(typeCtx, i, None);
+					i            = typeRes.second;
+					variants.push_back(std::make_pair(std::move(names), std::move(typeRes.first)));
+					if (not is_next(TokenType::separator, i)) {
+						break;
+					}
+					i++;
+				}
+				if (not is_next(TokenType::curlybraceClose, i)) {
+					add_error("Expected } after this this to end the definition of this toggle type",
+					          RangeSpan(start, i));
+				}
+				i++;
+				addNode(ast::DefineToggleType::create(std::move(name), std::move(variants), entMeta.defineChecker,
+				                                      entMeta.genericConstraint, std::move(entMeta.metaInfo),
+				                                      get_visibility(), RangeSpan(start, i)));
+				break;
+			}
 			case TokenType::opaque: {
-				auto start = i;
+				const auto start = i;
 				if (is_next(TokenType::identifier, i)) {
 					auto                          visibility = get_visibility();
 					auto                          typeName   = IdentifierAt(i + 1);

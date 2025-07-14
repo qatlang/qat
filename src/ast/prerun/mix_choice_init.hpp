@@ -3,11 +3,10 @@
 
 #include "../expression.hpp"
 #include "../type_like.hpp"
-#include "../types/qat_type.hpp"
 
 namespace qat::ast {
 
-class PrerunMixOrChoiceInit final : public PrerunExpression, public TypeInferrable {
+class PrerunVariantInitialiser final : public PrerunExpression, public TypeInferrable {
 	friend class LocalDeclaration;
 
 	TypeLike                 type;
@@ -15,13 +14,13 @@ class PrerunMixOrChoiceInit final : public PrerunExpression, public TypeInferrab
 	Maybe<PrerunExpression*> expression;
 
   public:
-	PrerunMixOrChoiceInit(TypeLike _type, Identifier _subName, Maybe<PrerunExpression*> _expression,
-	                      FileRange _fileRange)
+	PrerunVariantInitialiser(TypeLike _type, Identifier _subName, Maybe<PrerunExpression*> _expression,
+	                         FileRange _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-	useit static PrerunMixOrChoiceInit* create(TypeLike type, Identifier subName, Maybe<PrerunExpression*> expression,
-	                                           FileRange fileRange) {
-		return std::construct_at(OwnNormal(PrerunMixOrChoiceInit), type, subName, expression, fileRange);
+	useit static PrerunVariantInitialiser* create(TypeLike type, Identifier subName,
+	                                              Maybe<PrerunExpression*> expression, FileRange fileRange) {
+		return std::construct_at(OwnNormal(PrerunVariantInitialiser), type, subName, expression, fileRange);
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS
@@ -43,7 +42,7 @@ class PrerunMixOrChoiceInit final : public PrerunExpression, public TypeInferrab
 
 	useit String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
+	useit NodeType nodeType() const final { return NodeType::PRERUN_VARIANT_INITIALISER; }
 };
 
 } // namespace qat::ast

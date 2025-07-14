@@ -4,7 +4,7 @@
 
 namespace qat::ast {
 
-ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
+ir::PrerunValue* PrerunVariantInitialiser::emit(EmitCtx* ctx) {
 	SHOW("Prerun Mix/Choice type initialiser")
 	if (not type && not is_type_inferred()) {
 		ctx->Error("No type is provided for this expression, and no type could be inferred from scope", fileRange);
@@ -88,12 +88,12 @@ ir::PrerunValue* PrerunMixOrChoiceInit::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-String PrerunMixOrChoiceInit::to_string() const {
+String PrerunVariantInitialiser::to_string() const {
 	return type.to_string() + "::" + subName.value +
 	       (expression.has_value() ? ("(" + expression.value()->to_string() + ")") : "");
 }
 
-Json PrerunMixOrChoiceInit::to_json() const {
+Json PrerunVariantInitialiser::to_json() const {
 	return Json()
 	    ._("nodeType", "prerunMixOrChoiceInit")
 	    ._("hasType", (bool)type)

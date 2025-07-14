@@ -6,10 +6,10 @@
 
 namespace qat::ast {
 
-class MixOrChoiceInitialiser final : public Expression,
-                                     public LocalDeclCompatible,
-                                     public InPlaceCreatable,
-                                     public TypeInferrable {
+class VariantInitialiser final : public Expression,
+                                 public LocalDeclCompatible,
+                                 public InPlaceCreatable,
+                                 public TypeInferrable {
 	friend class LocalDeclaration;
 
   private:
@@ -18,12 +18,12 @@ class MixOrChoiceInitialiser final : public Expression,
 	Expression* expression;
 
   public:
-	MixOrChoiceInitialiser(TypeLike _type, Identifier _subName, Expression* _expression, FileRange _fileRange)
+	VariantInitialiser(TypeLike _type, Identifier _subName, Expression* _expression, FileRange _fileRange)
 	    : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-	useit static MixOrChoiceInitialiser* create(TypeLike type, Identifier subName, Expression* expression,
-	                                            FileRange fileRange) {
-		return std::construct_at(OwnNormal(MixOrChoiceInitialiser), type, subName, expression, fileRange);
+	useit static VariantInitialiser* create(TypeLike type, Identifier subName, Expression* expression,
+	                                        FileRange fileRange) {
+		return std::construct_at(OwnNormal(VariantInitialiser), type, subName, expression, fileRange);
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS
@@ -39,7 +39,8 @@ class MixOrChoiceInitialiser final : public Expression,
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::MIX_OR_CHOICE_INITIALISER; }
+
+	useit NodeType nodeType() const final { return NodeType::VARIANT_INITIALISER; }
 };
 
 } // namespace qat::ast

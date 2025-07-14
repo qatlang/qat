@@ -618,7 +618,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							                   : FileRange RangeSpan(start, i)));
 						}
 					}
-					setCachedPreExp(ast::PrerunMixOrChoiceInit::create(typeExp, name, valueExp, RangeSpan(start, i)),
+					setCachedPreExp(ast::PrerunVariantInitialiser::create(typeExp, name, valueExp, RangeSpan(start, i)),
 					                i);
 				} else if (is_next(TokenType::curlybraceOpen, i)) {
 					Maybe<FileRange> specialRange;
@@ -5048,7 +5048,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						if (pCloseRes) {
 							auto  pClose = pCloseRes.value();
 							auto* exp    = do_expression(preCtx, None, i + 2, pClose).first;
-							setCachedExpr(ast::MixOrChoiceInitialiser::create(
+							setCachedExpr(ast::VariantInitialiser::create(
 							                  typeLike, subName, exp,
 							                  {typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(pClose)}),
 							              pClose);
@@ -5057,7 +5057,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error("Expected end for (", RangeAt(i + 2));
 						}
 					} else {
-						setCachedExpr(ast::MixOrChoiceInitialiser::create(
+						setCachedExpr(ast::VariantInitialiser::create(
 						                  typeLike, subName, nullptr,
 						                  {typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(i + 1)}),
 						              i + 1);

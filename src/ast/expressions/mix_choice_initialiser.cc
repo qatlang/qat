@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
+ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 	FnAtEnd fnObj{[&] { createIn = nullptr; }};
 	// FIXME - Support heaped value
 	SHOW("Mix/Choice type initialiser")
@@ -258,9 +258,9 @@ ir::Value* MixOrChoiceInitialiser::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json MixOrChoiceInitialiser::to_json() const {
+Json VariantInitialiser::to_json() const {
 	return Json()
-	    ._("nodeType", "mixTypeInitialiser")
+	    ._("nodeType", "variantInitialiser")
 	    ._("hasType", (bool)type)
 	    ._("type", type.to_json_value())
 	    ._("subName", subName)

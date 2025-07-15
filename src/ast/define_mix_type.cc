@@ -96,7 +96,7 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 		    subtypes.at(i).second.has_value()) {
 			irCtx->Error("A variant with an associated type cannot be "
 			             "used as the default variant of a mix type",
-			             FileRange{fRanges.at(i), subtypes.at(i).second.value()->fileRange});
+			             FileRange::merge(fRanges.at(i), subtypes.at(i).second.value()->fileRange));
 		}
 		auto emitCtx = EmitCtx::get(irCtx, mod);
 		if (opaquedType) {

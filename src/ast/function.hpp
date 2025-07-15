@@ -20,7 +20,7 @@ class FunctionPrototype final : public IsEntity {
 	PrerunExpression*     defineChecker;
 	PrerunExpression*     genericConstraint;
 
-	Maybe<Pair<Vec<Sentence*>, FileRange>> definition;
+	Maybe<Pair<Vec<Sentence*>, FileRangePtr>> definition;
 
 	Vec<GenericAbstractType*> generics;
 	ir::GenericFunction*      genericFn = nullptr;
@@ -32,20 +32,19 @@ class FunctionPrototype final : public IsEntity {
 	mutable bool          isMainFn = false;
 
   public:
-	FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, Maybe<Type*> _returnType,
-	                  PrerunExpression* _checker, PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
-	                  Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-	                  Vec<GenericAbstractType*> _generics, Maybe<Pair<Vec<Sentence*>, FileRange>> _definition)
+	FunctionPrototype(Identifier _name, Vec<Argument*> _arguments, Maybe<Type*> _returnType, PrerunExpression* _checker,
+	                  PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                  FileRangePtr _fileRange, Vec<GenericAbstractType*> _generics,
+	                  Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _definition)
 	    : IsEntity(_fileRange), name(_name), arguments(_arguments), returnType(_returnType), metaInfo(_metaInfo),
 	      visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint),
 	      definition(_definition), generics(_generics) {}
 
-	useit static FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments,
-	                                       Maybe<Type*> _returnType, PrerunExpression* _checker,
-	                                       PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
-	                                       Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
-	                                       Vec<GenericAbstractType*>              _generics,
-	                                       Maybe<Pair<Vec<Sentence*>, FileRange>> _definition) {
+	useit static FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, Maybe<Type*> _returnType,
+	                                       PrerunExpression* _checker, PrerunExpression* _genericConstraint,
+	                                       Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                                       FileRangePtr _fileRange, Vec<GenericAbstractType*> _generics,
+	                                       Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _definition) {
 		return std::construct_at(OwnNormal(FunctionPrototype), _name, _arguments, _returnType, _checker,
 		                         _genericConstraint, _metaInfo, _visibSpec, _fileRange, _generics, _definition);
 	}
@@ -62,9 +61,11 @@ class FunctionPrototype final : public IsEntity {
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	void           emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
-	useit Json     to_json() const final;
+	void       emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
+	useit Json to_json() const final;
+
 	useit NodeType nodeType() const final { return NodeType::FUNCTION_PROTOTYPE; }
+
 	~FunctionPrototype() final;
 };
 

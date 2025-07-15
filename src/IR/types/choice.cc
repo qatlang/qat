@@ -16,19 +16,19 @@ namespace qat::ir {
 
 ChoiceType::ChoiceType(Identifier _name, Mod* _parent, Vec<Vec<Identifier>> _fields,
                        Maybe<Vec<llvm::ConstantInt*>> _values, Maybe<ir::Type*> _providedType, bool areValuesUnsigned,
-                       Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, ir::Ctx* _ctx, FileRange _fileRange,
-                       Maybe<MetaInfo> _metaInfo)
+                       Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, ir::Ctx* _ctx,
+                       FileRangePtr _fileRange, Maybe<MetaInfo> _metaInfo)
     : EntityOverview("choiceType",
                      Json()
                          ._("moduleID", _parent->get_id())
                          ._("hasValues", _values.has_value())
-						 ._("areValuesUnsigned", areValuesUnsigned)
+                         ._("areValuesUnsigned", areValuesUnsigned)
                          ._("hasDefault", _defaultVal.has_value())
                          ._("visibility", _visibility),
                      _name.range),
       name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
       providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal), metaInfo(_metaInfo), irCtx(_ctx),
-      fileRange(std::move(_fileRange)) {
+      fileRange(_fileRange) {
 	Maybe<String> foreignID;
 	if (metaInfo) {
 		foreignID = metaInfo->get_foreign_id();

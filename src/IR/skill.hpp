@@ -202,7 +202,7 @@ class GenericSkill : public Uniq, public EntityOverview {
 
 	useit Mod* get_module() const { return parent; }
 
-	useit Skill* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+	useit Skill* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
 	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
 
@@ -221,9 +221,9 @@ class DoneSkill : public EntityOverview, public Uniq {
 	Mod*                      parent;
 	Maybe<Skill*>             skill;
 	Vec<ir::GenericArgument*> generics;
-	FileRange                 fileRange;
+	FileRangePtr              fileRange;
 	Type*                     candidateType;
-	FileRange                 typeRange;
+	FileRangePtr              typeRange;
 
 	Vec<DefinitionType*> definitions;
 
@@ -246,13 +246,13 @@ class DoneSkill : public EntityOverview, public Uniq {
 	llvm::GlobalVariable* methodTable = nullptr;
 
   public:
-	DoneSkill(Maybe<Identifier> _name, Mod* _parentMod, Maybe<Skill*> _skill, FileRange _fileRange,
-	          Type* _candidateType, FileRange _typeRange);
+	DoneSkill(Maybe<Identifier> _name, Mod* _parentMod, Maybe<Skill*> _skill, FileRangePtr _fileRange,
+	          Type* _candidateType, FileRangePtr _typeRange);
 
-	useit static DoneSkill* create_extension(Mod* parent, FileRange fileRange, Type* candidateType,
-	                                         FileRange typeRange);
-	useit static DoneSkill* create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRange fileRange,
-	                                      Type* candidateType, FileRange typeRange);
+	useit static DoneSkill* create_extension(Mod* parent, FileRangePtr fileRange, Type* candidateType,
+	                                         FileRangePtr typeRange);
+	useit static DoneSkill* create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRangePtr fileRange,
+	                                      Type* candidateType, FileRangePtr typeRange);
 
 	useit bool has_name() const { return name.has_value(); }
 
@@ -323,8 +323,8 @@ class DoneSkill : public EntityOverview, public Uniq {
 	useit bool           is_type_extension() const;
 	useit bool           is_normal_skill() const;
 	useit Skill*         get_skill() const;
-	useit FileRange      get_type_range() const;
-	useit FileRange      get_file_range() const;
+	useit FileRangePtr   get_type_range() const;
+	useit FileRangePtr   get_file_range() const;
 	useit Type*          get_candidate_type() const;
 	useit Mod*           get_module() const;
 	useit VisibilityInfo get_visibility() const;

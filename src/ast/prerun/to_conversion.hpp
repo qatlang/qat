@@ -11,10 +11,10 @@ class PrerunTo final : public PrerunExpression {
 	Type*             targetType;
 
   public:
-	PrerunTo(PrerunExpression* _value, Type* _targetType, FileRange _fileRange)
+	PrerunTo(PrerunExpression* _value, Type* _targetType, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), value(_value), targetType(_targetType) {}
 
-	useit static PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRange _fileRange) {
+	useit static PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunTo), _value, _targetType, _fileRange);
 	}
 
@@ -23,7 +23,8 @@ class PrerunTo final : public PrerunExpression {
 	useit ir::PrerunValue* emit(EmitCtx* ctx);
 	useit String           to_string() const final;
 	useit Json             to_json() const final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_TO_CONVERSION; }
+
+	useit NodeType nodeType() const final { return NodeType::PRERUN_TO_CONVERSION; }
 };
 
 } // namespace qat::ast

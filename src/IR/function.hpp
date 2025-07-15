@@ -50,9 +50,9 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
 	String name;
 
   public:
-	LocalValue(String name, ir::Type* type, bool is_variable, Function* fun, FileRange fileRange);
+	LocalValue(String name, ir::Type* type, bool is_variable, Function* fun, FileRangePtr fileRange);
 
-	useit static LocalValue* get(String name, ir::Type* type, bool isVar, Function* fn, FileRange fileRange) {
+	useit static LocalValue* get(String name, ir::Type* type, bool isVar, Function* fn, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(LocalValue), name, type, isVar, fn, fileRange);
 	}
 
@@ -60,7 +60,7 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
 
 	useit String get_name() const;
 	useit llvm::AllocaInst* get_alloca() const;
-	useit FileRange         get_file_range() const;
+	useit FileRangePtr      get_file_range() const;
 	useit ir::Value* to_new_ir_value() const;
 };
 
@@ -68,18 +68,18 @@ class UseValue final : public Value, public Uniq, public EntityOverview {
 	String name;
 
   public:
-	UseValue(String _name, llvm::Value* _value, ir::Type* _type, FileRange _fileRange)
+	UseValue(String _name, llvm::Value* _value, ir::Type* _type, FileRangePtr _fileRange)
 	    : Value(_value, _type, false), EntityOverview("useValue", Json(), _fileRange), name(_name) {
 		associatedRange = _fileRange;
 	}
 
-	useit static UseValue* create(String name, llvm::Value* value, ir::Type* type, FileRange fileRange) {
-		return std::construct_at(OwnNormal(UseValue), std::move(name), value, type, std::move(fileRange));
+	useit static UseValue* create(String name, llvm::Value* value, ir::Type* type, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(UseValue), std::move(name), value, type, fileRange);
 	}
 
 	useit String get_name() const { return name; }
 
-	useit FileRange get_range() const { return associatedRange.value(); }
+	useit FileRangePtr get_range() const { return associatedRange.value(); }
 };
 
 class Block : public Uniq {
@@ -104,7 +104,7 @@ class Block : public Uniq {
 	Block* nextBlock = nullptr;
 
   public:
-	Maybe<FileRange> fileRange;
+	Maybe<FileRangePtr> fileRange;
 
 	Block(Function* _fn, Block* _parent);
 
@@ -133,12 +133,12 @@ class Block : public Uniq {
 	useit bool        has_value(const String& name) const;
 	useit LocalValue* get_value(const String& name) const;
 
-	useit LocalValue* new_local(const String& name, ir::Type* type, bool isVar, FileRange fileRange) {
+	useit LocalValue* new_local(const String& name, ir::Type* type, bool isVar, FileRangePtr fileRange) {
 		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
 		return values.back();
 	}
 
-	useit UseValue* create_use_value(String name, llvm::Value* value, ir::Type* type, FileRange fileRange) {
+	useit UseValue* create_use_value(String name, llvm::Value* value, ir::Type* type, FileRangePtr fileRange) {
 		usedValues.push_back(UseValue::create(std::move(name), value, type, std::move(fileRange)));
 		return usedValues.back();
 	}
@@ -182,7 +182,7 @@ class Block : public Uniq {
 
 	useit Vec<LocalValue*>& get_locals() { return values; }
 
-	useit Maybe<FileRange> get_file_range() const {
+	useit Maybe<FileRangePtr> get_file_range() const {
 		if (fileRange.has_value()) {
 			return fileRange;
 		}
@@ -197,7 +197,7 @@ class Block : public Uniq {
 		block->nextBlock = this;
 	}
 
-	void set_file_range(FileRange _fileRange) { fileRange = _fileRange; }
+	void set_file_range(FileRangePtr _fileRange) { fileRange = _fileRange; }
 
 	void set_has_give() const { hasGive = true; }
 
@@ -224,7 +224,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 	Mod*                  mod;
 	Vec<Argument>         arguments;
 	VisibilityInfo        visibilityInfo;
-	Maybe<FileRange>      fileRange;
+	Maybe<FileRangePtr>   fileRange;
 	bool                  hasVariadicArguments;
 	bool                  isInline;
 	Vec<Block*>           blocks;
@@ -237,12 +237,12 @@ class Function : public Value, public Uniq, public EntityOverview {
 
   public:
 	Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics, bool isInline,
-	         ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> fileRange,
+	         ReturnType* returnType, Vec<Argument> _args, Maybe<FileRangePtr> fileRange,
 	         const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool _isMemberFn = false,
 	         Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
 
 	static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-	                        bool isInline, ReturnType* return_type, Vec<Argument> args, Maybe<FileRange> fileRange,
+	                        bool isInline, ReturnType* return_type, Vec<Argument> args, Maybe<FileRangePtr> fileRange,
 	                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
 	                        Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
@@ -298,7 +298,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 	useit bool has_definition_range() const { return fileRange.has_value(); }
 
-	useit FileRange get_definition_range() const { return fileRange.value(); }
+	useit FileRangePtr get_definition_range() const { return fileRange.value(); }
 
 	useit String get_random_alloca_name() const {
 		localNameCounter++;
@@ -345,13 +345,13 @@ class GenericFunction : public Uniq, public EntityOverview {
 	useit Mod*       get_module() const;
 	useit ast::GenericAbstractType* getGenericAt(usize index) const;
 	useit VisibilityInfo            get_visibility() const;
-	useit Function* fill_generics(Vec<ir::GenericToFill*> _types, Ctx* irCtx, const FileRange& fileRange);
-	useit bool      all_generics_have_default() const;
+	useit Function*                 fill_generics(Vec<ir::GenericToFill*> _types, Ctx* irCtx, FileRangePtr fileRange);
+	useit bool                      all_generics_have_default() const;
 
 	void update_overview() final;
 };
 
-void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange& fileRange);
+void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, FileRangePtr fileRange);
 void destructor_caller(ir::Ctx* irCtx, ir::Function* fun);
 void method_handler(ir::Ctx* irCtx, ir::Function* fun);
 void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block);

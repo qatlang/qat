@@ -39,7 +39,7 @@ void PrerunLoopTo::emit(EmitCtx* ctx) {
 			for (auto& inf : ctx->get_pre_call_state()->loopsInfo) {
 				if (inf.tag.has_value() && inf.tag->value == tag->value) {
 					ctx->Error("Tag already used in another " + ctx->color(inf.kind_to_string()), tag->range,
-					           Pair<String, FileRange>{"The existing tag can be found here", inf.tag->range});
+					           Pair<String, FileRangePtr>{"The existing tag can be found here", inf.tag->range});
 				}
 			}
 		}

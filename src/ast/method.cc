@@ -12,7 +12,7 @@ namespace qat::ast {
 
 MethodPrototype::MethodPrototype(MethodType _fnTy, Identifier _name, PrerunExpression* _condition,
                                  Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                 Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+                                 Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
     : fnTy(_fnTy), name(std::move(_name)), arguments(std::move(_arguments)), isVariadic(_isVariadic),
       returnType(_returnType), visibSpec(_visibSpec), fileRange(_fileRange), defineChecker(_condition),
       metaInfo(_metaInfo) {}
@@ -26,7 +26,7 @@ MethodPrototype::~MethodPrototype() {
 MethodPrototype* MethodPrototype::Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
                                          const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                          Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
-                                         const FileRange& _fileRange) {
+                                         FileRangePtr _fileRange) {
 	return std::construct_at(OwnNormal(MethodPrototype), _isVariationFn ? MethodType::variation : MethodType::normal,
 	                         _name, _condition, _arguments, _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
 }
@@ -34,7 +34,7 @@ MethodPrototype* MethodPrototype::Normal(bool _isVariationFn, const Identifier& 
 MethodPrototype* MethodPrototype::Static(const Identifier& _name, PrerunExpression* _condition,
                                          const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                          Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
-                                         const FileRange& _fileRange) {
+                                         FileRangePtr _fileRange) {
 	return std::construct_at(OwnNormal(MethodPrototype), MethodType::Static, _name, _condition, _arguments, _isVariadic,
 	                         _returnType, _metaInfo, visibSpec, _fileRange);
 }
@@ -42,7 +42,7 @@ MethodPrototype* MethodPrototype::Static(const Identifier& _name, PrerunExpressi
 MethodPrototype* MethodPrototype::Value(const Identifier& _name, PrerunExpression* _condition,
                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
-                                        const FileRange& _fileRange) {
+                                        FileRangePtr _fileRange) {
 	return std::construct_at(OwnNormal(MethodPrototype), MethodType::valued, _name, _condition, _arguments, _isVariadic,
 	                         _returnType, _metaInfo, visibSpec, _fileRange);
 }
@@ -108,19 +108,19 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		if ((fnTy == MethodType::variation) && expTy->has_variation(name.value)) {
 			irCtx->Error("A variation function named " + irCtx->color(name.value) + " exists in the parent type " +
 			                 irCtx->color(expTy->get_full_name()) + " at " +
-			                 irCtx->color(expTy->get_variation(name.value)->get_name().range.start_to_string()),
+			                 irCtx->color(expTy->get_variation(name.value)->get_name().range->start_to_string()),
 			             name.range);
 		}
 		if ((fnTy == MethodType::normal) && expTy->has_normal_method(name.value)) {
 			irCtx->Error("A member function named " + irCtx->color(name.value) + " exists in the parent type " +
 			                 irCtx->color(expTy->get_full_name()) + " at " +
-			                 irCtx->color(expTy->get_normal_method(name.value)->get_name().range.start_to_string()),
+			                 irCtx->color(expTy->get_normal_method(name.value)->get_name().range->start_to_string()),
 			             name.range);
 		}
 		if (expTy->has_static_method(name.value)) {
 			irCtx->Error("A static function named " + irCtx->color(name.value) + " exists in the parent type " +
 			                 irCtx->color(expTy->get_full_name()) + " at " +
-			                 irCtx->color(expTy->get_static_method(name.value)->get_name().range.start_to_string()),
+			                 irCtx->color(expTy->get_static_method(name.value)->get_name().range->start_to_string()),
 			             name.range);
 		}
 		if (expTy->is_struct()) {
@@ -134,7 +134,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 				             ? (" in the skill " +
 				                irCtx->color(state.parent->as_done_skill()->get_skill()->get_full_name()) + " at " +
 				                irCtx->color(
-				                    state.parent->as_done_skill()->get_skill()->get_name().range.start_to_string()))
+				                    state.parent->as_done_skill()->get_skill()->get_name().range->start_to_string()))
 				             : ""),
 				    name.range);
 			}

@@ -7,9 +7,9 @@ namespace qat::ast {
 
 class SelfInstance final : public Expression {
   public:
-	explicit SelfInstance(FileRange _fileRange) : Expression(_fileRange) {}
+	explicit SelfInstance(FileRangePtr _fileRange) : Expression(_fileRange) {}
 
-	useit static SelfInstance* create(FileRange _fileRange) {
+	useit static SelfInstance* create(FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(SelfInstance), _fileRange);
 	}
 

@@ -28,7 +28,7 @@
 namespace qat::ir {
 
 ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
-                                        FileRange valueRange, bool restrictLocalRefs) {
+                                        FileRangePtr valueRange, bool restrictLocalRefs) {
 	if (expectedType->is_same(value->get_ir_type()) && not expectedType->is_ref()) {
 		if (not value->is_ghost_ref()) {
 			return value;
@@ -114,7 +114,7 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 	return nullptr;
 }
 
-ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange) {
+ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRangePtr fileRange) {
 	if (ir::StdLib::is_std_lib_found() &&
 	    ir::StdLib::stdLib->has_generic_function(isSigned ? "signed_to_string" : "unsigned_to_string",
 	                                             AccessInfo::get_privileged())) {
@@ -149,12 +149,12 @@ ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value*
 	return nullptr;
 }
 
-Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::Value*> values, Vec<FileRange> ranges,
-                                                     FileRange fileRange) {
+Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::Value*> values,
+                                                     Vec<FileRangePtr> ranges, FileRangePtr fileRange) {
 	Vec<llvm::Value*> printVals;
 	String            formatString;
 
-	std::function<void(ir::Value*, FileRange)> formatValue = [&](ir::Value* val, FileRange valRange) {
+	std::function<void(ir::Value*, FileRangePtr)> formatValue = [&](ir::Value* val, FileRangePtr valRange) {
 		auto valTy = val->get_ir_type()->is_ref() ? val->get_ir_type()->as_ref()->get_subtype() : val->get_ir_type();
 		if (valTy->is_text()) {
 			formatString += "%.*s";
@@ -469,7 +469,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 	return {formatString, printVals};
 }
 
-void Logic::exit_thread(ir::Function*, ast::EmitCtx* ctx, FileRange rangeVal) {
+void Logic::exit_thread(ir::Function*, ast::EmitCtx* ctx, FileRangePtr rangeVal) {
 	auto triple = ctx->irCtx->clangTargetInfo->getTriple();
 	if (triple.isWindowsMSVCEnvironment()) {
 		auto exitFnName =
@@ -490,19 +490,18 @@ void Logic::exit_thread(ir::Function*, ast::EmitCtx* ctx, FileRange rangeVal) {
 	}
 }
 
-void Logic::exit_program(ir::Function*, ast::EmitCtx* ctx, FileRange rangeVal) {
+void Logic::exit_program(ir::Function*, ast::EmitCtx* ctx, FileRangePtr rangeVal) {
 	auto exitFnName = ctx->mod->link_internal_dependency(InternalDependency::exitProgram, ctx->irCtx, rangeVal);
 	auto exitFun    = ctx->mod->get_llvm_module()->getFunction(exitFnName);
 	ctx->irCtx->builder.CreateCall(exitFun->getFunctionType(), exitFun,
 	                               {llvm::ConstantInt::get(NativeType::get_int(ctx->irCtx)->get_llvm_type(), 1u)});
 }
 
-void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
-                              ast::EmitCtx* ctx) {
-	fileRange.file     = fs::absolute(fileRange.file);
+void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRangePtr> ranges,
+                              FileRangePtr fileRange, ast::EmitCtx* ctx) {
 	auto  startMessage = ir::TextType::create_value(ctx->irCtx, ctx->mod,
 	                                                "\nFunction " + fun->get_full_name() + " panicked at " +
-	                                                    fileRange.start_to_string() + " => ");
+	                                                    fileRange->start_to_string() + " => ");
 	auto* mod          = fun->get_module();
 	auto  printfName   = mod->link_internal_dependency(InternalDependency::printf, ctx->irCtx, fileRange);
 	auto  printFn      = mod->get_llvm_module()->getFunction(printfName);
@@ -613,8 +612,8 @@ bool Logic::compare_prerun_text(llvm::Constant* lhsBuff, llvm::Constant* lhsCoun
 	}
 }
 
-useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Value* rhsEmit, FileRange lhsRange,
-                                     FileRange rhsRange, FileRange fileRange, ast::EmitCtx* ctx) {
+useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Value* rhsEmit, FileRangePtr lhsRange,
+                                     FileRangePtr rhsRange, FileRangePtr fileRange, ast::EmitCtx* ctx) {
 	llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
 	bool         isConstantLHS = false, isConstantRHS = false;
 	auto*        int64Type  = llvm::Type::getInt64Ty(ctx->irCtx->llctx);

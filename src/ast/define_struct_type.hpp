@@ -16,12 +16,12 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
   public:
 	struct Member {
 		Member(Type* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
-		       Maybe<Expression*> _expression, FileRange _fileRange)
+		       Maybe<Expression*> _expression, FileRangePtr _fileRange)
 		    : type(_type), name(_name), variability(_variability), visibSpec(_visibSpec), expression(_expression),
 		      fileRange(_fileRange) {}
 
 		useit static Member* create(Type* _type, Identifier _name, bool _variability, Maybe<VisibilitySpec> _visibSpec,
-		                            Maybe<Expression*> _expression, FileRange _fileRange) {
+		                            Maybe<Expression*> _expression, FileRangePtr _fileRange) {
 			return std::construct_at(OwnNormal(Member), _type, _name, _variability, _visibSpec, _expression,
 			                         _fileRange);
 		}
@@ -31,7 +31,7 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 		bool                  variability;
 		Maybe<VisibilitySpec> visibSpec;
 		Maybe<Expression*>    expression;
-		FileRange             fileRange;
+		FileRangePtr          fileRange;
 
 		useit Json to_json() const;
 	};
@@ -39,12 +39,12 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	// Static member representation in the AST
 	struct StaticMember {
 		StaticMember(Type* _type, Identifier _name, bool _variability, Expression* _value,
-		             Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+		             Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
 		    : type(_type), name(_name), variability(_variability), value(_value), visibSpec(_visibSpec),
 		      fileRange(_fileRange) {}
 
 		useit static StaticMember* create(Type* _type, Identifier _name, bool _variability, Expression* _value,
-		                                  Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+		                                  Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
 			return std::construct_at(OwnNormal(StaticMember), _type, _name, _variability, _value, _visibSpec,
 			                         _fileRange);
 		}
@@ -54,7 +54,7 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 		bool                  variability;
 		Expression*           value;
 		Maybe<VisibilitySpec> visibSpec;
-		FileRange             fileRange;
+		FileRangePtr          fileRange;
 
 		useit Json to_json() const;
 	};
@@ -64,8 +64,8 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	PrerunExpression*     defineChecker;
 	Vec<Member*>          members;
 	Vec<StaticMember*>    staticMembers;
-	Maybe<FileRange>      simpleCopy;
-	Maybe<FileRange>      simpleMove;
+	Maybe<FileRangePtr>   simpleCopy;
+	Maybe<FileRangePtr>   simpleMove;
 	Maybe<VisibilitySpec> visibSpec;
 	Maybe<MetaInfo>       metaInfo;
 
@@ -83,13 +83,13 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 
   public:
 	DefineStructType(Identifier _name, PrerunExpression* _checker, Maybe<VisibilitySpec> _visibSpec,
-	                 FileRange _fileRange, Vec<ast::GenericAbstractType*> _generics,
+	                 FileRangePtr _fileRange, Vec<ast::GenericAbstractType*> _generics,
 	                 PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo)
 	    : IsEntity(_fileRange), name(_name), defineChecker(_checker), visibSpec(_visibSpec), metaInfo(_metaInfo),
 	      generics(_generics), genericConstraint(_genericConstraint) {}
 
 	useit static DefineStructType* create(Identifier _name, PrerunExpression* _checker,
-	                                      Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange,
+	                                      Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange,
 	                                      Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _constraint,
 	                                      Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(DefineStructType), _name, _checker, _visibSpec, _fileRange, _generics,
@@ -116,11 +116,11 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 
 	useit bool has_simple_copy() { return simpleCopy.has_value(); }
 
-	void set_simple_copy(FileRange range) { simpleCopy = std::move(range); }
+	void set_simple_copy(FileRangePtr range) { simpleCopy = std::move(range); }
 
 	useit bool has_simple_move() { return simpleMove.has_value(); }
 
-	void set_simple_move(FileRange range) { simpleMove = std::move(range); }
+	void set_simple_move(FileRangePtr range) { simpleMove = std::move(range); }
 
 	useit bool is_generic() const;
 	useit bool has_default_constructor() const;

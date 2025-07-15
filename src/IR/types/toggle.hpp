@@ -141,7 +141,7 @@ class GenericToggleType : public Uniq, public EntityOverview {
 
 	useit Mod* get_module() const { return parent; }
 
-	useit Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+	useit Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
 	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics[index]; }
 

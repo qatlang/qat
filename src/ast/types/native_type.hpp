@@ -10,9 +10,9 @@ class NativeType final : public Type {
 	ir::NativeTypeKind nativeKind;
 
   public:
-	NativeType(ir::NativeTypeKind _cTypeKind, FileRange _fileRange) : Type(_fileRange), nativeKind(_cTypeKind) {}
+	NativeType(ir::NativeTypeKind _cTypeKind, FileRangePtr _fileRange) : Type(_fileRange), nativeKind(_cTypeKind) {}
 
-	useit static NativeType* create(ir::NativeTypeKind _cTypeKind, FileRange _fileRange) {
+	useit static NativeType* create(ir::NativeTypeKind _cTypeKind, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(NativeType), _cTypeKind, _fileRange);
 	}
 

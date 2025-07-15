@@ -473,16 +473,16 @@ Mod* GenericStructType::get_module() const { return parent; }
 
 ast::GenericAbstractType* GenericStructType::getGenericAt(usize index) const { return generics.at(index); }
 
-Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRangePtr range) {
 	for (auto& oVar : opaqueVariants) {
 		SHOW("Opaque variant: " << oVar.get()->get_full_name())
-		if (oVar.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+		if (oVar.check(irCtx, [&](const String& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
 			return oVar.get();
 		}
 	}
 	for (auto& var : variants) {
 		SHOW("Struct type variant: " << var.get()->get_full_name())
-		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+		if (var.check(irCtx, [&](const String& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
 			return var.get();
 		}
 	}
@@ -497,7 +497,7 @@ Type* GenericStructType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 		}
 		if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 			irCtx->Error("The provided parameters for the generic struct type do not satisfy the constraints", range,
-			             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
+			             Pair<String, FileRangePtr>{"The constraint can be found here", constraint->fileRange});
 		}
 	}
 	Vec<ir::GenericArgument*> genParams;

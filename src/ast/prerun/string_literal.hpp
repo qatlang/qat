@@ -11,24 +11,24 @@ class StringLiteral final : public PrerunExpression {
 	String value;
 
   public:
-	StringLiteral(String _value, FileRange _fileRange)
+	StringLiteral(String _value, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
-	useit static StringLiteral* create(String _value, FileRange _fileRange) {
+	useit static StringLiteral* create(String _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(StringLiteral), _value, _fileRange);
 	}
 
-	void addValue(const String& val, const FileRange& fRange);
+	void addValue(const String& val, FileRangePtr fRange);
 
 	useit String get_value() const;
 
-	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {
-	}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
 	useit Json             to_json() const override;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const override { return NodeType::STRING_LITERAL; }
+
+	useit NodeType nodeType() const override { return NodeType::STRING_LITERAL; }
 };
 
 } // namespace qat::ast

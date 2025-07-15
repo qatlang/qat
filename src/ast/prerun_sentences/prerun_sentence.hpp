@@ -7,10 +7,10 @@ namespace qat::ast {
 
 class PrerunSentence {
   protected:
-	FileRange fileRange;
+	FileRangePtr fileRange;
 
   public:
-	PrerunSentence(FileRange _fileRange) : fileRange(_fileRange) {}
+	PrerunSentence(FileRangePtr _fileRange) : fileRange(_fileRange) {}
 
 	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 

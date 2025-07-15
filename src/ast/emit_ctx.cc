@@ -29,7 +29,7 @@ String EmitCtx::color(String const& message) const {
 	                                                  : String(colors::reset) + cli::get_color(cli::Color::white));
 }
 
-void EmitCtx::genericNameCheck(String const& name, FileRange const& range) {
+void EmitCtx::genericNameCheck(String const& name, FileRangePtr range) {
 	if (has_fn() && get_fn()->has_generic_parameter(name)) {
 		Error("A generic parameter named " + color(name) + " is present in this function. This will lead to ambiguity.",
 		      range);
@@ -339,7 +339,7 @@ VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
 	std::unreachable();
 }
 
-void EmitCtx::Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo) {
+void EmitCtx::Error(const String& message, Maybe<FileRangePtr> fileRange, Maybe<Pair<String, FileRangePtr>> pointTo) {
 	irCtx->Error(mod, message, fileRange, pointTo);
 }
 

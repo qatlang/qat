@@ -72,23 +72,23 @@ class Parser {
 	void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* memberParent);
 
 	void parse_mix_type(ParserContext& prev_ctx, usize from, usize upto, Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef,
-	                    Maybe<FileRange>& noneVariant, Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal);
+	                    Maybe<FileRangePtr>& noneVariant, Vec<FileRangePtr>& fileRanges, Maybe<usize>& defaultVal);
 
 	void do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,
 	                    Maybe<usize>& defaultVal);
 
 	Pair<ast::DefineFlagType*, usize> do_flag_type(usize from, Identifier name, ast::Type* providedType,
-	                                               Maybe<ast::VisibilitySpec> visibSpec, FileRange startRange);
+	                                               Maybe<ast::VisibilitySpec> visibSpec, FileRangePtr startRange);
 
 	void parse_match_contents(ParserContext& prev_ctx, usize from, usize upto,
 	                          Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
-	                          Maybe<Pair<Vec<ast::Sentence*>, FileRange>>&           elseCase);
+	                          Maybe<Pair<Vec<ast::Sentence*>, FileRangePtr>>&        elseCase);
 
-	void add_error(const String& message, const FileRange& fileRange);
+	void add_error(const String& message, FileRangePtr fileRange);
 
 	String color_error(const String& message);
 
-	static void add_warning(const String& message, const FileRange& fileRange);
+	static void add_warning(const String& message, FileRangePtr fileRange);
 
 	useit bool is_previous(lexer::TokenType type, usize current);
 
@@ -108,7 +108,7 @@ class Parser {
 	                                               usize upto);
 
 	useit ast::BringPaths* parse_bring_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
-	                                         const FileRange& start);
+	                                         FileRangePtr start);
 
 	useit Vec<fs::path>& get_brought_paths();
 
@@ -119,7 +119,7 @@ class Parser {
 	useit EntityMetadata do_entity_metadata(ParserContext& parserCtx, usize from, String entityType,
 	                                        usize genericLength);
 
-	useit ast::MetaInfo do_meta_info(usize from, usize upto, FileRange fileRange);
+	useit ast::MetaInfo do_meta_info(usize from, usize upto, FileRangePtr fileRange);
 
 	useit Pair<ast::VisibilitySpec, usize> do_visibility_kind(usize from);
 

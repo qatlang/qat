@@ -112,10 +112,10 @@ struct MatchArm {
 };
 
 struct Pattern {
-	PatternType type;
-	FileRange   range;
+	PatternType  type;
+	FileRangePtr range;
 
-	Pattern(PatternType _type, FileRange _range) : type(_type), range(std::move(_range)) {}
+	Pattern(PatternType _type, FileRangePtr _range) : type(_type), range(std::move(_range)) {}
 
 	void precheck(PatternFill* fill, EmitCtx* ctx) const;
 
@@ -133,11 +133,11 @@ enum class BindingType {
 };
 
 struct PatternBinding {
-	BindingType bindType;
-	Identifier  name;
-	FileRange   range;
+	BindingType  bindType;
+	Identifier   name;
+	FileRangePtr range;
 
-	useit static PatternBinding create(BindingType bindType, Identifier name, FileRange range) {
+	useit static PatternBinding create(BindingType bindType, Identifier name, FileRangePtr range) {
 		return PatternBinding{
 		    .bindType = bindType,
 		    .name     = std::move(name),
@@ -169,7 +169,7 @@ struct PatternChild {
 
 	useit PatternBinding const& as_binding() const { return std::get<1>(child); }
 
-	useit FileRange const& get_range() { return is_pattern() ? as_pattern()->range : as_binding().range; }
+	useit FileRangePtr get_range() { return is_pattern() ? as_pattern()->range : as_binding().range; }
 
 	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const;
 
@@ -185,20 +185,20 @@ struct PatternChild {
 };
 
 struct PatternArray final : public Pattern {
-	Vec<PatternChild>             patterns;
-	Maybe<Pair<usize, FileRange>> ellipsis;
+	Vec<PatternChild>                patterns;
+	Maybe<Pair<usize, FileRangePtr>> ellipsis;
 
 	mutable Vec<usize> patternIndices;
 
   public:
-	PatternArray(Vec<PatternChild> _patterns, Maybe<Pair<usize, FileRange>> _ellipsis, FileRange _fileRange)
+	PatternArray(Vec<PatternChild> _patterns, Maybe<Pair<usize, FileRangePtr>> _ellipsis, FileRangePtr _fileRange)
 	    : Pattern(PatternType::ARRAY, std::move(_fileRange)), patterns(std::move(_patterns)),
 	      ellipsis(std::move(_ellipsis)) {
 		patternIndices.reserve(patterns.size());
 	}
 
-	useit static PatternArray* create(Vec<PatternChild> patterns, Maybe<Pair<usize, FileRange>> ellipsis,
-	                                  FileRange fileRange) {
+	useit static PatternArray* create(Vec<PatternChild> patterns, Maybe<Pair<usize, FileRangePtr>> ellipsis,
+	                                  FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternArray), std::move(patterns), std::move(ellipsis),
 		                         std::move(fileRange));
 	}
@@ -214,10 +214,10 @@ struct PatternChoice final : public Pattern {
 	Identifier name;
 
   public:
-	PatternChoice(Identifier _name, FileRange _fileRange)
+	PatternChoice(Identifier _name, FileRangePtr _fileRange)
 	    : Pattern(PatternType::CHOICE, std::move(_fileRange)), name(std::move(_name)) {}
 
-	useit static PatternChoice* create(Identifier name, FileRange fileRange) {
+	useit static PatternChoice* create(Identifier name, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternChoice), std::move(name), std::move(fileRange));
 	}
 
@@ -233,10 +233,10 @@ struct PatternMix final : public Pattern {
 	Maybe<PatternChild> child;
 
   public:
-	PatternMix(Identifier _name, PatternChild _child, FileRange _fileRange)
+	PatternMix(Identifier _name, PatternChild _child, FileRangePtr _fileRange)
 	    : Pattern(PatternType::MIX, std::move(_fileRange)), name(std::move(_name)), child(std::move(_child)) {}
 
-	useit static PatternMix* create(Identifier name, PatternChild child, FileRange fileRange) {
+	useit static PatternMix* create(Identifier name, PatternChild child, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternMix), std::move(name), std::move(child), std::move(fileRange));
 	}
 
@@ -253,12 +253,12 @@ struct PatternChain final : public Pattern {
 	Vec<Pattern> patterns;
 
   public:
-	PatternChain(Vec<Pattern> _patterns, FileRange _fileRange)
+	PatternChain(Vec<Pattern> _patterns, FileRangePtr _fileRange)
 	    : Pattern(PatternType::CHAIN, std::move(_fileRange)), patterns(std::move(_patterns)) {}
 
 	~PatternChain() {}
 
-	useit static PatternChain* create(Vec<Pattern> patterns, FileRange range) {
+	useit static PatternChain* create(Vec<Pattern> patterns, FileRangePtr range) {
 		return std::construct_at(OwnNormal(PatternChain), std::move(patterns), std::move(range));
 	}
 
@@ -289,10 +289,10 @@ struct PatternFlag final : public Pattern {
 	FlagPatternKind flagKind;
 
   public:
-	PatternFlag(Vec<Identifier> _names, FlagPatternKind _flagKind, FileRange _fileRange)
+	PatternFlag(Vec<Identifier> _names, FlagPatternKind _flagKind, FileRangePtr _fileRange)
 	    : Pattern(PatternType::FLAG, std::move(_fileRange)), names(std::move(_names)), flagKind(_flagKind) {}
 
-	useit static PatternFlag* create(Vec<Identifier> names, FlagPatternKind flagKind, FileRange fileRange) {
+	useit static PatternFlag* create(Vec<Identifier> names, FlagPatternKind flagKind, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternFlag), std::move(names), flagKind, std::move(fileRange));
 	}
 
@@ -325,9 +325,9 @@ struct PatternFlag final : public Pattern {
 
 struct PatternRest final : public Pattern {
   public:
-	PatternRest(FileRange _fileRange) : Pattern(PatternType::ELLIPSIS, std::move(_fileRange)) {}
+	PatternRest(FileRangePtr _fileRange) : Pattern(PatternType::ELLIPSIS, std::move(_fileRange)) {}
 
-	useit static PatternRest* create(FileRange range) {
+	useit static PatternRest* create(FileRangePtr range) {
 		return std::construct_at(OwnNormal(PatternRest), std::move(range));
 	}
 

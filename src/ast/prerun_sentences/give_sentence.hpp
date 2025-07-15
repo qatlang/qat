@@ -10,9 +10,9 @@ class PrerunGive final : public PrerunSentence {
 	Maybe<PrerunExpression*> value;
 
   public:
-	PrerunGive(Maybe<PrerunExpression*> _value, FileRange _fileRange) : PrerunSentence(_fileRange), value(_value) {}
+	PrerunGive(Maybe<PrerunExpression*> _value, FileRangePtr _fileRange) : PrerunSentence(_fileRange), value(_value) {}
 
-	useit static PrerunGive* create(Maybe<PrerunExpression*> value, FileRange fileRange) {
+	useit static PrerunGive* create(Maybe<PrerunExpression*> value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunGive), value, fileRange);
 	}
 

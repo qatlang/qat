@@ -1,7 +1,6 @@
 #ifndef QAT_AST_TYPES_GENERIC_ABSTRACT_HPP
 #define QAT_AST_TYPES_GENERIC_ABSTRACT_HPP
 
-#include "../../IR/context.hpp"
 #include "../../utils/identifier.hpp"
 #include "./qat_type.hpp"
 
@@ -17,20 +16,20 @@ class PrerunGenericAbstract;
 
 class GenericAbstractType {
   protected:
-	usize       index;
-	Identifier  name;
-	GenericKind kind;
-	FileRange   range;
+	usize        index;
+	Identifier   name;
+	GenericKind  kind;
+	FileRangePtr range;
 
-	GenericAbstractType(usize _index, Identifier _name, GenericKind _kind, FileRange _range)
+	GenericAbstractType(usize _index, Identifier _name, GenericKind _kind, FileRangePtr _range)
 	    : index(_index), name(std::move(_name)), kind(_kind), range(std::move(_range)) {
 		ast::Type::generics.push_back(this);
 	}
 
   public:
-	useit usize      getIndex() const;
-	useit Identifier get_name() const;
-	useit FileRange  get_range() const;
+	useit usize        getIndex() const;
+	useit Identifier   get_name() const;
+	useit FileRangePtr get_range() const;
 
 	useit bool                   is_typed() const;
 	useit TypedGenericAbstract*  as_typed() const;

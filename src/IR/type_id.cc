@@ -46,7 +46,7 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 		if (isPrimitive) {
 			if (not builtinModule) {
 				builtinModule =
-				    Mod::create({"type", FileRange("")}, "", "", ModuleType::lib, VisibilityInfo::pub(), ctx);
+				    Mod::create({"type", FileRange::null}, "", "", ModuleType::lib, VisibilityInfo::pub(), ctx);
 				builtinGlobal = new llvm::GlobalVariable(
 				    *builtinModule->get_llvm_module(), llvm::ArrayType::get(typeInfoType, UINT64_MAX), true,
 				    llvm::GlobalVariable::ExternalLinkage, nullptr,
@@ -81,7 +81,7 @@ TypeInfo* TypeInfo::create(ir::Ctx* ctx, Type* type, Mod* mod) {
 				typeMod = type->as_region()->get_module();
 			}
 			if (not typeMod->typeInfoDetail) {
-				auto infoMod  = Mod::create_submodule(typeMod, "", "", {"type", FileRange("")}, ModuleType::lib,
+				auto infoMod  = Mod::create_submodule(typeMod, "", "", {"type", FileRange::null}, ModuleType::lib,
 				                                      VisibilityInfo::pub(), ctx);
 				auto infoList = new llvm::GlobalVariable(
 				    *infoMod->get_llvm_module(), llvm::ArrayType::get(typeInfoType, UINT64_MAX), true,

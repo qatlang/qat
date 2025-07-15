@@ -15,12 +15,12 @@ class LoopIn : public Sentence {
 
   public:
 	LoopIn(Expression* _candidate, Vec<Sentence*> _sentences, Identifier _itemName, Maybe<Identifier> _indexName,
-	       FileRange _fileRange)
+	       FileRangePtr _fileRange)
 	    : Sentence(std::move(_fileRange)), candidate(_candidate), sentences(std::move(_sentences)),
 	      itemName(std::move(_itemName)), indexName(std::move(_indexName)) {}
 
 	useit static LoopIn* create(Expression* candidate, Vec<Sentence*> sentences, Identifier itemName,
-	                            Maybe<Identifier> indexName, FileRange fileRange) {
+	                            Maybe<Identifier> indexName, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(LoopIn), candidate, std::move(sentences), std::move(itemName),
 		                         std::move(indexName), std::move(fileRange));
 	}

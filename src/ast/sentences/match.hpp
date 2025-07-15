@@ -21,7 +21,7 @@ class MatchValue {
 
 	useit MixOrChoiceMatchValue* asMixOrChoice();
 	useit ExpressionMatchValue*  asExp();
-	useit virtual FileRange      getMainRange() const = 0;
+	useit virtual FileRangePtr   getMainRange() const = 0;
 	useit virtual MatchType      getType() const      = 0;
 	useit virtual Json           to_json() const      = 0;
 };
@@ -48,7 +48,7 @@ class MixOrChoiceMatchValue final : public MatchValue {
 
 	useit MatchType getType() const final { return MatchType::mixOrChoice; }
 
-	useit FileRange getMainRange() const final { return name.range; }
+	useit FileRangePtr getMainRange() const final { return name.range; }
 
 	useit Json to_json() const final;
 };
@@ -72,7 +72,7 @@ class ExpressionMatchValue final : public MatchValue {
 
 	useit MatchType getType() const final { return MatchType::Exp; }
 
-	useit FileRange getMainRange() const final { return exp->fileRange; }
+	useit FileRangePtr getMainRange() const final { return exp->fileRange; }
 
 	useit Json to_json() const final;
 };
@@ -87,17 +87,17 @@ class Match final : public Sentence {
   private:
 	Expression*                                 candidate;
 	Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> chain;
-	Maybe<Pair<Vec<Sentence*>, FileRange>>      elseCase;
+	Maybe<Pair<Vec<Sentence*>, FileRangePtr>>   elseCase;
 
 	Vec<CaseResult> matchResult;
 
   public:
 	Match(Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-	      Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange)
+	      Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _elseCase, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), candidate(_candidate), chain(_chain), elseCase(_elseCase) {}
 
 	useit static Match* create(Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-	                           Maybe<Pair<Vec<Sentence*>, FileRange>> _elseCase, FileRange _fileRange) {
+	                           Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _elseCase, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Match), _candidate, _chain, _elseCase, _fileRange);
 	}
 

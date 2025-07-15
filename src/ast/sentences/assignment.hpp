@@ -14,10 +14,10 @@ class Assignment final : public Sentence {
 	Expression* value;
 
   public:
-	Assignment(Expression* _lhs, Expression* _value, FileRange _fileRange)
+	Assignment(Expression* _lhs, Expression* _value, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), lhs(_lhs), value(_value) {}
 
-	useit static Assignment* create(Expression* _lhs, Expression* _value, FileRange _fileRange) {
+	useit static Assignment* create(Expression* _lhs, Expression* _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Assignment), _lhs, _value, _fileRange);
 	}
 
@@ -28,7 +28,8 @@ class Assignment final : public Sentence {
 
 	useit ir::Value* emit(EmitCtx* ctx);
 	useit Json       to_json() const;
-	useit NodeType   nodeType() const { return NodeType::ASSIGNMENT; }
+
+	useit NodeType nodeType() const { return NodeType::ASSIGNMENT; }
 };
 
 } // namespace qat::ast

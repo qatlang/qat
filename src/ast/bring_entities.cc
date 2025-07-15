@@ -7,13 +7,13 @@
 
 namespace qat::ast {
 
-void BroughtGroup::addMember(BroughtGroup* mem) { members.push_back(mem); }
+void BroughtGroup::add_member(BroughtGroup* mem) { members.push_back(mem); }
 
-void BroughtGroup::extendFileRange(FileRange end) { fileRange = FileRange(fileRange, end); }
+void BroughtGroup::extend_filerange(FileRangePtr end) { fileRange = FileRange::merge(fileRange, end); }
 
-bool BroughtGroup::hasMembers() const { return not members.empty(); }
+bool BroughtGroup::has_members() const { return not members.empty(); }
 
-bool BroughtGroup::isAllBrought() const { return members.empty(); }
+bool BroughtGroup::is_all_brought() const { return members.empty(); }
 
 void BroughtGroup::bring() const {
 	isAlreadyBrought = true;
@@ -83,7 +83,7 @@ void BringEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
 				ctx->Error("Lib " + ctx->color(entName.value) + " is not accessible in the current scope",
 				           entName.range);
 			}
-			if (ent->isAllBrought()) {
+			if (ent->is_all_brought()) {
 				ent->entityState =
 				    currMod->add_entity(nameInMod, ir::EntityType::bringEntity, this, ir::EmitPhase::phase_1);
 				entityState->addDependency(
@@ -102,7 +102,7 @@ void BringEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
 				ctx->Error("Brought module " + ctx->color(entName.value) + " is not accessible in the current scope",
 				           entName.range);
 			}
-			if (ent->isAllBrought()) {
+			if (ent->is_all_brought()) {
 				ent->entityState =
 				    currMod->add_entity(nameInMod, ir::EntityType::bringEntity, this, ir::EmitPhase::phase_1);
 				entityState->addDependency(
@@ -116,7 +116,7 @@ void BringEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
 				}
 			}
 		} else {
-			if (ent->hasMembers()) {
+			if (ent->has_members()) {
 				ctx->Error(ctx->color(entName.value) + " is not a module and hence you cannot bring its members",
 				           entName.range);
 			}
@@ -173,7 +173,7 @@ void BringEntities::update_entity_dependencies(ir::Mod* currMod, ir::Ctx* irCtx)
 				irCtx->Error("Lib " + irCtx->color(entName.value) + " is not accessible in the current scope",
 				             entName.range);
 			}
-			if (not ent->isAllBrought()) {
+			if (not ent->is_all_brought()) {
 				for (auto& mem : ent->members) {
 					updateHandler(mem, mod);
 				}
@@ -185,13 +185,13 @@ void BringEntities::update_entity_dependencies(ir::Mod* currMod, ir::Ctx* irCtx)
 				                 " is not accessible in the current scope",
 				             entName.range);
 			}
-			if (not ent->isAllBrought()) {
+			if (not ent->is_all_brought()) {
 				for (auto& mem : ent->members) {
 					updateHandler(mem, mod);
 				}
 			}
 		} else {
-			if (ent->hasMembers()) {
+			if (ent->has_members()) {
 				irCtx->Error(irCtx->color(entName.value) + " is not a module and hence you cannot bring its members",
 				             entName.range);
 			}
@@ -288,7 +288,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 				irCtx->Error("Lib " + irCtx->color(entName.value) + " is not accessible in the current scope",
 				             entName.range);
 			}
-			if (ent->isAllBrought()) {
+			if (ent->is_all_brought()) {
 				currentMod->bring_module(mod, emitCtx->get_visibility_info(visibSpec), ent->alias);
 				mod->add_bring_mention(currentMod, ent->entity.back().range);
 				ent->bring();
@@ -304,7 +304,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 				                 " is not accessible in the current scope",
 				             entName.range);
 			}
-			if (ent->isAllBrought()) {
+			if (ent->is_all_brought()) {
 				currentMod->bring_module(mod, emitCtx->get_visibility_info(visibSpec), ent->alias);
 				mod->add_bring_mention(currentMod, ent->entity.back().range);
 				ent->bring();
@@ -314,7 +314,7 @@ void BringEntities::handle_brings(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 				}
 			}
 		} else {
-			if (ent->hasMembers()) {
+			if (ent->has_members()) {
 				irCtx->Error(irCtx->color(entName.value) + " is not a module and hence you cannot bring its members",
 				             entName.range);
 			}

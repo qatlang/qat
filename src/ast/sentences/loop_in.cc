@@ -16,11 +16,11 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		if (loopInfo.name.has_value()) {
 			if (loopInfo.name->value == itemName.value) {
 				ctx->Error("The tag for the loop item provided here is already used by another loop", itemName.range,
-				           Pair<String, FileRange>{"The existing tag was found here", loopInfo.name->range});
+				           Pair<String, FileRangePtr>{"The existing tag was found here", loopInfo.name->range});
 			}
 			if (indexName.has_value() && (loopInfo.name->value == indexName->value)) {
 				ctx->Error("The tag for the loop index provided here is already used by another loop", indexName->range,
-				           Pair<String, FileRange>{"The existing tag was found here", loopInfo.name->range});
+				           Pair<String, FileRangePtr>{"The existing tag was found here", loopInfo.name->range});
 			}
 		}
 	}
@@ -29,13 +29,14 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 			if (brk.tag->value == itemName.value) {
 				ctx->Error("The name for the loop item provided here is already used by another " +
 				               ctx->color(brk.type_to_string()),
-				           itemName.range, Pair<String, FileRange>{"The existing tag was found here", brk.tag->range});
+				           itemName.range,
+				           Pair<String, FileRangePtr>{"The existing tag was found here", brk.tag->range});
 			}
 			if (indexName.has_value() && (brk.tag->value == indexName->value)) {
 				ctx->Error("The name for the loop index provided here is already used by another " +
 				               ctx->color(brk.type_to_string()),
 				           indexName->range,
-				           Pair<String, FileRange>{"The existing tag was found here", brk.tag->range});
+				           Pair<String, FileRangePtr>{"The existing tag was found here", brk.tag->range});
 			}
 		}
 	}
@@ -43,14 +44,14 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 	if (block->has_value(itemName.value)) {
 		ctx->Error("There already exists another local value with the same name as this tag", itemName.range,
 		           block->get_value(itemName.value)->has_associated_range()
-		               ? Maybe<Pair<String, FileRange>>(
+		               ? Maybe<Pair<String, FileRangePtr>>(
 		                     {"The local value was found here", block->get_value(itemName.value)->get_file_range()})
 		               : None);
 	}
 	if (indexName.has_value() && block->has_value(indexName->value)) {
 		ctx->Error("There already exists another local value with the same name as this tag", indexName->range,
 		           block->get_value(indexName->value)->has_associated_range()
-		               ? Maybe<Pair<String, FileRange>>(
+		               ? Maybe<Pair<String, FileRangePtr>>(
 		                     {"The local value was found here", block->get_value(indexName->value)->get_file_range()})
 		               : None);
 	}

@@ -1,7 +1,6 @@
 #ifndef QAT_AST_TYPES_SUBTYPE_HPP
 #define QAT_AST_TYPES_SUBTYPE_HPP
 
-#include "../node.hpp"
 #include "../types/qat_type.hpp"
 
 namespace qat::ir {
@@ -13,21 +12,21 @@ namespace qat::ast {
 class SubType final : public Type {
 	friend class MethodPrototype;
 
-	Maybe<FileRange> skill;
-	Maybe<FileRange> doneSkill;
-	Vec<Identifier>  names;
-	Type*            parentType;
+	Maybe<FileRangePtr> skill;
+	Maybe<FileRangePtr> doneSkill;
+	Vec<Identifier>     names;
+	Type*               parentType;
 
   public:
-	SubType(Maybe<FileRange> _skill, Maybe<FileRange> _doneSkill, Vec<Identifier> _names, Type* _parentType,
-	        FileRange _fileRange)
+	SubType(Maybe<FileRangePtr> _skill, Maybe<FileRangePtr> _doneSkill, Vec<Identifier> _names, Type* _parentType,
+	        FileRangePtr _fileRange)
 	    : Type(std::move(_fileRange)), skill(std::move(_skill)), doneSkill(std::move(_doneSkill)),
 	      names(std::move(_names)), parentType(_parentType) {}
 
-	useit static SubType* create(Maybe<FileRange> skill, Maybe<FileRange> doneSkill, Vec<Identifier> names,
-	                             Type* parent, FileRange fileRange) {
+	useit static SubType* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill, Vec<Identifier> names,
+	                             Type* parent, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(SubType), std::move(skill), std::move(doneSkill), std::move(names), parent,
-		                         std::move(fileRange));
+		                         fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,

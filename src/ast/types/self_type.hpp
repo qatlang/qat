@@ -16,15 +16,16 @@ class SelfType final : public Type {
 	bool isVarRef          = false;
 
   public:
-	SelfType(bool _isJustType, FileRange _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
+	SelfType(bool _isJustType, FileRangePtr _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
 
-	useit static SelfType* create(bool _isJustType, FileRange _fileRange) {
+	useit static SelfType* create(bool _isJustType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
 	}
 
-	useit ir::Type*   emit(EmitCtx* ctx);
-	useit Json        to_json() const;
-	useit String      to_string() const;
+	useit ir::Type* emit(EmitCtx* ctx);
+	useit Json      to_json() const;
+	useit String    to_string() const;
+
 	useit AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
 };
 

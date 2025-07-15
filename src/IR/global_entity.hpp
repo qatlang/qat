@@ -17,17 +17,20 @@ class PrerunGlobal : public PrerunValue, public EntityOverview {
 
   public:
 	PrerunGlobal(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant, VisibilityInfo _visibility,
-	             FileRange _fileRange);
+	             FileRangePtr _fileRange);
 
 	useit static PrerunGlobal* create(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant,
-	                                  VisibilityInfo _visibility, FileRange _fileRange) {
+	                                  VisibilityInfo _visibility, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunGlobal), _parent, std::move(_name), _type, _constant, _visibility,
-		                         std::move(_fileRange));
+		                         _fileRange);
 	}
 
 	useit Identifier get_name() const { return name; }
-	useit String     get_full_name() const;
-	useit ir::Mod*              get_parent() const { return parent; }
+
+	useit String get_full_name() const;
+
+	useit ir::Mod* get_parent() const { return parent; }
+
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
 };
 

@@ -10,11 +10,11 @@ class PrerunFunctionCall : public PrerunExpression {
 	Vec<PrerunExpression*> arguments; // TODO - Support named arguments
 
   public:
-	PrerunFunctionCall(PrerunExpression* _funcExp, Vec<PrerunExpression*> _arguments, FileRange _fileRange)
+	PrerunFunctionCall(PrerunExpression* _funcExp, Vec<PrerunExpression*> _arguments, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), funcExp(_funcExp), arguments(std::move(_arguments)) {}
 
 	useit static PrerunFunctionCall* create(PrerunExpression* function, Vec<PrerunExpression*> arguments,
-	                                        FileRange fileRange) {
+	                                        FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunFunctionCall), function, std::move(arguments), std::move(fileRange));
 	}
 

@@ -15,13 +15,13 @@
 namespace qat::ir {
 
 Region* Region::get(Identifier name, usize blockSize, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
-                    FileRange fileRange) {
+                    FileRangePtr fileRange) {
 	return std::construct_at(OwnNormal(Region), std::move(name), blockSize, parent, visibInfo, irCtx,
 	                         std::move(fileRange));
 }
 
 Region::Region(Identifier _name, usize _blockSize, Mod* _module, const VisibilityInfo& _visibInfo, ir::Ctx* irCtx,
-               FileRange _fileRange)
+               FileRangePtr _fileRange)
     : EntityOverview("region", Json()._("moduleID", _module->get_id())._("visibility", _visibInfo), _name.range),
       name(std::move(_name)), blockSize(_blockSize), parent(_module), visibInfo(_visibInfo),
       fileRange(std::move(_fileRange)) {

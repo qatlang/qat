@@ -13,13 +13,13 @@ class PrerunIfElse final : public PrerunSentence {
   public:
 	PrerunIfElse(Pair<PrerunExpression*, Vec<PrerunSentence*>>      _ifBlock,
 	             Vec<Pair<PrerunExpression*, Vec<PrerunSentence*>>> _elseIfChain,
-	             Maybe<Vec<PrerunSentence*>> _elseBlock, FileRange _fileRange)
+	             Maybe<Vec<PrerunSentence*>> _elseBlock, FileRangePtr _fileRange)
 	    : PrerunSentence(std::move(_fileRange)), ifBlock(std::move(_ifBlock)), elseIfChain(std::move(_elseIfChain)),
 	      elseBlock(std::move(_elseBlock)) {}
 
 	useit static PrerunIfElse* create(Pair<PrerunExpression*, Vec<PrerunSentence*>>      ifBlock,
 	                                  Vec<Pair<PrerunExpression*, Vec<PrerunSentence*>>> elseIfChain,
-	                                  Maybe<Vec<PrerunSentence*>> elseBlock, FileRange fileRange) {
+	                                  Maybe<Vec<PrerunSentence*>> elseBlock, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunIfElse), std::move(ifBlock), std::move(elseIfChain),
 		                         std::move(elseBlock), std::move(fileRange));
 	}

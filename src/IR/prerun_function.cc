@@ -33,7 +33,7 @@ PrerunValue* PrerunCallState::get_arg_value_for(String const& name) {
 }
 
 PrerunFunction::PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
-                               Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib,
+                               Pair<Vec<ast::PrerunSentence*>, FileRangePtr> _sentences, VisibilityInfo visib,
                                llvm::LLVMContext& ctx)
     : PrerunValue((llvm::Constant*)this, ir::FunctionType::create(ReturnType::get(_retTy), _argTys, ctx)),
       EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
@@ -43,7 +43,7 @@ PrerunFunction::PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec
 
 String PrerunFunction::get_full_name() const { return parent->get_fullname_with_child(name.value); }
 
-PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx, FileRange fileRange) {
+PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx, FileRangePtr fileRange) {
 	auto callState = PrerunCallState::get(this, argValues);
 	auto emitCtx   = ast::EmitCtx::get(irCtx, parent)->with_prerun_call_state(callState);
 	try {

@@ -21,13 +21,13 @@ class GlobalDeclaration : public IsEntity {
 
   public:
 	GlobalDeclaration(Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isVariable,
-	                  Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo, FileRange _fileRange)
+	                  Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo, FileRangePtr _fileRange)
 	    : IsEntity(_fileRange), name(_name), type(_type), value(_value), is_variable(_isVariable),
 	      visibSpec(_visibSpec), metaInfo(_metaInfo) {}
 
 	useit static GlobalDeclaration* create(Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isVariable,
 	                                       Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
-	                                       FileRange _fileRange) {
+	                                       FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(GlobalDeclaration), _name, _type, _value, _isVariable, _visibSpec, _metaInfo,
 		                         _fileRange);
 	}
@@ -37,7 +37,8 @@ class GlobalDeclaration : public IsEntity {
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx);
 	void define(ir::Mod* mod, ir::Ctx* irCtx);
 
-	useit Json     to_json() const final;
+	useit Json to_json() const final;
+
 	useit NodeType nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
 };
 

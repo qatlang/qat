@@ -9,10 +9,10 @@ class PrerunExpressionSentence : public PrerunSentence {
 	PrerunExpression* expression;
 
   public:
-	PrerunExpressionSentence(PrerunExpression* _exp, FileRange _fileRange)
+	PrerunExpressionSentence(PrerunExpression* _exp, FileRangePtr _fileRange)
 	    : PrerunSentence(std::move(_fileRange)), expression(_exp) {}
 
-	useit static PrerunExpressionSentence* create(PrerunExpression* expression, FileRange fileRange) {
+	useit static PrerunExpressionSentence* create(PrerunExpression* expression, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunExpressionSentence), expression, std::move(fileRange));
 	}
 

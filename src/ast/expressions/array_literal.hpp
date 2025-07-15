@@ -16,10 +16,10 @@ class ArrayLiteral final : public Expression,
 	Vec<Expression*> values;
 
   public:
-	ArrayLiteral(Vec<Expression*> _values, FileRange _fileRange)
+	ArrayLiteral(Vec<Expression*> _values, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), values(std::move(_values)) {}
 
-	useit static ArrayLiteral* create(Vec<Expression*> values, FileRange fileRange) {
+	useit static ArrayLiteral* create(Vec<Expression*> values, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ArrayLiteral), values, fileRange);
 	}
 
@@ -34,7 +34,8 @@ class ArrayLiteral final : public Expression,
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json       to_json() const final;
+
+	useit Json to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::ARRAY_LITERAL; }
 };

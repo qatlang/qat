@@ -10,9 +10,9 @@ class PrerunMetaTodo : public PrerunSentence {
 	Maybe<String> message;
 
   public:
-	PrerunMetaTodo(Maybe<String> _message, FileRange _fileRange) : PrerunSentence(_fileRange), message(_message) {}
+	PrerunMetaTodo(Maybe<String> _message, FileRangePtr _fileRange) : PrerunSentence(_fileRange), message(_message) {}
 
-	useit static PrerunMetaTodo* create(Maybe<String> message, FileRange fileRange) {
+	useit static PrerunMetaTodo* create(Maybe<String> message, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunMetaTodo), message, fileRange);
 	}
 
@@ -23,9 +23,9 @@ class MetaTodo : public Sentence {
 	Maybe<String> message;
 
   public:
-	MetaTodo(Maybe<String> _message, FileRange _fileRange) : Sentence(_fileRange), message(_message) {}
+	MetaTodo(Maybe<String> _message, FileRangePtr _fileRange) : Sentence(_fileRange), message(_message) {}
 
-	useit static MetaTodo* create(Maybe<String> message, FileRange fileRange) {
+	useit static MetaTodo* create(Maybe<String> message, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MetaTodo), message, fileRange);
 	}
 

@@ -28,16 +28,16 @@ class FlagType final : public EntityOverview, public Type {
 	Vec<FlagVariant>         variants;
 	Maybe<Vec<PrerunValue*>> values;
 	UnsignedType*            underlyingType;
-	FileRange                range;
+	FileRangePtr             range;
 	bool                     hasDefaultVariants;
 	VisibilityInfo           visibility;
 
   public:
 	FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, Maybe<Vec<PrerunValue*>> _values,
-	         UnsignedType* _underlyingType, FileRange _range, VisibilityInfo _visibility);
+	         UnsignedType* _underlyingType, FileRangePtr _range, VisibilityInfo _visibility);
 
 	useit static FlagType* create(Identifier name, Mod* parent, Vec<FlagVariant> variants,
-	                              Maybe<Vec<PrerunValue*>> values, UnsignedType* underlyingType, FileRange range,
+	                              Maybe<Vec<PrerunValue*>> values, UnsignedType* underlyingType, FileRangePtr range,
 	                              VisibilityInfo visibility) {
 		return std::construct_at(OwnNormal(FlagType), std::move(name), parent, std::move(variants), std::move(values),
 		                         underlyingType, std::move(range), std::move(visibility));

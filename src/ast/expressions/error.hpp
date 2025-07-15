@@ -7,17 +7,17 @@ namespace qat::ast {
 
 class ErrorExpression : public Expression, public LocalDeclCompatible, public InPlaceCreatable, public TypeInferrable {
   private:
-	Expression*                                    errorValue;
-	Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked;
-	Maybe<Pair<Type*, Type*>>                      providedType;
+	Expression*                                       errorValue;
+	Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> isPacked;
+	Maybe<Pair<Type*, Type*>>                         providedType;
 
   public:
-	ErrorExpression(Expression* _value, Maybe<Pair<FileRange, ast::PrerunExpression*>> _isPacked,
-	                Maybe<Pair<Type*, Type*>> _providedType, FileRange _fileRange)
+	ErrorExpression(Expression* _value, Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> _isPacked,
+	                Maybe<Pair<Type*, Type*>> _providedType, FileRangePtr _fileRange)
 	    : Expression(_fileRange), errorValue(_value), isPacked(_isPacked), providedType(_providedType) {}
 
-	useit static ErrorExpression* create(Expression* value, Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked,
-	                                     Maybe<Pair<Type*, Type*>> providedType, FileRange fileRange) {
+	useit static ErrorExpression* create(Expression* value, Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> isPacked,
+	                                     Maybe<Pair<Type*, Type*>> providedType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ErrorExpression), value, isPacked, providedType, fileRange);
 	}
 
@@ -29,7 +29,8 @@ class ErrorExpression : public Expression, public LocalDeclCompatible, public In
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::ERROR_EXPRESSION; }
+
+	useit NodeType nodeType() const final { return NodeType::ERROR_EXPRESSION; }
 };
 
 } // namespace qat::ast

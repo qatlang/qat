@@ -35,9 +35,9 @@ void Logger::warn(String message, Maybe<ErrorLocation> range) {
 	                 (range.has_value()
 	                      ? (String(cli::get_color(cli::Color::cyan)) + " --> " + cli::get_color(cli::Color::reset) +
 	                         getPathFromErrorLocation(range.value()).string() +
-	                         (std::holds_alternative<FileRange>(range.value())
-	                              ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
-	                                 std::to_string(std::get<FileRange>(range.value()).start.byteOffset))
+	                         (std::holds_alternative<FileRangePtr>(range.value())
+	                              ? (":" + std::to_string(std::get<FileRangePtr>(range.value())->start.line) + ":" +
+	                                 std::to_string(std::get<FileRangePtr>(range.value())->start.byteOffset))
 	                              : "") +
 	                         "\n")
 	                      : "") +
@@ -48,9 +48,9 @@ void Logger::fatalError(String message, Maybe<ErrorLocation> range) {
 	std::cerr << String(cli::get_bg_color(cli::Color::red)) + " ERROR " + cli::get_bg_color(cli::Color::reset) +
 	                 (range.has_value()
 	                      ? (" --> " + getPathFromErrorLocation(range.value()).string() +
-	                         (std::holds_alternative<FileRange>(range.value())
-	                              ? (":" + std::to_string(std::get<FileRange>(range.value()).start.line) + ":" +
-	                                 std::to_string(std::get<FileRange>(range.value()).start.byteOffset))
+	                         (std::holds_alternative<FileRangePtr>(range.value())
+	                              ? (":" + std::to_string(std::get<FileRangePtr>(range.value())->start.line) + ":" +
+	                                 std::to_string(std::get<FileRangePtr>(range.value())->start.byteOffset))
 	                              : "") +
 	                         "\n")
 	                      : "") +

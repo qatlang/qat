@@ -179,9 +179,9 @@ void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
 			    "Found " + entity_type_to_string(ent->type) + " named " + ctx->color(name.value) +
 			        " in the parent module. So cannot define a " + entity_type_to_string(entTy) + " named " +
 			        ctx->color(name.value) + ".",
-			    name.range,
+			    name.range ? Maybe<FileRangePtr>(name.range) : None,
 			    ent->name.has_value()
-			        ? Maybe<Pair<String, FileRange>>(Pair<String, FileRange>{
+			        ? Maybe<Pair<String, FileRangePtr>>(Pair<String, FileRangePtr>{
 			              "The existing " + entity_type_to_string(ent->type) + " can be found here", ent->name->range})
 			        : None);
 		}
@@ -310,8 +310,8 @@ void Mod::addMember(Mod* mod) {
 	submodules.push_back(mod);
 }
 
-Function* Mod::create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
-                               const FileRange& fileRange, const VisibilityInfo& visibility,
+Function* Mod::create_function(Identifier const& name, bool isInline, Type* returnType, Vec<Argument> args,
+                               FileRangePtr fileRange, const VisibilityInfo& visibility,
                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, Ctx* ctx) {
 	SHOW("Creating IR function")
 	auto nmUnits = get_link_names();
@@ -374,11 +374,11 @@ Mod* Mod::create_root_lib(Mod* parent, fs::path filepath, fs::path basePath, Ide
 	return sub;
 }
 
-void Mod::add_fs_bring_mention(Mod* otherMod, const FileRange& fileRange) {
-	fsBroughtMentions.push_back(Pair<Mod*, FileRange>(otherMod, fileRange));
+void Mod::add_fs_bring_mention(Mod* otherMod, FileRangePtr fileRange) {
+	fsBroughtMentions.push_back(Pair<Mod*, FileRangePtr>(otherMod, fileRange));
 }
 
-Vec<Pair<Mod*, FileRange>> const& Mod::get_fs_bring_mentions() const { return fsBroughtMentions; }
+Vec<Pair<Mod*, FileRangePtr>> const& Mod::get_fs_bring_mentions() const { return fsBroughtMentions; }
 
 void Mod::update_overview() {
 	String moduleTyStr;
@@ -565,8 +565,9 @@ bool Mod::should_be_named() const { return moduleType == ModuleType::lib; }
 Function* Mod::get_mod_initialiser(Ctx* ctx) {
 	if (not moduleInitialiser) {
 		moduleInitialiser = ir::Function::Create(
-		    this, Identifier("module'initialiser'" + get_referrable_name(), {filePath}), None, {/* Generics */}, false,
-		    ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, name.range, VisibilityInfo::pub(), ctx);
+		    this, Identifier("module'initialiser'" + get_referrable_name(), FileRange::from_path(filePath)), None,
+		    {/* Generics */}, false, ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {},
+		    name.range ? Maybe<FileRangePtr>(name.range) : nullptr, VisibilityInfo::pub(), ctx);
 		auto* entry = ir::Block::create(moduleInitialiser, nullptr);
 		entry->set_active(ctx->builder);
 	}
@@ -4034,11 +4035,11 @@ void Mod::export_json_from_ast(Ctx* ctx) {
 				jsonStream.close();
 			} else {
 				ctx->Error("Output file could not be opened for writing the JSON representation",
-				           {get_parent_file()->filePath});
+				           FileRange::from_path(get_parent_file()->filePath));
 			}
 		} else {
 			ctx->Error("Could not create parent directories for the JSON file for exporting AST",
-			           {get_parent_file()->filePath});
+			           FileRange::from_path(get_parent_file()->filePath));
 		}
 	} else {
 		SHOW("Module type not suitable for exporting AST")
@@ -4068,7 +4069,7 @@ llvm::Function* Mod::link_intrinsic(IntrinsicID intr) {
 	}
 }
 
-String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRange rangeVal) {
+String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRangePtr rangeVal) {
 	if (cli::Config::get()->is_freestanding()) {
 		if (has_provided_function(nval)) {
 			auto resFn      = get_provided_function(nval);

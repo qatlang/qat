@@ -9,9 +9,9 @@ class LogicalNot final : public Expression {
 	Expression* exp;
 
   public:
-	LogicalNot(Expression* _exp, FileRange _range) : Expression(_range), exp(_exp) {}
+	LogicalNot(Expression* _exp, FileRangePtr _range) : Expression(_range), exp(_exp) {}
 
-	useit static LogicalNot* create(Expression* _exp, FileRange _range) {
+	useit static LogicalNot* create(Expression* _exp, FileRangePtr _range) {
 		return std::construct_at(OwnNormal(LogicalNot), _exp, _range);
 	}
 

@@ -7,9 +7,9 @@ namespace qat::ast {
 
 String StringLiteral::get_value() const { return value; }
 
-void StringLiteral::addValue(const String& val, const FileRange& fRange) {
+void StringLiteral::addValue(const String& val, FileRangePtr fRange) {
 	value += val;
-	fileRange = FileRange(fileRange, fRange);
+	fileRange = FileRange::merge(fileRange, fRange);
 }
 
 ir::PrerunValue* StringLiteral::emit(EmitCtx* ctx) {
@@ -18,7 +18,7 @@ ir::PrerunValue* StringLiteral::emit(EmitCtx* ctx) {
 	        llvm::cast<llvm::StructType>(ir::TextType::get(ctx->irCtx)->get_llvm_type()),
 	        // NOTE - This usage of llvm::IRBuilder is allowed as it creates a constant without requiring a function
 	        {ctx->irCtx->builder.CreateGlobalString(value, ctx->irCtx->get_global_string_name(), 0U,
-	                                                   ctx->mod->get_llvm_module()),
+	                                                ctx->mod->get_llvm_module()),
 	         llvm::ConstantInt::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), value.length())}),
 	    ir::TextType::get(ctx->irCtx));
 }

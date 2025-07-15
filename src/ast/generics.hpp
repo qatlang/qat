@@ -18,9 +18,11 @@ class FillGeneric {
 
   public:
 	explicit FillGeneric(Type* type) : data(type), kind(FillGenericKind::typed) {}
+
 	explicit FillGeneric(PrerunExpression* expression) : data(expression), kind(FillGenericKind::prerun) {}
 
 	useit static FillGeneric* create(Type* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
+
 	useit static FillGeneric* create(PrerunExpression* _exp) { return std::construct_at(OwnNormal(FillGeneric), _exp); }
 
 	useit bool is_type() const;
@@ -29,7 +31,7 @@ class FillGeneric {
 	useit Type*             as_type() const;
 	useit PrerunExpression* as_prerun() const;
 
-	useit FileRange const& get_range() const;
+	useit FileRangePtr get_range() const;
 
 	useit ir::GenericToFill* toFill(EmitCtx* ctx) const;
 

@@ -2,7 +2,7 @@
 #define QAT_UTILS_FILE_PLACEMENT_HPP
 
 #include "./json.hpp"
-#include <cstdint>
+
 #include <filesystem>
 
 namespace qat {
@@ -15,38 +15,51 @@ struct FilePos {
 	u64 byteOffset;
 
 	operator JsonValue() const;
-
 	operator Json() const;
+
+	operator String() const { return std::to_string(line) + ":" + std::to_string(byteOffset); }
 };
 
 std::ostream& operator<<(std::ostream& os, FilePos const& pos);
 
+class FileRange;
+using FileRangePtr = FileRange const*;
+
 class FileRange {
   public:
-	FileRange(fs::path _filePath);
-
-	FileRange(fs::path _file, FilePos _start, FilePos _end);
-
-	FileRange(Json json);
-
-	FileRange(const FileRange& first, const FileRange& second);
-
 	fs::path file;
-	FilePos start;
-	FilePos end;
+	FilePos  start;
+	FilePos  end;
 
-	useit FileRange spanTo(FileRange const& other) const;
-	useit FileRange trimTo(FilePos othStart) const;
-	useit String    start_to_string() const;
-	useit bool      is_before(FileRange another) const;
+	FileRange(fs::path _path, FilePos _start, FilePos _end)
+	    : file(fs::exists(_path) ? fs::absolute(std::move(_path)) : std::move(_path)), start(_start), end(_end) {}
 
-	operator Json() const;
-	operator JsonValue() const;
-	useit Json to_json() const;
-	useit JsonValue to_json_value() const;
+	FileRange(FileRange const&) = delete;
+	FileRange(FileRange&&)      = delete;
+
+	static FileRangePtr null;
+
+	useit static FileRangePtr from_path(fs::path _filePath);
+
+	useit static FileRangePtr from(fs::path _file, FilePos _start, FilePos _end);
+
+	useit static FileRange* var_from(fs::path _file, FilePos _start, FilePos _end);
+
+	useit static FileRangePtr from_json(Json json);
+
+	useit static FileRangePtr merge(FileRangePtr first, FileRangePtr second);
+
+	useit FileRangePtr spanTo(FileRangePtr other) const;
+	useit FileRangePtr trimTo(FilePos othStart) const;
+	useit String       start_to_string() const;
+	useit bool         is_before(FileRangePtr another) const;
+	useit String       to_string() const;
+	useit Json         to_json() const;
+	useit JsonValue    to_json_value() const;
 };
 
-std::ostream& operator<<(std::ostream& os, FileRange const& range);
+std::ostream& operator<<(std::ostream& os, FileRangePtr) = delete;
+std::ostream& operator<<(std::ostream& os, FileRange*)   = delete;
 
 } // namespace qat
 

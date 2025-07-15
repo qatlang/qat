@@ -14,11 +14,11 @@ class GenericEntity final : public Expression {
 	Vec<FillGeneric*> genericTypes;
 
   public:
-	GenericEntity(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes, FileRange _fileRange)
+	GenericEntity(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes, FileRangePtr _fileRange)
 	    : Expression(_fileRange), relative(_relative), names(_names), genericTypes(_genericTypes) {}
 
 	useit static GenericEntity* create(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes,
-	                                   FileRange _fileRange) {
+	                                   FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(GenericEntity), _relative, _names, _genericTypes, _fileRange);
 	}
 
@@ -26,7 +26,8 @@ class GenericEntity final : public Expression {
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::GENERIC_ENTITY; }
+
+	useit NodeType nodeType() const final { return NodeType::GENERIC_ENTITY; }
 };
 
 } // namespace qat::ast

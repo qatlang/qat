@@ -50,7 +50,7 @@ void GenericNamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depend
 }
 
 Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identifier entityName, Vec<Identifier> names,
-                                           Vec<FillGeneric*> genericTypes, AccessInfo reqInfo, FileRange fileRange,
+                                           Vec<FillGeneric*> genericTypes, AccessInfo reqInfo, FileRangePtr fileRange,
                                            EmitCtx* ctx) {
 	if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
 	    mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||

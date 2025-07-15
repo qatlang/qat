@@ -76,7 +76,7 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				auto thirdVal  = args[3]->emit(ctx);
 				auto fourthVal = args[4]->emit(ctx);
 				auto fifthVal  = args[5]->emit(ctx);
-				auto checkFn   = [&](ir::PrerunValue* value, FileRange range) {
+				auto checkFn   = [&](ir::PrerunValue* value, FileRangePtr range) {
                     if (not(value->get_ir_type()->is_unsigned() &&
                             (value->get_ir_type()->as_unsigned()->get_bitwidth() == 32u))) {
                         ctx->Error("This value is expected to be of type " + ctx->color("u32") +

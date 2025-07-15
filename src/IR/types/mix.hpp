@@ -26,7 +26,7 @@ class MixType : public ExpandedType, public EntityOverview {
 
 	usize           tagBitWidth = 1;
 	Maybe<usize>    defaultVal;
-	FileRange       fileRange;
+	FileRangePtr    fileRange;
 	Maybe<MetaInfo> metaInfo;
 
 	ir::OpaqueType* opaquedType = nullptr;
@@ -36,15 +36,15 @@ class MixType : public ExpandedType, public EntityOverview {
   public:
 	MixType(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics, Mod* parent,
 	        Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool addNoneVariant,
-	        bool isPacked, const VisibilityInfo& visibility, FileRange fileRange, Maybe<MetaInfo> metaInfo);
+	        bool isPacked, const VisibilityInfo& visibility, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo);
 
 	useit static MixType* create(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics,
 	                             Mod* parent, Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal,
 	                             ir::Ctx* irCtx, bool addNoneVariant, bool isPacked, const VisibilityInfo& visibility,
-	                             FileRange fileRange, Maybe<MetaInfo> metaInfo) {
+	                             FileRangePtr fileRange, Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(MixType), std::move(name), opaquedTy, std::move(_generics), parent,
 		                         std::move(subtypes), defaultVal, irCtx, addNoneVariant, isPacked, visibility,
-		                         std::move(fileRange), std::move(metaInfo));
+		                         fileRange, std::move(metaInfo));
 	}
 
 	useit usize get_index_of(const String& name) const;
@@ -60,14 +60,14 @@ class MixType : public ExpandedType, public EntityOverview {
 
 	useit Type* get_variant_type_at(usize index) const;
 
-	useit bool      is_packed() const;
-	useit usize     get_tag_bitwidth() const;
-	useit u64       get_data_bitwidth() const;
-	useit FileRange get_file_range() const;
-	useit String    to_string() const final;
-	useit TypeKind  type_kind() const final;
-	useit LinkNames get_link_names() const final;
-	useit bool      is_type_sized() const final;
+	useit bool         is_packed() const;
+	useit usize        get_tag_bitwidth() const;
+	useit u64          get_data_bitwidth() const;
+	useit FileRangePtr get_file_range() const;
+	useit String       to_string() const final;
+	useit TypeKind     type_kind() const final;
+	useit LinkNames    get_link_names() const final;
+	useit bool         is_type_sized() const final;
 
 	useit bool can_be_prerun() const final {
 		for (auto sub : subtypes) {

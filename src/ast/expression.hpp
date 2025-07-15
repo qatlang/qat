@@ -38,14 +38,14 @@ class InPlaceCreatable {
 		                                 : createIn->get_ir_type()->as_ref()->get_subtype()->is_same(_type));
 	}
 
-	useit ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type, FileRange rangeVal) {
+	useit ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type, FileRangePtr rangeVal) {
 		auto created = createIn;
 		unsetCreateIn();
 		if (created->is_ref()) {
 			return ir::Value::get(created->get_llvm(),
 			                      ir::RefType::get(created->get_ir_type()->as_ref()->has_variability(), type, irCtx),
 			                      false)
-			    ->with_range(std::move(rangeVal));
+			    ->with_range(rangeVal);
 		} else {
 			return ir::Value::get(created->get_llvm(), type, created->is_variable())->with_range(std::move(rangeVal));
 		}
@@ -72,7 +72,7 @@ class TypeInferrable {
 
 	useit bool is_type_inferred() const { return inferredType != nullptr; }
 
-	void check_inferred_type(ir::Type* provided, EmitCtx* ctx, FileRange fileRange) const {
+	void check_inferred_type(ir::Type* provided, EmitCtx* ctx, FileRangePtr fileRange) const {
 		if (inferredType && not inferredType->is_same(provided)) {
 			ctx->Error("The type inferred for this expression is " + ctx->color(inferredType->to_string()) +
 			               " which does not match with the provided type which is " + ctx->color(provided->to_string()),
@@ -87,7 +87,7 @@ class TypeInferrable {
 
 class Expression : public Node {
   public:
-	Expression(FileRange _fileRange) : Node(std::move(_fileRange)) {}
+	Expression(FileRangePtr _fileRange) : Node(_fileRange) {}
 
 	~Expression() override = default;
 
@@ -114,7 +114,7 @@ class Expression : public Node {
 
 class PrerunExpression : public Expression {
   public:
-	PrerunExpression(FileRange _fileRange) : Expression(std::move(_fileRange)) {}
+	PrerunExpression(FileRangePtr _fileRange) : Expression(_fileRange) {}
 
 	~PrerunExpression() override = default;
 

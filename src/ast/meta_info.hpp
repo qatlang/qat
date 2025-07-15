@@ -8,12 +8,12 @@ namespace qat::ast {
 
 struct MetaInfo {
 	Vec<Pair<Identifier, PrerunExpression*>> keyValues;
-	Maybe<FileRange>                         inlineRange;
-	FileRange                                fileRange;
+	Maybe<FileRangePtr>                      inlineRange;
+	FileRangePtr                             fileRange;
 
 	mutable bool isParentFunction = false;
 
-	MetaInfo(Vec<Pair<Identifier, PrerunExpression*>> _keyValues, FileRange _fileRange)
+	MetaInfo(Vec<Pair<Identifier, PrerunExpression*>> _keyValues, FileRangePtr _fileRange)
 	    : keyValues(_keyValues), fileRange(_fileRange) {}
 
 	void set_parent_as_function() const { isParentFunction = true; }
@@ -23,7 +23,7 @@ struct MetaInfo {
 	useit ir::MetaInfo toIR(EmitCtx* ctx) const {
 		std::set<String>                        keys;
 		Vec<Pair<Identifier, ir::PrerunValue*>> resultVec;
-		Vec<FileRange>                          valuesRange;
+		Vec<FileRangePtr>                       valuesRange;
 		for (auto& kv : keyValues) {
 			if (keys.contains(kv.first.value)) {
 				ctx->Error("The key " + ctx->color(kv.first.value) + " is repeating here", kv.first.range);
@@ -46,12 +46,12 @@ struct MetaInfo {
 				}
 				if (inlineRange.has_value()) {
 					ctx->Error("The " + ctx->color(ir::MetaInfo::inlineKey) + " condition is repeating here",
-					           inlineRange.value().is_before(kv.second->fileRange) ? kv.second->fileRange
-					                                                               : inlineRange.value(),
-					           Pair<String, FileRange>{
+					           inlineRange.value()->is_before(kv.second->fileRange) ? kv.second->fileRange
+					                                                                : inlineRange.value(),
+					           Pair<String, FileRangePtr>{
 					               "The " + ctx->color(ir::MetaInfo::inlineKey) + " condition is already provided here",
-					               inlineRange.value().is_before(kv.second->fileRange) ? inlineRange.value()
-					                                                                   : kv.second->fileRange});
+					               inlineRange.value()->is_before(kv.second->fileRange) ? inlineRange.value()
+					                                                                    : kv.second->fileRange});
 				}
 				if (not irVal->get_ir_type()->is_bool()) {
 					ctx->Error("The " + ctx->color(ir::MetaInfo::inlineKey) + " field is expected to be of type " +

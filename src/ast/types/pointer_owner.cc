@@ -50,7 +50,7 @@ String ptr_owner_to_string(PtrOwnType ownType) {
 	}
 }
 
-ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRange fileRange) {
+ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange) {
 
 	if (owner.kind == PtrOwnType::function) {
 		if (not ctx->get_fn()) {

@@ -13,25 +13,25 @@ class InExpression : public TypeInferrable, public Expression {
 	InExpressionVariants target;
 
   public:
-	InExpression(Expression* _candidate, InExpressionVariants _target, FileRange _fileRange)
+	InExpression(Expression* _candidate, InExpressionVariants _target, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), candidate(_candidate), target(std::move(_target)) {}
 
-	useit static InExpression* create_expression(Expression* candidate, Expression* target, FileRange fileRange) {
+	useit static InExpression* create_expression(Expression* candidate, Expression* target, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<0>, target), std::move(fileRange));
 	}
 
-	useit static InExpression* create_heap(Expression* candidate, FileRange fileRange) {
+	useit static InExpression* create_heap(Expression* candidate, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<1>, std::nullopt), std::move(fileRange));
 	}
 
-	useit static InExpression* create_region(Expression* candidate, Type* target, FileRange fileRange) {
+	useit static InExpression* create_region(Expression* candidate, Type* target, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<2>, target), std::move(fileRange));
 	}
 
-	useit static InExpression* create_type(Expression* candidate, Type* target, FileRange fileRange) {
+	useit static InExpression* create_type(Expression* candidate, Type* target, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<3>, target), std::move(fileRange));
 	}

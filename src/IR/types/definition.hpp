@@ -176,7 +176,7 @@ class GenericDefinitionType : public Uniq, public EntityOverview {
 
 	useit Mod* get_module() const;
 
-	useit DefinitionType* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+	useit DefinitionType* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
 	useit ast::GenericAbstractType* get_generic_at(usize index) const;
 

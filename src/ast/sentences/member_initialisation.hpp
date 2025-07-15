@@ -17,12 +17,12 @@ class MemberInit final : public Sentence {
 	bool isAllowed = false;
 
   public:
-	MemberInit(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue, FileRange _fileRange)
+	MemberInit(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), memName(_memName), value(_value),
 	      isInitOfMixVariantWithoutValue(_isInitOfMixVariantWithoutValue) {}
 
 	useit static MemberInit* create(Identifier _memName, Expression* _value, bool _isInitOfMixVariantWithoutValue,
-	                                FileRange _fileRange) {
+	                                FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(MemberInit), _memName, _value, _isInitOfMixVariantWithoutValue, _fileRange);
 	}
 
@@ -31,8 +31,10 @@ class MemberInit final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::MEMBER_INIT; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::MEMBER_INIT; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

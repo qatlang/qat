@@ -3,8 +3,6 @@
 
 #include "../utils/identifier.hpp"
 #include "../utils/visibility.hpp"
-#include <functional>
-#include <optional>
 
 namespace qat::ir {
 
@@ -23,7 +21,7 @@ template <class T> class Brought {
 
 	Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
-	useit Identifier get_name() const { return name.value_or(Identifier("", {""})); }
+	useit Identifier get_name() const { return name.value(); }
 
 	useit bool is_named() const { return name.has_value(); }
 

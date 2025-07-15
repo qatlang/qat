@@ -70,7 +70,7 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 				irCtx->Error("There already exists another " + irCtx->color("from convertor") +
 				                 " with the same receiving type in the parent skill",
 				             fileRange,
-				             Pair<String, FileRange>{
+				             Pair<String, FileRangePtr>{
 				                 "The previous convertor can be found here",
 				                 state.parent->as_done_skill()->get_from_convertor(None, candidate)->get_name().range});
 			}
@@ -84,7 +84,8 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 					        " have a variadic argument which can be skipped. This convertor will effectively have the"
 					        " same signature as that constructor, which is not allowed",
 					    fileRange,
-					    Pair<String, FileRange>{"The previous constructor can be found here", cons->get_name().range});
+					    Pair<String, FileRangePtr>{"The previous constructor can be found here",
+					                               cons->get_name().range});
 				}
 			}
 		} else if (state.parent->is_expanded()) {
@@ -92,7 +93,7 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 				irCtx->Error("There already exists another " + irCtx->color("from convertor") +
 				                 " with the same receiving type in the parent type",
 				             fileRange,
-				             Pair<String, FileRange>{
+				             Pair<String, FileRangePtr>{
 				                 "The previous convertor can be found here",
 				                 state.parent->as_expanded()->get_from_convertor(None, candidate)->get_name().range});
 			}
@@ -106,7 +107,8 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 					        " have a variadic argument which can be skipped. This convertor will effectively have the"
 					        " same signature as that constructor, which is not allowed",
 					    fileRange,
-					    Pair<String, FileRange>{"The previous constructor can be found here", cons->get_name().range});
+					    Pair<String, FileRangePtr>{"The previous constructor can be found here",
+					                               cons->get_name().range});
 				}
 			}
 		}
@@ -117,19 +119,19 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		SHOW("Convertor IR created")
 	} else {
 		if (state.parent->is_done_skill() && state.parent->as_done_skill()->has_to_convertor(candidate)) {
-			irCtx->Error(
-			    "There already exists another " + irCtx->color("to convertor") +
-			        " with the same destination type in the parent skill",
-			    fileRange,
-			    Pair<String, FileRange>{"The previous convertor can be found here",
-			                            state.parent->as_done_skill()->get_to_convertor(candidate)->get_name().range});
+			irCtx->Error("There already exists another " + irCtx->color("to convertor") +
+			                 " with the same destination type in the parent skill",
+			             fileRange,
+			             Pair<String, FileRangePtr>{
+			                 "The previous convertor can be found here",
+			                 state.parent->as_done_skill()->get_to_convertor(candidate)->get_name().range});
 		} else if (state.parent->is_expanded() && state.parent->as_expanded()->has_to_convertor(candidate)) {
 			irCtx->Error(
 			    "There already exists another " + irCtx->color("to convertor") +
 			        " with the same destination type in the parent type",
 			    fileRange,
-			    Pair<String, FileRange>{"The previous convertor can be found here",
-			                            state.parent->as_expanded()->get_to_convertor(candidate)->get_name().range});
+			    Pair<String, FileRangePtr>{"The previous convertor can be found here",
+			                               state.parent->as_expanded()->get_to_convertor(candidate)->get_name().range});
 		}
 		SHOW("Convertor is TO")
 		state.result = ir::Method::CreateToConvertor(
@@ -284,7 +286,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						irCtx->Error("The expected type of the member field is " +
 						                 irCtx->color(mem->type->to_string()) + " but the value provided is of type " +
 						                 irCtx->color(memVal->get_ir_type()->to_string()),
-						             FileRange{mem->name.range, mem->defaultValue.value()->fileRange});
+						             FileRange::merge(mem->name.range, mem->defaultValue.value()->fileRange));
 					}
 					fnEmit->add_init_member({i, mem->defaultValue.value()->fileRange});
 				} else if (mem->type->has_prerun_default_value() || mem->type->is_default_constructible()) {
@@ -317,8 +319,8 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			}
 		}
 		if (state.parent->get_parent_type()->is_struct()) {
-			Vec<Pair<String, FileRange>> missingMembers;
-			auto                         cTy = state.parent->get_parent_type()->as_struct();
+			Vec<Pair<String, FileRangePtr>> missingMembers;
+			auto                            cTy = state.parent->get_parent_type()->as_struct();
 			for (u64 ind = 0; ind < cTy->get_field_count(); ind++) {
 				auto memCheck = fnEmit->is_member_initted(ind);
 				if (not memCheck.has_value()) {

@@ -20,10 +20,10 @@ class Type {
 	static Vec<GenericAbstractType*> generics;
 
   public:
-	explicit Type(FileRange _fileRange);
+	explicit Type(FileRangePtr _fileRange);
 	virtual ~Type() = default;
 
-	FileRange fileRange;
+	FileRangePtr fileRange;
 
 	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 

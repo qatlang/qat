@@ -28,7 +28,7 @@ class Lexer {
 	ir::Ctx* irCtx;
 
   public:
-	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx){};
+	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
 	useit static Lexer* get(ir::Ctx* irCtx);
 
 	~Lexer();
@@ -86,9 +86,11 @@ class Lexer {
 		std::unreachable();
 	}
 
-	useit FileRange get_position(u64 length);
+	useit FileRangePtr get_position(u64 length);
 
-	useit FileRange create_range(FilePos start, FilePos end);
+	useit FileRange* get_position_var(u64 length);
+
+	useit FileRangePtr create_range(FilePos start, FilePos end);
 };
 
 } // namespace qat::lexer

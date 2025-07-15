@@ -2,9 +2,9 @@
 #define QAT_AST_NAMED_GENERIC_HPP
 
 #include "../../utils/helpers.hpp"
-#include "../expression.hpp"
+#include "../node.hpp"
+#include "./generic_abstract.hpp"
 #include "./qat_type.hpp"
-#include "generic_abstract.hpp"
 
 namespace qat::ast {
 
@@ -14,21 +14,22 @@ class TypedGenericAbstract final : public GenericAbstractType {
 	mutable Vec<ir::Type*> typeValue;
 
   public:
-	TypedGenericAbstract(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy, FileRange _fileRange)
+	TypedGenericAbstract(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy, FileRangePtr _fileRange)
 	    : GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
 
 	useit static TypedGenericAbstract* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
-	                                          FileRange _fileRange) {
+	                                          FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TypedGenericAbstract), _index, std::move(_name), _defaultTy,
 		                         std::move(_fileRange));
 	}
 
 	useit bool hasDefault() const final;
+
 	useit ast::Type* getDefaultAST() const { return defaultTypeAST.value(); }
+
 	useit ir::Type* getDefault() const;
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-	                         EmitCtx* ctx) final {
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		if (defaultTypeAST.has_value()) {
 			UPDATE_DEPS(defaultTypeAST.value());
 		}

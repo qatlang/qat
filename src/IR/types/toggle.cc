@@ -128,14 +128,14 @@ bool GenericToggleType::all_parameters_have_default() const {
 	return true;
 }
 
-Type* GenericToggleType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+Type* GenericToggleType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRangePtr range) {
 	for (auto& oVar : opaqueVariants) {
-		if (oVar.check(irCtx, [&](String const& msg, FileRange const& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+		if (oVar.check(irCtx, [&](String const& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
 			return oVar.get();
 		}
 	}
 	for (auto& var : variants) {
-		if (var.check(irCtx, [&](String const& msg, FileRange const& rng) { irCtx->Error(msg, rng); }, toFillTypes))
+		if (var.check(irCtx, [&](String const& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, toFillTypes))
 			return var.get();
 	}
 	auto* ctx = ast::EmitCtx::get(irCtx, parent);
@@ -149,7 +149,7 @@ Type* GenericToggleType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 		}
 		if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 			irCtx->Error("The provided parameters for the generic struct type do not satisfy the constraints", range,
-			             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
+			             Pair<String, FileRangePtr>{"The constraint can be found here", constraint->fileRange});
 		}
 	}
 	Vec<ir::GenericArgument*> genParams;

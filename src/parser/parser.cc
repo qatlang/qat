@@ -146,7 +146,7 @@
 #define IdentifierAt(ind)     Identifier(tokens->at(ind).value, tokens->at(ind).fileRange)
 #define ValueAt(ind)          tokens->at(ind).value
 #define RangeAt(ind)          tokens->at(ind).fileRange
-#define RangeSpan(ind1, ind2) {tokens->at(ind1).fileRange, tokens->at(ind2).fileRange}
+#define RangeSpan(ind1, ind2) FileRange::merge(tokens->at(ind1).fileRange, tokens->at(ind2).fileRange)
 
 #define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(val))
 
@@ -250,7 +250,7 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 								add_warning(
 								    "Expected multiple entities to be brought. Consider removing the curly braces "
 								    "since only one child entity is brought",
-								    FileRange(RangeAt(i + 1), RangeAt(bClose)));
+								    RangeSpan(i + 1, bClose));
 								if (is_next(TokenType::identifier, i + 1)) {
 									handler(newGroup, i + 1, bCloseRes.value());
 								} else if (is_next(TokenType::super, i + 1)) {
@@ -265,7 +265,7 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 						}
 					}
 					if (parent.has_value()) {
-						parent.value()->addMember(newGroup);
+						parent.value()->add_member(newGroup);
 					} else {
 						rootGroups.push_back(newGroup);
 					}
@@ -384,11 +384,11 @@ EntityMetadata Parser::do_entity_metadata(ParserContext& parserCtx, usize from, 
 	return EntityMetadata(defineChecker, genericConstraint, std::move(metaInfo), i);
 }
 
-ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRange fileRange) {
+ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRangePtr fileRange) {
 	Vec<Pair<Identifier, ast::PrerunExpression*>> fields;
 
-	bool             isInline = false;
-	Maybe<FileRange> inlineRange;
+	bool                isInline = false;
+	Maybe<FileRangePtr> inlineRange;
 	using lexer::TokenType;
 	for (usize i = from + 1; i < upto; i++) {
 		auto& token = tokens->at(i);
@@ -436,11 +436,11 @@ ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRange fileRange) 
 			}
 		}
 	}
-	return ast::MetaInfo(fields, FileRange{fileRange, RangeAt(upto)});
+	return ast::MetaInfo(fields, FileRange::merge(fileRange, RangeAt(upto)));
 }
 
 ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
-                                           const FileRange& startRange) {
+                                           FileRangePtr startRange) {
 	using lexer::TokenType;
 	Vec<ast::StringLiteral*>        paths;
 	Vec<Maybe<ast::StringLiteral*>> names;
@@ -465,10 +465,10 @@ ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto
 					names.push_back(None);
 					i++;
 				}
-				SHOW("Pushing brought path: " << token.fileRange.file.parent_path() / token.value)
-				broughtPaths.push_back(token.fileRange.file.parent_path() / token.value);
+				SHOW("Pushing brought path: " << token.fileRange->file.parent_path() / token.value)
+				broughtPaths.push_back(token.fileRange->file.parent_path() / token.value);
 				if (isMember) {
-					memberPaths.push_back(token.fileRange.file.parent_path() / token.value);
+					memberPaths.push_back(token.fileRange->file.parent_path() / token.value);
 				}
 				paths.push_back(ast::StringLiteral::create(token.value, token.fileRange));
 				break;
@@ -491,7 +491,8 @@ ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto
 			}
 		}
 	}
-	return ast::BringPaths::create(isMember, std::move(paths), std::move(names), spec, {startRange, RangeAt(upto)});
+	return ast::BringPaths::create(isMember, std::move(paths), std::move(names), spec,
+	                               FileRange::merge(startRange, RangeAt(upto)));
 }
 
 Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& preCtx, usize from, Maybe<usize> upto,
@@ -559,7 +560,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				if (not(is_next(TokenType::colon, i) && is_next(TokenType::skill, i + 1))) {
 					add_error("Expected " + color_error(":skill") + " after this", RangeAt(i));
 				}
-				FileRange doneSkill = RangeSpan(i, i + 2);
+				FileRangePtr doneSkill = RangeSpan(i, i + 2);
 				i += 2;
 				if (not is_next(TokenType::colon, i)) {
 					add_error("Expected : after this", RangeSpan(start, i));
@@ -578,8 +579,8 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				break;
 			}
 			case TokenType::skill: {
-				auto             start      = i;
-				Maybe<FileRange> skillRange = RangeAt(i);
+				auto                start      = i;
+				Maybe<FileRangePtr> skillRange = RangeAt(i);
 				if (not is_next(TokenType::colon, i)) {
 					add_error("Expected : after this", RangeAt(i));
 				}
@@ -613,17 +614,17 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						if (is_next(TokenType::parenthesisClose, i)) {
 							i++;
 						} else {
-							add_error("The expression ended here, and expected ) to indicate the end of the expression",
-							          (typeExp ? FileRange{typeExp.get_range(), RangeSpan(start, i)}
-							                   : FileRange RangeSpan(start, i)));
+							add_error(
+							    "The expression ended here, and expected ) to indicate the end of the expression",
+							    (typeExp ? FileRange::merge(typeExp.get_range(), RangeAt(i)) : RangeSpan(start, i)));
 						}
 					}
 					setCachedPreExp(ast::PrerunVariantInitialiser::create(typeExp, name, valueExp, RangeSpan(start, i)),
 					                i);
 				} else if (is_next(TokenType::curlybraceOpen, i)) {
-					Maybe<FileRange> specialRange;
-					bool             isSpecialDefault = false;
-					Vec<Identifier>  variants;
+					Maybe<FileRangePtr> specialRange;
+					bool                isSpecialDefault = false;
+					Vec<Identifier>     variants;
 					i++;
 					if (is_next(TokenType::Default, i)) {
 						specialRange     = RangeAt(i + 1);
@@ -666,7 +667,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					        color_error("::{ Variant1, Variant2 }") + " for initialising specific variants or " +
 					        color_error("::{ default }") + " for the default value or " + color_error("::{ none }") +
 					        " for the zero value",
-					    typeExp ? FileRange{typeExp.get_range(), RangeAt(i)} : RangeAt(i));
+					    typeExp ? FileRange::merge(typeExp.get_range(), RangeAt(i)) : RangeAt(i));
 				}
 				break;
 			}
@@ -713,7 +714,8 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				}
 				auto expRes = do_prerun_expression(preCtx, i, upto, true);
 				i           = expRes.second;
-				setCachedPreExp(ast::PrerunBitwiseNot::create(expRes.first, {RangeAt(start), expRes.first->fileRange}),
+				setCachedPreExp(ast::PrerunBitwiseNot::create(
+				                    expRes.first, FileRange::merge(RangeAt(start), expRes.first->fileRange)),
 				                i);
 				break;
 			}
@@ -754,7 +756,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							auto index  = findLowestPrecedence();
 							auto newExp = ast::PrerunBinaryOperator::create(
 							    expressions[index], operators[index], expressions[index + 1],
-							    {expressions[index]->fileRange, expressions[index + 1]->fileRange});
+							    FileRange::merge(expressions[index]->fileRange, expressions[index + 1]->fileRange));
 							operators.erase(operators.begin() + index);
 							expressions.erase(expressions.begin() + index + 1);
 							expressions.at(index) = newExp;
@@ -763,9 +765,10 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					} else {
 						auto lhs = consumeCachedExp();
 						i        = rhsRes.second;
-						setCachedPreExp(ast::PrerunBinaryOperator::create(lhs, opr, rhsRes.first,
-						                                                  {lhs->fileRange, rhsRes.first->fileRange}),
-						                i);
+						setCachedPreExp(
+						    ast::PrerunBinaryOperator::create(
+						        lhs, opr, rhsRes.first, FileRange::merge(lhs->fileRange, rhsRes.first->fileRange)),
+						    i);
 					}
 				} else {
 					add_error("No expression found on the left hand side of the binary operator " +
@@ -813,10 +816,10 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					Maybe<Identifier> suffix;
 					if (not utils::is_integer(bitStr) && (lastUnderscorePos + 1 < token.value.length())) {
 						suffix = {token.value.substr(lastUnderscorePos + 1),
-						          FileRange(token.fileRange.file,
-						                    FilePos{token.fileRange.start.line,
-						                            token.fileRange.start.byteOffset + lastUnderscorePos + 1},
-						                    token.fileRange.end)};
+						          FileRange::from(token.fileRange->file,
+						                          FilePos{token.fileRange->start.line,
+						                                  token.fileRange->start.byteOffset + lastUnderscorePos + 1},
+						                          token.fileRange->end)};
 					}
 					Maybe<u64> bits =
 					    (not bitStr.empty() && utils::is_integer(bitStr)) ? Maybe<u64>(std::stoul(bitStr)) : None;
@@ -842,31 +845,32 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					} else {
 						SHOW("INTEGER_LITERAL: " << token.value << " isUnsigned: " << (isUnsigned ? "true" : "false")
 						                         << " bits: " << (bits.has_value() ? bits.value() : 0u))
-						setCachedPreExp(
-						    isUnsigned.has_value() && isUnsigned.value()
-						        ? (ast::PrerunExpression*)(ast::UnsignedLiteral::create(
-						              token.value.substr(0, lastUnderscorePos),
-						              bits.has_value()
-						                  ? Maybe<Pair<u64, FileRange>>(
-						                        {bits.value(), FileRange(token.fileRange.file,
-						                                                 FilePos{token.fileRange.start.line,
-						                                                         token.fileRange.start.byteOffset +
-						                                                             lastUnderscorePos + 1},
-						                                                 token.fileRange.end)})
-						                  : None,
-						              token.fileRange))
-						        : (ast::PrerunExpression*)(ast::IntegerLiteral::create(
-						              token.value.substr(0, lastUnderscorePos),
-						              bits.has_value()
-						                  ? Maybe<Pair<u64, FileRange>>(
-						                        {bits.value(), FileRange(token.fileRange.file,
-						                                                 FilePos{token.fileRange.start.line,
-						                                                         token.fileRange.start.byteOffset +
-						                                                             lastUnderscorePos + 1},
-						                                                 token.fileRange.end)})
-						                  : None,
-						              token.fileRange)),
-						    i);
+						setCachedPreExp(isUnsigned.has_value() && isUnsigned.value()
+						                    ? (ast::PrerunExpression*)(ast::UnsignedLiteral::create(
+						                          token.value.substr(0, lastUnderscorePos),
+						                          bits.has_value()
+						                              ? Maybe<Pair<u64, FileRangePtr>>(
+						                                    {bits.value(),
+						                                     FileRange::from(token.fileRange->file,
+						                                                     FilePos{token.fileRange->start.line,
+						                                                             token.fileRange->start.byteOffset +
+						                                                                 lastUnderscorePos + 1},
+						                                                     token.fileRange->end)})
+						                              : None,
+						                          token.fileRange))
+						                    : (ast::PrerunExpression*)(ast::IntegerLiteral::create(
+						                          token.value.substr(0, lastUnderscorePos),
+						                          bits.has_value()
+						                              ? Maybe<Pair<u64, FileRangePtr>>(
+						                                    {bits.value(),
+						                                     FileRange::from(token.fileRange->file,
+						                                                     FilePos{token.fileRange->start.line,
+						                                                             token.fileRange->start.byteOffset +
+						                                                                 lastUnderscorePos + 1},
+						                                                     token.fileRange->end)})
+						                              : None,
+						                          token.fileRange)),
+						                i);
 						SHOW("Set integer literal. i = " << i << "; from = " << from
 						                                 << "; upto = " << (upto.has_value() ? upto.value() : 0))
 					}
@@ -997,8 +1001,9 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						if (hasCachedExp()) {
 							typeLike = ast::TypeLike::from_prerun(consumeCachedExp());
 						}
-						setCachedPreExp(ast::PrerunPlainInit::create(typeLike, fields, fieldValues,
-						                                             {typeLike.get_range(), RangeSpan(start, cEnd)}),
+						setCachedPreExp(ast::PrerunPlainInit::create(
+						                    typeLike, fields, fieldValues,
+						                    FileRange::merge(typeLike.get_range(), RangeSpan(start, cEnd))),
 						                cEnd);
 						i = cEnd;
 					} else {
@@ -1052,12 +1057,12 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						}
 						if (not is_next(TokenType::parenthesisClose, i)) {
 							add_error("Expected ) after this to end the list of arguments for the function call",
-							          FileRange{funcExp->fileRange, RangeAt(i)});
+							          FileRange::merge(funcExp->fileRange, RangeAt(i)));
 						}
 						i++;
 					}
 					setCachedPreExp(ast::PrerunFunctionCall::create(funcExp, std::move(arguments),
-					                                                {funcExp->fileRange, RangeAt(i)}),
+					                                                FileRange::merge(funcExp->fileRange, RangeAt(i))),
 					                i);
 				} else {
 					const auto start  = i;
@@ -1106,19 +1111,20 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							if (pCloseRes.has_value()) {
 								auto exp     = consumeCachedExp();
 								auto argVals = do_separated_prerun_expressions(preCtx, i + 2, pCloseRes.value());
-								setCachedPreExp(
-								    ast::PrerunMemberFnCall::create(exp, IdentifierAt(i + 1), argVals,
-								                                    {exp->fileRange, RangeAt(pCloseRes.value())}),
-								    pCloseRes.value());
+								setCachedPreExp(ast::PrerunMemberFnCall::create(
+								                    exp, IdentifierAt(i + 1), argVals,
+								                    FileRange::merge(exp->fileRange, RangeAt(pCloseRes.value()))),
+								                pCloseRes.value());
 								i = pCloseRes.value();
 							} else {
 								add_error("Expected end for (", RangeAt(i + 2));
 							}
 						} else {
 							auto exp = consumeCachedExp();
-							setCachedPreExp(ast::PrerunMemberAccess::create(exp, IdentifierAt(i + 1),
-							                                                FileRange{exp->fileRange, RangeAt(i + 1)}),
-							                i + 1);
+							setCachedPreExp(
+							    ast::PrerunMemberAccess::create(exp, IdentifierAt(i + 1),
+							                                    FileRange::merge(exp->fileRange, RangeAt(i + 1))),
+							    i + 1);
 							i = i + 1;
 						}
 					} else if (is_next(TokenType::to, i)) {
@@ -1133,7 +1139,9 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 								          RangeSpan(start, i));
 							}
 							i++;
-							setCachedPreExp(ast::PrerunTo::create(exp, typeRes.first, {exp->fileRange, RangeAt(i)}), i);
+							setCachedPreExp(
+							    ast::PrerunTo::create(exp, typeRes.first, FileRange::merge(exp->fileRange, RangeAt(i))),
+							    i);
 						} else {
 							// TODO - Allow type inference in this case???
 							add_error("Expected a type to be provided here like " + color_error("'to:[TargetType]") +
@@ -1271,7 +1279,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				if (not(is_next(TokenType::colon, i) && is_next(TokenType::skill, i + 1))) {
 					add_error("Expected " + color_error(":skill") + " after this", RangeAt(i));
 				}
-				FileRange doneSkill = RangeSpan(i, i + 2);
+				FileRangePtr doneSkill = RangeSpan(i, i + 2);
 				i += 2;
 				if (not is_next(TokenType::colon, i)) {
 					add_error("Expected : after this", RangeAt(i));
@@ -1290,8 +1298,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				break;
 			}
 			case TokenType::skill: {
-				auto             start      = i;
-				Maybe<FileRange> skillRange = RangeAt(i);
+				auto                start      = i;
+				Maybe<FileRangePtr> skillRange = RangeAt(i);
 				if (not is_next(TokenType::colon, i)) {
 					add_error("Expected : after this", RangeAt(i));
 				}
@@ -1348,7 +1356,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 			case TokenType::vectorType: {
 				auto start = i;
 				if (is_next(TokenType::genericTypeStart, i)) {
-					Maybe<FileRange> scalable;
+					Maybe<FileRangePtr> scalable;
 					if (is_next(TokenType::questionMark, i + 1)) {
 						scalable = RangeAt(i + 2);
 						if (is_next(TokenType::separator, i + 2)) {
@@ -1761,14 +1769,14 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 								}
 								cacheTy = ast::PtrType::create(
 								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_function(RangeAt(sepPos + 1)),
-								    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
+								    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
 							} else if (is_next(TokenType::heap, sepPos)) {
 								if (sepPos + 2 != bClose) {
 									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
 								}
 								cacheTy = ast::PtrType::create(
 								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_heap(RangeAt(sepPos + 1)),
-								    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
+								    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
 							} else if (is_next(TokenType::Type, sepPos)) {
 								if (is_next(TokenType::parenthesisOpen, sepPos + 1)) {
 									auto pCloseRes = get_pair_end(TokenType::parenthesisOpen,
@@ -1787,7 +1795,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 										    subTypeRes.first, isSubtypeVar,
 										    ast::PtrOwner::of_type(ownTy.first,
 										                           RangeSpan(sepPos + 1, pCloseRes.value())),
-										    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
+										    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
 									} else {
 										add_error("Expected end for (", RangeAt(sepPos + 2));
 									}
@@ -1817,7 +1825,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 										    subTypeRes.first, isSubtypeVar,
 										    ast::PtrOwner::of_region(regTy.first,
 										                             RangeSpan(sepPos + 1, pCloseRes.value())),
-										    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
+										    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
 									} else {
 										add_error("Expected end for (", RangeAt(sepPos + 2));
 									}
@@ -1825,7 +1833,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 									cacheTy = ast::PtrType::create(subTypeRes.first, isSubtypeVar,
 									                               ast::PtrOwner::of_any_region(RangeAt(sepPos + 1)),
 									                               isNonNullable, isMulti,
-									                               {token.fileRange, RangeAt(bClose)});
+									                               FileRange::merge(token.fileRange, RangeAt(bClose)));
 								}
 							} else if (is_next(TokenType::selfInstance, sepPos)) {
 								if (sepPos + 2 != bClose) {
@@ -1833,11 +1841,11 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 								}
 								cacheTy = ast::PtrType::create(
 								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_type_parent(RangeAt(sepPos + 1)),
-								    isNonNullable, isMulti, {token.fileRange, RangeAt(bClose)});
+								    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
 							} else {
 								add_error("Invalid ownership of the " +
 								              color_error(isMulti ? "multi-pointer" : "pointer"),
-								          {token.fileRange, RangeAt(sepPos)});
+								          FileRange::merge(token.fileRange, RangeAt(sepPos)));
 							}
 						} else {
 							auto subTypeRes = do_type(ctx, i + 1, bClose);
@@ -1847,8 +1855,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 							}
 							cacheTy = ast::PtrType::create(
 							    subTypeRes.first, isSubtypeVar,
-							    ast::PtrOwner::of_anonymous(FileRange{token.fileRange, RangeAt(bClose)}), isNonNullable,
-							    isMulti, {token.fileRange, RangeAt(bClose)});
+							    ast::PtrOwner::of_anonymous(FileRange::merge(token.fileRange, RangeAt(bClose))),
+							    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
 						}
 						i = bClose;
 						break;
@@ -1885,9 +1893,9 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						add_error("Array length did not span till ]", RangeSpan(lengthExp.second + 1, bClose.value()));
 					}
 					auto arrSubTy = do_type(ctx, bClose.value(), None);
-					cacheTy =
-					    ast::ArrayType::create(arrSubTy.first, lengthExp.first, {RangeAt(i), RangeAt(arrSubTy.second)});
-					i = arrSubTy.second;
+					cacheTy       = ast::ArrayType::create(arrSubTy.first, lengthExp.first,
+					                                       FileRange::merge(RangeAt(i), RangeAt(arrSubTy.second)));
+					i             = arrSubTy.second;
 				} else {
 					add_error("Expected end for [", RangeAt(i));
 				}
@@ -2197,12 +2205,12 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 	parseRecurseCount++;
 	SHOW("Parse main function recurse count: " << parseRecurseCount)
 
-	Maybe<std::tuple<usize, String, FileRange>> totalComment;
-	auto                                        addComment = [&](std::tuple<usize, String, FileRange> commValue) {
+	Maybe<std::tuple<usize, String, FileRangePtr>> totalComment;
+	auto                                           addComment = [&](std::tuple<usize, String, FileRangePtr> commValue) {
         if (totalComment.has_value() && (std::get<0>(totalComment.value()) + 1 == std::get<0>(commValue))) {
             std::get<0>(totalComment.value()) = std::get<0>(commValue);
             std::get<1>(totalComment.value()).append(std::get<1>(commValue));
-            std::get<2>(totalComment.value()) = std::get<2>(totalComment.value()).spanTo(std::get<2>(commValue));
+            std::get<2>(totalComment.value()) = std::get<2>(totalComment.value())->spanTo(std::get<2>(commValue));
         } else {
             totalComment = commValue;
         }
@@ -2210,10 +2218,13 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 
 	Vec<ast::Node*> resultNodes;
 	auto            addNode = [&](ast::Node* node) {
+        SHOW("addNode called")
         if (node->isCommentable() && totalComment.has_value()) {
+            SHOW("Found comment and node is commentable")
             node->asCommentable()->commentValue =
-                Pair<String, FileRange>{std::get<1>(totalComment.value()), std::get<2>(totalComment.value())};
+                Pair<String, FileRangePtr>{std::get<1>(totalComment.value()), std::get<2>(totalComment.value())};
         }
+        SHOW("Pushing to result nodes")
         resultNodes.push_back(node);
 	};
 
@@ -2246,8 +2257,11 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         return res;
 	};
 
+	SHOW("parse loop begins")
+
 	for (usize i = (from + 1); i < upto; i++) {
 		Token& token = tokens->at(i);
+		SHOW("Token type is " << (u64)token.type)
 		switch (token.type) {
 			case TokenType::startOfFile:
 			case TokenType::endOfFile: {
@@ -2296,7 +2310,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					add_error("Expected ] after this to end the assembly block", RangeSpan(start, i));
 				}
 				i++;
-				addNode(ast::AssemblyBlock::create(contRes.first, entMeta.defineChecker, RangeSpan(start, i)));
+				auto newRange = RangeSpan(start, i);
+				addNode(ast::AssemblyBlock::create(contRes.first, entMeta.defineChecker, newRange));
 				break;
 			}
 			case TokenType::let: {
@@ -2340,8 +2355,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					}
 					if (not is_next(TokenType::identifier, i)) {
 						add_error("Expected name for the global declaration",
-						          isVar ? FileRange(tokens->at(start).fileRange, tokens->at(start + 1).fileRange)
-						                : RangeAt(start));
+						          isVar ? RangeSpan(start, start + 1) : RangeAt(start));
 					}
 					Maybe<ast::Expression*> exp;
 					ast::Type*              typ    = nullptr;
@@ -2566,9 +2580,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				}
 				auto                                     bClose = bCloseRes.value();
 				Vec<Pair<Identifier, Maybe<ast::Type*>>> subTypes;
-				Vec<FileRange>                           fileRanges;
+				Vec<FileRangePtr>                        fileRanges;
 				Maybe<usize>                             defaultVal;
-				Maybe<FileRange>                         noneVariant;
+				Maybe<FileRangePtr>                      noneVariant;
 				parse_mix_type(preCtx, i + 2, bClose, subTypes, noneVariant, fileRanges, defaultVal);
 				// FIXME - Support packing
 				addNode(ast::DefineMixType::create(IdentifierAt(i + 1), entityMeta.defineChecker,
@@ -2737,10 +2751,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						auto bClose = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
 						if (bClose.has_value()) {
 							// FIXME - Implement packing
-							auto* tRes =
-							    ast::DefineStructType::create(name, typeMetaData.defineChecker, get_visibility(),
-							                                  {token.fileRange, RangeAt(bClose.value())}, genericList,
-							                                  typeMetaData.genericConstraint, typeMetaData.metaInfo);
+							auto* tRes = ast::DefineStructType::create(
+							    name, typeMetaData.defineChecker, get_visibility(),
+							    FileRange::merge(token.fileRange, RangeAt(bClose.value())), genericList,
+							    typeMetaData.genericConstraint, typeMetaData.metaInfo);
 							do_type_contents(typeCtx, i + 1, bClose.value(), tRes);
 							addNode(tRes);
 							i = bClose.value();
@@ -2845,7 +2859,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						if (bClose.has_value()) {
 							auto contents = parse(thisCtx, i + 2, bClose.value());
 							addNode(ast::Lib::create(IdentifierAt(i + 1), contents, get_visibility(),
-							                         FileRange(token.fileRange, RangeAt(bClose.value()))));
+							                         FileRange::merge(token.fileRange, RangeAt(bClose.value()))));
 							i = bClose.value();
 						} else {
 							add_error("Expected } to close the lib", RangeAt(i + 2));
@@ -2862,7 +2876,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				if (hasCachedSymbol()) {
 					auto cachSym = getCachedSymbol();
 					add_error("Another symbol " + color_error(cachSym.to_string()) + " found before this",
-					          cachSym.fileRange.spanTo(RangeAt(i)));
+					          cachSym.fileRange->spanTo(RangeAt(i)));
 				}
 				auto start   = i;
 				auto sym_res = do_symbol(thisCtx, i);
@@ -2920,7 +2934,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 							    IdentifierAt(start), argResult.first, retType, entityMeta.defineChecker,
 							    entityMeta.genericConstraint, entityMeta.metaInfo, get_visibility(),
 							    RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
-							    genericList, Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
+							    genericList, Pair<Vec<ast::Sentence*>, FileRangePtr>(sentences, RangeSpan(i, bClose))));
 							i = bClose;
 							break;
 						} else {
@@ -2974,14 +2988,15 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						auto sentences = do_sentences(thisCtx, pClose + 1, bClose);
 						addNode(ast::FunctionPrototype::create(
 						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker, nullptr, meta.metaInfo,
-						    get_visibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {},
-						    Pair<Vec<ast::Sentence*>, FileRange>(sentences, RangeSpan(i, bClose))));
+						    get_visibility(), FileRange::merge(RangeAt(cacheSym.tokenIndex), token.fileRange), {},
+						    Pair<Vec<ast::Sentence*>, FileRangePtr>(sentences, RangeSpan(i, bClose))));
 						i = bClose;
 						continue;
 					} else if (is_next(TokenType::stop, i)) {
 						addNode(ast::FunctionPrototype::create(
 						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker, nullptr, meta.metaInfo,
-						    get_visibility(), FileRange{RangeAt(cacheSym.tokenIndex), token.fileRange}, {}, None));
+						    get_visibility(), FileRange::merge(RangeAt(cacheSym.tokenIndex), token.fileRange), {},
+						    None));
 						i++;
 					} else {
 						add_error(
@@ -3073,23 +3088,23 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 		return res;
 	};
 
-	Maybe<Pair<ast::VisibilitySpec, FileRange>> visibility;
-	auto setVisibility = [&](Pair<ast::VisibilitySpec, FileRange> kind) { visibility = kind; };
+	Maybe<Pair<ast::VisibilitySpec, FileRangePtr>> visibility;
+	auto setVisibility = [&](Pair<ast::VisibilitySpec, FileRangePtr> kind) { visibility = kind; };
 	auto getVisibility = [&]() {
 		auto res   = visibility;
 		visibility = None;
 		return res;
 	};
-	auto getVisibSpec = [](Maybe<Pair<ast::VisibilitySpec, FileRange>> visibValue) -> Maybe<ast::VisibilitySpec> {
+	auto getVisibSpec = [](Maybe<Pair<ast::VisibilitySpec, FileRangePtr>> visibValue) -> Maybe<ast::VisibilitySpec> {
 		if (visibValue.has_value()) {
 			return visibValue->first;
 		} else {
 			return None;
 		}
 	};
-	auto fromVisibRange = [](Maybe<Pair<ast::VisibilitySpec, FileRange>> visibValue, FileRange otherRange) {
+	auto fromVisibRange = [](Maybe<Pair<ast::VisibilitySpec, FileRangePtr>> visibValue, FileRangePtr otherRange) {
 		if (visibValue.has_value()) {
-			return FileRange{visibValue->second, otherRange};
+			return FileRange::merge(visibValue->second, otherRange);
 		} else {
 			return otherRange;
 		}
@@ -3552,7 +3567,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 				auto                start = i;
 				String              opr;
 				bool                isUnary  = false;
-				ast::Type*          returnTy = ast::VoidType::create(FileRange{"", {0u, 0u}, {0u, 0u}});
+				ast::Type*          returnTy = ast::VoidType::create(FileRange::null);
 				Vec<ast::Argument*> args;
 				if (is_next(TokenType::binaryOperator, i)) {
 					SHOW("Binary operator for struct type: " << ValueAt(i + 1))
@@ -3709,8 +3724,8 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 }
 
 void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
-                            Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef, Maybe<FileRange>& noneVariant,
-                            Vec<FileRange>& fileRanges, Maybe<usize>& defaultVal) {
+                            Vec<Pair<Identifier, Maybe<ast::Type*>>>& uRef, Maybe<FileRangePtr>& noneVariant,
+                            Vec<FileRangePtr>& fileRanges, Maybe<usize>& defaultVal) {
 	using lexer::TokenType;
 
 	for (auto i = from + 1; i < upto; i++) {
@@ -3736,8 +3751,9 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 					add_error("The " + color_error("none") + " variant should be the first variant of a mix type",
 					          RangeAt(i));
 				}
-				noneVariant = is_previous(TokenType::Default, i) ? FileRange{tokens->at(i - 1).fileRange, RangeAt(i)}
-				                                                 : RangeAt(i);
+				noneVariant = is_previous(TokenType::Default, i)
+				                  ? FileRange::merge(tokens->at(i - 1).fileRange, RangeAt(i))
+				                  : RangeAt(i);
 				if (is_next(TokenType::separator, i) || (is_next(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
 					i++;
 				} else {
@@ -3751,9 +3767,10 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 				auto start = i;
 				if (is_next(TokenType::separator, i) || (is_next(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
 					uRef.push_back(Pair<Identifier, Maybe<ast::Type*>>(IdentifierAt(start), None));
-					fileRanges.push_back(is_previous(TokenType::Default, start)
-					                         ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
-					                         : RangeAt(start));
+					fileRanges.push_back(
+					    is_previous(TokenType::Default, start)
+					        ? FileRange::merge(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+					        : RangeAt(start));
 					i++;
 				} else if (is_next(TokenType::typeSeparator, i)) {
 					ast::Type* typ;
@@ -3766,9 +3783,10 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 						i   = upto;
 					}
 					uRef.push_back(Pair<Identifier, Maybe<ast::Type*>>(IdentifierAt(start), typ));
-					fileRanges.push_back(is_previous(TokenType::Default, start)
-					                         ? FileRange(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
-					                         : RangeAt(start));
+					fileRanges.push_back(
+					    is_previous(TokenType::Default, start)
+					        ? FileRange::merge(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+					        : RangeAt(start));
 				} else {
 					add_error("Invalid token found after identifier in mix type definition", RangeAt(i));
 				}
@@ -3782,7 +3800,7 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 }
 
 Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier name, ast::Type* providedType,
-                                                       Maybe<ast::VisibilitySpec> visibSpec, FileRange startRange) {
+                                                       Maybe<ast::VisibilitySpec> visibSpec, FileRangePtr startRange) {
 	using lexer::TokenType;
 	auto                  i          = from + 1;
 	bool                  shouldExit = false;
@@ -3860,7 +3878,7 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 		add_error("Expected } to end the body of the flag type", RangeSpan(from, i - 1));
 	}
 	return {ast::DefineFlagType::create(std::move(name), std::move(variants), providedType, visibSpec,
-	                                    FileRange{std::move(startRange), RangeAt(i - 1)}),
+	                                    FileRange::merge(std::move(startRange), RangeAt(i - 1))),
 	        i};
 }
 
@@ -3933,7 +3951,7 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Ma
 
 void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
                                   Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>>& chain,
-                                  Maybe<Pair<Vec<ast::Sentence*>, FileRange>>&           elseCase) {
+                                  Maybe<Pair<Vec<ast::Sentence*>, FileRangePtr>>&        elseCase) {
 	using lexer::TokenType;
 
 	for (usize i = from + 1; i < upto; i++) {
@@ -4045,8 +4063,8 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 					auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 					if (bCloseRes.has_value()) {
 						auto snts = do_sentences(preCtx, i + 1, bCloseRes.value());
-						elseCase  = Pair<Vec<ast::Sentence*>, FileRange>{std::move(snts),
-						                                                 FileRange RangeSpan(start, bCloseRes.value())};
+						elseCase  = Pair<Vec<ast::Sentence*>, FileRangePtr>{std::move(snts),
+						                                                    RangeSpan(start, bCloseRes.value())};
 						i         = bCloseRes.value();
 						if (i + 1 != upto) {
 							add_warning(
@@ -4148,11 +4166,11 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 ast::PlainInitialiser* Parser::do_plain_initialiser(ParserContext& preCtx, ast::TypeLike type, usize from, usize upto) {
 	using lexer::TokenType;
 	if (is_primary_within(TokenType::associatedAssignment, from, upto)) {
-		Vec<Pair<String, FileRange>> fields;
-		Vec<ast::Expression*>        fieldValues;
+		Vec<Pair<String, FileRangePtr>> fields;
+		Vec<ast::Expression*>           fieldValues;
 		for (usize j = from + 1; j < upto; j++) {
 			if (is_next(TokenType::identifier, j - 1)) {
-				fields.push_back(Pair<String, FileRange>(ValueAt(j), RangeAt(j)));
+				fields.push_back(Pair<String, FileRangePtr>(ValueAt(j), RangeAt(j)));
 				if (is_next(TokenType::associatedAssignment, j)) {
 					if (is_primary_within(TokenType::separator, j + 1, upto)) {
 						auto sepRes = first_primary_position(TokenType::separator, j + 1);
@@ -4184,13 +4202,13 @@ ast::PlainInitialiser* Parser::do_plain_initialiser(ParserContext& preCtx, ast::
 			}
 		}
 		return ast::PlainInitialiser::create(type, fields, fieldValues,
-		                                     type ? FileRange{type.get_range(), RangeAt(upto)}
-		                                          : FileRange RangeSpan(from, upto));
+		                                     type ? FileRange::merge(type.get_range(), RangeAt(upto))
+		                                          : RangeSpan(from, upto));
 	} else {
 		SHOW("PlainInit from " << from << " upto " << upto)
 		auto exps = do_separated_expressions(preCtx, from, upto);
 		return ast::PlainInitialiser::create(
-		    type, {}, exps, type ? FileRange{type.get_range(), RangeAt(upto)} : FileRange RangeSpan(from, upto));
+		    type, {}, exps, type ? FileRange::merge(type.get_range(), RangeAt(upto)) : RangeSpan(from, upto));
 	}
 }
 
@@ -4209,10 +4227,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 	if (_cachedExps.has_value()) {
 		SHOW("			" << ((_cachedExps.value())->to_json()["nodeType"].asString()))
 	}
-	SHOW("	FROM : " << from << " range: " << RangeAt(from))
+	SHOW("	FROM : " << from << " range: " << RangeAt(from)->to_string())
 	SHOW("	UPTO : " << (upto.has_value() ? "true" : "false")
 	                 << (upto.has_value() ? "\n		" + std::to_string(upto.value()) +
-	                                            " range: " + RangeAt(upto.value()).start_to_string()
+	                                            " range: " + RangeAt(upto.value())->start_to_string()
 	                                      : ""))
 
 	usize i = from + 1; // NOLINT(readability-identifier-length)
@@ -4320,10 +4338,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 			case TokenType::none: {
-				ast::Type*       noneType = nullptr;
-				auto             range    = RangeAt(i);
-				auto             start    = i;
-				Maybe<FileRange> isPacked = None;
+				ast::Type*          noneType = nullptr;
+				auto                range    = RangeAt(i);
+				auto                start    = i;
+				Maybe<FileRangePtr> isPacked = None;
 				if (is_next(TokenType::genericTypeStart, i)) {
 					if (is_next(TokenType::packed, i + 1)) {
 						isPacked = RangeAt(i + 2);
@@ -4379,7 +4397,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				if (not(is_next(TokenType::colon, i) && is_next(TokenType::skill, i + 1))) {
 					add_error("Expected " + color_error(":skill") + " after this", RangeAt(i));
 				}
-				FileRange doneSkill = RangeSpan(i, i + 2);
+				FileRangePtr doneSkill = RangeSpan(i, i + 2);
 				i += 2;
 				if (not is_next(TokenType::colon, i)) {
 					add_error("Expected : after this", RangeSpan(start, i));
@@ -4398,8 +4416,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 			case TokenType::skill: {
-				auto             start      = i;
-				Maybe<FileRange> skillRange = RangeAt(i);
+				auto                start      = i;
+				Maybe<FileRangePtr> skillRange = RangeAt(i);
 				if (not is_next(TokenType::colon, i)) {
 					add_error("Expected : after this", RangeSpan(start, i));
 				}
@@ -4482,18 +4500,18 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						              color_error("MyType:from(arg1, arg2)") + " or " +
 						              color_error("from(arg1, arg2)") +
 						              " if you want the type to be inferred from scope",
-						          {consumeCachedSymbol().fileRange, RangeAt(start)});
+						          FileRange::merge(consumeCachedSymbol().fileRange, RangeAt(start)));
 					}
 					if (is_next(TokenType::parenthesisOpen, i)) {
 						auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
 						if (pCloseRes.has_value()) {
 							auto pClose = pCloseRes.value();
 							auto exps   = do_separated_expressions(preCtx, i + 1, pClose);
-							setCachedExpr(
-							    ast::ConstructorCall::create(typeLike, exps,
-							                                 typeLike ? FileRange{typeLike.get_range(), RangeAt(pClose)}
-							                                          : FileRange{RangeAt(start), RangeAt(pClose)}),
-							    pClose);
+							setCachedExpr(ast::ConstructorCall::create(
+							                  typeLike, exps,
+							                  typeLike ? FileRange::merge(typeLike.get_range(), RangeAt(pClose))
+							                           : FileRange::merge(RangeAt(start), RangeAt(pClose))),
+							              pClose);
 							i = pClose;
 						} else {
 							add_error("Expected end for (", RangeAt(i + 1));
@@ -4548,7 +4566,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						} else {
 							auto symbol = consumeCachedSymbol();
 							setCachedExpr(ast::GenericEntity::create(symbol.relative, symbol.name, types,
-							                                         {symbol.fileRange, RangeAt(end)}),
+							                                         FileRange::merge(symbol.fileRange, RangeAt(end))),
 							              end);
 							i = end;
 						}
@@ -4572,8 +4590,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				} else if (((is_next(TokenType::var, i) || is_next(TokenType::constant, i)) &&
 				            is_next(TokenType::colon, i + 1) && is_next(TokenType::identifier, i + 2)) ||
 				           is_next(TokenType::identifier, i)) {
-					auto                         start = i;
-					Maybe<Pair<bool, FileRange>> callNature;
+					auto                            start = i;
+					Maybe<Pair<bool, FileRangePtr>> callNature;
 					if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
 						callNature = std::make_pair(true, RangeAt(i + 1));
 						i += 2;
@@ -4723,7 +4741,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				if (hasCachedExpr()) {
 					auto* exp = do_expression(preCtx, None, i, bCloseRes.value()).first;
 					auto* ent = consumeCachedExpr();
-					setCachedExpr(ast::IndexAccess::create(ent, exp, {ent->fileRange, RangeAt(bCloseRes.value())}),
+					setCachedExpr(ast::IndexAccess::create(
+					                  ent, exp, FileRange::merge(ent->fileRange, RangeAt(bCloseRes.value()))),
 					              bCloseRes.value());
 					i = bCloseRes.value();
 				} else {
@@ -4769,14 +4788,14 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 									add_error("No expression found to be passed to the function call. "
 									          "And no function name found for "
 									          "the static function call",
-									          {token.fileRange, RangeAt(p_close.value())});
+									          FileRange::merge(token.fileRange, RangeAt(p_close.value())));
 								}
 							} else {
 								auto* expression = consumeCachedExpr();
-								setCachedExpr(
-								    ast::FunctionCall::create(
-								        expression, args, FileRange(expression->fileRange, RangeAt(p_close.value()))),
-								    p_close.value());
+								setCachedExpr(ast::FunctionCall::create(
+								                  expression, args,
+								                  FileRange::merge(expression->fileRange, RangeAt(p_close.value()))),
+								              p_close.value());
 							}
 							i = p_close.value();
 						}
@@ -4811,8 +4830,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							}
 							values.push_back(do_expression(preCtx, None, separations.back(), p_close).first);
 						}
-						setCachedExpr(ast::TupleValue::create(values, FileRange(token.fileRange, RangeAt(p_close))),
-						              p_close);
+						setCachedExpr(
+						    ast::TupleValue::create(values, FileRange::merge(token.fileRange, RangeAt(p_close))),
+						    p_close);
 						i = p_close;
 					} else {
 						SHOW("Parsing enclosed expression")
@@ -4828,9 +4848,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 			case TokenType::ok: {
-				const auto                                     start = i;
-				Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked;
-				Maybe<Pair<ast::Type*, ast::Type*>>            providedType;
+				const auto                                        start = i;
+				Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> isPacked;
+				Maybe<Pair<ast::Type*, ast::Type*>>               providedType;
 				if (is_next(TokenType::genericTypeStart, i)) {
 					auto gClose = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
 					if (not gClose.has_value()) {
@@ -4841,11 +4861,11 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					if (is_next(TokenType::packed, i + 1)) {
 						if (is_next(TokenType::associatedAssignment, i + 2)) {
 							auto packExpRes = do_prerun_expression(preCtx, i + 3, None);
-							isPacked = Pair<FileRange, ast::PrerunExpression*>{RangeSpan(i + 2, packExpRes.second + 1),
-							                                                   packExpRes.first};
-							i        = packExpRes.second;
+							isPacked        = Pair<FileRangePtr, ast::PrerunExpression*>{
+                                RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first};
+							i = packExpRes.second;
 						} else {
-							isPacked = Pair<FileRange, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
+							isPacked = Pair<FileRangePtr, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
 							i        = i + 2;
 						}
 						if (is_next(TokenType::separator, i)) {
@@ -4893,9 +4913,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 			}
 			case TokenType::error: {
 				/// NOTE - The logic is identical to that of an `ok` expression
-				const auto                                     start = i;
-				Maybe<Pair<FileRange, ast::PrerunExpression*>> isPacked;
-				Maybe<Pair<ast::Type*, ast::Type*>>            providedType;
+				const auto                                        start = i;
+				Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> isPacked;
+				Maybe<Pair<ast::Type*, ast::Type*>>               providedType;
 				if (is_next(TokenType::genericTypeStart, i)) {
 					auto gClose = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
 					if (not gClose.has_value()) {
@@ -4906,11 +4926,11 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					if (is_next(TokenType::packed, i + 1)) {
 						if (is_next(TokenType::associatedAssignment, i + 2)) {
 							auto packExpRes = do_prerun_expression(preCtx, i + 3, None);
-							isPacked = Pair<FileRange, ast::PrerunExpression*>{RangeSpan(i + 2, packExpRes.second + 1),
-							                                                   packExpRes.first};
-							i        = packExpRes.second;
+							isPacked        = Pair<FileRangePtr, ast::PrerunExpression*>{
+                                RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first};
+							i = packExpRes.second;
 						} else {
-							isPacked = Pair<FileRange, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
+							isPacked = Pair<FileRangePtr, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
 							i        = i + 2;
 						}
 						if (is_next(TokenType::separator, i)) {
@@ -5008,7 +5028,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							auto index  = findLowestPrecedence();
 							auto newExp = ast::BinaryExpression::create(
 							    expressions[index], ast::operator_to_string(operators[index]), expressions[index + 1],
-							    {expressions[index]->fileRange, expressions[index + 1]->fileRange});
+							    FileRange::merge(expressions[index]->fileRange, expressions[index + 1]->fileRange));
 							operators.erase(operators.begin() + index);
 							expressions.erase(expressions.begin() + index + 1);
 							expressions.at(index) = newExp;
@@ -5016,9 +5036,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						setCachedExpr(expressions.front(), i);
 					} else {
 						i = rhsRes.second;
-						setCachedExpr(ast::BinaryExpression::create(lhs, token.value, rhsRes.first,
-						                                            {lhs->fileRange, rhsRes.first->fileRange}),
-						              i);
+						setCachedExpr(
+						    ast::BinaryExpression::create(lhs, token.value, rhsRes.first,
+						                                  FileRange::merge(lhs->fileRange, rhsRes.first->fileRange)),
+						    i);
 					}
 				}
 				break;
@@ -5048,25 +5069,27 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						if (pCloseRes) {
 							auto  pClose = pCloseRes.value();
 							auto* exp    = do_expression(preCtx, None, i + 2, pClose).first;
-							setCachedExpr(ast::VariantInitialiser::create(
-							                  typeLike, subName, exp,
-							                  {typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(pClose)}),
-							              pClose);
+							setCachedExpr(
+							    ast::VariantInitialiser::create(
+							        typeLike, subName, exp,
+							        FileRange::merge(typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(pClose))),
+							    pClose);
 							i = pClose;
 						} else {
 							add_error("Expected end for (", RangeAt(i + 2));
 						}
 					} else {
-						setCachedExpr(ast::VariantInitialiser::create(
-						                  typeLike, subName, nullptr,
-						                  {typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(i + 1)}),
-						              i + 1);
+						setCachedExpr(
+						    ast::VariantInitialiser::create(
+						        typeLike, subName, nullptr,
+						        FileRange::merge(typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(i + 1))),
+						    i + 1);
 						i++;
 					}
 				} else if (is_next(TokenType::curlybraceOpen, i)) {
-					Maybe<FileRange> specialRange;
-					bool             isSpecialDefault = false;
-					Vec<Identifier>  variants;
+					Maybe<FileRangePtr> specialRange;
+					bool                isSpecialDefault = false;
+					Vec<Identifier>     variants;
 					i++;
 					if (is_next(TokenType::Default, i)) {
 						specialRange     = RangeAt(i + 1);
@@ -5097,11 +5120,11 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						add_error("Expected the body of the flag type to end after this", RangeSpan(start, i));
 					}
 					i++;
-					setCachedExpr(ast::FlagInitialiser::create(typeLike, std::move(specialRange), isSpecialDefault,
-					                                           std::move(variants),
-					                                           typeLike ? FileRange{typeLike.get_range(), RangeAt(i)}
-					                                                    : FileRange RangeSpan(start, i)),
-					              i);
+					setCachedExpr(
+					    ast::FlagInitialiser::create(
+					        typeLike, std::move(specialRange), isSpecialDefault, std::move(variants),
+					        typeLike ? FileRange::merge(typeLike.get_range(), RangeAt(i)) : RangeSpan(start, i)),
+					    i);
 				} else {
 					add_error(
 					    "Invalid token found. Expected one of the following:\n  1) Initialiser for a mix or choice type which follows the syntax " +
@@ -5111,7 +5134,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					        color_error("::{ Variant1, Variant2 }") + " for initialising specific variants or " +
 					        color_error("::{ default }") + " for the default value or " + color_error("::{ none }") +
 					        " for the zero value",
-					    typeLike ? FileRange{typeLike.get_range(), RangeAt(i)} : RangeAt(i));
+					    typeLike ? FileRange::merge(typeLike.get_range(), RangeAt(i)) : RangeAt(i));
 				}
 				break;
 			}
@@ -5152,10 +5175,12 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					}
 					auto* exp = consumeCachedExpr();
 					if (is_next(TokenType::Not, i)) {
-						setCachedExpr(ast::LogicalNot::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
+						setCachedExpr(ast::LogicalNot::create(exp, FileRange::merge(exp->fileRange, RangeAt(i + 1))),
+						              i + 1);
 						i++;
 					} else if (is_next(TokenType::let, i)) {
-						setCachedExpr(ast::InlineLet::create(exp, FileRange{exp->fileRange, RangeAt(i + 1)}), i + 1);
+						setCachedExpr(ast::InlineLet::create(exp, FileRange::merge(exp->fileRange, RangeAt(i + 1))),
+						              i + 1);
 						i++;
 					} else if (is_next(TokenType::match, i)) {
 						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
@@ -5234,10 +5259,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							    RangeAt(i)); // TODO - Add more allocator syntaxes
 						}
 					} else if (is_next(TokenType::copy, i)) {
-						setCachedExpr(ast::Copy::create(exp, false, exp->fileRange.spanTo(RangeAt(i + 1))), i + 1);
+						setCachedExpr(ast::Copy::create(exp, false, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
 						i++;
 					} else if (is_next(TokenType::move, i)) {
-						setCachedExpr(ast::Move::create(exp, false, exp->fileRange.spanTo(RangeAt(i + 1))), i + 1);
+						setCachedExpr(ast::Move::create(exp, false, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
 						i++;
 					} else if (is_next(TokenType::to, i)) {
 						if (is_next(TokenType::genericTypeStart, i + 1)) {
@@ -5247,10 +5272,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								              " conversion",
 								          RangeSpan(i, destTyRes.second));
 							}
-							setCachedExpr(
-							    ast::ToConversion::create(exp, destTyRes.first,
-							                              FileRange{exp->fileRange, RangeAt(destTyRes.second + 1)}),
-							    destTyRes.second + 1);
+							setCachedExpr(ast::ToConversion::create(
+							                  exp, destTyRes.first,
+							                  FileRange::merge(exp->fileRange, RangeAt(destTyRes.second + 1))),
+							              destTyRes.second + 1);
 							i = destTyRes.second + 1;
 						} else if (is_next(TokenType::colon, i + 1) && is_next(TokenType::referenceType, i + 2)) {
 							i += 3;
@@ -5266,16 +5291,17 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error(
 							    "Expected :[ after this to start the target type for the cast. The type for the cast can be provided like " +
 							        color_error("'as:[TargetType]"),
-							    {exp->fileRange, RangeAt(i + 1)});
+							    FileRange::merge(exp->fileRange, RangeAt(i + 1)));
 						}
 						auto targetTy = do_type(preCtx, i + 2, None);
 						i             = targetTy.second;
 						if (not is_next(TokenType::genericTypeEnd, i)) {
 							add_error("Expected ] after this to end the target type for the cast",
-							          {exp->fileRange, RangeAt(i)});
+							          FileRange::merge(exp->fileRange, RangeAt(i)));
 						}
 						i++;
-						setCachedExpr(ast::Cast::create(exp, targetTy.first, {exp->fileRange, RangeAt(i)}), i);
+						setCachedExpr(
+						    ast::Cast::create(exp, targetTy.first, FileRange::merge(exp->fileRange, RangeAt(i))), i);
 					} else if (is_next(TokenType::polymorph, i)) {
 						const auto           start = i;
 						Maybe<ast::PtrOwner> ptrOwner;
@@ -5285,8 +5311,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							isPtrPoly = true;
 							i += 2;
 						}
-						Maybe<FileRange> typeRange;
-						bool             isVar = false;
+						Maybe<FileRangePtr> typeRange;
+						bool                isVar = false;
 						if (not is_next(TokenType::genericTypeStart, i)) {
 							add_error("Expected :[ after this to start the specifications of this polymorph",
 							          RangeSpan(start, i));
@@ -5370,8 +5396,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					} else if ((is_next(TokenType::var, i) && is_next(TokenType::colon, i + 1) &&
 					            is_next(TokenType::identifier, i + 2)) ||
 					           is_next(TokenType::identifier, i)) {
-						auto                         start = i;
-						Maybe<Pair<bool, FileRange>> callNature;
+						auto                            start = i;
+						Maybe<Pair<bool, FileRangePtr>> callNature;
 						if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
 							callNature = std::make_pair(tokens->at(i + 1).type == TokenType::var, RangeAt(i + 1));
 							i += 2;
@@ -5384,7 +5410,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								auto pClose = pCloseRes.value();
 								auto args   = do_separated_expressions(preCtx, i + 2, pClose);
 								setCachedExpr(ast::MethodCall::create(exp, false, IdentifierAt(i + 1), args, callNature,
-								                                      exp->fileRange.spanTo(RangeSpan(start, pClose))),
+								                                      exp->fileRange->spanTo(RangeSpan(start, pClose))),
 								              pClose);
 								i = pClose;
 								break;
@@ -5393,7 +5419,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							}
 						} else {
 							setCachedExpr(ast::MemberAccess::create(exp, false, callNature, IdentifierAt(i + 1),
-							                                        exp->fileRange.spanTo(RangeSpan(i, i + 1))),
+							                                        exp->fileRange->spanTo(RangeSpan(i, i + 1))),
 							              i + 1);
 							i++;
 							break;
@@ -5405,7 +5431,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							if (pCloseRes) {
 								setCachedExpr(
 								    ast::MethodCall::create(exp, false, Identifier{"end", RangeAt(i)}, {}, None,
-								                            exp->fileRange.spanTo(RangeSpan(i, pCloseRes.value()))),
+								                            exp->fileRange->spanTo(RangeSpan(i, pCloseRes.value()))),
 								    pCloseRes.value());
 								i = pCloseRes.value();
 								break;
@@ -5416,7 +5442,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error("Expected ( to start the destructor call", RangeAt(i));
 						}
 					} else if (is_next(TokenType::ptrType, i)) {
-						setCachedExpr(ast::AddressOf::create(exp, {exp->fileRange, RangeAt(i + 1)}), i + 1);
+						setCachedExpr(ast::AddressOf::create(exp, FileRange::merge(exp->fileRange, RangeAt(i + 1))),
+						              i + 1);
 						i += 1;
 					} else {
 						add_error("Expected an identifier for member access", RangeAt(i));
@@ -5444,7 +5471,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						if (is_next(TokenType::separator, i)) {
 							auto clobRes = do_prerun_expression(preCtx, i + 1, None);
 							i            = clobRes.second;
-							Maybe<FileRange>       volatileRange;
+							Maybe<FileRangePtr>    volatileRange;
 							ast::PrerunExpression* volatileExpr = nullptr;
 							if (is_next(TokenType::separator, i)) {
 								i++;
@@ -5476,7 +5503,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								          RangeSpan(genInd, i));
 							}
 							Vec<ast::Expression*> args;
-							FileRange             argsRange{""};
+							auto                  argsRange = FileRange::null;
 							if (is_next(TokenType::parenthesisOpen, i)) {
 								auto pClose =
 								    get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
@@ -5824,8 +5851,8 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				auto expRes = do_prerun_expression(preCtx, i, None);
 				i           = expRes.second;
 				if (is_next(TokenType::stop, i)) {
-					sentences.push_back(
-					    ast::PrerunExpressionSentence::create(expRes.first, {expRes.first->fileRange, RangeAt(i + 1)}));
+					sentences.push_back(ast::PrerunExpressionSentence::create(
+					    expRes.first, FileRange::merge(expRes.first->fileRange, RangeAt(i + 1))));
 					i++;
 				} else {
 					add_error("Found just an expression without . at the end", RangeSpan(start, i));
@@ -5848,13 +5875,13 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 	auto  ctx = preCtx;
 	usize i   = from + 1; // NOLINT(readability-identifier-length)
 
-	Maybe<std::tuple<usize, String, FileRange>> totalComment;
+	Maybe<std::tuple<usize, String, FileRangePtr>> totalComment;
 
-	auto addComment = [&](std::tuple<usize, String, FileRange> commValue) {
+	auto addComment = [&](std::tuple<usize, String, FileRangePtr> commValue) {
 		if (totalComment.has_value() && (std::get<0>(totalComment.value()) + 1 == std::get<0>(commValue))) {
 			std::get<0>(totalComment.value()) = std::get<0>(commValue);
 			std::get<1>(totalComment.value()).append(std::get<1>(commValue));
-			std::get<2>(totalComment.value()) = std::get<2>(totalComment.value()).spanTo(std::get<2>(commValue));
+			std::get<2>(totalComment.value()) = std::get<2>(totalComment.value())->spanTo(std::get<2>(commValue));
 		} else {
 			totalComment = commValue;
 		}
@@ -6056,7 +6083,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 					auto  symbol = consumeCachedSymbol();
 					auto* lhs    = ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange);
-					addSentence(ast::Assignment::create(lhs, expRes.first, FileRange(symbol.fileRange, RangeAt(end))));
+					addSentence(
+					    ast::Assignment::create(lhs, expRes.first, FileRange::merge(symbol.fileRange, RangeAt(end))));
 					i = end;
 				} else if (hasCachedExpr()) {
 					SHOW("Assignment has cached expression")
@@ -6069,10 +6097,12 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 							add_error("Expression to assign did not span till the .",
 							          RangeSpan(expRes.second + 1, end));
 						}
-						addSentence(ast::Assignment::create(lhs, expRes.first, {lhs->fileRange, RangeAt(end)}));
+						addSentence(
+						    ast::Assignment::create(lhs, expRes.first, FileRange::merge(lhs->fileRange, RangeAt(end))));
 						i = end;
 					} else {
-						add_error("Invalid end of sentence", {consumeCachedExpr()->fileRange, token.fileRange});
+						add_error("Invalid end of sentence",
+						          FileRange::merge(consumeCachedExpr()->fileRange, token.fileRange));
 					}
 				} else {
 					add_error("Expected an expression to assign the expression to", token.fileRange);
@@ -6109,7 +6139,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				SHOW("Parsed expression sentence")
 				if (hasCachedExpr()) {
 					auto* expr = consumeCachedExpr();
-					addSentence(ast::ExpressionSentence::create(expr, {expr->fileRange, token.fileRange}));
+					addSentence(
+					    ast::ExpressionSentence::create(expr, FileRange::merge(expr->fileRange, token.fileRange)));
 				} else if (hasCachedSymbol()) {
 					auto symbol = consumeCachedSymbol();
 					addSentence(ast::ExpressionSentence::create(
@@ -6126,7 +6157,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 						if (bCloseRes) {
 							Vec<Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>> chain;
-							Maybe<Pair<Vec<ast::Sentence*>, FileRange>>           elseCase;
+							Maybe<Pair<Vec<ast::Sentence*>, FileRangePtr>>        elseCase;
 							parse_match_contents(preCtx, i + 1, bCloseRes.value(), chain, elseCase);
 							addSentence(ast::Match::create(expRes.first, std::move(chain), std::move(elseCase),
 							                               RangeSpan(start, bCloseRes.value())));
@@ -6239,10 +6270,10 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				break;
 			}
 			case TokenType::If: {
-				Vec<std::tuple<ast::Expression*, Vec<ast::Sentence*>, FileRange>> chain;
-				Maybe<Pair<Vec<ast::Sentence*>, FileRange>>                       elseCase;
-				FileRange                                                         fileRange = token.fileRange;
-				usize                                                             index     = 0;
+				Vec<std::tuple<ast::Expression*, Vec<ast::Sentence*>, FileRangePtr>> chain;
+				Maybe<Pair<Vec<ast::Sentence*>, FileRangePtr>>                       elseCase;
+				FileRangePtr                                                         fileRange = token.fileRange;
+				usize                                                                index     = 0;
 				while (true) {
 					auto altPos = first_primary_position(TokenType::fatArrow, i);
 					if (altPos.has_value()) {
@@ -6257,7 +6288,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 							auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 							if (bCloseRes.has_value()) {
 								auto bClose = bCloseRes.value();
-								fileRange   = FileRange(fileRange, RangeAt(bClose));
+								fileRange   = FileRange::merge(fileRange, RangeAt(bClose));
 								auto snts   = do_sentences(preCtx, i + 1, bClose);
 								chain.push_back({expRes.first, snts, RangeSpan(i, bClose)});
 								if (is_next(TokenType::Else, bClose)) {
@@ -6272,7 +6303,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 										auto bClRes =
 										    get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, bOp);
 										if (bClRes) {
-											fileRange = FileRange(fileRange, RangeAt(bClRes.value()));
+											fileRange = FileRange::merge(fileRange, RangeAt(bClRes.value()));
 											elseCase  = {do_sentences(preCtx, bOp, bClRes.value()),
 											             RangeSpan(bClose + 1, bClRes.value())};
 											i         = bClRes.value();
@@ -6294,7 +6325,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						} else {
 							add_error("Expected [ to start the body of the " +
 							              color_error(index == 0 ? "if" : "else if") + " block",
-							          index == 0 ? RangeAt(i) : FileRange RangeSpan(i - 1, i));
+							          index == 0 ? RangeAt(i) : RangeSpan(i - 1, i));
 						}
 					} else {
 						add_error("Expected => to end the condition for " + color_error(index == 0 ? "if" : "else if") +
@@ -6505,7 +6536,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				SHOW("give sentence found")
 				if (is_next(TokenType::stop, i)) {
 					i++;
-					addSentence(ast::GiveSentence::create(None, FileRange(token.fileRange, RangeAt(i + 1))));
+					addSentence(ast::GiveSentence::create(None, FileRange::merge(token.fileRange, RangeAt(i + 1))));
 				} else {
 					auto end = first_primary_position(TokenType::stop, i);
 					if (not end.has_value()) {
@@ -6515,7 +6546,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 					auto* exp = do_expression(ctx, None, i, end.value()).first;
 					i         = end.value();
-					addSentence(ast::GiveSentence::create(exp, FileRange(token.fileRange, RangeAt(end.value()))));
+					addSentence(
+					    ast::GiveSentence::create(exp, FileRange::merge(token.fileRange, RangeAt(end.value()))));
 				}
 				break;
 			}
@@ -6559,10 +6591,10 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					auto end_res = first_primary_position(TokenType::stop, i).value();
 					auto lhs     = do_expression(preCtx, retrieveCachedSymbol(), i, i, retrieveCachedExpr()).first;
 					auto rhs     = do_expression(preCtx, None, i, end_res, None).first;
-					auto bin_exp =
-					    ast::BinaryExpression::create(lhs, token.value, rhs, FileRange{lhs->fileRange, rhs->fileRange});
-					addSentence(
-					    ast::ExpressionSentence::create(bin_exp, FileRange{bin_exp->fileRange, RangeAt(end_res)}));
+					auto bin_exp = ast::BinaryExpression::create(lhs, token.value, rhs,
+					                                             FileRange::merge(lhs->fileRange, rhs->fileRange));
+					addSentence(ast::ExpressionSentence::create(
+					    bin_exp, FileRange::merge(bin_exp->fileRange, RangeAt(end_res))));
 				} else {
 					add_error("Detected " + token.value +
 					              " operator and expected . within this scope to end the sentence",
@@ -6577,7 +6609,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				              (hasNameBefore ? (". Did you forget to add '' before " +
 				                                color_error(_cacheSymbol_.value().name.front().value))
 				                             : ""),
-				          hasNameBefore ? FileRange{_cacheSymbol_->fileRange, RangeAt(i)} : RangeAt(i));
+				          hasNameBefore ? FileRange::merge(_cacheSymbol_->fileRange, RangeAt(i)) : RangeAt(i));
 				break;
 			}
 			default: {
@@ -6800,20 +6832,20 @@ Vec<usize> Parser::primary_positions_within(lexer::TokenType candidate, usize fr
 	return result;
 }
 
-void Parser::add_error(const String& message, const FileRange& fileRange) { irCtx->Error(message, fileRange); }
+void Parser::add_error(const String& message, FileRangePtr fileRange) { irCtx->Error(message, fileRange); }
 
 String Parser::color_error(const String& message) {
 	auto* cfg = cli::Config::get();
 	return ColoredOr(cli::Color::yellow, "`") + message + ColoredOr(cli::Color::white, "`");
 }
 
-void Parser::add_warning(const String& message, const FileRange& fileRange) {
+void Parser::add_warning(const String& message, FileRangePtr fileRange) {
 	std::cout << cli::get_bg_color(cli::Color::orange) << " PARSER WARNING " << cli::get_color(cli::Color::reset)
 	          << "▌ " << cli::get_color(cli::Color::yellow) << message << cli::get_color(cli::Color::reset) << " | "
-	          << cli::get_color(cli::Color::green) << fileRange.file.string() << ":" << fileRange.start.line << ":"
-	          << fileRange.start.byteOffset << cli::get_color(cli::Color::reset) << " >> "
-	          << cli::get_color(cli::Color::green) << fileRange.file.string() << ":" << fileRange.end.line << ":"
-	          << fileRange.end.byteOffset << cli::get_color(cli::Color::reset) << "\n";
+	          << cli::get_color(cli::Color::green) << fileRange->file.string() << ":" << fileRange->start.line << ":"
+	          << fileRange->start.byteOffset << cli::get_color(cli::Color::reset) << " >> "
+	          << cli::get_color(cli::Color::green) << fileRange->file.string() << ":" << fileRange->end.line << ":"
+	          << fileRange->end.byteOffset << cli::get_color(cli::Color::reset) << "\n";
 }
 
 } // namespace qat::parser

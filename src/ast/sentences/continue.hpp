@@ -9,18 +9,19 @@ class Continue final : public Sentence {
 	Maybe<Identifier> tag;
 
   public:
-	Continue(Maybe<Identifier> _tag, FileRange _fileRange) : Sentence(_fileRange), tag(_tag) {}
+	Continue(Maybe<Identifier> _tag, FileRangePtr _fileRange) : Sentence(_fileRange), tag(_tag) {}
 
-	useit static Continue* create(Maybe<Identifier> _tag, FileRange _fileRange) {
+	useit static Continue* create(Maybe<Identifier> _tag, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Continue), _tag, _fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {
-	}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit NodeType   nodeType() const final { return NodeType::CONTINUE; }
-	useit Json       to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::CONTINUE; }
+
+	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

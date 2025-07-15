@@ -37,14 +37,15 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 		for (usize i = 0; i < numberValue.length(); i++) {
 			if ((radixDigits.substr(0, radix.value()).find(numberValue.at(i)) == String::npos) &&
 			    (radixDigitsUpper.substr(0, radix.value()).find(numberValue.at(i)) == String::npos)) {
-				ctx->Error("Invalid character found in radix integer literal. For radix " +
-				               ctx->color(std::to_string(radix.value())) + ", the characters allowed are " +
-				               ctx->color(radixDigits.substr(0, radix.value())),
-				           FileRange{fileRange.file,
-				                     FilePos{fileRange.start.line,
-				                             fileRange.start.byteOffset + radixToString(radix.value()).length() + i},
-				                     FilePos{fileRange.start.line, fileRange.start.byteOffset +
-				                                                       radixToString(radix.value()).length() + i + 1}});
+				ctx->Error(
+				    "Invalid character found in radix integer literal. For radix " +
+				        ctx->color(std::to_string(radix.value())) + ", the characters allowed are " +
+				        ctx->color(radixDigits.substr(0, radix.value())),
+				    FileRange::from(fileRange->file,
+				                    FilePos{fileRange->start.line,
+				                            fileRange->start.byteOffset + radixToString(radix.value()).length() + i},
+				                    FilePos{fileRange->start.line, fileRange->start.byteOffset +
+				                                                       radixToString(radix.value()).length() + i + 1}));
 			}
 		}
 	} else {
@@ -55,9 +56,9 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 				if (i + 1 < value.length()) {
 					if (value.at(i + 1) == '_') {
 						ctx->Error("Two adjacent underscores found in custom integer literal",
-						           FileRange{fileRange.file,
-						                     FilePos{fileRange.start.line, fileRange.start.byteOffset + i},
-						                     FilePos{fileRange.start.line, fileRange.start.byteOffset + i + 1}});
+						           FileRange::from(
+						               fileRange->file, FilePos{fileRange->start.line, fileRange->start.byteOffset + i},
+						               FilePos{fileRange->start.line, fileRange->start.byteOffset + i + 1}));
 					}
 				}
 			}

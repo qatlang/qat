@@ -11,10 +11,10 @@ class IndexAccess final : public Expression {
 	Expression* index;
 
   public:
-	IndexAccess(Expression* _instance, Expression* _index, FileRange _fileRange)
+	IndexAccess(Expression* _instance, Expression* _index, FileRangePtr _fileRange)
 	    : Expression(_fileRange), instance(_instance), index(_index) {}
 
-	useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRange _fileRange) {
+	useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
 	}
 

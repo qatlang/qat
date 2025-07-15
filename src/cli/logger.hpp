@@ -7,19 +7,21 @@
 #include <variant>
 
 #define EraseLineAndGoToStartOfLine "\33[2K\r"
+
 namespace qat {
 namespace ir {
 class Ctx;
 }
+
 namespace cli {
 class Config;
 }
 
-using ErrorLocation = std::variant<FileRange, fs::path>;
+using ErrorLocation = std::variant<FileRangePtr, fs::path>;
 
 useit inline fs::path getPathFromErrorLocation(ErrorLocation& loc) {
 	if (loc.index() == 0) {
-		return std::get<FileRange>(loc).file;
+		return std::get<FileRangePtr>(loc)->file;
 	} else {
 		return std::get<fs::path>(loc);
 	}

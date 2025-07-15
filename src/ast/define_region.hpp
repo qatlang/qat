@@ -13,11 +13,12 @@ class DefineRegion : public IsEntity {
 	Maybe<VisibilitySpec> visibSpec;
 
   public:
-	DefineRegion(Identifier _name, PrerunExpression* _blockSize, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+	DefineRegion(Identifier _name, PrerunExpression* _blockSize, Maybe<VisibilitySpec> _visibSpec,
+	             FileRangePtr _fileRange)
 	    : IsEntity(_fileRange), name(_name), blockSize(_blockSize), visibSpec(_visibSpec) {}
 
 	useit static DefineRegion* create(Identifier name, PrerunExpression* blockSize, Maybe<VisibilitySpec> visibSpec,
-	                                  FileRange fileRange) {
+	                                  FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefineRegion), name, blockSize, visibSpec, fileRange);
 	}
 
@@ -25,7 +26,8 @@ class DefineRegion : public IsEntity {
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json     to_json() const final;
+	useit Json to_json() const final;
+
 	useit NodeType nodeType() const final { return NodeType::DEFINE_REGION; }
 };
 

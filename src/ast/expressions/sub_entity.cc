@@ -1,4 +1,5 @@
 #include "./sub_entity.hpp"
+#include "../../IR/types/typed.hpp"
 #include "../sub_entity_solver.hpp"
 
 namespace qat::ast {

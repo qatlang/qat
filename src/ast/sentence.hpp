@@ -8,7 +8,7 @@ namespace qat::ast {
 
 class Sentence : public Node {
   public:
-	Sentence(FileRange _fileRange) : Node(std::move(_fileRange)) {}
+	Sentence(FileRangePtr _fileRange) : Node(std::move(_fileRange)) {}
 
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
 	                                 EmitCtx* ctx) = 0;

@@ -11,10 +11,10 @@ class FutureType final : public Type {
 	bool       isPacked;
 
   public:
-	FutureType(bool _isPacked, ast::Type* _subType, FileRange _fileRange)
+	FutureType(bool _isPacked, ast::Type* _subType, FileRangePtr _fileRange)
 	    : Type(_fileRange), subType(_subType), isPacked(_isPacked) {}
 
-	useit static FutureType* create(bool isPacked, ast::Type* subType, FileRange fileRange) {
+	useit static FutureType* create(bool isPacked, ast::Type* subType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(FutureType), isPacked, subType, fileRange);
 	}
 
@@ -23,10 +23,13 @@ class FutureType final : public Type {
 
 	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type*   emit(EmitCtx* ctx) final;
+	useit ir::Type* emit(EmitCtx* ctx) final;
+
 	useit AstTypeKind type_kind() const final;
-	useit Json        to_json() const final;
-	useit String      to_string() const final;
+
+	useit Json to_json() const final;
+
+	useit String to_string() const final;
 };
 
 } // namespace qat::ast

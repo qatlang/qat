@@ -19,12 +19,12 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 
   public:
 	DoSkill(bool _isDef, Maybe<SkillEntity> _skillName, Maybe<Identifier> _implementationName, ast::Type* _targetType,
-	        FileRange _fileRange)
+	        FileRangePtr _fileRange)
 	    : IsEntity(_fileRange), isDefaultSkill(_isDef), skillName(_skillName),
 	      implementationName(std::move(_implementationName)), targetType(_targetType) {}
 
 	useit static DoSkill* create(bool isDef, Maybe<SkillEntity> skillName, Maybe<Identifier> implementationName,
-	                             ast::Type* targetType, FileRange fileRange) {
+	                             ast::Type* targetType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DoSkill), isDef, std::move(skillName), std::move(implementationName),
 		                         targetType, fileRange);
 	}

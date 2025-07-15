@@ -10,10 +10,10 @@ class NullPointer final : public PrerunExpression, public TypeInferrable {
 	Maybe<ast::Type*> providedType;
 
   public:
-	NullPointer(Maybe<ast::Type*> _providedType, FileRange _fileRange)
+	NullPointer(Maybe<ast::Type*> _providedType, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), providedType(_providedType) {}
 
-	useit static NullPointer* create(Maybe<ast::Type*> _providedType, FileRange _fileRange) {
+	useit static NullPointer* create(Maybe<ast::Type*> _providedType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(NullPointer), _providedType, _fileRange);
 	}
 

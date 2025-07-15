@@ -24,7 +24,7 @@ namespace qat::ir {
 
 #define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(cli::Color::yellow))
 
-CodeProblem::CodeProblem(bool _isError, String _message, Maybe<FileRange> _range)
+CodeProblem::CodeProblem(bool _isError, String _message, Maybe<FileRangePtr> _range)
     : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
 
 CodeProblem::operator Json() const {
@@ -32,12 +32,12 @@ CodeProblem::operator Json() const {
 	    ._("isError", isError)
 	    ._("message", message)
 	    ._("hasRange", range.has_value())
-	    ._("fileRange", range.has_value() ? (Json)(range.value()) : Json());
+	    ._("fileRange", range.has_value() ? range.value()->to_json() : JsonValue());
 }
 
 QatError::QatError() = default;
 
-QatError::QatError(String _message, Maybe<FileRange> _range) : message(_message), fileRange(_range) {}
+QatError::QatError(String _message, Maybe<FileRangePtr> _range) : message(_message), fileRange(_range) {}
 
 QatError& QatError::add(String value) {
 	message.append(value);
@@ -50,7 +50,7 @@ QatError& QatError::colored(String value) {
 	return *this;
 }
 
-void QatError::setRange(FileRange range) { fileRange = range; }
+void QatError::setRange(FileRangePtr range) { fileRange = range; }
 
 Ctx* Ctx::instance = nullptr;
 
@@ -170,8 +170,8 @@ GenericArgument* Ctx::get_generic_parameter_from_entity(String const& name) cons
 	return nullptr;
 }
 
-void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> fileRange,
-                    Maybe<Pair<String, FileRange>> pointTo) {
+void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRangePtr> fileRange,
+                    Maybe<Pair<String, FileRangePtr>> pointTo) {
 	auto* cfg = cli::Config::get();
 	if (has_active_generic()) {
 		codeProblems.push_back(
@@ -180,7 +180,8 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
 		std::cerr << "\n"
 		          << cli::get_bg_color(cli::Color::red) << " ERROR " << cli::get_color(cli::Color::reset)
 		          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-		          << get_active_generic().fileRange.file.string() << ":" << get_active_generic().fileRange.start << "\n"
+		          << get_active_generic().fileRange->file.string() << ":" << get_active_generic().fileRange->start
+		          << "\n"
 		          << "Errors while creating generic variant: " << color(get_active_generic().name) << "\n"
 		          << "\n";
 	}
@@ -192,16 +193,16 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
 	          << cli::get_color(cli::Color::reset) << "\n";
 	if (fileRange) {
 		std::cerr << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-		          << fileRange.value().file.string() << ":" << fileRange.value().start << " to "
-		          << fileRange.value().end;
+		          << fileRange.value()->file.string() << ":" << fileRange.value()->start << " to "
+		          << fileRange.value()->end;
 		print_range_content(fileRange.value(), true, true);
 	}
 	if (pointTo.has_value()) {
 		std::cerr << (fileRange.has_value() ? "" : "\n") << cli::get_color(cli::Color::white) << pointTo.value().first
 		          << cli::get_color(cli::Color::reset) << "\n"
 		          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-		          << pointTo.value().second.file.string() << ":" << pointTo.value().second.start << " to "
-		          << pointTo.value().second.end;
+		          << pointTo.value().second->file.string() << ":" << pointTo.value().second->start << " to "
+		          << pointTo.value().second->end;
 		print_range_content(pointTo.value().second, true, false);
 	}
 	std::cerr << "\n";
@@ -216,8 +217,8 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRange> 
 	}
 }
 
-void Ctx::print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const {
-	if (not fs::is_regular_file(fileRange.file)) {
+void Ctx::print_range_content(FileRangePtr fileRange, bool isError, bool isContentError) const {
+	if (not fs::is_regular_file(fileRange->file)) {
 		return;
 	}
 	auto  lines       = get_range_content(fileRange);
@@ -269,8 +270,8 @@ void Ctx::finalise_errors() {
 	std::exit(1);
 }
 
-void Ctx::Error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
-                Maybe<Pair<String, FileRange>> pointTo) {
+void Ctx::Error(ir::Mod* activeMod, const String& message, Maybe<FileRangePtr> fileRange,
+                Maybe<Pair<String, FileRangePtr>> pointTo) {
 	add_error(activeMod, message, fileRange, pointTo);
 	finalise_errors();
 }
@@ -282,7 +283,7 @@ void Ctx::Errors(ir::Mod* activeMod, Vec<QatError> errors) {
 	finalise_errors();
 }
 
-void Ctx::Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo) {
+void Ctx::Error(const String& message, Maybe<FileRangePtr> fileRange, Maybe<Pair<String, FileRangePtr>> pointTo) {
 	add_error(nullptr, message, fileRange, pointTo);
 	finalise_errors();
 }
@@ -294,16 +295,16 @@ void Ctx::Errors(Vec<QatError> errors) {
 	finalise_errors();
 }
 
-Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> Ctx::get_range_content(FileRange const& _range) const {
+Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> Ctx::get_range_content(FileRangePtr _range) const {
 	Vec<std::tuple<String, u64, u64, u32>> result;
 
-	std::ifstream file(_range.file);
+	std::ifstream file(_range->file);
 	String        line;
 	u64           lineCount = 0;
-	const usize   startLine = _range.start.line;
-	const usize   startByte = _range.start.byteOffset;
-	const usize   endLine   = _range.end.line;
-	const usize   endByte   = _range.end.byteOffset;
+	const usize   startLine = _range->start.line;
+	const usize   startByte = _range->start.byteOffset;
+	const usize   endLine   = _range->end.line;
+	const usize   endByte   = _range->end.byteOffset;
 	usize         firstLine = startLine;
 	while (std::getline(file, line)) {
 		lineCount++;
@@ -341,18 +342,18 @@ Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> Ctx::get_range_content(FileR
 	return {firstLine, result};
 }
 
-void Ctx::Warning(const String& message, const FileRange& fileRange) {
+void Ctx::Warning(String const& message, FileRangePtr fileRange) {
 	if (has_active_generic()) {
 		get_active_generic().warningCount++;
 	}
 	codeProblems.push_back(CodeProblem(
 	    false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
 	    fileRange));
-	//auto* cfg = cli::Config::get();
+	// auto* cfg = cli::Config::get();
 	std::cout << "\n"
 	          << cli::get_bg_color(cli::Color::purple) << " WARNING " << cli::get_bg_color(cli::Color::reset)
 	          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
-	          << fileRange.file.string() << ":" << fileRange.start.line << ":" << fileRange.start.byteOffset
+	          << fileRange->file.string() << ":" << fileRange->start.line << ":" << fileRange->start.byteOffset
 	          << cli::get_color(cli::Color::white) << "\n"
 	          << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
 	          << cli::get_color(cli::Color::reset) << "\n";

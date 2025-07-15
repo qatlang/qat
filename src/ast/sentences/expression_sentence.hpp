@@ -10,9 +10,9 @@ class ExpressionSentence final : public Sentence {
 	Expression* expr;
 
   public:
-	ExpressionSentence(Expression* _expr, FileRange _fileRange) : Sentence(_fileRange), expr(_expr) {}
+	ExpressionSentence(Expression* _expr, FileRangePtr _fileRange) : Sentence(_fileRange), expr(_expr) {}
 
-	useit static ExpressionSentence* create(Expression* _expr, FileRange _fileRange) {
+	useit static ExpressionSentence* create(Expression* _expr, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ExpressionSentence), _expr, _fileRange);
 	}
 
@@ -22,7 +22,8 @@ class ExpressionSentence final : public Sentence {
 
 	useit ir::Value* emit(EmitCtx* ctx);
 	useit Json       to_json() const;
-	useit NodeType   nodeType() const { return NodeType::EXPRESSION_SENTENCE; }
+
+	useit NodeType nodeType() const { return NodeType::EXPRESSION_SENTENCE; }
 };
 
 } // namespace qat::ast

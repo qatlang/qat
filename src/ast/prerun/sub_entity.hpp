@@ -7,19 +7,19 @@
 namespace qat::ast {
 
 class PrerunSubEntity final : public PrerunExpression {
-	Maybe<FileRange> skill;
-	Maybe<FileRange> doneSkill;
-	Vec<Identifier>  names;
-	TypeLike         parentType;
+	Maybe<FileRangePtr> skill;
+	Maybe<FileRangePtr> doneSkill;
+	Vec<Identifier>     names;
+	TypeLike            parentType;
 
   public:
-	PrerunSubEntity(Maybe<FileRange> _skill, Maybe<FileRange> _doneSkill, Vec<Identifier> _names, TypeLike _parentType,
-	                FileRange _fileRange)
+	PrerunSubEntity(Maybe<FileRangePtr> _skill, Maybe<FileRangePtr> _doneSkill, Vec<Identifier> _names,
+	                TypeLike _parentType, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), skill(std::move(_skill)), doneSkill(std::move(_doneSkill)),
 	      names(std::move(_names)), parentType(_parentType) {}
 
-	useit static PrerunSubEntity* create(Maybe<FileRange> skill, Maybe<FileRange> doneSkill, Vec<Identifier> names,
-	                                     TypeLike parentType, FileRange fileRange) {
+	useit static PrerunSubEntity* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill,
+	                                     Vec<Identifier> names, TypeLike parentType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunSubEntity), std::move(skill), std::move(doneSkill), std::move(names),
 		                         parentType, std::move(fileRange));
 	}

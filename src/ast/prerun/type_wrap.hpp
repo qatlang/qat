@@ -17,10 +17,10 @@ class TypeWrap final : public PrerunExpression {
 	bool       isExplicit;
 
   public:
-	TypeWrap(ast::Type* _theType, bool _isExplicit, FileRange _fileRange)
+	TypeWrap(ast::Type* _theType, bool _isExplicit, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), theType(_theType), isExplicit(_isExplicit) {}
 
-	useit static TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRange _fileRange) {
+	useit static TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TypeWrap), _theType, _isExplicit, _fileRange);
 	}
 
@@ -29,7 +29,8 @@ class TypeWrap final : public PrerunExpression {
 	ir::PrerunValue* emit(EmitCtx* ctx);
 	Json             to_json() const;
 	String           to_string() const;
-	NodeType         nodeType() const { return NodeType::TYPE_WRAP; }
+
+	NodeType nodeType() const { return NodeType::TYPE_WRAP; }
 };
 
 } // namespace qat::ast

@@ -8,10 +8,10 @@ namespace qat {
 
 class Identifier {
   public:
-	Identifier(String value, FileRange range);
+	Identifier(String value, FileRangePtr range);
 
-	String    value;
-	FileRange range;
+	String       value;
+	FileRangePtr range;
 
 	operator JsonValue() const;
 

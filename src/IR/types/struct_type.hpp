@@ -13,7 +13,6 @@
 #include <llvm/IR/LLVMContext.h>
 #include <string>
 #include <utility>
-#include <vector>
 
 namespace qat::ast {
 class DefineStructType;
@@ -220,7 +219,7 @@ class GenericStructType : public Uniq, public EntityOverview {
 
 	useit Mod* get_module() const;
 
-	useit Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRange range);
+	useit Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
 	useit ast::GenericAbstractType* getGenericAt(usize index) const;
 

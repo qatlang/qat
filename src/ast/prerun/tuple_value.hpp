@@ -9,10 +9,10 @@ class PrerunTupleValue final : public PrerunExpression, public TypeInferrable {
 	Vec<PrerunExpression*> members;
 
   public:
-	PrerunTupleValue(Vec<PrerunExpression*> _members, FileRange _fileRange)
+	PrerunTupleValue(Vec<PrerunExpression*> _members, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), members(_members) {}
 
-	useit static PrerunTupleValue* create(Vec<PrerunExpression*> _members, FileRange _fileRange) {
+	useit static PrerunTupleValue* create(Vec<PrerunExpression*> _members, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunTupleValue), _members, _fileRange);
 	}
 
@@ -23,7 +23,8 @@ class PrerunTupleValue final : public PrerunExpression, public TypeInferrable {
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 	useit Json             to_json() const final;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_TUPLE_VALUE; }
+
+	useit NodeType nodeType() const final { return NodeType::PRERUN_TUPLE_VALUE; }
 };
 
 } // namespace qat::ast

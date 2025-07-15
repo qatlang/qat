@@ -11,17 +11,17 @@ namespace qat::ast {
 // and If-Else. The Else block is optional and if omitted, IfElse becomes a
 // plain if sentence
 class IfElse final : public Sentence {
-	Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> chain;
-	Maybe<Pair<Vec<Sentence*>, FileRange>>                  elseCase;
-	Vec<Maybe<bool>>                                        knownVals;
+	Vec<std::tuple<Expression*, Vec<Sentence*>, FileRangePtr>> chain;
+	Maybe<Pair<Vec<Sentence*>, FileRangePtr>>                  elseCase;
+	Vec<Maybe<bool>>                                           knownVals;
 
   public:
-	IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain, Maybe<Pair<Vec<Sentence*>, FileRange>> _else,
-	       FileRange _fileRange)
+	IfElse(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRangePtr>> _chain,
+	       Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _else, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), chain(_chain), elseCase(_else) {}
 
-	useit static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRange>> _chain,
-	                            Maybe<Pair<Vec<Sentence*>, FileRange>> _else, FileRange _fileRange) {
+	useit static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRangePtr>> _chain,
+	                            Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _else, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
 	}
 
@@ -43,17 +43,20 @@ class IfElse final : public Sentence {
 	useit bool              getKnownValue(usize ind) const;
 	useit bool              hasValueAt(usize ind) const;
 	useit bool              isFalseTill(usize ind) const;
-	useit bool              hasAnyKnownValue() const {
-        for (const auto& val : knownVals) {
-            if (val.has_value()) {
-                return true;
-            }
-        }
-        return false;
+
+	useit bool hasAnyKnownValue() const {
+		for (const auto& val : knownVals) {
+			if (val.has_value()) {
+				return true;
+			}
+		}
+		return false;
 	};
+
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::IF_ELSE_IF; }
+
+	useit NodeType nodeType() const final { return NodeType::IF_ELSE_IF; }
 };
 
 } // namespace qat::ast

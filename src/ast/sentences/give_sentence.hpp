@@ -12,10 +12,10 @@ class GiveSentence final : public Sentence {
 	Maybe<Expression*> give_expr;
 
   public:
-	GiveSentence(Maybe<Expression*> _given_expr, FileRange _fileRange)
+	GiveSentence(Maybe<Expression*> _given_expr, FileRangePtr _fileRange)
 	    : Sentence(std::move(_fileRange)), give_expr(_given_expr) {}
 
-	useit static GiveSentence* create(Maybe<Expression*> _given_expr, FileRange _fileRange) {
+	useit static GiveSentence* create(Maybe<Expression*> _given_expr, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(GiveSentence), _given_expr, _fileRange);
 	}
 
@@ -27,7 +27,8 @@ class GiveSentence final : public Sentence {
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
 	useit Json       to_json() const override;
-	useit NodeType   nodeType() const override { return NodeType::GIVE_SENTENCE; }
+
+	useit NodeType nodeType() const override { return NodeType::GIVE_SENTENCE; }
 };
 
 } // namespace qat::ast

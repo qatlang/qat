@@ -9,9 +9,9 @@ class Dereference final : public Expression {
 	Expression* exp;
 
   public:
-	Dereference(Expression* _exp, FileRange _fileRange) : Expression(_fileRange), exp(_exp) {}
+	Dereference(Expression* _exp, FileRangePtr _fileRange) : Expression(_fileRange), exp(_exp) {}
 
-	useit static Dereference* create(Expression* _exp, FileRange _fileRange) {
+	useit static Dereference* create(Expression* _exp, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Dereference), _exp, _fileRange);
 	}
 

@@ -1,8 +1,7 @@
 #ifndef QAT_AST_TYPES_INTEGER_HPP
 #define QAT_AST_TYPES_INTEGER_HPP
 
-#include "../../IR/context.hpp"
-#include "qat_type.hpp"
+#include "./qat_type.hpp"
 
 namespace qat::ast {
 
@@ -16,9 +15,9 @@ class IntegerType final : public Type {
 	mutable bool isPartOfGeneric = false;
 
   public:
-	IntegerType(u32 _bitWidth, FileRange _fileRange) : Type(_fileRange), bitWidth(_bitWidth) {}
+	IntegerType(u32 _bitWidth, FileRangePtr _fileRange) : Type(_fileRange), bitWidth(_bitWidth) {}
 
-	useit static IntegerType* create(u32 _bitWidth, FileRange _fileRange) {
+	useit static IntegerType* create(u32 _bitWidth, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IntegerType), _bitWidth, _fileRange);
 	}
 

@@ -1,10 +1,7 @@
 #ifndef QAT_AST_TYPES_TUPLE_HPP
 #define QAT_AST_TYPES_TUPLE_HPP
 
-#include "../../IR/context.hpp"
 #include "./qat_type.hpp"
-
-#include <vector>
 
 namespace qat::ast {
 
@@ -14,10 +11,10 @@ class TupleType final : public Type {
 	bool       isPacked;
 
   public:
-	TupleType(Vec<Type*> _types, bool _isPacked, FileRange _fileRange)
+	TupleType(Vec<Type*> _types, bool _isPacked, FileRangePtr _fileRange)
 	    : Type(_fileRange), types(_types), isPacked(_isPacked) {}
 
-	useit static TupleType* create(Vec<Type*> _types, bool _isPacked, FileRange _fileRange) {
+	useit static TupleType* create(Vec<Type*> _types, bool _isPacked, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TupleType), _types, _isPacked, _fileRange);
 	}
 

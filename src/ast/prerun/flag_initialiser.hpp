@@ -7,19 +7,19 @@
 namespace qat::ast {
 
 class FlagInitialiser final : public PrerunExpression, public TypeInferrable {
-	TypeLike         type;
-	Maybe<FileRange> specialRange;
-	bool             isSpecialDefault;
-	Vec<Identifier>  variants;
+	TypeLike            type;
+	Maybe<FileRangePtr> specialRange;
+	bool                isSpecialDefault;
+	Vec<Identifier>     variants;
 
   public:
-	FlagInitialiser(TypeLike _type, Maybe<FileRange> _specialRange, bool _isSpecialDefault, Vec<Identifier> _variants,
-	                FileRange _range)
+	FlagInitialiser(TypeLike _type, Maybe<FileRangePtr> _specialRange, bool _isSpecialDefault,
+	                Vec<Identifier> _variants, FileRangePtr _range)
 	    : PrerunExpression(std::move(_range)), type(_type), specialRange(_specialRange),
 	      isSpecialDefault(_isSpecialDefault), variants(_variants) {}
 
-	useit static FlagInitialiser* create(TypeLike type, Maybe<FileRange> specialRange, bool isSpecialDefault,
-	                                     Vec<Identifier> variants, FileRange range) {
+	useit static FlagInitialiser* create(TypeLike type, Maybe<FileRangePtr> specialRange, bool isSpecialDefault,
+	                                     Vec<Identifier> variants, FileRangePtr range) {
 		return std::construct_at(OwnNormal(FlagInitialiser), type, std::move(specialRange), isSpecialDefault,
 		                         std::move(variants), std::move(range));
 	}

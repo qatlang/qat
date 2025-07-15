@@ -14,10 +14,10 @@ class PrerunEntity final : public PrerunExpression {
 	Vec<Identifier> identifiers;
 
   public:
-	PrerunEntity(u32 _relative, Vec<Identifier> _ids, FileRange _fileRange)
+	PrerunEntity(u32 _relative, Vec<Identifier> _ids, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), relative(_relative), identifiers(_ids) {}
 
-	useit static PrerunEntity* create(u32 _relative, Vec<Identifier> _ids, FileRange _fileRange) {
+	useit static PrerunEntity* create(u32 _relative, Vec<Identifier> _ids, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunEntity), _relative, _ids, _fileRange);
 	}
 
@@ -26,7 +26,8 @@ class PrerunEntity final : public PrerunExpression {
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
 	useit Json             to_json() const override;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const override { return NodeType::PRERUN_ENTITY; }
+
+	useit NodeType nodeType() const override { return NodeType::PRERUN_ENTITY; }
 };
 
 } // namespace qat::ast

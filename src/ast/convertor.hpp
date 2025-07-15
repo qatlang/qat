@@ -22,32 +22,32 @@ class ConvertorPrototype {
 	bool                  isMemArg;
 	Maybe<VisibilitySpec> visibSpec;
 	bool                  isFrom;
-	FileRange             nameRange;
-	Maybe<FileRange>      definitionRange;
-	FileRange             fileRange;
+	FileRangePtr          nameRange;
+	Maybe<FileRangePtr>   definitionRange;
+	FileRangePtr          fileRange;
 
 	PrerunExpression* defineChecker;
 	Maybe<MetaInfo>   metaInfo;
 
   public:
-	ConvertorPrototype(bool _isFrom, FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
-	                   bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	ConvertorPrototype(bool _isFrom, FileRangePtr _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
+	                   bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange,
 	                   PrerunExpression* _defineCondition, Maybe<MetaInfo> _metaInfo)
 	    : argName(std::move(_argName)), candidateType(_candidateType), isMemArg(_is_member_argument),
 	      visibSpec(_visibSpec), isFrom(_isFrom), nameRange(std::move(_nameRange)), fileRange(_fileRange),
 	      defineChecker(_defineCondition), metaInfo(std::move(_metaInfo)) {}
 
-	static ConvertorPrototype* create_from(FileRange _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
+	static ConvertorPrototype* create_from(FileRangePtr _nameRange, Maybe<Identifier> _argName, Type* _candidateType,
 	                                       bool _is_member_argument, Maybe<VisibilitySpec> _visibSpec,
-	                                       const FileRange& _fileRange, PrerunExpression* _defineCondition,
+	                                       FileRangePtr _fileRange, PrerunExpression* _defineCondition,
 	                                       Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(ConvertorPrototype), true, _nameRange, _argName, _candidateType,
 		                         _is_member_argument, _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
 	}
 
-	static ConvertorPrototype* create_to(FileRange _nameRange, Type* _candidateType, Maybe<VisibilitySpec> _visibSpec,
-	                                     const FileRange& _fileRange, PrerunExpression* _defineCondition,
-	                                     Maybe<MetaInfo> _metaInfo) {
+	static ConvertorPrototype* create_to(FileRangePtr _nameRange, Type* _candidateType,
+	                                     Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange,
+	                                     PrerunExpression* _defineCondition, Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(ConvertorPrototype), false, _nameRange, None, _candidateType, false,
 		                         _visibSpec, _fileRange, _defineCondition, std::move(_metaInfo));
 	}
@@ -74,16 +74,16 @@ class ConvertorDefinition {
   private:
 	Vec<Sentence*>      sentences;
 	ConvertorPrototype* prototype;
-	FileRange           fileRange;
+	FileRangePtr        fileRange;
 
   public:
-	ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+	ConvertorDefinition(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences, FileRangePtr _fileRange)
 	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {
 		prototype->definitionRange = fileRange;
 	}
 
 	useit static ConvertorDefinition* create(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
-	                                         FileRange _fileRange) {
+	                                         FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
 	}
 

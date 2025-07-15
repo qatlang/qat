@@ -16,7 +16,7 @@ class Region : public Type, public EntityOverview {
 	usize          blockSize;
 	Mod*           parent;
 	VisibilityInfo visibInfo;
-	FileRange      fileRange;
+	FileRangePtr   fileRange;
 
 	llvm::GlobalVariable* blocks;
 	llvm::GlobalVariable* blockCount;
@@ -25,10 +25,10 @@ class Region : public Type, public EntityOverview {
 
   public:
 	Region(Identifier _name, usize _blockSize, Mod* _module, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
-	       FileRange fileRange);
+	       FileRangePtr fileRange);
 
 	static Region* get(Identifier name, usize blockSize, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
-	                   FileRange fileRange);
+	                   FileRangePtr fileRange);
 
 	useit Identifier get_name() const;
 

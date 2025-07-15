@@ -16,7 +16,7 @@ void BringPaths::handle_fs_brings(ir::Mod* mod, ir::Ctx* irCtx) const {
 	}
 	for (usize i = 0; i < paths.size(); i++) {
 		auto path = fs::path(paths.at(i)->get_value()).is_relative()
-		                ? fileRange.file.parent_path() / paths.at(i)->get_value()
+		                ? fileRange->file.parent_path() / paths.at(i)->get_value()
 		                : fs::path(paths.at(i)->get_value());
 		if (fs::exists(path)) {
 			path = fs::canonical(path);

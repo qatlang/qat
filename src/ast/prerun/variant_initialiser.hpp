@@ -15,11 +15,11 @@ class PrerunVariantInitialiser final : public PrerunExpression, public TypeInfer
 
   public:
 	PrerunVariantInitialiser(TypeLike _type, Identifier _subName, Maybe<PrerunExpression*> _expression,
-	                         FileRange _fileRange)
+	                         FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
 	useit static PrerunVariantInitialiser* create(TypeLike type, Identifier subName,
-	                                              Maybe<PrerunExpression*> expression, FileRange fileRange) {
+	                                              Maybe<PrerunExpression*> expression, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunVariantInitialiser), type, subName, expression, fileRange);
 	}
 

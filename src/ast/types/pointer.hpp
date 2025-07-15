@@ -14,12 +14,13 @@ class PtrType final : public Type {
 	bool     isNonNullable;
 
   public:
-	PtrType(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti, FileRange _fileRange)
+	PtrType(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti,
+	        FileRangePtr _fileRange)
 	    : Type(_fileRange), type(_type), owner(_owner), isMulti(_isMulti), isSubtypeVar(_isSubtypeVar),
 	      isNonNullable(_isNonNullable) {}
 
 	useit static PtrType* create(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti,
-	                             FileRange _fileRange) {
+	                             FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PtrType), _type, _isSubtypeVar, _owner, _isNonNullable, _isMulti,
 		                         _fileRange);
 	}

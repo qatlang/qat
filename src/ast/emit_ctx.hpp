@@ -146,12 +146,12 @@ struct EmitCtx {
 
 	useit String color(String const& message) const;
 
-	void genericNameCheck(String const& name, FileRange const& range);
+	void genericNameCheck(String const& name, FileRangePtr range);
 
 	void name_check_in_module(const Identifier& name, const String& entityType, Maybe<u64> genericID = None,
 	                          Maybe<u64> opaqueID = None);
 
-	void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
+	void Error(const String& message, Maybe<FileRangePtr> fileRange, Maybe<Pair<String, FileRangePtr>> pointTo = None);
 
 	VisibilityInfo get_visibility_info(Maybe<VisibilitySpec> spec);
 };

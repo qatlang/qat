@@ -18,14 +18,14 @@ class DefinePrerunFunction : public IsEntity {
   public:
 	DefinePrerunFunction(Identifier _name, Type* _returnType, Vec<Argument*> _arguments,
 	                     PrerunExpression* _defineChecker, Vec<PrerunSentence*> _sentences,
-	                     Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+	                     Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
 	    : IsEntity(std::move(_fileRange)), name(std::move(_name)), returnType(_returnType),
 	      arguments(std::move(_arguments)), sentences(std::move(_sentences)), visibSpec(_visibSpec),
 	      defineChecker(_defineChecker) {}
 
 	useit static DefinePrerunFunction* create(Identifier name, Type* returnType, Vec<Argument*> arguments,
 	                                          PrerunExpression* defineChecker, Vec<PrerunSentence*> sentences,
-	                                          Maybe<VisibilitySpec> visibSpec, FileRange fileRange) {
+	                                          Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefinePrerunFunction), std::move(name), returnType, std::move(arguments),
 		                         defineChecker, std::move(sentences), visibSpec, std::move(fileRange));
 	}

@@ -9,10 +9,10 @@ class PrerunSay : public PrerunSentence {
 	Vec<PrerunExpression*> values;
 
   public:
-	PrerunSay(Vec<PrerunExpression*> _values, FileRange _fileRange)
+	PrerunSay(Vec<PrerunExpression*> _values, FileRangePtr _fileRange)
 	    : PrerunSentence(std::move(_fileRange)), values(std::move(_values)) {}
 
-	useit static PrerunSay* create(Vec<PrerunExpression*> values, FileRange fileRange) {
+	useit static PrerunSay* create(Vec<PrerunExpression*> values, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunSay), std::move(values), fileRange);
 	}
 

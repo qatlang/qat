@@ -32,7 +32,7 @@ JsonValue TypeLike::to_json_value() const {
 	return JsonValue();
 }
 
-FileRange TypeLike::get_range() const {
+FileRangePtr TypeLike::get_range() const {
 	if (data) {
 		if (kind == TypeLikeKind::TYPE) {
 			return ((Type*)data)->fileRange;
@@ -42,7 +42,7 @@ FileRange TypeLike::get_range() const {
 			return ((Expression*)data)->fileRange;
 		}
 	}
-	return FileRange("");
+	return FileRange::null;
 }
 
 void TypeLike::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) {

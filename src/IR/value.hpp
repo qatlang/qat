@@ -1,9 +1,9 @@
 #ifndef QAT_IR_VALUE_HPP
 #define QAT_IR_VALUE_HPP
 
-#include "../IR/types/typed.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/qat_region.hpp"
+#include "./types/qat_type.hpp"
 
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
@@ -29,13 +29,13 @@ class PrerunFunction;
 
 class Value {
   protected:
-	ir::Type*        type;
-	bool             variable;
-	llvm::Value*     ll;
-	Maybe<u64>       localID;
-	bool             isSelf = false;
-	Maybe<FileRange> associatedRange;
-	bool             isConfirmedRef = false;
+	ir::Type*           type;
+	bool                variable;
+	llvm::Value*        ll;
+	Maybe<u64>          localID;
+	bool                isSelf = false;
+	Maybe<FileRangePtr> associatedRange;
+	bool                isConfirmedRef = false;
 
   public:
 	static Vec<ir::Value*> allValues;
@@ -95,14 +95,14 @@ class Value {
 
 	useit ir::PrerunFunction* as_prerun_function() const { return (ir::PrerunFunction*)ll; }
 
-	useit ir::Value* with_range(FileRange rangeVal) {
+	useit ir::Value* with_range(FileRangePtr rangeVal) {
 		associatedRange = rangeVal;
 		return this;
 	}
 
 	useit bool has_associated_range() const { return associatedRange.has_value(); }
 
-	useit FileRange get_associated_range() const { return associatedRange.value(); }
+	useit FileRangePtr get_associated_range() const { return associatedRange.value(); }
 
 	void set_self() { isSelf = true; }
 
@@ -114,7 +114,7 @@ class Value {
 		}
 	}
 
-	useit Value* make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange);
+	useit Value* make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRangePtr fileRange);
 
 	static void clear_all();
 };

@@ -12,11 +12,11 @@
 namespace qat::ast {
 
 SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntityParent parent,
-                                  Vec<Identifier> const& names, FileRange fileRange) {
+                                  Vec<Identifier> const& names, FileRangePtr fileRange) {
 	auto current = parent;
 	for (usize i = 0; i < names.size(); i++) {
 		auto        isLast     = [&]() { return i == (names.size() - 1); };
-		auto        rangeAfter = [&]() { return FileRange{names[i + 1].range, names.back().range}; };
+		auto        rangeAfter = [&]() { return FileRange::merge(names[i + 1].range, names.back().range); };
 		auto const& name       = names[i];
 		if (current.kind == SubEntityParentKind::TYPE) {
 			auto type = (ir::Type*)current.data;

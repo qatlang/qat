@@ -34,7 +34,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 						auto memCheckRes = memFn->is_member_initted(memIndex.value());
 						if (memCheckRes.has_value()) {
 							ctx->Error("Member field " + ctx->color(memName.value) + " is already initialised at " +
-							               ctx->color(memCheckRes.value().start_to_string()),
+							               ctx->color(memCheckRes.value()->start_to_string()),
 							           fileRange);
 						} else {
 							SHOW("Adding init member")
@@ -56,7 +56,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 						auto memCheckRes = memFn->is_member_initted(ind);
 						if (memCheckRes.has_value()) {
 							ctx->Error("The mix type instance has already been initialised at " +
-							               ctx->color(memCheckRes.value().start_to_string()) +
+							               ctx->color(memCheckRes.value()->start_to_string()) +
 							               ". Cannot initialise again",
 							           fileRange);
 						}

@@ -22,7 +22,7 @@ namespace qat::ir {
 
 MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgument*> _generics, Mod* _parent,
                  Vec<Pair<Identifier, Maybe<Type*>>> _subtypes, Maybe<usize> _defaultVal, ir::Ctx* irCtx,
-                 bool addNoneVariant, bool _isPacked, const VisibilityInfo& _visibility, FileRange _fileRange,
+                 bool addNoneVariant, bool _isPacked, const VisibilityInfo& _visibility, FileRangePtr _fileRange,
                  Maybe<MetaInfo> _metaInfo)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
       EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
@@ -196,7 +196,7 @@ usize MixType::get_tag_bitwidth() const { return tagBitWidth; }
 
 u64 MixType::get_data_bitwidth() const { return maxSize; }
 
-FileRange MixType::get_file_range() const { return fileRange; }
+FileRangePtr MixType::get_file_range() const { return fileRange; }
 
 bool MixType::is_type_sized() const { return true; }
 

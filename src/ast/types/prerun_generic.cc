@@ -1,5 +1,6 @@
 #include "./prerun_generic.hpp"
-#include "generic_abstract.hpp"
+#include "../../utils/file_range.hpp"
+#include "./generic_abstract.hpp"
 
 namespace qat::ast {
 
@@ -46,7 +47,7 @@ void PrerunGenericAbstract::setExpression(ir::PrerunValue* exp) const { expressi
 
 void PrerunGenericAbstract::unset() const { expressionValue.pop_back(); }
 
-ir::PrerunGeneric* PrerunGenericAbstract::toIR() const { return ir::PrerunGeneric::get(name, getPrerun(), range); }
+ir::PrerunGeneric* PrerunGenericAbstract::to_ir() const { return ir::PrerunGeneric::get(name, getPrerun(), range); }
 
 Json PrerunGenericAbstract::to_json() const {
 	return Json()
@@ -56,7 +57,7 @@ Json PrerunGenericAbstract::to_json() const {
 	    ._("hasDefault", defaultValueAST.has_value())
 	    ._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->to_json() : JsonValue())
 	    ._("defaultValueString", defaultValueAST.has_value() ? defaultValueAST.value()->to_string() : JsonValue())
-	    ._("range", range);
+	    ._("range", range->to_json());
 }
 
 PrerunGenericAbstract::~PrerunGenericAbstract() {}

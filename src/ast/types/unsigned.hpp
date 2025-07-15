@@ -17,10 +17,10 @@ class UnsignedType final : public Type {
 	mutable bool isPartOfGeneric = false;
 
   public:
-	UnsignedType(u64 _bitWidth, bool _isBool, FileRange _fileRange)
+	UnsignedType(u64 _bitWidth, bool _isBool, FileRangePtr _fileRange)
 	    : Type(_fileRange), bitWidth(_bitWidth), is_bool(_isBool) {}
 
-	useit static UnsignedType* create(u64 _bitWidth, bool _isBool, FileRange _fileRange) {
+	useit static UnsignedType* create(u64 _bitWidth, bool _isBool, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(UnsignedType), _bitWidth, _isBool, _fileRange);
 	}
 

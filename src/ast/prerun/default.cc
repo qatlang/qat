@@ -1,5 +1,6 @@
 #include "./default.hpp"
 #include "../../IR/types/integer.hpp"
+#include "../../IR/types/typed.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "../../utils/utils.hpp"
 #include "../types/generic_abstract.hpp"

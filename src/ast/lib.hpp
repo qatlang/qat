@@ -17,17 +17,18 @@ class Lib : public Node {
 	Maybe<VisibilitySpec> visibSpec;
 
   public:
-	Lib(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, const FileRange& _file_range)
+	Lib(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _file_range)
 	    : Node(_file_range), name(_name), members(_members), visibSpec(_visibSpec) {}
 
 	useit static Lib* create(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec,
-	                         const FileRange& _file_range) {
+	                         FileRangePtr _file_range) {
 		return std::construct_at(OwnNormal(Lib), _name, _members, _visibSpec, _file_range);
 	}
 
 	void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-	useit Json     to_json() const final;
+	useit Json to_json() const final;
+
 	useit NodeType nodeType() const final { return NodeType::LIB; }
 };
 

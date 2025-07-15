@@ -2,7 +2,7 @@
 
 namespace qat::ast {
 
-Node::Node(FileRange _fileRange) : fileRange(std::move(_fileRange)) { Node::allNodes.push_back(this); }
+Node::Node(FileRangePtr _fileRange) : fileRange(_fileRange) { Node::allNodes.push_back(this); }
 
 Vec<Node*> Node::allNodes = {};
 

@@ -7,14 +7,14 @@ namespace qat::ast {
 
 class IntegerLiteral final : public PrerunExpression, public TypeInferrable {
   private:
-	String                      value;
-	Maybe<Pair<u64, FileRange>> bits;
+	String                         value;
+	Maybe<Pair<u64, FileRangePtr>> bits;
 
   public:
-	IntegerLiteral(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange)
+	IntegerLiteral(String _value, Maybe<Pair<u64, FileRangePtr>> _bits, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
 
-	useit static IntegerLiteral* create(String _value, Maybe<Pair<u64, FileRange>> _bits, FileRange _fileRange) {
+	useit static IntegerLiteral* create(String _value, Maybe<Pair<u64, FileRangePtr>> _bits, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IntegerLiteral), _value, _bits, _fileRange);
 	}
 
@@ -25,7 +25,8 @@ class IntegerLiteral final : public PrerunExpression, public TypeInferrable {
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
 	useit Json             to_json() const override;
 	useit String           to_string() const override;
-	useit NodeType         nodeType() const override { return NodeType::INTEGER_LITERAL; }
+
+	useit NodeType nodeType() const override { return NodeType::INTEGER_LITERAL; }
 };
 
 } // namespace qat::ast

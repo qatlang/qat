@@ -11,10 +11,10 @@ class FunctionCall final : public Expression {
 	Vec<Expression*> values;
 
   public:
-	FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange)
+	FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
 
-	useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRange _fileRange) {
+	useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
 	}
 

@@ -11,10 +11,10 @@ class ReferenceType final : public Type {
 	bool  isSubtypeVar;
 
   public:
-	ReferenceType(Type* _type, bool _isSubtypeVar, FileRange _fileRange)
+	ReferenceType(Type* _type, bool _isSubtypeVar, FileRangePtr _fileRange)
 	    : Type(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar) {}
 
-	useit static ReferenceType* create(Type* type, bool isSubtypeVar, FileRange fileRange) {
+	useit static ReferenceType* create(Type* type, bool isSubtypeVar, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ReferenceType), type, isSubtypeVar, std::move(fileRange));
 	}
 

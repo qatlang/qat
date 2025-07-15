@@ -9,7 +9,7 @@ usize GenericAbstractType::getIndex() const { return index; }
 
 Identifier GenericAbstractType::get_name() const { return name; }
 
-FileRange GenericAbstractType::get_range() const { return range; }
+FileRangePtr GenericAbstractType::get_range() const { return range; }
 
 bool GenericAbstractType::is_prerun() const { return kind == GenericKind::prerunGeneric; }
 
@@ -23,7 +23,7 @@ ir::GenericArgument* GenericAbstractType::toIRGenericType() const {
 	if (is_typed()) {
 		return as_typed()->toIR();
 	} else {
-		return as_prerun()->toIR();
+		return as_prerun()->to_ir();
 	}
 }
 

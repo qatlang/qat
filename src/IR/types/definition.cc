@@ -182,9 +182,9 @@ Mod* GenericDefinitionType::get_module() const { return parent; }
 
 ast::GenericAbstractType* GenericDefinitionType::get_generic_at(usize index) const { return generics.at(index); }
 
-DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types, ir::Ctx* irCtx, FileRange range) {
+DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range) {
 	for (auto var : variants) {
-		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
+		if (var.check(irCtx, [&](String const& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, types)) {
 			return var.get();
 		}
 	}
@@ -195,7 +195,7 @@ DefinitionType* GenericDefinitionType::fill_generics(Vec<GenericToFill*>& types,
 			if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 				irCtx->Error(
 				    "The provided generic parameters for the generic function do not satisfy the constraints", range,
-				    Pair<String, FileRange>{"The constraint can be found here", constraint.value()->fileRange});
+				    Pair<String, FileRangePtr>{"The constraint can be found here", constraint.value()->fileRange});
 			}
 		} else {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +

@@ -95,22 +95,24 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 					    "Because of the variadic argument, this constructor can be called with the same argument as a previous " +
 					        irCtx->color("from convertor") + ", thereby effectively having the same signature",
 					    fileRange,
-					    Pair<String, FileRange>{"The previous " + irCtx->color("from convertor") + " can be found here",
-					                            state.parent->as_done_skill()
-					                                ->get_from_convertor(None, generatedTypes.back().second)
-					                                ->get_name()
-					                                .range});
+					    Pair<String, FileRangePtr>{"The previous " + irCtx->color("from convertor") +
+					                                   " can be found here",
+					                               state.parent->as_done_skill()
+					                                   ->get_from_convertor(None, generatedTypes.back().second)
+					                                   ->get_name()
+					                                   .range});
 				} else if (state.parent->is_expanded() &&
 				           state.parent->as_expanded()->has_from_convertor(None, generatedTypes.back().second)) {
 					irCtx->Error(
 					    "Because of the variadic argument, this constructor can be called with the same argument as a previous " +
 					        irCtx->color("from convertor") + ", thereby effectively having the same signature",
 					    fileRange,
-					    Pair<String, FileRange>{"The previous " + irCtx->color("from convertor") + " can be found here",
-					                            state.parent->as_expanded()
-					                                ->get_from_convertor(None, generatedTypes.back().second)
-					                                ->get_name()
-					                                .range});
+					    Pair<String, FileRangePtr>{"The previous " + irCtx->color("from convertor") +
+					                                   " can be found here",
+					                               state.parent->as_expanded()
+					                                   ->get_from_convertor(None, generatedTypes.back().second)
+					                                   ->get_name()
+					                                   .range});
 				}
 			} else {
 				generatedTypes.push_back({None, arg->get_type()->emit(emitCtx)});
@@ -124,7 +126,7 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 			    "A constructor with the same signature exists in the same implementation " +
 			        irCtx->color(state.parent->as_done_skill()->to_string()),
 			    fileRange,
-			    Pair<String, FileRange>{
+			    Pair<String, FileRangePtr>{
 			        "The existing constructor can be found here",
 			        state.parent->as_done_skill()->get_constructor_with_types(generatedTypes)->get_name().range});
 		}
@@ -133,12 +135,12 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 			irCtx->Error("A constructor with the same signature exists in the parent type " +
 			                 irCtx->color(state.parent->get_parent_type()->to_string()),
 			             fileRange,
-			             Pair<String, FileRange>{"The existing constructor can be found here",
-			                                     state.parent->get_parent_type()
-			                                         ->as_expanded()
-			                                         ->get_constructor_with_types(generatedTypes)
-			                                         ->get_name()
-			                                         .range});
+			             Pair<String, FileRangePtr>{"The existing constructor can be found here",
+			                                        state.parent->get_parent_type()
+			                                            ->as_expanded()
+			                                            ->get_constructor_with_types(generatedTypes)
+			                                            ->get_name()
+			                                            .range});
 		}
 		if (state.parent->get_parent_type()->is_struct()) {
 			auto  structType = state.parent->get_parent_type()->as_struct();
@@ -367,7 +369,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					irCtx->Error("The expected type of the member field is " + irCtx->color(mem->type->to_string()) +
 					                 " but the value provided is of type " +
 					                 irCtx->color(memVal->get_ir_type()->to_string()),
-					             FileRange{mem->name.range, mem->defaultValue.value()->fileRange});
+					             FileRange::merge(mem->name.range, mem->defaultValue.value()->fileRange));
 				}
 				fnEmit->add_init_member({i, mem->defaultValue.value()->fileRange});
 			} else if (mem->type->has_prerun_default_value() || mem->type->is_default_constructible()) {
@@ -399,8 +401,8 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 		}
 	}
 	if (state.parent->get_parent_type()->is_struct()) {
-		Vec<Pair<String, FileRange>> missingMembers;
-		auto                         cTy = state.parent->get_parent_type()->as_struct();
+		Vec<Pair<String, FileRangePtr>> missingMembers;
+		auto                            cTy = state.parent->get_parent_type()->as_struct();
 		for (u64 ind = 0; ind < cTy->get_field_count(); ind++) {
 			auto memCheck = fnEmit->is_member_initted(ind);
 			if (not memCheck.has_value()) {

@@ -7,7 +7,7 @@
 namespace qat::ir {
 
 FlagType::FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, Maybe<Vec<PrerunValue*>> _values,
-                   UnsignedType* _underlyingType, FileRange _range, VisibilityInfo _visibility)
+                   UnsignedType* _underlyingType, FileRangePtr _range, VisibilityInfo _visibility)
     : EntityOverview("flagType",
                      Json()
                          ._("name", _name)

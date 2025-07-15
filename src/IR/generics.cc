@@ -10,7 +10,7 @@
 namespace qat::ir {
 
 void fill_generics(ast::EmitCtx* ctx, Vec<ast::GenericAbstractType*>& generics, Vec<GenericToFill*>& types,
-                   FileRange const& fileRange) {
+                   FileRangePtr fileRange) {
 	for (usize i = 0; i < generics.size(); i++) {
 		if (generics.at(i)->is_typed()) {
 			if ((types.size() > i)) {
@@ -70,14 +70,14 @@ void fill_generics(ast::EmitCtx* ctx, Vec<ast::GenericAbstractType*>& generics, 
 	}
 }
 
-GenericToFill::GenericToFill(void* _data, GenericKind _kind, FileRange _range)
+GenericToFill::GenericToFill(void* _data, GenericKind _kind, FileRangePtr _range)
     : data(_data), kind(_kind), range(std::move(_range)) {}
 
-GenericToFill* GenericToFill::GetPrerun(ir::PrerunValue* constVal, FileRange _range) {
+GenericToFill* GenericToFill::GetPrerun(ir::PrerunValue* constVal, FileRangePtr _range) {
 	return std::construct_at(OwnNormal(GenericToFill), constVal, GenericKind::prerunGeneric, std::move(_range));
 }
 
-GenericToFill* GenericToFill::GetType(ir::Type* type, FileRange _range) {
+GenericToFill* GenericToFill::GetType(ir::Type* type, FileRangePtr _range) {
 	SHOW("GenericToFill of type is created")
 	SHOW("Type is: " << type)
 	SHOW("TypeKind is: " << (int)type->type_kind());
@@ -92,7 +92,7 @@ bool GenericToFill::is_prerun() const { return kind == GenericKind::prerunGeneri
 
 ir::PrerunValue* GenericToFill::as_prerun() const { return (ir::PrerunValue*)data; }
 
-FileRange GenericToFill::get_range() const { return range; }
+FileRangePtr GenericToFill::get_range() const { return range; }
 
 String GenericToFill::to_string() const {
 	if (is_type()) {
@@ -102,12 +102,12 @@ String GenericToFill::to_string() const {
 	}
 }
 
-GenericArgument::GenericArgument(Identifier _name, GenericKind _kind, FileRange _range)
+GenericArgument::GenericArgument(Identifier _name, GenericKind _kind, FileRangePtr _range)
     : name(std::move(_name)), kind(_kind), range(std::move(_range)) {}
 
 Identifier GenericArgument::get_name() const { return name; }
 
-FileRange GenericArgument::get_range() const { return range; }
+FileRangePtr GenericArgument::get_range() const { return range; }
 
 bool GenericArgument::is_same(const String& cName) const { return name.value == cName; }
 
@@ -156,10 +156,10 @@ String GenericArgument::to_string() const {
 	std::unreachable();
 }
 
-TypedGeneric::TypedGeneric(Identifier _name, ir::Type* _type, FileRange _range)
+TypedGeneric::TypedGeneric(Identifier _name, ir::Type* _type, FileRangePtr _range)
     : GenericArgument(std::move(_name), GenericKind::typedGeneric, std::move(_range)), type(_type) {}
 
-TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRange range) {
+TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRangePtr range) {
 	return std::construct_at(OwnNormal(TypedGeneric), std::move(name), type, std::move(range));
 }
 
@@ -174,10 +174,10 @@ Json TypedGeneric::to_json() const {
 	    ._("range", range);
 }
 
-PrerunGeneric::PrerunGeneric(Identifier _name, ir::PrerunValue* _val, FileRange _range)
+PrerunGeneric::PrerunGeneric(Identifier _name, ir::PrerunValue* _val, FileRangePtr _range)
     : GenericArgument(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
 
-PrerunGeneric* PrerunGeneric::get(Identifier name, ir::PrerunValue* val, FileRange range) {
+PrerunGeneric* PrerunGeneric::get(Identifier name, ir::PrerunValue* val, FileRangePtr range) {
 	return std::construct_at(OwnNormal(PrerunGeneric), std::move(name), val, std::move(range));
 }
 

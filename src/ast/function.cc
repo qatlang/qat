@@ -264,10 +264,10 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 				if (ir::Mod::has_provided_function(inDep.value())) {
 					auto fn       = ir::Mod::get_provided_function(inDep.value());
 					auto depRange = fn->has_definition_range() ? fn->get_definition_range() : fn->get_name().range;
-					irCtx->Error("The internal dependency " + irCtx->color(proVal.value()) +
-					                 " has already been provided",
-					             irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey),
-					             Pair<String, FileRange>{"The previously provided entity can be found here", depRange});
+					irCtx->Error(
+					    "The internal dependency " + irCtx->color(proVal.value()) + " has already been provided",
+					    irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey),
+					    Pair<String, FileRangePtr>{"The previously provided entity can be found here", depRange});
 				}
 				switch (inDep.value()) {
 					case ir::InternalDependency::printf: {

@@ -9,12 +9,12 @@ namespace qat::ast {
 
 class DefineMixType final : public IsEntity {
 	Vec<Pair<Identifier, Maybe<Type*>>> subtypes;
-	Maybe<FileRange>                    noneVariant;
+	Maybe<FileRangePtr>                 noneVariant;
 
 	Identifier            name;
 	bool                  isPacked;
 	Maybe<VisibilitySpec> visibSpec;
-	Vec<FileRange>        fRanges;
+	Vec<FileRangePtr>     fRanges;
 	Maybe<usize>          defaultVal;
 	PrerunExpression*     defineChecker;
 	PrerunExpression*     genericConstraint;
@@ -24,17 +24,18 @@ class DefineMixType final : public IsEntity {
 
   public:
 	DefineMixType(Identifier _name, PrerunExpression* _defineChecker, PrerunExpression* _genericConstraint,
-	              Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Maybe<FileRange> _noneVariant, Vec<FileRange> _ranges,
-	              Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+	              Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Maybe<FileRangePtr> _noneVariant,
+	              Vec<FileRangePtr> _ranges, Maybe<usize> _defaultVal, bool _isPacked, Maybe<VisibilitySpec> _visibSpec,
+	              FileRangePtr _fileRange)
 	    : IsEntity(std::move(_fileRange)), subtypes(std::move(_subTypes)), noneVariant(std::move(_noneVariant)),
 	      name(_name), isPacked(_isPacked), visibSpec(_visibSpec), fRanges(std::move(_ranges)), defaultVal(_defaultVal),
 	      defineChecker(_defineChecker), genericConstraint(_genericConstraint) {}
 
 	useit static DefineMixType* create(Identifier _name, PrerunExpression* _defineChecker,
 	                                   PrerunExpression*                   _genericConstraint,
-	                                   Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Maybe<FileRange> _noneVariant,
-	                                   Vec<FileRange> _ranges, Maybe<usize> _defaultVal, bool _isPacked,
-	                                   Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange) {
+	                                   Vec<Pair<Identifier, Maybe<Type*>>> _subTypes, Maybe<FileRangePtr> _noneVariant,
+	                                   Vec<FileRangePtr> _ranges, Maybe<usize> _defaultVal, bool _isPacked,
+	                                   Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(DefineMixType), _name, _defineChecker, _genericConstraint,
 		                         std::move(_subTypes), std::move(_noneVariant), std::move(_ranges), _defaultVal,
 		                         _isPacked, _visibSpec, std::move(_fileRange));

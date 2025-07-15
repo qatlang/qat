@@ -42,7 +42,7 @@ Json BringBitwidths::to_json() const {
 	for (auto typ : broughtTypes) {
 		typesJson.push_back(typ->to_json());
 	}
-	return Json()._("nodeType", "bringBitwidths")._("types", typesJson)._("fileRange", fileRange);
+	return Json()._("nodeType", "bringBitwidths")._("types", typesJson)._("fileRange", fileRange->to_json());
 }
 
 } // namespace qat::ast

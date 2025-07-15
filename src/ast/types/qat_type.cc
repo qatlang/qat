@@ -3,7 +3,7 @@
 
 namespace qat::ast {
 
-Type::Type(FileRange _fileRange) : fileRange(std::move(_fileRange)) { allTypes.push_back(this); }
+Type::Type(FileRangePtr _fileRange) : fileRange(_fileRange) { allTypes.push_back(this); }
 
 Vec<GenericAbstractType*> Type::generics{};
 

@@ -44,7 +44,7 @@ useit Json AssemblyBlock::to_json() const {
 	    ._("nodeType", "assemblyBlock")
 	    ._("content", content->to_json())
 	    ._("defineChecker", defineChecker->to_json())
-	    ._("fileRange", fileRange);
+	    ._("fileRange", fileRange->to_json());
 }
 
 } // namespace qat::ast

@@ -10,11 +10,11 @@ class SliceType final : public Type {
 	Type* subType;
 
   public:
-	SliceType(bool _isVar, Type* _subType, FileRange _fileRange)
-	    : Type(std::move(_fileRange)), isVar(_isVar), subType(_subType) {}
+	SliceType(bool _isVar, Type* _subType, FileRangePtr _fileRange)
+	    : Type(_fileRange), isVar(_isVar), subType(_subType) {}
 
-	useit static SliceType* create(bool isVar, Type* subType, FileRange fileRange) {
-		return std::construct_at(OwnNormal(SliceType), isVar, subType, std::move(fileRange));
+	useit static SliceType* create(bool isVar, Type* subType, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(SliceType), isVar, subType, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx) {

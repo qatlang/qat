@@ -18,7 +18,7 @@ Value::Value(llvm::Value* _llvmValue, ir::Type* _type, bool _isVariable)
 
 Vec<Value*> Value::allValues = {};
 
-Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRange fileRange) {
+Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRangePtr fileRange) {
 	if (not is_ghost_ref()) {
 		auto result = ctx->get_fn()->get_block()->new_local(name.value_or(ctx->get_fn()->get_random_alloca_name()),
 		                                                    type, true, fileRange);
@@ -39,8 +39,7 @@ ir::Type* Value::get_pass_type() const {
 
 bool Value::is_prerun_function() const { return is_prerun_value() && get_ir_type()->is_function(); }
 
-Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> _localID,
-                   Mod*) {
+Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> _localID, Mod*) {
 	llvm::FunctionType* fnTy  = nullptr;
 	ir::FunctionType*   funTy = nullptr;
 	if (type->is_ptr() && type->as_ptr()->get_subtype()->is_function()) {

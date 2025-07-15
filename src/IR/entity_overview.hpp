@@ -13,26 +13,27 @@ class EntityOverview {
 	friend class MixType;
 
   protected:
-	String         ovKind;
-	Json           ovInfo;
-	FileRange      ovRange;
-	Vec<FileRange> ovMentions;
-	bool           isOverviewUpdated = false;
+	String            ovKind;
+	Json              ovInfo;
+	FileRangePtr      ovRange;
+	Vec<FileRangePtr> ovMentions;
+	bool              isOverviewUpdated = false;
 
-	Vec<Pair<Mod*, FileRange>> ovBroughtMentions;
+	Vec<Pair<Mod*, FileRangePtr>> ovBroughtMentions;
 
   public:
-	EntityOverview(String _ovKind, Json _ovInfo, FileRange _ovRange);
+	EntityOverview(String _ovKind, Json _ovInfo, FileRangePtr _ovRange);
 
 	virtual ~EntityOverview() = default;
 
-	void add_mention(FileRange _range);
-	void add_bring_mention(Mod* module, const FileRange& range);
+	void add_mention(FileRangePtr _range);
+	void add_bring_mention(Mod* module, FileRangePtr range);
 
-	Vec<Pair<Mod*, FileRange>> const& get_brought_mentions() const;
+	Vec<Pair<Mod*, FileRangePtr>> const& get_brought_mentions() const;
 
 	virtual void update_overview() {}
-	Json         overviewToJson();
+
+	Json overviewToJson();
 };
 
 } // namespace qat::ir

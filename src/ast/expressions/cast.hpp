@@ -11,10 +11,10 @@ class Cast final : public Expression {
 	Type*       destination;
 
   public:
-	Cast(Expression* _mainExp, Type* _dest, FileRange _fileRange)
+	Cast(Expression* _mainExp, Type* _dest, FileRangePtr _fileRange)
 	    : Expression(_fileRange), instance(_mainExp), destination(_dest) {}
 
-	useit static Cast* create(Expression* mainExp, Type* value, FileRange fileRange) {
+	useit static Cast* create(Expression* mainExp, Type* value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
 	}
 

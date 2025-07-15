@@ -12,11 +12,11 @@ class PrerunBinaryOperator final : public PrerunExpression {
 	PrerunExpression* rhs;
 
   public:
-	PrerunBinaryOperator(PrerunExpression* _lhs, OperatorKind _opr, PrerunExpression* _rhs, FileRange _fileRange)
+	PrerunBinaryOperator(PrerunExpression* _lhs, OperatorKind _opr, PrerunExpression* _rhs, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), lhs(_lhs), opr(_opr), rhs(_rhs) {}
 
 	useit static PrerunBinaryOperator* create(PrerunExpression* _lhs, OperatorKind _opr, PrerunExpression* _rhs,
-	                                          FileRange _fileRange) {
+	                                          FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunBinaryOperator), _lhs, _opr, _rhs, _fileRange);
 	}
 

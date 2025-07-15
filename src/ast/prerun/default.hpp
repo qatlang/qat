@@ -11,9 +11,9 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
 	mutable Maybe<ast::GenericAbstractType*> genericAbstractType;
 
   public:
-	PrerunDefault(Maybe<ast::Type*> _type, FileRange range) : PrerunExpression(range), theType(_type) {}
+	PrerunDefault(Maybe<ast::Type*> _type, FileRangePtr range) : PrerunExpression(range), theType(_type) {}
 
-	useit static PrerunDefault* create(Maybe<ast::Type*> _type, FileRange _range) {
+	useit static PrerunDefault* create(Maybe<ast::Type*> _type, FileRangePtr _range) {
 		return std::construct_at(OwnNormal(PrerunDefault), _type, _range);
 	}
 

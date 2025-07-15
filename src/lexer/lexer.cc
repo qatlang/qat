@@ -93,14 +93,24 @@ void Lexer::read() {
 	//   }
 }
 
-FileRange Lexer::get_position(u64 length) {
+FileRangePtr Lexer::get_position(u64 length) {
 	FilePos end = {lineNumber, byteNumber > 0 ? (byteNumber - 1) : byteNumber};
 	if (byteNumber == 0) {
 		if (previousLineEnd.has_value()) {
 			end = {lineNumber - 1, previousLineEnd.value()};
 		}
 	}
-	return {fs::path(filePath), {end.line, end.byteOffset - length}, end};
+	return FileRange::from(fs::path(filePath), {end.line, end.byteOffset - length}, end);
+}
+
+FileRange* Lexer::get_position_var(u64 length) {
+	FilePos end = {lineNumber, byteNumber > 0 ? (byteNumber - 1) : byteNumber};
+	if (byteNumber == 0) {
+		if (previousLineEnd.has_value()) {
+			end = {lineNumber - 1, previousLineEnd.value()};
+		}
+	}
+	return FileRange::var_from(fs::path(filePath), {end.line, end.byteOffset - length}, end);
 }
 
 void Lexer::analyse() {
@@ -248,7 +258,7 @@ Token Lexer::tokeniser() {
 				bool   star = false;
 				String commentValue;
 				read();
-				auto commentPos = this->get_position(0);
+				auto commentPos = this->get_position_var(0);
 				while ((not star || (current != '/')) && not file.eof()) {
 					if (star) {
 						star = false;
@@ -260,14 +270,14 @@ Token Lexer::tokeniser() {
 					if (not star || (current != '/')) {
 						commentValue += current;
 						if (current == '\n') {
-							commentPos.end.line++;
-							commentPos.end.byteOffset = 0;
+							commentPos->end.line++;
+							commentPos->end.byteOffset = 0;
 						} else {
-							commentPos.end.byteOffset++;
+							commentPos->end.byteOffset++;
 						}
 					}
 				}
-				commentPos.end.byteOffset--;
+				commentPos->end.byteOffset--;
 				read();
 				return Token::valued(TokenType::comment, commentValue, commentPos);
 			} else if (current == '/') {
@@ -279,7 +289,7 @@ Token Lexer::tokeniser() {
 					commRange = this->get_position(commentValue.length());
 				}
 				SHOW("Single line comment value is " << commentValue)
-				return Token::valued(TokenType::comment, commentValue, this->get_position(commentValue.length()));
+				return Token::valued(TokenType::comment, commentValue, commRange);
 			} else {
 				return Token::valued(TokenType::binaryOperator, value, this->get_position(1));
 			}
@@ -901,9 +911,9 @@ Token Lexer::tokeniser() {
 						/// This is in the reverse order since the last element is returned
 						/// first
 						buffer.push_back(Token::normal(TokenType::stop, this->get_position(1)));
-						auto fileRange = this->get_position(numVal.length() + 1);
-						if (fileRange.end.byteOffset > 0) {
-							fileRange.end.byteOffset--;
+						auto fileRange = this->get_position_var(numVal.length() + 1);
+						if (fileRange->end.byteOffset > 0) {
+							fileRange->end.byteOffset--;
 						}
 						buffer.push_back(Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral,
 						                               numVal, fileRange));
@@ -943,9 +953,9 @@ Token Lexer::tokeniser() {
 			if (file.eof()) {
 				return Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0));
 			}
-			auto      start = byteNumber;
-			String    idVal;
-			FileRange idRange{"", {0, 0}, {0, 0}};
+			auto   start = byteNumber;
+			String idVal;
+			auto   idRange = FileRange::null;
 			if (current == 'b') {
 				idVal += current;
 				read();
@@ -1199,7 +1209,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 		if (lexInst) {
 			return lexInst->get_position(len);
 		} else {
-			return FileRange("", {0u, 0u}, {0u, 0u});
+			return FileRange::null;
 		}
 	};
 
@@ -1396,10 +1406,11 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 }
 
 void Lexer::throw_error(const String& message, Maybe<usize> offset) {
-	irCtx->Error(message, offset.has_value()
-	                          ? get_position(offset.value())
-	                          : FileRange{filePath, FilePos{lineNumber, byteNumber > 0 ? byteNumber - 1 : byteNumber},
-	                                      FilePos{lineNumber, byteNumber > 0 ? byteNumber : byteNumber + 1}});
+	irCtx->Error(message,
+	             offset.has_value()
+	                 ? get_position(offset.value())
+	                 : FileRange::from(filePath, FilePos{lineNumber, byteNumber > 0 ? byteNumber - 1 : byteNumber},
+	                                   FilePos{lineNumber, byteNumber > 0 ? byteNumber : byteNumber + 1}));
 }
 
 } // namespace qat::lexer

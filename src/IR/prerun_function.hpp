@@ -184,15 +184,16 @@ class PrerunFunction : public PrerunValue, public EntityOverview {
 	Mod*               parent;
 	VisibilityInfo     visibility;
 
-	Pair<Vec<ast::PrerunSentence*>, FileRange> sentences;
+	Pair<Vec<ast::PrerunSentence*>, FileRangePtr> sentences;
 
   public:
 	PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec<ArgumentType*> _argTys,
-	               Pair<Vec<ast::PrerunSentence*>, FileRange> _sentences, VisibilityInfo visib, llvm::LLVMContext& ctx);
+	               Pair<Vec<ast::PrerunSentence*>, FileRangePtr> _sentences, VisibilityInfo visib,
+	               llvm::LLVMContext& ctx);
 
 	useit static PrerunFunction* create(Mod* parent, Identifier name, Type* returnTy, Vec<ArgumentType*> argTypes,
-	                                    Pair<Vec<ast::PrerunSentence*>, FileRange> sentences, VisibilityInfo visibility,
-	                                    llvm::LLVMContext& ctx) {
+	                                    Pair<Vec<ast::PrerunSentence*>, FileRangePtr> sentences,
+	                                    VisibilityInfo visibility, llvm::LLVMContext& ctx) {
 		return std::construct_at(OwnNormal(PrerunFunction), parent, std::move(name), returnTy, std::move(argTypes),
 		                         std::move(sentences), visibility, ctx);
 	}
@@ -211,7 +212,7 @@ class PrerunFunction : public PrerunValue, public EntityOverview {
 
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
 
-	PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRange fileRange);
+	PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRangePtr fileRange);
 };
 
 } // namespace qat::ir

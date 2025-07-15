@@ -10,10 +10,10 @@ class PrerunMemberAccess final : public PrerunExpression {
 	Identifier        memberName;
 
   public:
-	PrerunMemberAccess(PrerunExpression* _expr, Identifier _member, FileRange _fileRange)
+	PrerunMemberAccess(PrerunExpression* _expr, Identifier _member, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), expr(_expr), memberName(_member) {}
 
-	useit static PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRange _fileRange) {
+	useit static PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunMemberAccess), _expr, _member, _fileRange);
 	}
 

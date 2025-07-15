@@ -12,10 +12,10 @@ class HeapGet final : public Expression {
 	Expression* count = nullptr;
 
   public:
-	HeapGet(Type* _type, Expression* _count, FileRange _fileRange)
+	HeapGet(Type* _type, Expression* _count, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), type(_type), count(_count) {}
 
-	useit static HeapGet* create(Type* _type, Expression* _count, FileRange _fileRange) {
+	useit static HeapGet* create(Type* _type, Expression* _count, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(HeapGet), _type, _count, _fileRange);
 	}
 
@@ -38,9 +38,9 @@ class HeapPut final : public Expression {
 	Expression* ptr;
 
   public:
-	HeapPut(Expression* pointer, FileRange _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
+	HeapPut(Expression* pointer, FileRangePtr _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
 
-	useit static HeapPut* create(Expression* _pointer, FileRange _fileRange) {
+	useit static HeapPut* create(Expression* _pointer, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(HeapPut), _pointer, _fileRange);
 	}
 
@@ -63,10 +63,10 @@ class HeapGrow final : public Expression {
 	Expression* count;
 
   public:
-	HeapGrow(Type* _type, Expression* _ptr, Expression* _count, FileRange _fileRange)
+	HeapGrow(Type* _type, Expression* _ptr, Expression* _count, FileRangePtr _fileRange)
 	    : Expression(_fileRange), type(_type), ptr(_ptr), count(_count) {}
 
-	useit static HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRange fileRange) {
+	useit static HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(HeapGrow), type, ptr, count, fileRange);
 	}
 

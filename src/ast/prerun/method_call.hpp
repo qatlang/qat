@@ -12,11 +12,11 @@ class PrerunMemberFnCall final : public PrerunExpression {
 
   public:
 	PrerunMemberFnCall(PrerunExpression* _instance, Identifier _memberName, Vec<PrerunExpression*> _arguments,
-	                   FileRange _fileRange)
+	                   FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), instance(_instance), memberName(_memberName), arguments(_arguments) {}
 
 	useit static PrerunMemberFnCall* create(PrerunExpression* instance, Identifier memberName,
-	                                        Vec<PrerunExpression*> arguments, FileRange fileRange) {
+	                                        Vec<PrerunExpression*> arguments, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunMemberFnCall), instance, memberName, arguments, fileRange);
 	}
 
@@ -35,9 +35,9 @@ class PrerunMemberFnCall final : public PrerunExpression {
 };
 
 useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expression*> const& arguments,
-                                                  Identifier memberName, EmitCtx* ctx, FileRange fileRange);
+                                                  Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange);
 useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<PrerunExpression*> const& arguments,
-                                                  Identifier memberName, EmitCtx* ctx, FileRange fileRange);
+                                                  Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange);
 
 } // namespace qat::ast
 

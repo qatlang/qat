@@ -31,19 +31,19 @@ class ChoiceType : public Type, public EntityOverview {
 	ir::Ctx*    irCtx;
 	mutable u64 bitwidth = 1;
 
-	FileRange fileRange;
+	FileRangePtr fileRange;
 
   public:
 	ChoiceType(Identifier name, Mod* parent, Vec<Vec<Identifier>> fields, Maybe<Vec<llvm::ConstantInt*>> values,
 	           Maybe<ir::Type*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
-	           const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo);
+	           const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo);
 
 	useit static ChoiceType* create(Identifier name, Mod* parent, Vec<Vec<Identifier>> fields,
 	                                Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType,
 	                                bool areValuesUnsigned, Maybe<usize> defaultVal, const VisibilityInfo& visibility,
-	                                ir::Ctx* irCtx, FileRange fileRange, Maybe<MetaInfo> metaInfo) {
+	                                ir::Ctx* irCtx, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(ChoiceType), std::move(name), parent, std::move(fields), std::move(values),
-		                         providedType, areValuesUnsigned, defaultVal, visibility, irCtx, std::move(fileRange),
+		                         providedType, areValuesUnsigned, defaultVal, visibility, irCtx, fileRange,
 		                         std::move(metaInfo));
 	}
 

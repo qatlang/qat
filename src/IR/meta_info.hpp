@@ -14,7 +14,7 @@ struct MetaInfo {
 	static constexpr auto inlineKey   = "inline";
 	static constexpr auto providesKey = "provides";
 
-	MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRange> _valueRanges, FileRange _fileRange)
+	MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRangePtr> _valueRanges, FileRangePtr _fileRange)
 	    : valueRanges(_valueRanges), fileRange(_fileRange) {
 		for (auto& kv : keyValues) {
 			keys.push_back(kv.first);
@@ -24,8 +24,8 @@ struct MetaInfo {
 
 	Vec<Identifier>       keys;
 	Vec<ir::PrerunValue*> values;
-	Vec<FileRange>        valueRanges;
-	FileRange             fileRange;
+	Vec<FileRangePtr>     valueRanges;
+	FileRangePtr          fileRange;
 
 	useit bool has_key(String const& name) const {
 		for (auto& k : keys) {
@@ -47,7 +47,7 @@ struct MetaInfo {
 		return nullptr;
 	}
 
-	useit FileRange get_value_range_for(String const& name) const {
+	useit FileRangePtr get_value_range_for(String const& name) const {
 		usize ind = 0;
 		for (auto& k : keys) {
 			if (k.value == name) {

@@ -14,7 +14,7 @@ namespace qat::ast {
 
 struct VisibilitySpec {
 	VisibilityKind kind;
-	FileRange      range;
+	FileRangePtr   range;
 
 	useit String to_string() const {
 		switch (kind) {
@@ -35,12 +35,14 @@ struct VisibilitySpec {
 		}
 	}
 
-	useit Json to_json() const { return Json()._("visibilityKind", kind_to_string(kind))._("fileRange", range); }
+	useit Json to_json() const {
+		return Json()._("visibilityKind", kind_to_string(kind))._("fileRange", range->to_json());
+	}
 };
 
 class Commentable {
   public:
-	Maybe<Pair<String, FileRange>> commentValue;
+	Maybe<Pair<String, FileRangePtr>> commentValue;
 
 	useit bool hasCommentValue() const { return commentValue.has_value(); }
 };
@@ -60,9 +62,9 @@ class Node {
 	static Vec<Node*> allNodes;
 
   public:
-	FileRange fileRange;
+	FileRangePtr fileRange;
 
-	explicit Node(FileRange _fileRange);
+	explicit Node(FileRangePtr _fileRange);
 	virtual ~Node() = default;
 
 	useit virtual bool isCommentable() const { return false; }
@@ -86,7 +88,7 @@ class IsEntity : public Node {
   public:
 	ir::EntityState* entityState = nullptr;
 
-	IsEntity(FileRange _fileRange) : Node(_fileRange) {}
+	IsEntity(FileRangePtr _fileRange) : Node(_fileRange) {}
 
 	virtual ~IsEntity() = default;
 
@@ -95,19 +97,6 @@ class IsEntity : public Node {
 	virtual void create_entity(ir::Mod* parent, ir::Ctx* irCtx)                 = 0;
 	virtual void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx)    = 0;
 	virtual void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) = 0;
-};
-
-class HolderNode : public Node {
-  private:
-	Node* node;
-
-  public:
-	explicit HolderNode(Node* _node) : Node(_node->fileRange), node(_node) {}
-
-	// NOLINTNEXTLINE(misc-unused-parameters)
-	useit Json to_json() const final { return node->to_json(); }
-
-	useit NodeType nodeType() const final { return NodeType::HOLDER; }
 };
 
 } // namespace qat::ast

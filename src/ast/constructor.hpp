@@ -27,8 +27,8 @@ class ConstructorPrototype {
 	Maybe<VisibilitySpec> visibSpec;
 	ConstructorType       type;
 	Maybe<Identifier>     argName;
-	FileRange             nameRange;
-	FileRange             fileRange;
+	FileRangePtr          nameRange;
+	FileRangePtr          fileRange;
 
 	PrerunExpression*    defineChecker;
 	Maybe<ast::MetaInfo> metaInfo;
@@ -39,32 +39,33 @@ class ConstructorPrototype {
 	mutable Vec<ir::StructField*> absentMembersWithoutDefault;
 
   public:
-	ConstructorPrototype(ConstructorType _constrType, FileRange _nameRange, Vec<Argument*> _arguments,
-	                     Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange, Maybe<Identifier> _argName,
+	ConstructorPrototype(ConstructorType _constrType, FileRangePtr _nameRange, Vec<Argument*> _arguments,
+	                     Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange, Maybe<Identifier> _argName,
 	                     PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo)
 	    : arguments(_arguments), visibSpec(_visibSpec), type(_constrType), argName(_argName), nameRange(_nameRange),
 	      fileRange(_fileRange), defineChecker(_defineChecker), metaInfo(std::move(_metaInfo)) {}
 
-	static ConstructorPrototype* Normal(FileRange nameRange, Vec<Argument*> args, Maybe<VisibilitySpec> visibSpec,
-	                                    FileRange fileRange, PrerunExpression* defineChecker,
+	static ConstructorPrototype* Normal(FileRangePtr nameRange, Vec<Argument*> args, Maybe<VisibilitySpec> visibSpec,
+	                                    FileRangePtr fileRange, PrerunExpression* defineChecker,
 	                                    Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::normal, nameRange, std::move(args),
 		                         visibSpec, std::move(fileRange), None, defineChecker, metaInfo);
 	}
 
-	static ConstructorPrototype* Default(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
-	                                     PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
+	static ConstructorPrototype* Default(Maybe<VisibilitySpec> visibSpec, FileRangePtr nameRange,
+	                                     FileRangePtr fileRange, PrerunExpression* defineChecker,
+	                                     Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::Default, nameRange, Vec<Argument*>{},
 		                         visibSpec, std::move(fileRange), None, defineChecker, metaInfo);
 	}
 
-	static ConstructorPrototype* Copy(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
+	static ConstructorPrototype* Copy(Maybe<VisibilitySpec> visibSpec, FileRangePtr nameRange, FileRangePtr fileRange,
 	                                  Identifier _argName, PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::copy, nameRange, Vec<Argument*>{},
 		                         visibSpec, std::move(fileRange), _argName, defineChecker, metaInfo);
 	}
 
-	static ConstructorPrototype* Move(Maybe<VisibilitySpec> visibSpec, FileRange nameRange, FileRange fileRange,
+	static ConstructorPrototype* Move(Maybe<VisibilitySpec> visibSpec, FileRangePtr nameRange, FileRangePtr fileRange,
 	                                  Identifier _argName, PrerunExpression* defineChecker, Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(ConstructorPrototype), ConstructorType::move, nameRange, Vec<Argument*>{},
 		                         visibSpec, std::move(fileRange), _argName, defineChecker, metaInfo);
@@ -92,14 +93,14 @@ class ConstructorDefinition {
 
 	Vec<Sentence*>        sentences;
 	ConstructorPrototype* prototype;
-	FileRange             fileRange;
+	FileRangePtr          fileRange;
 
   public:
-	ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+	ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, FileRangePtr _fileRange)
 	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
 	useit static ConstructorDefinition* create(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
-	                                           FileRange _fileRange) {
+	                                           FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ConstructorDefinition), _prototype, _sentences, _fileRange);
 	}
 

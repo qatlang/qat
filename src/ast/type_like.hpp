@@ -33,7 +33,7 @@ class TypeLike {
 
 	useit operator bool() const { return data != nullptr; }
 
-	useit FileRange get_range() const;
+	useit FileRangePtr get_range() const;
 
 	useit String to_string() const;
 

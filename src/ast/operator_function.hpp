@@ -22,23 +22,23 @@ class OperatorPrototype {
 	Type*                 returnType;
 	Maybe<VisibilitySpec> visibSpec;
 	Maybe<Identifier>     argName;
-	FileRange             nameRange;
-	FileRange             fileRange;
+	FileRangePtr          nameRange;
+	FileRangePtr          fileRange;
 
 	PrerunExpression* defineChecker;
 	Maybe<MetaInfo>   metaInfo;
 
   public:
-	OperatorPrototype(bool _isVariationFn, OperatorKind _op, FileRange _nameRange, Vec<Argument*> _arguments,
-	                  Type* _returnType, Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	OperatorPrototype(bool _isVariationFn, OperatorKind _op, FileRangePtr _nameRange, Vec<Argument*> _arguments,
+	                  Type* _returnType, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange,
 	                  Maybe<Identifier> _argName, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo)
 	    : isVariationFn(_isVariationFn), opr(_op), arguments(_arguments), returnType(_returnType),
 	      visibSpec(_visibSpec), argName(_argName), nameRange(_nameRange), fileRange(_fileRange),
 	      defineChecker(_defineChecker), metaInfo(std::move(_metaInfo)) {}
 
-	useit static OperatorPrototype* create(bool _isVariationFn, OperatorKind _op, FileRange _nameRange,
+	useit static OperatorPrototype* create(bool _isVariationFn, OperatorKind _op, FileRangePtr _nameRange,
 	                                       Vec<Argument*> _arguments, Type* _returnType,
-	                                       Maybe<VisibilitySpec> _visibSpec, const FileRange& _fileRange,
+	                                       Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange,
 	                                       Maybe<Identifier> _argName, PrerunExpression* _defineChecker,
 	                                       Maybe<MetaInfo> _metaInfo) {
 		return std::construct_at(OwnNormal(OperatorPrototype), _isVariationFn, _op, _nameRange, _arguments, _returnType,
@@ -73,14 +73,14 @@ class OperatorDefinition {
 
 	Vec<Sentence*>     sentences;
 	OperatorPrototype* prototype;
-	FileRange          fileRange;
+	FileRangePtr       fileRange;
 
   public:
-	OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRange _fileRange)
+	OperatorDefinition(OperatorPrototype* _prototype, Vec<Sentence*> _sentences, FileRangePtr _fileRange)
 	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
 	useit static OperatorDefinition* create(OperatorPrototype* _prototype, Vec<Sentence*> _sentences,
-	                                        FileRange _fileRange) {
+	                                        FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(OperatorDefinition), _prototype, _sentences, _fileRange);
 	}
 

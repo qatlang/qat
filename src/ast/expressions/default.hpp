@@ -14,10 +14,10 @@ class Default final : public Expression, public LocalDeclCompatible, public InPl
 	ast::Type* providedType;
 
   public:
-	Default(ast::Type* _providedType, FileRange _fileRange)
+	Default(ast::Type* _providedType, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), providedType(_providedType) {}
 
-	useit static Default* create(ast::Type* _providedType, FileRange _fileRange) {
+	useit static Default* create(ast::Type* _providedType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Default), _providedType, _fileRange);
 	}
 

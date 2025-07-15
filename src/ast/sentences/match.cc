@@ -164,8 +164,9 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					        ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {1u})
 					        : ctx->irCtx->builder.CreatePointerCast(
 					              ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), expEmit->get_llvm(), 1),
-					              llvm::PointerType::get(mTy->get_variant_with_name(uMatch->get_name().value)
-					                  ->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
+					              llvm::PointerType::get(
+					                  mTy->get_variant_with_name(uMatch->get_name().value)->get_llvm_type(),
+					                  ctx->irCtx->dataLayout.getProgramAddressSpace())),
 					    loc->get_alloca());
 				}
 			}
@@ -224,10 +225,10 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 							               ctx->color(chTy->get_full_name()) +
 							               " is repeating here. Please check logic and make necessary changes",
 							           cMatch->getMainRange(),
-							           Pair<String, FileRange>{"The previous occurrence of " +
-							                                       ctx->color(cMatch->get_name().value) +
-							                                       " can be found here",
-							                                   cMatch->getMainRange()});
+							           Pair<String, FileRangePtr>{"The previous occurrence of " +
+							                                          ctx->color(cMatch->get_name().value) +
+							                                          " can be found here",
+							                                      cMatch->getMainRange()});
 						}
 					}
 					mentionedFields.push_back(cMatch->get_name());
@@ -324,7 +325,8 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 			strBuff  = expEmit->is_value()
 			               ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {0u})
 			               : ctx->irCtx->builder.CreateLoad(
-                                llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
+                                llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+			                                            ctx->irCtx->dataLayout.getProgramAddressSpace()),
                                 ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(), expEmit->get_llvm(), 0u));
 			strCount = expEmit->is_value()
 			               ? ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {1u})
@@ -416,7 +418,8 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 						caseStrBuff  = caseIR->is_value()
 						                   ? ctx->irCtx->builder.CreateExtractValue(caseIR->get_llvm(), {0u})
 						                   : ctx->irCtx->builder.CreateLoad(
-                                                llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
+                                                llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+						                                                ctx->irCtx->dataLayout.getProgramAddressSpace()),
                                                 ctx->irCtx->builder.CreateStructGEP(strTy->get_llvm_type(),
 						                                                             caseIR->get_llvm(), 0u));
 						caseStrCount = ctx->irCtx->builder.CreateLoad(
@@ -580,7 +583,7 @@ Json Match::to_json() const {
 	    ._("matchChain", chainJson)
 	    ._("hasElse", elseCase.has_value())
 	    ._("elseSentences", elseJson)
-	    ._("elseRange", elseCase.has_value() ? (Json)(elseCase->second) : Json());
+	    ._("elseRange", elseCase.has_value() ? elseCase->second->to_json() : JsonValue());
 }
 
 } // namespace qat::ast

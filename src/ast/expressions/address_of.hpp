@@ -9,9 +9,9 @@ class AddressOf final : public Expression {
 	Expression* instance;
 
   public:
-	AddressOf(Expression* _instance, FileRange _fileRange) : Expression(_fileRange), instance(_instance) {}
+	AddressOf(Expression* _instance, FileRangePtr _fileRange) : Expression(_fileRange), instance(_instance) {}
 
-	useit static AddressOf* create(Expression* _instance, FileRange _fileRange) {
+	useit static AddressOf* create(Expression* _instance, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(AddressOf), _instance, _fileRange);
 	}
 

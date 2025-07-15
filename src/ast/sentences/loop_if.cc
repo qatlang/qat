@@ -10,25 +10,25 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 		for (const auto& info : ctx->loopsInfo) {
 			if (info.name.has_value() && (info.name->value == uniq)) {
 				ctx->Error("The tag provided for this loop is already used by another loop", tag->range,
-				           Pair<String, FileRange>{"The existing tag was found here", info.name->range});
+				           Pair<String, FileRangePtr>{"The existing tag was found here", info.name->range});
 			}
 			if (info.secondaryName.has_value() && (info.secondaryName->value == uniq)) {
 				ctx->Error("The tag provided for this loop is already used by another loop", tag->range,
-				           Pair<String, FileRange>{"The existing tag was found here", info.secondaryName->range});
+				           Pair<String, FileRangePtr>{"The existing tag was found here", info.secondaryName->range});
 			}
 		}
 		for (const auto& brek : ctx->breakables) {
 			if (brek.tag.has_value() && (brek.tag->value == tag->value)) {
 				ctx->Error("The tag provided for the loop is already used by another " +
 				               ctx->color(brek.type_to_string()),
-				           tag->range, Pair<String, FileRange>{"The existing tag was found here", brek.tag->range});
+				           tag->range, Pair<String, FileRangePtr>{"The existing tag was found here", brek.tag->range});
 			}
 		}
 		auto block = ctx->get_fn()->get_block();
 		if (block->has_value(tag->value)) {
 			ctx->Error("There already exists another local value with the same name as this tag", tag->range,
 			           block->get_value(tag->value)->has_associated_range()
-			               ? Maybe<Pair<String, FileRange>>(
+			               ? Maybe<Pair<String, FileRangePtr>>(
 			                     {"The local value was found here", block->get_value(tag->value)->get_file_range()})
 			               : None);
 		}

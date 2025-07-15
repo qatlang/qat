@@ -27,7 +27,7 @@ template <typename T> class GenericVariant {
 		genericTypes.clear();
 	}
 
-	useit bool check(ir::Ctx* irCtx, std::function<void(const String&, const FileRange&)> errorFn,
+	useit bool check(ir::Ctx* irCtx, std::function<void(String const&, FileRangePtr)> errorFn,
 	                 Vec<GenericToFill*> dest) const {
 		if (genericTypes.size() != dest.size()) {
 			return false;
@@ -93,6 +93,7 @@ template <typename T> class GenericVariant {
 			return true;
 		}
 	}
+
 	useit T* get() { return entity; }
 };
 

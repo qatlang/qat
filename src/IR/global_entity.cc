@@ -5,7 +5,7 @@
 namespace qat::ir {
 
 PrerunGlobal::PrerunGlobal(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant,
-                           VisibilityInfo _visibility, FileRange _fileRange)
+                           VisibilityInfo _visibility, FileRangePtr _fileRange)
     : PrerunValue(_constant, _type), EntityOverview("prerunGlobal", Json(), _fileRange), name(_name),
       visibility(_visibility), parent(_parent) {
 	parent->prerunGlobals.push_back(this);

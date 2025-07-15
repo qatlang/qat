@@ -10,10 +10,10 @@ class ConfirmRef : public Expression {
 	bool        isVar;
 
   public:
-	ConfirmRef(Expression* _subExpr, bool _isVar, FileRange _fileRange)
+	ConfirmRef(Expression* _subExpr, bool _isVar, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), subExpr(_subExpr), isVar(_isVar) {}
 
-	useit static ConfirmRef* create(Expression* subExpr, bool isVar, FileRange fileRange) {
+	useit static ConfirmRef* create(Expression* subExpr, bool isVar, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ConfirmRef), subExpr, isVar, std::move(fileRange));
 	}
 

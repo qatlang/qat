@@ -1,7 +1,6 @@
 #ifndef QAT_AST_TYPES_POLYMORPH_HPP
 #define QAT_AST_TYPES_POLYMORPH_HPP
 
-#include "../node.hpp"
 #include "../skill_entity.hpp"
 #include "./pointer_owner.hpp"
 #include "./qat_type.hpp"
@@ -20,11 +19,11 @@ class PolymorphType final : public Type {
 	Maybe<PtrOwner>  owner;
 
   public:
-	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<PtrOwner> _owner, FileRange _range)
+	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<PtrOwner> _owner, FileRangePtr _range)
 	    : Type(std::move(_range)), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(_owner) {}
 
 	useit static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<PtrOwner> owner,
-	                                   FileRange range) {
+	                                   FileRangePtr range) {
 		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), owner, std::move(range));
 	}
 

@@ -44,7 +44,7 @@ enum class GenericEntityType {
 struct GenericEntityMarker {
 	String                    name;
 	GenericEntityType         type;
-	FileRange                 fileRange;
+	FileRangePtr              fileRange;
 	u64                       warningCount = 0;
 	Vec<ir::GenericArgument*> generics{};
 
@@ -68,27 +68,27 @@ struct GenericEntityMarker {
 };
 
 class CodeProblem {
-	bool             isError;
-	String           message;
-	Maybe<FileRange> range;
+	bool                isError;
+	String              message;
+	Maybe<FileRangePtr> range;
 
   public:
-	CodeProblem(bool isError, String message, Maybe<FileRange> range);
+	CodeProblem(bool isError, String message, Maybe<FileRangePtr> range);
 	operator Json() const;
 };
 
 class QatError {
 	friend class ir::Ctx;
-	String           message;
-	Maybe<FileRange> fileRange;
+	String              message;
+	Maybe<FileRangePtr> fileRange;
 
   public:
 	QatError();
-	QatError(String message, Maybe<FileRange> fileRange);
+	QatError(String message, Maybe<FileRangePtr> fileRange);
 
 	QatError& add(String value);
 	QatError& colored(String value);
-	void      setRange(FileRange range);
+	void      setRange(FileRangePtr range);
 };
 
 class Ctx {
@@ -108,9 +108,9 @@ class Ctx {
 		return false;
 	}
 
-	Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> get_range_content(FileRange const& _range) const;
+	Pair<usize, Vec<std::tuple<String, u64, u64, u32>>> get_range_content(FileRangePtr _range) const;
 
-	void print_range_content(FileRange const& fileRange, bool isError, bool isContentError) const;
+	void print_range_content(FileRangePtr fileRange, bool isError, bool isContentError) const;
 
 	QatSitter* sitter = nullptr;
 
@@ -202,14 +202,14 @@ class Ctx {
 	void write_json_result(bool status) const;
 
 	void finalise_errors();
-	void add_error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
-	               Maybe<Pair<String, FileRange>> pointTo = None);
-	void Error(ir::Mod* activeMod, const String& message, Maybe<FileRange> fileRange,
-	           Maybe<Pair<String, FileRange>> pointTo = None);
-	void Error(const String& message, Maybe<FileRange> fileRange, Maybe<Pair<String, FileRange>> pointTo = None);
+	void add_error(ir::Mod* activeMod, String const& message, Maybe<FileRangePtr> fileRange,
+	               Maybe<Pair<String, FileRangePtr>> pointTo = None);
+	void Error(ir::Mod* activeMod, String const& message, Maybe<FileRangePtr> fileRange,
+	           Maybe<Pair<String, FileRangePtr>> pointTo = None);
+	void Error(String const& message, Maybe<FileRangePtr> fileRange, Maybe<Pair<String, FileRangePtr>> pointTo = None);
 	void Errors(ir::Mod* activeMod, Vec<QatError> errors);
 	void Errors(Vec<QatError> errors);
-	void Warning(const String& message, const FileRange& fileRange);
+	void Warning(String const& message, FileRangePtr fileRange);
 
 	static String color(String const& message) {
 		auto* cfg = cli::Config::get();

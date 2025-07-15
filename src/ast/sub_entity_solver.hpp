@@ -24,17 +24,17 @@ enum class SubEntityParentKind {
 struct SubEntityParent {
 	SubEntityParentKind kind;
 	void*               data;
-	FileRange           range;
+	FileRangePtr        range;
 
-	useit static SubEntityParent of_type(ir::Type* type, FileRange range) {
+	useit static SubEntityParent of_type(ir::Type* type, FileRangePtr range) {
 		return SubEntityParent{.kind = SubEntityParentKind::TYPE, .data = type, .range = range};
 	}
 
-	useit static SubEntityParent of_skill(ir::Skill* skill, FileRange range) {
+	useit static SubEntityParent of_skill(ir::Skill* skill, FileRangePtr range) {
 		return SubEntityParent{.kind = SubEntityParentKind::SKILL, .data = skill, .range = range};
 	}
 
-	useit static SubEntityParent of_done_skill(ir::DoneSkill* doneSkill, FileRange range) {
+	useit static SubEntityParent of_done_skill(ir::DoneSkill* doneSkill, FileRangePtr range) {
 		return SubEntityParent{.kind = SubEntityParentKind::DONE_SKILL, .data = doneSkill, .range = range};
 	}
 };
@@ -59,7 +59,7 @@ struct SubEntityResult {
 };
 
 SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntityParent currentParent,
-                                  Vec<Identifier> const& names, FileRange fileRange);
+                                  Vec<Identifier> const& names, FileRangePtr fileRange);
 
 } // namespace qat::ast
 

@@ -9,10 +9,10 @@ class PrerunArrayLiteral final : public PrerunExpression, public TypeInferrable 
 	Vec<PrerunExpression*> valuesExp;
 
   public:
-	PrerunArrayLiteral(Vec<PrerunExpression*> _elements, FileRange _fileRange)
+	PrerunArrayLiteral(Vec<PrerunExpression*> _elements, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), valuesExp(_elements) {}
 
-	useit static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, FileRange fileRange) {
+	useit static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunArrayLiteral), elements, fileRange);
 	}
 
@@ -27,7 +27,8 @@ class PrerunArrayLiteral final : public PrerunExpression, public TypeInferrable 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 	useit Json             to_json() const final;
 	useit String           to_string() const final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_ARRAY_LITERAL; }
+
+	useit NodeType nodeType() const final { return NodeType::PRERUN_ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

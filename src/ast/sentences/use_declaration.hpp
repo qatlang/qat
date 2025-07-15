@@ -12,10 +12,10 @@ class UseDeclaration final : public Sentence {
 	Expression* value;
 
   public:
-	UseDeclaration(Identifier _name, Type* _type, Expression* _value, FileRange _fileRange)
+	UseDeclaration(Identifier _name, Type* _type, Expression* _value, FileRangePtr _fileRange)
 	    : Sentence(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value) {}
 
-	useit static UseDeclaration* create(Identifier name, Type* type, Expression* value, FileRange fileRange) {
+	useit static UseDeclaration* create(Identifier name, Type* type, Expression* value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(UseDeclaration), std::move(name), type, value, fileRange);
 	}
 

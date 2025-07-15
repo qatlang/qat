@@ -7,16 +7,18 @@ namespace qat::ast {
 
 class AssemblyBlock final : public IsEntity {
 	PrerunExpression* content;
-
 	PrerunExpression* defineChecker;
 
   public:
-	AssemblyBlock(PrerunExpression* _content, PrerunExpression* _defineChecker, FileRange _fileRange)
-	    : IsEntity(std::move(_fileRange)), content(std::move(_content)), defineChecker(_defineChecker) {}
+	AssemblyBlock(PrerunExpression* _content, PrerunExpression* _defineChecker, FileRangePtr _fileRange)
+	    : IsEntity(_fileRange), content(std::move(_content)), defineChecker(_defineChecker) {
+		SHOW("Created ast::AssemblyBlock");
+	}
 
 	useit static AssemblyBlock* create(PrerunExpression* content, PrerunExpression* defineChecker,
-	                                   FileRange fileRange) {
-		return std::construct_at(OwnNormal(AssemblyBlock), content, defineChecker, std::move(fileRange));
+	                                   FileRangePtr fileRange) {
+		SHOW("Calling construct_at")
+		return std::construct_at(OwnNormal(AssemblyBlock), content, defineChecker, fileRange);
 	}
 
 	void create_entity(ir::Mod* mod, ir::Ctx* irCtx) final;

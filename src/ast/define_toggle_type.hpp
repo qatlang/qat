@@ -31,7 +31,7 @@ class DefineToggleType : public IsEntity {
   public:
 	DefineToggleType(Identifier _name, Vec<Pair<Vec<Identifier>, Type*>> _variants, PrerunExpression* _defineChecker,
 	                 PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-	                 FileRange _fileRange)
+	                 FileRangePtr _fileRange)
 	    : IsEntity(std::move(_fileRange)), name(std::move(_name)), variants(std::move(_variants)),
 	      defineChecker(_defineChecker), genericConstraint(_genericConstraint), metaInfo(std::move(_metaInfo)),
 	      visibSpec(std::move(_visibSpec)) {}
@@ -39,7 +39,7 @@ class DefineToggleType : public IsEntity {
 	useit static DefineToggleType* create(Identifier name, Vec<Pair<Vec<Identifier>, Type*>> variants,
 	                                      PrerunExpression* defineChecker, PrerunExpression* genericConstraint,
 	                                      Maybe<MetaInfo> metaInfo, Maybe<VisibilitySpec> visibSpec,
-	                                      FileRange fileRange) {
+	                                      FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefineToggleType), std::move(name), std::move(variants), defineChecker,
 		                         genericConstraint, std::move(metaInfo), std::move(visibSpec), std::move(fileRange));
 	}

@@ -1,10 +1,10 @@
 #include "./subtype.hpp"
+#include "../node.hpp"
 #include "../sub_entity_solver.hpp"
 
 namespace qat::ast {
 
-void SubType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-                                  EmitCtx* ctx) {
+void SubType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	if (parentType != nullptr) {
 		UPDATE_DEPS(parentType);
 	}

@@ -9,10 +9,10 @@ class InlineLet final : public Expression {
 	Expression* expression;
 
   public:
-	InlineLet(Expression* _expression, FileRange _fileRange)
+	InlineLet(Expression* _expression, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), expression(_expression) {}
 
-	useit static InlineLet* create(Expression* expr, FileRange fileRange) {
+	useit static InlineLet* create(Expression* expr, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InlineLet), expr, fileRange);
 	}
 

@@ -18,11 +18,11 @@ class VariantInitialiser final : public Expression,
 	Expression* expression;
 
   public:
-	VariantInitialiser(TypeLike _type, Identifier _subName, Expression* _expression, FileRange _fileRange)
+	VariantInitialiser(TypeLike _type, Identifier _subName, Expression* _expression, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
 	useit static VariantInitialiser* create(TypeLike type, Identifier subName, Expression* expression,
-	                                        FileRange fileRange) {
+	                                        FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(VariantInitialiser), type, subName, expression, fileRange);
 	}
 

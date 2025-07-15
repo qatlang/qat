@@ -14,7 +14,7 @@ Type* FillGeneric::as_type() const { return (Type*)data; }
 
 PrerunExpression* FillGeneric::as_prerun() const { return (PrerunExpression*)data; }
 
-FileRange const& FillGeneric::get_range() const { return as_type()->fileRange; }
+FileRangePtr FillGeneric::get_range() const { return as_type()->fileRange; }
 
 ir::GenericToFill* FillGeneric::toFill(EmitCtx* ctx) const {
 	SHOW("ToFill called")

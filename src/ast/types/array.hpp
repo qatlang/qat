@@ -7,11 +7,6 @@ namespace qat::ast {
 
 class PrerunExpression;
 
-/**
- *  A continuous sequence of elements of a particular type. The sequence
- * is fixed length
- *
- */
 class ArrayType final : public Type {
   private:
 	Type*                     elementType;
@@ -20,10 +15,10 @@ class ArrayType final : public Type {
 	void typeInferenceForLength(ir::Ctx* irCtx) const;
 
   public:
-	ArrayType(Type* _element_type, PrerunExpression* _length, FileRange _fileRange)
+	ArrayType(Type* _element_type, PrerunExpression* _length, FileRangePtr _fileRange)
 	    : Type(_fileRange), elementType(_element_type), lengthExp(_length) {}
 
-	useit static ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRange _fileRange) {
+	useit static ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ArrayType), _element_type, _length, _fileRange);
 	}
 

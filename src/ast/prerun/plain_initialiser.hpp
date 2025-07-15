@@ -14,11 +14,11 @@ class PrerunPlainInit final : public PrerunExpression, public TypeInferrable {
 
   public:
 	PrerunPlainInit(TypeLike _type, Maybe<Vec<Identifier>> _fields, Vec<PrerunExpression*> _fieldValues,
-	                FileRange _fileRange)
+	                FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
 	useit static PrerunPlainInit* create(TypeLike _type, Maybe<Vec<Identifier>> _fields,
-	                                     Vec<PrerunExpression*> _fieldValues, FileRange _fileRange) {
+	                                     Vec<PrerunExpression*> _fieldValues, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunPlainInit), _type, _fields, _fieldValues, _fileRange);
 	}
 
@@ -32,9 +32,11 @@ class PrerunPlainInit final : public PrerunExpression, public TypeInferrable {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
-	useit NodeType         nodeType() const final { return NodeType::PRERUN_PLAIN_INITIALISER; }
-	useit String           to_string() const final;
-	useit Json             to_json() const final;
+
+	useit NodeType nodeType() const final { return NodeType::PRERUN_PLAIN_INITIALISER; }
+
+	useit String to_string() const final;
+	useit Json   to_json() const final;
 };
 
 } // namespace qat::ast

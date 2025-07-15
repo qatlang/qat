@@ -13,22 +13,22 @@ class DestructorDefinition {
 	friend DefineStructType;
 	friend DoSkill;
 
-	FileRange      nameRange;
+	FileRangePtr   nameRange;
 	Vec<Sentence*> sentences;
-	FileRange      fileRange;
+	FileRangePtr   fileRange;
 
 	PrerunExpression* defineChecker;
 	Maybe<MetaInfo>   metaInfo;
 
   public:
-	DestructorDefinition(FileRange _nameRange, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo,
-	                     Vec<Sentence*> _sentences, FileRange _fileRange)
+	DestructorDefinition(FileRangePtr _nameRange, PrerunExpression* _defineChecker, Maybe<MetaInfo> _metaInfo,
+	                     Vec<Sentence*> _sentences, FileRangePtr _fileRange)
 	    : nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange), defineChecker(_defineChecker),
 	      metaInfo(std::move(_metaInfo)) {}
 
-	useit static DestructorDefinition* create(FileRange nameRange, PrerunExpression* _defineChecker,
+	useit static DestructorDefinition* create(FileRangePtr nameRange, PrerunExpression* _defineChecker,
 	                                          Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences,
-	                                          FileRange fileRange) {
+	                                          FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DestructorDefinition), nameRange, _defineChecker, std::move(metaInfo),
 		                         std::move(_sentences), fileRange);
 	}

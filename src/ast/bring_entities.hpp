@@ -16,26 +16,27 @@ class BroughtGroup {
 	Vec<Identifier>    entity;
 	Maybe<Identifier>  alias;
 	Vec<BroughtGroup*> members;
-	FileRange          fileRange;
+	FileRangePtr       fileRange;
 
 	mutable bool             isAlreadyBrought = false;
 	mutable ir::EntityState* entityState      = nullptr;
 
   public:
-	BroughtGroup(u32 _relative, Vec<Identifier> _entity, Maybe<Identifier> _alias, FileRange _fileRange)
+	BroughtGroup(u32 _relative, Vec<Identifier> _entity, Maybe<Identifier> _alias, FileRangePtr _fileRange)
 	    : relative(_relative), entity(std::move(_entity)), alias(std::move(_alias)), fileRange(std::move(_fileRange)) {}
 
-	useit static BroughtGroup* create(u32 relative, Vec<Identifier> parent, Maybe<Identifier> alias, FileRange range) {
+	useit static BroughtGroup* create(u32 relative, Vec<Identifier> parent, Maybe<Identifier> alias,
+	                                  FileRangePtr range) {
 		return std::construct_at(OwnNormal(BroughtGroup), relative, std::move(parent), std::move(alias),
 		                         std::move(range));
 	}
 
-	void addMember(BroughtGroup* mem);
-	void extendFileRange(FileRange end);
+	void add_member(BroughtGroup* mem);
+	void extend_filerange(FileRangePtr end);
 	void bring() const;
 
-	useit bool hasMembers() const;
-	useit bool isAllBrought() const;
+	useit bool has_members() const;
+	useit bool is_all_brought() const;
 	useit Json to_json() const;
 };
 
@@ -46,11 +47,11 @@ class BringEntities final : public IsEntity {
 	mutable bool throwErrorsWhenUnfound = false;
 
   public:
-	BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRange _fileRange)
+	BringEntities(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
 	    : IsEntity(_fileRange), entities(_entities), visibSpec(_visibSpec) {}
 
 	useit static BringEntities* create(Vec<BroughtGroup*> _entities, Maybe<VisibilitySpec> _visibSpec,
-	                                   FileRange _fileRange) {
+	                                   FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(BringEntities), _entities, _visibSpec, _fileRange);
 	}
 
@@ -60,8 +61,10 @@ class BringEntities final : public IsEntity {
 
 	void handle_brings(ir::Mod* mod, ir::Ctx* irCtx) const;
 
-	useit Json     to_json() const final;
+	useit Json to_json() const final;
+
 	useit NodeType nodeType() const final { return NodeType::BRING_ENTITIES; }
+
 	~BringEntities() final;
 };
 

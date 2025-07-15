@@ -10,15 +10,16 @@ class Spawn : public Expression {
 	Vec<Sentence*> sentences;
 
   public:
-	Spawn(Vec<Sentence*> _sentences, FileRange _fileRange) : Expression(_fileRange), sentences(_sentences) {}
+	Spawn(Vec<Sentence*> _sentences, FileRangePtr _fileRange) : Expression(_fileRange), sentences(_sentences) {}
 
-	useit static Spawn* create(Vec<Sentence*> sentences, FileRange fileRange) {
+	useit static Spawn* create(Vec<Sentence*> sentences, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Spawn), sentences, fileRange);
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 	useit Json       to_json() const final;
-	useit NodeType   nodeType() const final { return NodeType::SPAWN; }
+
+	useit NodeType nodeType() const final { return NodeType::SPAWN; }
 };
 
 } // namespace qat::ast

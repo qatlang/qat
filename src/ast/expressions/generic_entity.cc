@@ -1,5 +1,6 @@
 #include "./generic_entity.hpp"
 #include "../../IR/stdlib.hpp"
+#include "../../IR/types/typed.hpp"
 #include "../prerun/default.hpp"
 #include "../types/generic_named_type.hpp"
 #include "../types/prerun_generic.hpp"

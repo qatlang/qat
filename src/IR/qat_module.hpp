@@ -132,36 +132,37 @@ enum class LibToLinkType {
 
 class LibToLink {
 
-	LibToLink(LibToLinkType _type, FileRange _fileRange) : type(_type), fileRange(_fileRange) {}
+	LibToLink(LibToLinkType _type, FileRangePtr _fileRange) : type(_type), fileRange(_fileRange) {}
 
   public:
-	Maybe<Identifier>              name;
-	Maybe<Pair<String, FileRange>> path;
-	Maybe<Pair<String, FileRange>> sharedPath;
-	LibToLinkType                  type;
-	FileRange                      fileRange;
+	Maybe<Identifier>                 name;
+	Maybe<Pair<String, FileRangePtr>> path;
+	Maybe<Pair<String, FileRangePtr>> sharedPath;
+	LibToLinkType                     type;
+	FileRangePtr                      fileRange;
 
-	useit static LibToLink fromName(Identifier _name, FileRange _fileRange) {
+	useit static LibToLink fromName(Identifier _name, FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::namedLib, _fileRange);
 		result.name = _name;
 		return result;
 	}
 
-	useit static LibToLink fromPath(Pair<String, FileRange> _path, FileRange _fileRange) {
+	useit static LibToLink fromPath(Pair<String, FileRangePtr> _path, FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::libPath, _fileRange);
 		result.path = _path;
 		return result;
 	}
 
-	useit static LibToLink fromStaticAndShared(Pair<String, FileRange> _staticPath, Pair<String, FileRange> _sharedPath,
-	                                           FileRange _fileRange) {
+	useit static LibToLink fromStaticAndShared(Pair<String, FileRangePtr> _staticPath,
+	                                           Pair<String, FileRangePtr> _sharedPath, FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::staticAndSharedPaths, _fileRange);
 		result.path       = _staticPath;
 		result.sharedPath = _sharedPath;
 		return result;
 	}
 
-	useit static LibToLink fromNameWithPath(Identifier _name, Pair<String, FileRange> _path, FileRange _fileRange) {
+	useit static LibToLink fromNameWithPath(Identifier _name, Pair<String, FileRangePtr> _path,
+	                                        FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::nameWithLookupPath, _fileRange);
 		result.name = _name;
 		result.path = _path;
@@ -183,30 +184,31 @@ class LibToLink {
 					return name.value().value == other.name.value().value;
 				}
 				case LibToLinkType::libPath: {
-					return fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+					return fs::absolute(fs::path(path->first).is_relative() ? (fileRange->file / path->first)
 					                                                        : fs::path(path->first)) ==
-					       fs::absolute(fs::path(other.path->first).is_relative() ? (fileRange.file / other.path->first)
-					                                                              : fs::path(other.path->first));
+					       fs::absolute(fs::path(other.path->first).is_relative()
+					                        ? (fileRange->file / other.path->first)
+					                        : fs::path(other.path->first));
 				}
 				case LibToLinkType::staticAndSharedPaths: {
-					return (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+					return (fs::absolute(fs::path(path->first).is_relative() ? (fileRange->file / path->first)
 					                                                         : fs::path(path->first)) ==
 					        fs::absolute(fs::path(other.path->first).is_relative()
-					                         ? (fileRange.file / other.path->first)
+					                         ? (fileRange->file / other.path->first)
 					                         : fs::path(other.path->first))) &&
 					       (fs::absolute(fs::path(sharedPath->first).is_relative()
-					                         ? (fileRange.file / sharedPath->first)
+					                         ? (fileRange->file / sharedPath->first)
 					                         : fs::path(sharedPath->first)) ==
 					        fs::absolute(fs::path(other.sharedPath->first).is_relative()
-					                         ? (fileRange.file / other.sharedPath->first)
+					                         ? (fileRange->file / other.sharedPath->first)
 					                         : fs::path(other.sharedPath->first)));
 				}
 				case LibToLinkType::nameWithLookupPath: {
 					return (name.value().value == other.name.value().value) &&
-					       (fs::absolute(fs::path(path->first).is_relative() ? (fileRange.file / path->first)
+					       (fs::absolute(fs::path(path->first).is_relative() ? (fileRange->file / path->first)
 					                                                         : fs::path(path->first)) ==
 					        fs::absolute(fs::path(other.path->first).is_relative()
-					                         ? (fileRange.file / other.path->first)
+					                         ? (fileRange->file / other.path->first)
 					                         : fs::path(other.path->first)));
 				}
 			}
@@ -569,7 +571,7 @@ class Mod final : public Uniq, public EntityOverview {
 
 	std::set<FloatTypeKind> floatKinds;
 
-	Vec<Pair<Mod*, FileRange>> fsBroughtMentions;
+	Vec<Pair<Mod*, FileRangePtr>> fsBroughtMentions;
 
 	Vec<ast::Node*> nodes;
 	bool            hasMain = false;
@@ -688,8 +690,8 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit String get_file_path() const { return filePath.string(); }
 
-	void            set_file_range(FileRange fileRange);
-	useit FileRange get_file_range() const;
+	void               set_file_range(FileRangePtr fileRange);
+	useit FileRangePtr get_file_range() const;
 
 	useit Function* get_mod_initialiser(ir::Ctx* irCtx);
 	useit bool      should_call_initialiser() const;
@@ -713,8 +715,8 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit const VisibilityInfo& get_visibility() const;
 
-	useit Function* create_function(const Identifier& name, bool isInline, Type* returnType, Vec<Argument> args,
-	                                const FileRange& fileRange, const VisibilityInfo& visibility,
+	useit Function* create_function(Identifier const& name, bool isInline, Type* returnType, Vec<Argument> args,
+	                                FileRangePtr fileRange, VisibilityInfo const& visibility,
 	                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
 	useit bool is_submodule() const { return parent != nullptr; }
@@ -751,9 +753,9 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit std::set<String> get_all_linkable_libs() const;
 
-	void add_fs_bring_mention(ir::Mod* otherMod, const FileRange& fileRange);
+	void add_fs_bring_mention(ir::Mod* otherMod, FileRangePtr fileRange);
 
-	useit Vec<Pair<Mod*, FileRange>> const& get_fs_bring_mentions() const;
+	useit Vec<Pair<Mod*, FileRangePtr>> const& get_fs_bring_mentions() const;
 
 	void update_overview() final;
 	void output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
@@ -963,7 +965,7 @@ class Mod final : public Uniq, public EntityOverview {
 	/// This returns the name of the linked function or symbol
 	/// Even known units like printf can have a different name for the underlying function, especially in freehosting
 	/// environments
-	useit String link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRange fileRange);
+	useit String link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRangePtr fileRange);
 
 	useit llvm::Function* link_intrinsic(IntrinsicID intr);
 

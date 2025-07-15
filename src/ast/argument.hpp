@@ -42,15 +42,18 @@ class Argument {
 		return std::construct_at(OwnNormal(Argument), ArgKind::MEMBER, name, isVar, type);
 	}
 
-	useit static Argument* create_variadic(FileRange range) {
+	useit static Argument* create_variadic(FileRangePtr range) {
 		return std::construct_at(OwnNormal(Argument), ArgKind::VARIADIC, Identifier{"", range}, false, nullptr);
 	}
 
 	useit Identifier get_name() const { return name; }
-	useit bool       is_variable() const { return isVar; }
-	useit Type*      get_type() { return type; }
+
+	useit bool is_variable() const { return isVar; }
+
+	useit Type* get_type() { return type; }
 
 	useit bool is_member_arg() const { return kind == ArgKind::MEMBER; }
+
 	useit bool is_variadic_arg() const { return kind == ArgKind::VARIADIC; }
 
 	useit Json to_json() const {

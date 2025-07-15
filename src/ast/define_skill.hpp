@@ -12,7 +12,7 @@ struct SkillTypeDefinition {
 	Identifier            name;
 	PrerunExpression*     defineChecker;
 	Type*                 type;
-	FileRange             range;
+	FileRangePtr          range;
 
 	void update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent, EmitCtx* ctx);
 
@@ -63,7 +63,7 @@ struct SkillMethod {
 	Vec<Argument*>        arguments;
 	Type*                 givenType;
 	PrerunExpression*     defineChecker;
-	FileRange             fileRange;
+	FileRangePtr          fileRange;
 
 	void update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent, EmitCtx* ctx);
 
@@ -102,7 +102,7 @@ class DefineSkill final : public IsEntity {
   public:
 	DefineSkill(Identifier _name, Vec<GenericAbstractType*> _generics, Maybe<VisibilitySpec> _visibSpec,
 	            PrerunExpression* _polyQualifier, Vec<SkillTypeDefinition> _typeDefs, Vec<SkillMethod> _methods,
-	            PrerunExpression* _defineChecker, PrerunExpression* _genericConstraint, FileRange _fileRange)
+	            PrerunExpression* _defineChecker, PrerunExpression* _genericConstraint, FileRangePtr _fileRange)
 	    : IsEntity(std::move(_fileRange)), visibSpec(_visibSpec), name(std::move(_name)), polyQualifier(_polyQualifier),
 	      typeDefinitions(std::move(_typeDefs)), methods(std::move(_methods)), generics(std::move(_generics)),
 	      defineChecker(_defineChecker), genericConstraint(_genericConstraint) {}
@@ -111,7 +111,7 @@ class DefineSkill final : public IsEntity {
 	                                 Maybe<VisibilitySpec> visibSpec, PrerunExpression* polyQualifier,
 	                                 Vec<SkillTypeDefinition> typeDefs, Vec<SkillMethod> methods,
 	                                 PrerunExpression* defineChecker, PrerunExpression* genericConstraint,
-	                                 FileRange fileRange) {
+	                                 FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefineSkill), std::move(name), std::move(generics), visibSpec, polyQualifier,
 		                         std::move(typeDefs), std::move(methods), defineChecker, genericConstraint,
 		                         std::move(fileRange));

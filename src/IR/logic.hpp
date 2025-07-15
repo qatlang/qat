@@ -21,23 +21,24 @@ class Logic {
 	useit static bool compare_prerun_text(llvm::Constant* lhsBuff, llvm::Constant* lhsCount, llvm::Constant* rhsBuff,
 	                                      llvm::Constant* rhsCount, llvm::LLVMContext& llCtx);
 
-	useit static ir::Value* compare_text(bool isEquality, ir::Value* lhs, ir::Value* rhs, FileRange lhsRange,
-	                                     FileRange rhsRange, FileRange fileRange, ast::EmitCtx* ctx);
+	useit static ir::Value* compare_text(bool isEquality, ir::Value* lhs, ir::Value* rhs, FileRangePtr lhsRange,
+	                                     FileRangePtr rhsRange, FileRangePtr fileRange, ast::EmitCtx* ctx);
 
 	useit static Pair<String, Vec<llvm::Value*>> format_values(ast::EmitCtx* ctx, Vec<ir::Value*> values,
-	                                                           Vec<FileRange> ranges, FileRange fileRange);
+	                                                           Vec<FileRangePtr> ranges, FileRangePtr fileRange);
 
-	static void panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRange> ranges, FileRange fileRange,
-	                              ast::EmitCtx* ctx);
+	static void panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRangePtr> ranges,
+	                              FileRangePtr fileRange, ast::EmitCtx* ctx);
 
-	static void exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal);
-	static void exit_program(ir::Function* fun, ast::EmitCtx* ctx, FileRange rangeVal);
+	static void exit_thread(ir::Function* fun, ast::EmitCtx* ctx, FileRangePtr rangeVal);
+	static void exit_program(ir::Function* fun, ast::EmitCtx* ctx, FileRangePtr rangeVal);
 
-	useit static ir::Value* int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value, FileRange fileRange);
+	useit static ir::Value* int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value* value,
+	                                          FileRangePtr fileRange);
 
 	/// NOTE - This function should ideally control copy & move semantics behaviour for the entire language
 	useit static ir::Value* handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
-	                                              FileRange valueRange, bool restricLocalRefs = false);
+	                                              FileRangePtr valueRange, bool restricLocalRefs = false);
 };
 
 } // namespace qat::ir

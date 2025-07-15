@@ -23,7 +23,7 @@ ir::PrerunValue* PrerunMemberFnCall::emit(EmitCtx* ctx) {
 }
 
 ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<PrerunExpression*> const& arguments,
-                                            Identifier memberName, EmitCtx* ctx, FileRange fileRange) {
+                                            Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange) {
 	Vec<Expression*> args;
 	for (auto arg : arguments) {
 		args.push_back(arg);
@@ -32,7 +32,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<PrerunEx
 }
 
 ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expression*> const& arguments,
-                                            Identifier memberName, EmitCtx* ctx, FileRange fileRange) {
+                                            Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange) {
 	auto zeroArgCheck = [&]() {
 		if (arguments.size() != 0) {
 			ctx->Error("The type trait " + ctx->color(memberName.value) +

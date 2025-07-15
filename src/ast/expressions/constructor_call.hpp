@@ -18,10 +18,10 @@ class ConstructorCall final : public Expression,
 	Vec<Expression*> args;
 
   public:
-	ConstructorCall(TypeLike _type, Vec<Expression*> _args, FileRange _fileRange)
+	ConstructorCall(TypeLike _type, Vec<Expression*> _args, FileRangePtr _fileRange)
 	    : Expression(_fileRange), type(_type), args(_args) {}
 
-	useit static ConstructorCall* create(TypeLike _type, Vec<Expression*> _args, FileRange _fileRange) {
+	useit static ConstructorCall* create(TypeLike _type, Vec<Expression*> _args, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _fileRange);
 	}
 

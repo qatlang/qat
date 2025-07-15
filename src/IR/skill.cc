@@ -197,10 +197,10 @@ bool GenericSkill::all_types_have_defaults() const {
 	return true;
 }
 
-Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRange range) {
+Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx* irCtx, FileRangePtr range) {
 	for (auto& var : variants) {
 		SHOW("Struct type variant: " << var.get()->get_full_name())
-		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
+		if (var.check(irCtx, [&](const String& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, toFillTypes)) {
 			return var.get();
 		}
 	}
@@ -214,7 +214,7 @@ Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx
 		}
 		if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 			irCtx->Error("The provided parameters for the generic skill do not satisfy the constraints", range,
-			             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
+			             Pair<String, FileRangePtr>{"The constraint can be found here", constraint->fileRange});
 		}
 	}
 	Vec<ir::GenericArgument*> genParams;
@@ -270,8 +270,8 @@ void GenericSkill::update_overview() {
 	    ._("variants", variantsJSON);
 }
 
-DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill, FileRange _fileRange,
-                     Type* _candidateType, FileRange _typeRange)
+DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill, FileRangePtr _fileRange,
+                     Type* _candidateType, FileRangePtr _typeRange)
     : EntityOverview("doneSkill",
                      Json()
                          ._("hasName", _name.has_value())
@@ -294,12 +294,13 @@ DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill
 	SHOW("DoneSkill constructor completed")
 }
 
-DoneSkill* DoneSkill::create_extension(Mod* parent, FileRange fileRange, Type* candidateType, FileRange typeRange) {
+DoneSkill* DoneSkill::create_extension(Mod* parent, FileRangePtr fileRange, Type* candidateType,
+                                       FileRangePtr typeRange) {
 	return std::construct_at(OwnNormal(DoneSkill), None, parent, None, fileRange, candidateType, typeRange);
 }
 
-DoneSkill* DoneSkill::create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRange fileRange,
-                                    Type* candidateType, FileRange typeRange) {
+DoneSkill* DoneSkill::create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRangePtr fileRange,
+                                    Type* candidateType, FileRangePtr typeRange) {
 	return std::construct_at(OwnNormal(DoneSkill), std::move(name), parent, skill, fileRange, candidateType, typeRange);
 }
 
@@ -359,9 +360,9 @@ bool DoneSkill::is_normal_skill() const { return skill.has_value(); }
 
 Skill* DoneSkill::get_skill() const { return skill.value_or(nullptr); }
 
-FileRange DoneSkill::get_type_range() const { return typeRange; }
+FileRangePtr DoneSkill::get_type_range() const { return typeRange; }
 
-FileRange DoneSkill::get_file_range() const { return fileRange; }
+FileRangePtr DoneSkill::get_file_range() const { return fileRange; }
 
 Type* DoneSkill::get_candidate_type() const { return candidateType; }
 

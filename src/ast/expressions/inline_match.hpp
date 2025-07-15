@@ -10,10 +10,10 @@ class InlineMatch final : public Expression, public TypeInferrable {
 	Vec<Expression*> values;
 
   public:
-	InlineMatch(Expression* _expression, Vec<Expression*> _values, FileRange _fileRange)
+	InlineMatch(Expression* _expression, Vec<Expression*> _values, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), expression(_expression), values(std::move(_values)) {}
 
-	useit static InlineMatch* create(Expression* expression, Vec<Expression*> values, FileRange fileRange) {
+	useit static InlineMatch* create(Expression* expression, Vec<Expression*> values, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InlineMatch), expression, std::move(values), std::move(fileRange));
 	}
 

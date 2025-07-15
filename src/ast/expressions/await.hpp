@@ -10,9 +10,9 @@ class Await final : public Expression {
 	Expression* exp;
 
   public:
-	Await(Expression* _exp, FileRange _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
+	Await(Expression* _exp, FileRangePtr _fileRange) : Expression(_fileRange), exp(_exp) {}
 
-	useit static Await* create(Expression* exp, FileRange fileRange) {
+	useit static Await* create(Expression* exp, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Await), exp, fileRange);
 	}
 

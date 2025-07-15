@@ -16,10 +16,10 @@ class Copy final : public Expression, public LocalDeclCompatible, public InPlace
 	bool isAssignment = false;
 
   public:
-	Copy(Expression* _exp, bool _isExpSelf, FileRange _fileRange)
+	Copy(Expression* _exp, bool _isExpSelf, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
 
-	useit static Copy* create(Expression* exp, bool _isExpSelf, FileRange fileRange) {
+	useit static Copy* create(Expression* exp, bool _isExpSelf, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Copy), exp, _isExpSelf, fileRange);
 	}
 

@@ -15,18 +15,18 @@ namespace qat::parser {
  */
 class CacheSymbol {
   public:
-	CacheSymbol(Vec<Identifier> _name, usize _tokenIndex, FileRange _fileRange);
-	CacheSymbol(u32 _relative, Vec<Identifier> _name, usize _tokenIndex, FileRange _fileRange);
+	CacheSymbol(Vec<Identifier> _name, usize _tokenIndex, FileRangePtr _fileRange);
+	CacheSymbol(u32 _relative, Vec<Identifier> _name, usize _tokenIndex, FileRangePtr _fileRange);
 
 	u32             relative;
 	Vec<Identifier> name;
-	FileRange       fileRange;
+	FileRangePtr    fileRange;
 	usize           tokenIndex;
 
 	useit String to_string() const;
 
-	useit bool      hasRelative() const;
-	useit FileRange extend_fileRange(const FileRange& upto);
+	useit bool         hasRelative() const;
+	useit FileRangePtr extend_fileRange(FileRangePtr upto);
 };
 
 } // namespace qat::parser

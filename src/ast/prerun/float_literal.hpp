@@ -10,9 +10,9 @@ class FloatLiteral final : public PrerunExpression, public TypeInferrable {
 	String value;
 
   public:
-	FloatLiteral(String _value, FileRange _fileRange) : PrerunExpression(_fileRange), value(_value) {}
+	FloatLiteral(String _value, FileRangePtr _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-	useit static FloatLiteral* create(String _value, FileRange _fileRange) {
+	useit static FloatLiteral* create(String _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(FloatLiteral), _value, _fileRange);
 	}
 
@@ -23,7 +23,8 @@ class FloatLiteral final : public PrerunExpression, public TypeInferrable {
 	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
 	useit Json             to_json() const override;
 	useit String           to_string() const override;
-	useit NodeType         nodeType() const override { return NodeType::FLOAT_LITERAL; }
+
+	useit NodeType nodeType() const override { return NodeType::FLOAT_LITERAL; }
 };
 
 } // namespace qat::ast

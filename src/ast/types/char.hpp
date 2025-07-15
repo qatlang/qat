@@ -8,14 +8,11 @@ namespace qat::ast {
 class CharType final : public Type {
 
   public:
-	explicit CharType(FileRange _fileRange) : Type(std::move(_fileRange)) {}
+	explicit CharType(FileRangePtr _fileRange) : Type(_fileRange) {}
 
-	useit static CharType* create(FileRange fileRange) {
-		return std::construct_at(OwnNormal(CharType), std::move(fileRange));
-	}
+	useit static CharType* create(FileRangePtr fileRange) { return std::construct_at(OwnNormal(CharType), fileRange); }
 
-	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*,
-	                         EmitCtx*) final {}
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	useit Maybe<usize> get_type_bitsize(EmitCtx*) const final { return 21u; }
 
@@ -23,7 +20,7 @@ class CharType final : public Type {
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::CHAR; }
 
-	useit Json to_json() const { return Json()._("typeKind", "char")._("fileRange", fileRange); }
+	useit Json to_json() const { return Json()._("typeKind", "char")._("fileRange", fileRange->to_json()); }
 
 	useit String to_string() const { return "char"; }
 };

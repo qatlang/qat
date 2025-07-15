@@ -9,9 +9,9 @@ class BooleanLiteral final : public PrerunExpression {
 	bool value;
 
   public:
-	BooleanLiteral(bool _value, FileRange _fileRange) : PrerunExpression(std::move(_fileRange)), value(_value) {}
+	BooleanLiteral(bool _value, FileRangePtr _fileRange) : PrerunExpression(std::move(_fileRange)), value(_value) {}
 
-	useit static BooleanLiteral* create(bool _value, FileRange _fileRange) {
+	useit static BooleanLiteral* create(bool _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(BooleanLiteral), _value, _fileRange);
 	}
 

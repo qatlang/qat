@@ -10,7 +10,7 @@ namespace qat::ast {
 struct SkillEntity {
 	u32               relative;
 	Vec<Identifier>   names;
-	FileRange         range;
+	FileRangePtr      range;
 	Vec<FillGeneric*> generics;
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx);
@@ -25,7 +25,7 @@ struct SkillEntity {
 struct DoneSkillEntity {
 	u32               relative;
 	Vec<Identifier>   names;
-	FileRange         range;
+	FileRangePtr      range;
 	Vec<FillGeneric*> generics;
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx);

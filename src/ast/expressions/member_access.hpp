@@ -7,19 +7,20 @@
 namespace qat::ast {
 
 class MemberAccess final : public Expression {
-	Expression*                  instance;
-	bool                         isExpSelf = false;
-	Maybe<Pair<bool, FileRange>> isVarRange;
-	Identifier                   name;
+	Expression*                     instance;
+	bool                            isExpSelf = false;
+	Maybe<Pair<bool, FileRangePtr>> isVarRange;
+	Identifier                      name;
 
   public:
-	MemberAccess(Expression* _instance, bool _isExpSelf, Maybe<Pair<bool, FileRange>> _isVarRange, Identifier _name,
-	             FileRange _fileRange)
+	MemberAccess(Expression* _instance, bool _isExpSelf, Maybe<Pair<bool, FileRangePtr>> _isVarRange, Identifier _name,
+	             FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf),
 	      isVarRange(std::move(_isVarRange)), name(std::move(_name)) {}
 
-	useit static MemberAccess* create(Expression* _instance, bool isExpSelf, Maybe<Pair<bool, FileRange>> _isVarRange,
-	                                  Identifier _name, FileRange _fileRange) {
+	useit static MemberAccess* create(Expression* _instance, bool isExpSelf,
+	                                  Maybe<Pair<bool, FileRangePtr>> _isVarRange, Identifier _name,
+	                                  FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(MemberAccess), _instance, isExpSelf, std::move(_isVarRange), _name,
 		                         _fileRange);
 	}

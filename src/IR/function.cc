@@ -30,7 +30,7 @@
 
 namespace qat::ir {
 
-LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun, FileRange _fileRange)
+LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun, FileRangePtr _fileRange)
     : Value(nullptr, _type, _isVar), EntityOverview("localValue",
                                                     Json()
                                                         ._("name", _name)
@@ -52,7 +52,7 @@ String LocalValue::get_name() const { return name; }
 
 llvm::AllocaInst* LocalValue::get_alloca() const { return (llvm::AllocaInst*)ll; }
 
-FileRange LocalValue::get_file_range() const { return associatedRange.value(); }
+FileRangePtr LocalValue::get_file_range() const { return associatedRange.value(); }
 
 ir::Value* LocalValue::to_new_ir_value() const {
 	auto* result = ir::Value::get(get_llvm(), get_ir_type(), is_variable());
@@ -223,7 +223,7 @@ void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
 }
 
 Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<FileRange> _fileRange,
+                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<FileRangePtr> _fileRange,
                    const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
                    Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
     : Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
@@ -322,7 +322,7 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 }
 
 Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> _generics,
-                           bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRange> fileRange,
+                           bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRangePtr> fileRange,
                            const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
                            Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
 	return std::construct_at(OwnNormal(Function), mod, std::move(name), namingInfo, std::move(_generics), isInline,
@@ -415,9 +415,9 @@ useit bool GenericFunction::all_generics_have_default() const {
 	return true;
 }
 
-Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, Ctx* irCtx, const FileRange& fileRange) {
+Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, Ctx* irCtx, FileRangePtr fileRange) {
 	for (auto var : variants) {
-		if (var.check(irCtx, [&](const String& msg, const FileRange& rng) { irCtx->Error(msg, rng); }, types)) {
+		if (var.check(irCtx, [&](String const& msg, FileRangePtr rng) { irCtx->Error(msg, rng); }, types)) {
 			return var.get();
 		}
 	}
@@ -429,7 +429,7 @@ Function* GenericFunction::fill_generics(Vec<ir::GenericToFill*> types, Ctx* irC
 			if (not llvm::cast<llvm::ConstantInt>(checkVal->get_llvm_constant())->getValue().getBoolValue()) {
 				irCtx->Error("The provided generic parameters for the generic function do not satisfy the constraints",
 				             fileRange,
-				             Pair<String, FileRange>{"The constraint can be found here", constraint->fileRange});
+				             Pair<String, FileRangePtr>{"The constraint can be found here", constraint->fileRange});
 			}
 		} else {
 			irCtx->Error("The constraints for generic parameters should be of " + irCtx->color("bool") +
@@ -495,8 +495,8 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					auto* restBlock = ir::Block::create(fun, nullptr);
 					restBlock->link_previous_block(currBlock);
 					// NOLINTNEXTLINE(readability-magic-numbers)
-					auto* count =
-					    currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true, {""});
+					auto* count = currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true,
+					                                   FileRange::null);
 					irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 					                           count->get_llvm());
 					irCtx->builder.CreateCondBr(
@@ -567,12 +567,15 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 			    {ptrTy->is_multi()
 			         ? irCtx->builder.CreatePointerCast(
 			               irCtx->builder.CreateLoad(
-			                   llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace()),
+			                   llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
+			                                          irCtx->dataLayout.getProgramAddressSpace()),
 			                   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
-			               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace()))
+			               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
+			                                      irCtx->dataLayout.getProgramAddressSpace()))
 			         : irCtx->builder.CreatePointerCast(
 			               irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
-			               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace()))});
+			               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
+			                                      irCtx->dataLayout.getProgramAddressSpace()))});
 		}
 	}
 	locals.clear();
@@ -606,8 +609,8 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							auto* restBlock = ir::Block::create(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							// NOLINTNEXTLINE(readability-magic-numbers)
-							auto* count = currBlock->new_local(utils::uid_string(),
-							                                   ir::UnsignedType::create(64u, irCtx), true, {""});
+							auto* count = currBlock->new_local(
+							    utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true, FileRange::null);
 							irCtx->builder.CreateStore(
 							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 							    count->get_llvm());
@@ -616,10 +619,12 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							        irCtx->builder.CreatePtrDiff(
 							            ptrTy->get_subtype()->get_llvm_type(),
 							            irCtx->builder.CreateLoad(
-							                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace()),
+							                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
+							                                       irCtx->dataLayout.getProgramAddressSpace()),
 							                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
 							            llvm::ConstantPointerNull::get(
-							                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace()))),
+							                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
+							                                       irCtx->dataLayout.getProgramAddressSpace()))),
 							        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
 							    condBlock->get_bb(), restBlock->get_bb());
 							condBlock->set_active(irCtx->builder);
@@ -635,7 +640,8 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							SHOW("Set trueblock active")(void)
 							    dstrFn->call(irCtx,
 							                 {irCtx->builder.CreateLoad(
-							                     llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace()),
+							                     llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
+							                                            irCtx->dataLayout.getProgramAddressSpace()),
 							                     irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u))},
 							                 None, fun->get_module());
 							irCtx->builder.CreateStore(
@@ -677,12 +683,15 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 					    {ptrTy->is_multi()
 					         ? irCtx->builder.CreatePointerCast(
 					               irCtx->builder.CreateLoad(
-					                   llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace()),
+					                   llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
+					                                          irCtx->dataLayout.getProgramAddressSpace()),
 					                   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
-					               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace()))
+					               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
+					                                      irCtx->dataLayout.getProgramAddressSpace()))
 					         : irCtx->builder.CreatePointerCast(
 					               irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
-					               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace()))});
+					               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
+					                                      irCtx->dataLayout.getProgramAddressSpace()))});
 				}
 			}
 			if (fun->get_block_count() >= 1 && fun->get_first_block()->has_value("''")) {
@@ -696,7 +705,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 	}
 }
 
-void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, const FileRange& fileRange) {
+void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, FileRangePtr fileRange) {
 	SHOW("Starting function return handle for: " << fun->get_full_name())
 	// FIXME - Support destructors for types besides struct types
 	auto* block = fun->get_block();

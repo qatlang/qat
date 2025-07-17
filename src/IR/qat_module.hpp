@@ -451,6 +451,7 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class GenericFunction;
 	friend class GenericStructType;
 	friend class GenericDefinitionType;
+	friend class GenericToggleType;
 	friend class Skill;
 	friend class GenericSkill;
 	friend class Function;

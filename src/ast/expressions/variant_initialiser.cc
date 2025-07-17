@@ -174,13 +174,12 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 		if (expression->has_type_inferrance()) {
 			expression->as_type_inferrable()->set_inference_type(varType);
 		}
-		if (isLocalDecl() || not canCreateIn()) {
-			createIn = ctx->get_fn()->get_block()->new_local(
-			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
-			    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
-		}
 		if (expression->isInPlaceCreatable()) {
-
+			if (isLocalDecl() || (not canCreateIn())) {
+				createIn = ctx->get_fn()->get_block()->new_local(
+				    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
+				    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+			}
 			auto elemPtr = ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), createIn->get_llvm(), 0u);
 			expression->asInPlaceCreatable()->setCreateIn(ir::Value::get(
 			    isDefaultVar ? elemPtr
@@ -206,7 +205,12 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 				           expression->fileRange);
 			}
 			subVal = ir::Logic::handle_pass_semantics(ctx, subVal->get_pass_type(), subVal, expression->fileRange);
-			if (subVal->is_prerun_value()) {
+			if (isLocalDecl() || (not subVal->is_prerun_value() && not canCreateIn())) {
+				createIn = ctx->get_fn()->get_block()->new_local(
+				    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
+				    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+			}
+			if (subVal->is_prerun_value() && not canCreateIn()) {
 				if (isDefaultVar) {
 					Vec<llvm::Constant*> toggleElems;
 					toggleElems.reserve(2);

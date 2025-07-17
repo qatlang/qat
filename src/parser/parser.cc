@@ -2785,7 +2785,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						add_error("Could not find ] to end the generic parameter list", RangeAt(i + 1));
 					}
 					genericAbs = do_generic_abstracts(typeCtx, i + 1, endRes.value());
-					i          = endRes.value();
+					for (auto* temp : genericAbs) {
+						typeCtx.add_abstract_generic(temp);
+					}
+					i = endRes.value();
 				}
 				auto entMeta = do_entity_metadata(
 				    typeCtx, i, genericAbs.empty() ? "toggle type" : "generic toggle type", genericAbs.size());
@@ -2824,9 +2827,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					          RangeSpan(start, i));
 				}
 				i++;
-				addNode(ast::DefineToggleType::create(std::move(name), std::move(variants), entMeta.defineChecker,
-				                                      entMeta.genericConstraint, std::move(entMeta.metaInfo),
-				                                      get_visibility(), RangeSpan(start, i)));
+				addNode(ast::DefineToggleType::create(
+				    std::move(name), std::move(genericAbs), std::move(variants), entMeta.defineChecker,
+				    entMeta.genericConstraint, std::move(entMeta.metaInfo), get_visibility(), RangeSpan(start, i)));
 				break;
 			}
 			case TokenType::opaque: {

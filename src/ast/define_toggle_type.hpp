@@ -29,19 +29,20 @@ class DefineToggleType : public IsEntity {
 	ir::GenericToggleType* genericToggleType = nullptr;
 
   public:
-	DefineToggleType(Identifier _name, Vec<Pair<Vec<Identifier>, Type*>> _variants, PrerunExpression* _defineChecker,
-	                 PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-	                 FileRangePtr _fileRange)
-	    : IsEntity(std::move(_fileRange)), name(std::move(_name)), variants(std::move(_variants)),
-	      defineChecker(_defineChecker), genericConstraint(_genericConstraint), metaInfo(std::move(_metaInfo)),
-	      visibSpec(std::move(_visibSpec)) {}
+	DefineToggleType(Identifier _name, Vec<GenericAbstractType*> _generics, Vec<Pair<Vec<Identifier>, Type*>> _variants,
+	                 PrerunExpression* _defineChecker, PrerunExpression* _genericConstraint, Maybe<MetaInfo> _metaInfo,
+	                 Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
+	    : IsEntity(std::move(_fileRange)), name(std::move(_name)), generics(std::move(_generics)),
+	      variants(std::move(_variants)), defineChecker(_defineChecker), genericConstraint(_genericConstraint),
+	      metaInfo(std::move(_metaInfo)), visibSpec(std::move(_visibSpec)) {}
 
-	useit static DefineToggleType* create(Identifier name, Vec<Pair<Vec<Identifier>, Type*>> variants,
-	                                      PrerunExpression* defineChecker, PrerunExpression* genericConstraint,
-	                                      Maybe<MetaInfo> metaInfo, Maybe<VisibilitySpec> visibSpec,
-	                                      FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(DefineToggleType), std::move(name), std::move(variants), defineChecker,
-		                         genericConstraint, std::move(metaInfo), std::move(visibSpec), std::move(fileRange));
+	useit static DefineToggleType* create(Identifier name, Vec<GenericAbstractType*> generics,
+	                                      Vec<Pair<Vec<Identifier>, Type*>> variants, PrerunExpression* defineChecker,
+	                                      PrerunExpression* genericConstraint, Maybe<MetaInfo> metaInfo,
+	                                      Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(DefineToggleType), std::move(name), std::move(generics), std::move(variants),
+		                         defineChecker, genericConstraint, std::move(metaInfo), std::move(visibSpec),
+		                         std::move(fileRange));
 	}
 
 	useit bool is_generic() const { return not generics.empty(); }

@@ -117,7 +117,9 @@ GenericToggleType::GenericToggleType(Identifier _name, Vec<ast::GenericAbstractT
                          ._("moduleID", _parent->get_id()),
                      _name.range),
       name(std::move(_name)), generics(std::move(_generics)), defineToggleType(_defineToggleType), parent(_parent),
-      visibility(_visibInfo), constraint(_constraint) {}
+      visibility(_visibInfo), constraint(_constraint) {
+	parent->genericToggleTypes.push_back(this);
+}
 
 bool GenericToggleType::all_parameters_have_default() const {
 	for (auto* gen : generics) {

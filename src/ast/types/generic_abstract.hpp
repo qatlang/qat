@@ -6,7 +6,7 @@
 
 namespace qat::ast {
 
-enum class GenericKind {
+enum class GenericKind : u8 {
 	typedGeneric,
 	prerunGeneric,
 };
@@ -30,6 +30,8 @@ class GenericAbstractType {
 	useit usize        getIndex() const;
 	useit Identifier   get_name() const;
 	useit FileRangePtr get_range() const;
+
+	useit GenericKind get_kind() const { return kind; }
 
 	useit bool                   is_typed() const;
 	useit TypedGenericAbstract*  as_typed() const;

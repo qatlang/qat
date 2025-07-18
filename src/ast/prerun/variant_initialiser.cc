@@ -1,4 +1,6 @@
 #include "./variant_initialiser.hpp"
+#include "../../IR/logic.hpp"
+#include "../../IR/types/toggle.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 
@@ -79,6 +81,63 @@ ir::PrerunValue* PrerunVariantInitialiser::emit(EmitCtx* ctx) {
 			ctx->Error("Choice type " + ctx->color(chTy->to_string()) + " does not have a variant named " +
 			               ctx->color(subName.value),
 			           subName.range);
+		}
+	} else if (typeEmit->is_toggle()) {
+		auto tgTy = typeEmit->as_toggle();
+		if (not tgTy->has_variant(subName.value)) {
+			ctx->Error("Toggle type " + ctx->color(tgTy->to_string()) + " does not have a variant named " +
+			               ctx->color(subName.value),
+			           subName.range);
+		}
+		const bool isDefaultVar = tgTy->is_default_variant(subName.value);
+		auto       varType      = tgTy->get_variant_type_of(subName.value);
+
+		if (not expression.has_value()) {
+			ctx->Error("The variant " + ctx->color(subName.value) + " of the toggle type " +
+			               ctx->color(typeEmit->to_string()) + " expects an expression of type " +
+			               ctx->color(varType->to_string()) + ". Please change this expression to " +
+			               ctx->color(type.to_string() + "::" + subName.value + "(variantExpression)"),
+			           subName.range);
+		}
+		auto subVal = expression.value()->emit(ctx);
+		if (not subVal->get_pass_type()->is_same(varType)) {
+			ctx->Error("The variant " + ctx->color(subName.value) + " of the toggle type " +
+			               ctx->color(tgTy->to_string()) + " have the type " + ctx->color(varType->to_string()) +
+			               " associated with it, but found an expression of type " +
+			               ctx->color(subVal->get_pass_type()->to_string()),
+			           expression.value()->fileRange);
+		}
+		if (isDefaultVar) {
+			Vec<llvm::Constant*> toggleElems;
+			toggleElems.reserve(2);
+			toggleElems.push_back(subVal->get_llvm_constant());
+			if (llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getNumElements() == 2) {
+				toggleElems.push_back(llvm::ConstantAggregateZero::get(
+				    llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getElementType(1)));
+			}
+			return ir::PrerunValue::get(
+			    llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(tgTy->get_llvm_type()), toggleElems), tgTy);
+		} else {
+			auto                 toggleSize  = (usize)ctx->irCtx->dataLayout.getTypeStoreSize(tgTy->get_llvm_type());
+			auto                 variantSize = (usize)ctx->irCtx->dataLayout.getTypeStoreSize(varType->get_llvm_type());
+			auto                 variantArray = llvm::cast<llvm::ConstantArray>(llvm::ConstantFoldConstant(
+                llvm::ConstantExpr::getBitCast(
+                    subVal->as_prerun()->get_llvm_constant(),
+                    llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), variantSize)),
+                ctx->irCtx->dataLayout));
+			Vec<llvm::Constant*> toggleArrElems(toggleSize,
+			                                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), 0u));
+			for (usize i = 0; i < variantSize; i++) {
+				toggleArrElems[i] = variantArray->getAggregateElement(i);
+			}
+			return ir::PrerunValue::get(
+			    llvm::ConstantFoldConstant(
+			        llvm::ConstantExpr::getBitCast(
+			            llvm::ConstantArray::get(
+			                llvm::ArrayType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), toggleSize), toggleArrElems),
+			            tgTy->get_llvm_type()),
+			        ctx->irCtx->dataLayout),
+			    tgTy);
 		}
 	} else {
 		ctx->Error(ctx->color(typeEmit->to_string()) +

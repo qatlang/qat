@@ -7,8 +7,6 @@
 namespace qat::ast {
 
 ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
-	FnAtEnd fnObj{[&] { createIn = nullptr; }};
-	// FIXME - Support heaped value
 	SHOW("Mix/Choice type initialiser")
 	if (not type && not is_type_inferred()) {
 		ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);

@@ -4,6 +4,7 @@ add_library(QAT_AST_PRERUN
 	bitwise_not.cc
 	boolean_literal.cc
 	character.cc
+	choice_initialiser.cc
 	custom_float_literal.cc
 	custom_integer_literal.cc
 	default.cc

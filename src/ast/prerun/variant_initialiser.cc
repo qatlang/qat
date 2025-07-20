@@ -68,20 +68,6 @@ ir::PrerunValue* PrerunVariantInitialiser::emit(EmitCtx* ctx) {
 			               ctx->color(mixTy->get_full_name()),
 			           fileRange);
 		}
-	} else if (typeEmit->is_choice()) {
-		if (expression.has_value()) {
-			ctx->Error("An expression is provided here, but the recognised type is a choice type: " +
-			               ctx->color(typeEmit->to_string()) + ". Please remove the expression or check the logic here",
-			           expression.value()->fileRange);
-		}
-		auto* chTy = typeEmit->as_choice();
-		if (chTy->has_field(subName.value)) {
-			return ir::PrerunValue::get(chTy->get_value_for(subName.value), chTy);
-		} else {
-			ctx->Error("Choice type " + ctx->color(chTy->to_string()) + " does not have a variant named " +
-			               ctx->color(subName.value),
-			           subName.range);
-		}
 	} else if (typeEmit->is_toggle()) {
 		auto tgTy = typeEmit->as_toggle();
 		if (not tgTy->has_variant(subName.value)) {
@@ -141,10 +127,10 @@ ir::PrerunValue* PrerunVariantInitialiser::emit(EmitCtx* ctx) {
 		}
 	} else {
 		ctx->Error(ctx->color(typeEmit->to_string()) +
-		               " is not a mix type or a choice type and hence cannot be used here",
+		               " is not a mix type or a toggle type and hence cannot be used in this expression",
 		           fileRange);
 	}
-	return nullptr;
+	std::unreachable();
 }
 
 String PrerunVariantInitialiser::to_string() const {

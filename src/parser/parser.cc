@@ -63,6 +63,7 @@
 #include "../ast/prerun/bitwise_not.hpp"
 #include "../ast/prerun/boolean_literal.hpp"
 #include "../ast/prerun/character.hpp"
+#include "../ast/prerun/choice_initialiser.hpp"
 #include "../ast/prerun/custom_float_literal.hpp"
 #include "../ast/prerun/custom_integer_literal.hpp"
 #include "../ast/prerun/default.hpp"
@@ -618,9 +619,12 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 							    "The expression ended here, and expected ) to indicate the end of the expression",
 							    (typeExp ? FileRange::merge(typeExp.get_range(), RangeAt(i)) : RangeSpan(start, i)));
 						}
+						setCachedPreExp(
+						    ast::PrerunVariantInitialiser::create(typeExp, name, valueExp, RangeSpan(start, i)), i);
+
+					} else {
+						setCachedPreExp(ast::PrerunChoiceInitialiser::create(typeExp, name, RangeSpan(start, i)), i);
 					}
-					setCachedPreExp(ast::PrerunVariantInitialiser::create(typeExp, name, valueExp, RangeSpan(start, i)),
-					                i);
 				} else if (is_next(TokenType::curlybraceOpen, i)) {
 					Maybe<FileRangePtr> specialRange;
 					bool                isSpecialDefault = false;
@@ -5069,25 +5073,27 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					auto subName = IdentifierAt(i + 1);
 					if (is_next(TokenType::parenthesisOpen, i + 1)) {
 						auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
-						if (pCloseRes) {
-							auto  pClose = pCloseRes.value();
-							auto* exp    = do_expression(preCtx, None, i + 2, pClose).first;
-							setCachedExpr(
-							    ast::VariantInitialiser::create(
-							        typeLike, subName, exp,
-							        FileRange::merge(typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(pClose))),
-							    pClose);
-							i = pClose;
-						} else {
+						if (not pCloseRes.has_value()) {
 							add_error("Expected end for (", RangeAt(i + 2));
 						}
+						auto             pClose = pCloseRes.value();
+						ast::Expression* exp    = nullptr;
+						if (pClose != (i + 3)) { // paranthesisOpen is at i + 2
+							exp = do_expression(preCtx, None, i + 2, pClose).first;
+						}
+						setCachedExpr(ast::VariantInitialiser::create(
+						                  typeLike, subName, exp,
+						                  typeLike ? FileRange::merge(typeLike.get_range(), RangeAt(pClose))
+						                           : RangeSpan(start, pClose)),
+						              pClose);
+						i = pClose;
 					} else {
-						setCachedExpr(
-						    ast::VariantInitialiser::create(
-						        typeLike, subName, nullptr,
-						        FileRange::merge(typeLike ? typeLike.get_range() : RangeAt(i), RangeAt(i + 1))),
-						    i + 1);
 						i++;
+						setCachedExpr(
+						    ast::PrerunChoiceInitialiser::create(
+						        typeLike, subName,
+						        typeLike ? FileRange::merge(typeLike.get_range(), RangeAt(i)) : RangeSpan(start, i)),
+						    i);
 					}
 				} else if (is_next(TokenType::curlybraceOpen, i)) {
 					Maybe<FileRangePtr> specialRange;

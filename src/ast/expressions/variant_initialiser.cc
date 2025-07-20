@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
-	SHOW("Mix/Choice type initialiser")
+	SHOW("Mix/Toggle type initialiser")
 	if (not type && not is_type_inferred()) {
 		ctx->Error("No type is provided for this expression, and no type could be inferred from context", fileRange);
 	}
@@ -115,43 +115,6 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 		} else {
 			ctx->Error("Mix type " + ctx->color(mixTy->get_full_name()) + " is not accessible here", fileRange);
 		}
-	} else if (typeEmit->is_choice()) {
-		if (expression) {
-			ctx->Error("An expression is provided here, but the recognised type is a choice type: " +
-			               ctx->color(typeEmit->to_string()) + ". Please remove the expression or check the logic here",
-			           expression->fileRange);
-		}
-		auto* chTy = typeEmit->as_choice();
-		if (chTy->has_field(subName.value)) {
-			if (isLocalDecl()) {
-				createIn = ctx->get_fn()->get_block()->new_local(irName->value, chTy, isVar, irName->range);
-			}
-			if (canCreateIn()) {
-				if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
-					ctx->Error(
-					    "Trying to optimise the choice type initialisation by creating in-place, but the containing type is not a reference",
-					    fileRange);
-				}
-				auto expTy = createIn->is_ghost_ref() ? createIn->get_ir_type()
-				                                      : createIn->get_ir_type()->as_ref()->get_subtype();
-				if (not type_check_create_in(chTy)) {
-					ctx->Error(
-					    "Trying to optimise the choice type initialisation by creating in-place, but the expression type is " +
-					        ctx->color(chTy->to_string()) +
-					        " which does not match with the underlying type for in-place creation which is " +
-					        ctx->color(expTy->to_string()),
-					    fileRange);
-				}
-				ctx->irCtx->builder.CreateStore(chTy->get_value_for(subName.value), createIn->get_llvm());
-				return get_creation_result(ctx->irCtx, chTy, fileRange);
-			} else {
-				return ir::PrerunValue::get(chTy->get_value_for(subName.value), chTy)->with_range(fileRange);
-			}
-		} else {
-			ctx->Error("Choice type " + ctx->color(chTy->to_string()) + " does not have a variant named " +
-			               ctx->color(subName.value),
-			           subName.range);
-		}
 	} else if (typeEmit->is_toggle()) {
 		auto tgTy = typeEmit->as_toggle();
 		if (not tgTy->has_variant(subName.value)) {
@@ -177,6 +140,11 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 				createIn = ctx->get_fn()->get_block()->new_local(
 				    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
 				    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+			}
+			if (not type_check_create_in(tgTy)) {
+				ctx->Error(
+				    "Trying to optimise the toggle type initialisation by creating in-place, but the containing type is not reference-like",
+				    fileRange);
 			}
 			auto elemPtr = ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), createIn->get_llvm(), 0u);
 			expression->asInPlaceCreatable()->setCreateIn(ir::Value::get(
@@ -244,6 +212,11 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 					    tgTy);
 				}
 			}
+			if (not type_check_create_in(tgTy)) {
+				ctx->Error(
+				    "Trying to optimise the toggle type initialisation by creating in-place, but the containing type is not reference-like",
+				    fileRange);
+			}
 			ctx->irCtx->builder.CreateStore(subVal->get_llvm(), ctx->irCtx->builder.CreateStructGEP(
 			                                                        tgTy->get_llvm_type(), createIn->get_llvm(), 0u));
 			if (llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getNumElements() == 2) {
@@ -257,7 +230,7 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 	} else {
 		ctx->Error(ctx->color(typeEmit->to_string()) + " is not a mix, choice or toggle type", fileRange);
 	}
-	return nullptr;
+	std::unreachable();
 }
 
 Json VariantInitialiser::to_json() const {

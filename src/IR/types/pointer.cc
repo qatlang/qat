@@ -147,6 +147,8 @@ bool PtrType::is_non_nullable() const { return nonNullable; }
 
 Type* PtrType::get_subtype() const { return subType; }
 
+u32 PtrType::get_address_space() const { return llvm::cast<llvm::PointerType>(llvmType)->getAddressSpace(); }
+
 PtrOwner PtrType::get_owner() const { return owner; }
 
 TypeKind PtrType::type_kind() const { return TypeKind::POINTER; }

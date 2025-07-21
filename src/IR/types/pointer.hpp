@@ -78,6 +78,8 @@ class PtrType : public Type {
 	useit Type*    get_subtype() const;
 	useit PtrOwner get_owner() const;
 
+	useit u32 get_address_space() const;
+
 	useit bool is_subtype_variable() const;
 	useit bool is_multi() const;
 	useit bool is_nullable() const;

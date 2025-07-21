@@ -728,6 +728,18 @@ ResultType* Type::as_result() const {
 	            : (is_opaque() ? as_opaque()->get_subtype()->as_result() : (ResultType*)this));
 }
 
+bool Type::is_error() const {
+	return ((type_kind() == TypeKind::ERROR) ||
+	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_error()) ||
+	        (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_error()));
+}
+
+ErrorType* Type::as_error() const {
+	return ((type_kind() == TypeKind::DEFINITION)
+	            ? ((DefinitionType*)this)->get_subtype()->as_error()
+	            : (is_opaque() ? as_opaque()->get_subtype()->as_error() : (ErrorType*)this));
+}
+
 bool Type::is_flag() const {
 	return ((type_kind() == TypeKind::FLAG) ||
 	        (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_flag()) ||

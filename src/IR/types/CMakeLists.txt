@@ -3,6 +3,7 @@ add_library(QAT_IR_TYPES STATIC
 	char.cc
 	choice.cc
 	definition.cc
+	error.cc
 	expanded_type.cc
 	flag.cc
 	float.cc

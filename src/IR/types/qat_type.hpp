@@ -41,6 +41,7 @@ class OpaqueType;
 class TypedType;
 class PrerunValue;
 class ResultType;
+class ErrorType;
 class VectorType;
 class Polymorph;
 class FlagType;
@@ -193,6 +194,9 @@ class Type : public Uniq {
 
 	useit bool        is_result() const;
 	useit ResultType* as_result() const;
+
+	useit bool       is_error() const;
+	useit ErrorType* as_error() const;
 
 	useit bool        is_vector() const;
 	useit VectorType* as_vector() const;

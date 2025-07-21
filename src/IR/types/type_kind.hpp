@@ -32,6 +32,7 @@ enum class TypeKind {
 	TOGGLE,           // C-style unions
 	POLYMORPH,        // Runtime behavioural polymorphism object
 	FLAG,             // Bitflag
+	ERROR,            // Error (Transparent error types)
 };
 
 } // namespace qat::ir

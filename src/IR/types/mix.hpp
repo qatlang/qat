@@ -28,6 +28,7 @@ class MixType : public ExpandedType, public EntityOverview {
 	Maybe<usize>    defaultVal;
 	FileRangePtr    fileRange;
 	Maybe<MetaInfo> metaInfo;
+	bool            hasNoneVariant;
 
 	ir::OpaqueType* opaquedType = nullptr;
 
@@ -48,6 +49,8 @@ class MixType : public ExpandedType, public EntityOverview {
 	}
 
 	useit usize get_index_of(const String& name) const;
+
+	useit bool has_none_variant() const { return hasNoneVariant; }
 
 	useit Pair<bool, bool> has_variant_with_name(const String& sname) const;
 	useit Type*            get_variant_with_name(const String& sname) const;

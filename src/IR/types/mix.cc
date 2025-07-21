@@ -26,7 +26,8 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
                  Maybe<MetaInfo> _metaInfo)
     : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
       EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
-      defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo), opaquedType(_opaquedTy) {
+      defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo), hasNoneVariant(addNoneVariant),
+      opaquedType(_opaquedTy) {
 	for (const auto& sub : subtypes) {
 		if (sub.second.has_value()) {
 			auto* typ = sub.second.value();

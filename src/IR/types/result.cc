@@ -24,12 +24,8 @@ ResultType::ResultType(ir::Type* _resTy, ir::Type* _errTy, bool _isPacked, ir::C
 	    (validType->is_same(errorType) && not validType->is_opaque())
 	        ? validType->get_llvm_type()
 	        : llvm::Type::getIntNTy(irCtx->llctx, (validTypeSize > errorTypeSize) ? validTypeSize : errorTypeSize);
-	if (is_identical_to_bool()) {
-		llvmType = llvm::Type::getInt1Ty(irCtx->llctx);
-	} else {
-		llvmType = llvm::StructType::create(irCtx->llctx, {llvm::Type::getInt1Ty(irCtx->llctx), dataType}, linkingName,
-		                                    isPacked);
-	}
+	llvmType =
+	    llvm::StructType::create(irCtx->llctx, {llvm::Type::getInt1Ty(irCtx->llctx), dataType}, linkingName, isPacked);
 }
 
 ResultType* ResultType::get(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx) {
@@ -47,15 +43,9 @@ ir::Type* ResultType::get_valid_type() const { return validType; }
 ir::Type* ResultType::get_error_type() const { return errorType; }
 
 void ResultType::handle_tag_store(llvm::Value* resultRef, bool tag, ir::Ctx* irCtx) {
-	if (is_identical_to_bool()) {
-		irCtx->builder.CreateStore(llvm::ConstantInt::getBool(irCtx->llctx, tag), resultRef);
-	} else {
-		irCtx->builder.CreateStore(llvm::ConstantInt::getBool(irCtx->llctx, tag),
-		                           irCtx->builder.CreateStructGEP(llvmType, resultRef, 0u));
-	}
+	irCtx->builder.CreateStore(llvm::ConstantInt::getBool(irCtx->llctx, tag),
+	                           irCtx->builder.CreateStructGEP(llvmType, resultRef, 0u));
 }
-
-bool ResultType::is_packed() const { return isPacked && not is_identical_to_bool(); }
 
 String ResultType::to_string() const {
 	return "result:[" + validType->to_string() + ", " + errorType->to_string() + "]";

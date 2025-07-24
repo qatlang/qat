@@ -2624,7 +2624,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				auto                                                      bClose = bCloseRes.value();
 				Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> fields;
 				Maybe<usize>                                              defaultVal;
-				do_choice_type(i + 1, bClose, fields, defaultVal);
+				bool                                                      hasNoneVariant = false;
+				do_choice_type(i + 1, bClose, fields, defaultVal, hasNoneVariant);
 				addNode(ast::DefineChoiceType::create(typeName, std::move(fields), providedTy, defaultVal,
 				                                      get_visibility(), RangeSpan(start, bClose)));
 				i = bClose;
@@ -3890,7 +3891,7 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 }
 
 void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,
-                            Maybe<usize>& defaultVal) {
+                            Maybe<usize>& defaultVal, bool& hasNoneVariant) {
 	using lexer::TokenType;
 
 	for (usize i = from + 1; i < upto; i++) {
@@ -3901,12 +3902,40 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Ma
 					if (is_next(TokenType::identifier, i)) {
 						defaultVal = fields.size();
 						break;
+					} else if (is_next(TokenType::none, i)) {
+						defaultVal = 0;
+						add_warning(
+						    "If the default variant is not explicitly provided, the none variant, if present, will be the default for a choice type",
+						    RangeAt(i));
+						break;
 					} else {
 						add_error("Invalid token found after default", RangeAt(i));
 					}
+					break;
 				} else {
 					add_error("Default value for choice type already provided", RangeAt(i));
 				}
+			}
+			case TokenType::none: {
+				if (hasNoneVariant) {
+					add_error("The " + color_error("none") + " variant is already provided in this choice type",
+					          RangeAt(i));
+				}
+				if (not fields.empty()) {
+					add_error("The " + color_error("none") + " variant should always be the first variant", RangeAt(i));
+				}
+				fields.push_back(std::make_pair(Vec<Identifier>{Identifier{"none", RangeAt(i)}}, None));
+				hasNoneVariant = true;
+				if (is_next(TokenType::assignment, i)) {
+					add_error("The " + color_error("none") + " variant will always have the value 0", RangeAt(i));
+				}
+				if (is_next(TokenType::separator, i)) {
+					i++;
+				} else {
+					add_error("Expected , after this. Choice types are expected to have at least 2 variants",
+					          RangeAt(i));
+				}
+				break;
 			}
 			case TokenType::identifier: {
 				auto            start      = i;

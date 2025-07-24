@@ -14,7 +14,7 @@ namespace qat::ir {
 
 #define MAX_PRERUN_GENERIC_BITWIDTH 64u
 
-ChoiceType::ChoiceType(Identifier _name, Mod* _parent, Vec<Vec<Identifier>> _fields,
+ChoiceType::ChoiceType(Identifier _name, Mod* _parent, bool _hasNoneVariant, Vec<Vec<Identifier>> _fields,
                        Maybe<Vec<llvm::ConstantInt*>> _values, Maybe<ir::Type*> _providedType, bool areValuesUnsigned,
                        Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, ir::Ctx* _ctx,
                        FileRangePtr _fileRange, Maybe<MetaInfo> _metaInfo)
@@ -26,9 +26,9 @@ ChoiceType::ChoiceType(Identifier _name, Mod* _parent, Vec<Vec<Identifier>> _fie
                          ._("hasDefault", _defaultVal.has_value())
                          ._("visibility", _visibility),
                      _name.range),
-      name(std::move(_name)), parent(_parent), fields(std::move(_fields)), values(std::move(_values)),
-      providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal), metaInfo(_metaInfo), irCtx(_ctx),
-      fileRange(_fileRange) {
+      name(std::move(_name)), parent(_parent), hasNoneVariant(_hasNoneVariant), fields(std::move(_fields)),
+      values(std::move(_values)), providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal),
+      metaInfo(_metaInfo), irCtx(_ctx), fileRange(_fileRange) {
 	Maybe<String> foreignID;
 	if (metaInfo) {
 		foreignID = metaInfo->get_foreign_id();

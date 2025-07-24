@@ -75,7 +75,7 @@ class Parser {
 	                    Maybe<FileRangePtr>& noneVariant, Vec<FileRangePtr>& fileRanges, Maybe<usize>& defaultVal);
 
 	void do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>>& fields,
-	                    Maybe<usize>& defaultVal);
+	                    Maybe<usize>& defaultVal, bool& hasNoneVariant);
 
 	Pair<ast::DefineFlagType*, usize> do_flag_type(usize from, Identifier name, ast::Type* providedType,
 	                                               Maybe<ast::VisibilitySpec> visibSpec, FileRangePtr startRange);

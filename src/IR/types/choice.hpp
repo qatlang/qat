@@ -20,6 +20,7 @@ class ChoiceType : public Type, public EntityOverview {
   private:
 	Identifier                     name;
 	Mod*                           parent;
+	bool                           hasNoneVariant;
 	Vec<Vec<Identifier>>           fields;
 	Maybe<Vec<llvm::ConstantInt*>> values;
 	Maybe<ir::Type*>               providedType;
@@ -34,17 +35,18 @@ class ChoiceType : public Type, public EntityOverview {
 	FileRangePtr fileRange;
 
   public:
-	ChoiceType(Identifier name, Mod* parent, Vec<Vec<Identifier>> fields, Maybe<Vec<llvm::ConstantInt*>> values,
-	           Maybe<ir::Type*> providedType, bool areValuesUnsigned, Maybe<usize> defaultVal,
-	           const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo);
+	ChoiceType(Identifier name, Mod* parent, bool hasNoneVariant, Vec<Vec<Identifier>> fields,
+	           Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType, bool areValuesUnsigned,
+	           Maybe<usize> defaultVal, const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRangePtr fileRange,
+	           Maybe<MetaInfo> metaInfo);
 
-	useit static ChoiceType* create(Identifier name, Mod* parent, Vec<Vec<Identifier>> fields,
+	useit static ChoiceType* create(Identifier name, Mod* parent, bool hasNoneVariant, Vec<Vec<Identifier>> fields,
 	                                Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType,
 	                                bool areValuesUnsigned, Maybe<usize> defaultVal, const VisibilityInfo& visibility,
 	                                ir::Ctx* irCtx, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo) {
-		return std::construct_at(OwnNormal(ChoiceType), std::move(name), parent, std::move(fields), std::move(values),
-		                         providedType, areValuesUnsigned, defaultVal, visibility, irCtx, fileRange,
-		                         std::move(metaInfo));
+		return std::construct_at(OwnNormal(ChoiceType), std::move(name), parent, hasNoneVariant, std::move(fields),
+		                         std::move(values), providedType, areValuesUnsigned, defaultVal, visibility, irCtx,
+		                         fileRange, std::move(metaInfo));
 	}
 
 	useit Identifier get_name() const;
@@ -58,6 +60,8 @@ class ChoiceType : public Type, public EntityOverview {
 	useit bool has_provided_type() const;
 
 	useit bool has_negative_values() const;
+
+	useit bool has_none_variant() const { return hasNoneVariant; }
 
 	useit bool has_default() const;
 

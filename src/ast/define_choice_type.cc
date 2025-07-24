@@ -45,6 +45,17 @@ void DefineChoiceType::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 			             providedIntegerTy.value()->fileRange);
 		}
 	}
+	bool hasNoneVariant = false;
+	if ((not fields.empty()) && (fields[0].first[0].value == "none")) {
+		hasNoneVariant = true;
+	}
+	bool atLeastOneValue = false;
+	for (usize i = 0; i < fields.size(); i++) {
+		if (fields[i].second.has_value()) {
+			atLeastOneValue = true;
+			break;
+		}
+	}
 	for (usize i = 0; i < fields.size(); i++) {
 		for (usize j = i + 1; j < fields.size(); j++) {
 			for (usize k = 0; k < fields[j].first.size(); k++) {
@@ -57,6 +68,13 @@ void DefineChoiceType::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 		fieldNames.push_back(fields.at(i).first);
+		if ((i == 0) && hasNoneVariant && atLeastOneValue) {
+			fieldValues = Vec<llvm::ConstantInt*>{llvm::ConstantInt::get(
+			    providedType.has_value() ? llvm::cast<llvm::IntegerType>(providedType.value()->get_llvm_type())
+			                             : llvm::Type::getInt32Ty(irCtx->llctx),
+			    0u, providedType.has_value() ? providedType.value()->is_underlying_type_integer() : false)};
+			continue;
+		}
 		if (fields.at(i).second.has_value()) {
 			if (providedType && fields.at(i).second.value()->has_type_inferrance()) {
 				fields.at(i).second.value()->as_type_inferrable()->set_inference_type(providedType.value());
@@ -92,6 +110,11 @@ void DefineChoiceType::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 				             fields.at(i).second.value()->fileRange);
 			} else if (not variantValueType) {
 				variantValueType = iVal->get_ir_type();
+				if (hasNoneVariant && atLeastOneValue) {
+					fieldValues.value()[0] =
+					    llvm::ConstantInt::get(llvm::cast<llvm::IntegerType>(variantValueType->get_llvm_type()), 0u,
+					                           variantValueType->is_underlying_type_integer());
+				}
 			}
 			llvm::ConstantInt* fieldResult =
 			    llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldConstant(iVal->get_llvm_constant(), irCtx->dataLayout));
@@ -169,9 +192,10 @@ void DefineChoiceType::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 			}
 		}
 	}
-	SHOW("Creating choice type in the IR")(void) ir::ChoiceType::create(
-	    name, mod, std::move(fieldNames), std::move(fieldValues), providedType, areValuesUnsigned, defaultVal,
-	    emitCtx->get_visibility_info(visibSpec), irCtx, fileRange, None);
+	SHOW("Creating choice type in the IR");
+	(void)ir::ChoiceType::create(name, mod, hasNoneVariant, std::move(fieldNames), std::move(fieldValues), providedType,
+	                             areValuesUnsigned, defaultVal, emitCtx->get_visibility_info(visibSpec), irCtx,
+	                             fileRange, None);
 	SHOW("Created choice type")
 }
 

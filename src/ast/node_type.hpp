@@ -117,6 +117,7 @@ enum class NodeType {
 	GET_POLYMORPH,
 	DEFINE_TOGGLE_TYPE,
 	PRERUN_CHOICE_INITIALISER,
+	IS_VARIANT,
 };
 
 } // namespace qat::ast

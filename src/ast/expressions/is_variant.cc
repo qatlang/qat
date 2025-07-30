@@ -77,19 +77,63 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 					               " instead",
 					           fileRange);
 				}
-				if (isRef) {
+				if (valTy->is_result()) {
+					if (isRef) {
+						val->load_ghost_ref(ctx->irCtx->builder);
+					}
+					llvm::Value* cand = nullptr;
+					if (isRef || val->is_ghost_ref()) {
+						cand = ctx->irCtx->builder.CreateLoad(
+						    llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+						    ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u));
+					} else {
+						cand = ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u});
+					}
+					return ir::Value::get(kind == IsVariantKind::RESULT_OK ? cand : ctx->irCtx->builder.CreateNot(cand),
+					                      boolTy, true);
+				} else if (valTy->is_error()) {
+					auto errTy = valTy->as_error();
+					if (not errTy->has_simple_move()) {
+						ctx->Error("Found an expression of the error type " + ctx->color(errTy->to_string()) +
+						               " here, but it does not have the " + ctx->color("error::none") +
+						               " variant available, as its underlying type " +
+						               ctx->color(errTy->get_subtype()->to_string()) +
+						               " does not have simple-move. To perform the " + ctx->color("'is:ok") + " and " +
+						               ctx->color("'is:error") +
+						               " conditions on error type values, they are required to have the " +
+						               ctx->color("error::none") + " variant",
+						           fileRange);
+					}
 					val->load_ghost_ref(ctx->irCtx->builder);
-				}
-				llvm::Value* cand = nullptr;
-				if (isRef || val->is_ghost_ref()) {
-					cand = ctx->irCtx->builder.CreateLoad(
-					    llvm::Type::getInt1Ty(ctx->irCtx->llctx),
-					    ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u));
+					auto cand = val->get_llvm();
+					if (isRef) {
+						cand = ctx->irCtx->builder.CreateLoad(errTy->get_llvm_type(), cand);
+					}
+					if (llvm::isa<llvm::PointerType>(errTy->get_llvm_type())) {
+						cand = ctx->irCtx->builder.CreatePtrDiff(
+						    llvm::Type::getInt8Ty(ctx->irCtx->llctx), cand,
+						    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(errTy->get_llvm_type())));
+						cand = ctx->irCtx->builder.CreateICmp(
+						    kind == IsVariantKind::RESULT_OK ? llvm::CmpInst::ICMP_EQ : llvm::CmpInst::ICMP_NE, cand,
+						    llvm::ConstantInt::get(ir::NativeType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u));
+					} else {
+						auto intTy = llvm::Type::getIntNTy(
+						    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getTypeSizeInBits(errTy->get_llvm_type()));
+						if (not llvm::isa<llvm::IntegerType>(errTy->get_llvm_type())) {
+							cand = ctx->irCtx->builder.CreateBitCast(cand, intTy);
+						}
+						cand = ctx->irCtx->builder.CreateICmp(kind == IsVariantKind::RESULT_OK ? llvm::CmpInst::ICMP_EQ
+						                                                                       : llvm::CmpInst::ICMP_NE,
+						                                      cand, llvm::ConstantInt::get(intTy, 0u));
+					}
+					return ir::Value::get(cand, boolTy, true);
 				} else {
-					cand = ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u});
+					ctx->Error("Expected an expression of either a " + ctx->color("result") + " type, or an " +
+					               ctx->color("error") + " type that has the " + ctx->color("none") +
+					               " variant. Only those types are supported for conditions " + ctx->color("'is:ok") +
+					               " and " + ctx->color("'is:error"),
+					           fileRange);
 				}
-				return ir::Value::get(kind == IsVariantKind::RESULT_OK ? cand : ctx->irCtx->builder.CreateNot(cand),
-				                      boolTy, true);
 			}
 			case IsVariantKind::POINTER_NULL: {
 				if (not valTy->is_ptr()) {

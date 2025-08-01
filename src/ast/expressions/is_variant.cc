@@ -93,7 +93,7 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 					                      boolTy, true);
 				} else if (valTy->is_error()) {
 					auto errTy = valTy->as_error();
-					if (not errTy->has_simple_move()) {
+					if (not errTy->has_none_variant()) {
 						ctx->Error("Found an expression of the error type " + ctx->color(errTy->to_string()) +
 						               " here, but it does not have the " + ctx->color("error::none") +
 						               " variant available, as its underlying type " +
@@ -234,7 +234,7 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 					    boolTy, true);
 				} else if (valTy->is_error()) {
 					auto errTy = valTy->as_error();
-					if (not errTy->has_simple_move()) {
+					if (not errTy->has_none_variant()) {
 						ctx->Error("Found an expression of the error type " + ctx->color(errTy->to_string()) +
 						               " here, but it does not have the " + ctx->color("error::none") +
 						               " variant available, as its underlying type " +

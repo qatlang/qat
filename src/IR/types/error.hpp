@@ -7,33 +7,34 @@
 namespace qat::ir {
 
 class ErrorType final : public Type {
+	bool  hasNoneVariant;
 	Type* subType;
 
   public:
-	ErrorType(Type* _subType) : subType(_subType) {
-		linkingName =
-		    (subType->has_simple_move() ? "qat'error![" : "qat'error:[") + subType->get_name_for_linking() + "]";
-		llvmType = subType->get_llvm_type();
+	ErrorType(bool _hasNoneVariant, Type* _subType) : hasNoneVariant(_hasNoneVariant), subType(_subType) {
+		linkingName = (hasNoneVariant ? "qat'error:[" : "qat'error![") + subType->get_name_for_linking() + "]";
+		llvmType    = subType->get_llvm_type();
 	}
 
-	useit static ErrorType* get(Type* subType) {
+	useit static ErrorType* get(bool hasNoneVariant, Type* subType) {
 		for (auto typ : allTypes) {
-			if (typ->is_error() && typ->as_error()->get_subtype()->is_same(subType)) {
+			if (typ->is_error() && (typ->as_error()->hasNoneVariant == hasNoneVariant) &&
+			    typ->as_error()->get_subtype()->is_same(subType)) {
 				return typ->as_error();
 			}
 		}
-		return std::construct_at(OwnNormal(ErrorType), subType);
+		return std::construct_at(OwnNormal(ErrorType), hasNoneVariant, subType);
 	}
 
 	useit Type* get_subtype() const { return subType; }
+
+	useit bool has_none_variant() const { return hasNoneVariant; }
 
 	useit bool can_be_prerun() const final { return subType->can_be_prerun(); }
 
 	useit bool has_prerun_default_value() const final { return has_simple_move(); }
 
-	useit bool is_default_constructible() const final {
-		return has_simple_move() || subType->is_default_constructible();
-	}
+	useit bool is_default_constructible() const final { return hasNoneVariant or subType->is_default_constructible(); }
 
 	useit bool is_copy_constructible() const final { return subType->is_copy_constructible(); }
 
@@ -84,7 +85,7 @@ class ErrorType final : public Type {
 	useit TypeKind type_kind() const final { return TypeKind::ERROR; }
 
 	useit String to_string() const final {
-		return (has_simple_move() ? "error![" : "error:[") + subType->to_string() + "]";
+		return (hasNoneVariant ? "error:[" : "error![") + subType->to_string() + "]";
 	}
 };
 

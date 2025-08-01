@@ -35,6 +35,7 @@ enum class AstTypeKind {
 	GENERIC_INTEGER,
 	POLYMORPH,
 	SUBTYPE,
+	ERROR,
 };
 
 } // namespace qat::ast

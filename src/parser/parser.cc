@@ -111,6 +111,7 @@
 #include "../ast/type_definition.hpp"
 #include "../ast/types/array.hpp"
 #include "../ast/types/char.hpp"
+#include "../ast/types/error.hpp"
 #include "../ast/types/float.hpp"
 #include "../ast/types/function.hpp"
 #include "../ast/types/future.hpp"
@@ -1432,6 +1433,40 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					    "Expected a type for the valid value and another type for the error value in the result type",
 					    RangeAt(i));
 				}
+				break;
+			}
+			case TokenType::error: {
+				const auto start          = i;
+				bool       hasNoneVariant = true;
+				ast::Type* subType        = nullptr;
+				if (is_next(TokenType::exclamation, i)) {
+					hasNoneVariant = false;
+					i++;
+					if (not is_next(TokenType::bracketOpen, i)) {
+						add_error("Expected [ after this to begin the sub-type of the error type", RangeSpan(start, i));
+					}
+					auto typRes = do_type(preCtx, i + 1, None);
+					subType     = typRes.first;
+					i           = typRes.second;
+					if (not is_next(TokenType::bracketClose, i)) {
+						add_error("Expected ] after this to end the sub-type of the error type", RangeSpan(start, i));
+					}
+					i++;
+				} else {
+					if (not is_next(TokenType::genericTypeStart, i)) {
+						add_error("Expected :[ after this to begin the sub-type of the error type",
+						          RangeSpan(start, i));
+					}
+					i++;
+					auto typRes = do_type(preCtx, i, None);
+					subType     = typRes.first;
+					i           = typRes.second;
+					if (not is_next(TokenType::genericTypeEnd, i)) {
+						add_error("Expected ] after this to end the sub-type of the error type", RangeSpan(start, i));
+					}
+					i++;
+				}
+				cacheTy = ast::ErrorType::create(hasNoneVariant, subType, RangeSpan(start, i));
 				break;
 			}
 			case TokenType::futureType: {

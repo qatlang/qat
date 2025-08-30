@@ -30,15 +30,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 			}
 		}
 		auto boolVal = llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 1u);
-		if (subExpr->isPrerunNode() && not canCreateIn()) {
-			auto subPre  = subExpr->emit(ctx);
-			auto maybeTy = ir::MaybeType::get(subPre->get_ir_type(), false, ctx->irCtx);
-			return ir::PrerunValue::get(
-			           llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(maybeTy->get_llvm_type()),
-			                                     {boolVal, subPre->get_llvm_constant()}),
-			           maybeTy)
-			    ->with_range(fileRange);
-		} else if (subExpr->isInPlaceCreatable()) {
+		if (subExpr->isInPlaceCreatable()) {
 			auto dummyValue = llvm::UndefValue::get(
 			    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()));
 			subExpr->asInPlaceCreatable()->setCreateIn(ir::Value::get(
@@ -67,7 +59,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 				               ", but it is of type " + ctx->color(subType->to_string()),
 				           subExpr->fileRange);
 			}
-			if (subIR->is_prerun_value() && not canCreateIn()) {
+			if (subIR->is_prerun_value() && (not canCreateIn() && not isLocalDecl())) {
 				return ir::PrerunValue::get(
 				           llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(maybeTy->get_llvm_type()),
 				                                     {boolVal, subIR->get_llvm_constant()}),
@@ -75,9 +67,11 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 				    ->with_range(fileRange);
 			} else {
 				if (not canCreateIn()) {
+					SHOW("Creating createIn value for is() expression. Has irName: "
+					     << (irName.has_value() ? "true" : "false") << " name is: " << (irName ? irName->value : ""));
 					createIn = ctx->get_fn()->get_block()->new_local(
-					    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), maybeTy, true,
-					    irName.has_value() ? irName->range : fileRange);
+					    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), maybeTy,
+					    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
 				}
 				auto* finalVal = ir::Logic::handle_pass_semantics(ctx, subType, subIR, subExpr->fileRange);
 				ctx->irCtx->builder.CreateStore(

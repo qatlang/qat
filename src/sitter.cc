@@ -17,6 +17,11 @@
 
 #include <chrono>
 #include <filesystem>
+#include <llvm/ADT/StringMap.h>
+#include <llvm/MC/TargetRegistry.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Target/TargetMachine.h>
+#include <llvm/TargetParser/Host.h>
 #include <thread>
 
 #if OS_IS_WINDOWS
@@ -298,61 +303,84 @@ void QatSitter::initialise() {
 				}
 			}
 		};
-		auto clangStartTime = std::chrono::high_resolution_clock::now();
 		if (cfg->is_workflow_build()) {
-			if (cfg->has_clang_path() || check_executable_exists("qat-clang") || check_executable_exists("clang") ||
-			    check_executable_exists("clang++") || check_executable_exists("clang-20") ||
-			    check_executable_exists("clang++-20") || check_executable_exists("clang-19") ||
-			    check_executable_exists("clang++-19") || check_executable_exists("clang-18") ||
-			    check_executable_exists("clang++-18") || check_executable_exists("clang-17") ||
-			    check_executable_exists("clang++-17")) {
-				for (auto* entity : fileEntities) {
-					entity->compile_to_object(ctx);
-				}
-				ir::Mod::find_native_library_paths();
-				for (auto* entity : fileEntities) {
-					entity->handle_native_libs(ctx);
-				}
-				for (auto* entity : fileEntities) {
-					entity->bundle_modules(ctx);
-				}
-				ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
-				                                std::chrono::high_resolution_clock::now() - clangStartTime)
-				                                .count();
-				display_stats();
-				SHOW("Displayed stats")
-				ctx->write_json_result(true);
-				SHOW("Wrote JSON result")
-				clear_llvm_files();
-				SHOW("Cleared llvm files")
-				log->say("Cleared LLVM files");
-				if (cfg->is_workflow_run() && not ctx->executablePaths.empty()) {
-					if (llvm::Triple(cfg->get_target_triple()) != llvm::Triple(LLVM_HOST_TRIPLE)) {
-						ctx->Error("The target provided for compilation is " + ctx->color(cfg->get_target_triple()) +
-						               " which does not match the host target triplet of this compiler, which is " +
-						               ctx->color(LLVM_HOST_TRIPLE) +
-						               ". Cannot run built executables due to this mismatch",
-						           None);
-					}
-					for (const auto& exePath : ctx->executablePaths) {
-						std::cout << "\n===== Output of \"" << exePath.lexically_relative(fs::current_path()).string()
-						          << "\"\n";
-						auto exitCode = run_command_with_output(fs::absolute(exePath).string(), {});
-						std::cout << "\n===== Status Code: " << std::to_string(exitCode) << "\n";
-						if (exitCode) {
-							std::cout << "\nThe built executable at " + ctx->color(exePath.string()) +
-							                 " exited with error";
-						}
-					}
-				}
-				SHOW("Workflow run check complete")
-			} else {
-				ctx->Error(
-				    "Cannot find clang on path. Please make sure that you have clang with version 17 "
-				    "or later installed and the path to clang executable is present in the system PATH environment variable. Or else, provide path to a valid version of clang using the command line argument " +
-				        ctx->color("--clang=/path/to/clang/exe"),
-				    None);
+			llvm::InitializeAllTargetInfos();
+			llvm::InitializeAllTargets();
+			llvm::InitializeAllTargetMCs();
+			llvm::InitializeAllAsmParsers();
+			llvm::InitializeAllAsmPrinters();
+			String errStr;
+			auto   target = llvm::TargetRegistry::lookupTarget(cfg->get_target_triple(), errStr);
+			if (not target) {
+				ctx->Error("The target triple " + cfg->get_target_triple() +
+				               " is invalid. The error returned from LLVM is " + errStr,
+				           None);
 			}
+			llvm::PassBuilder   passBuilder;
+			llvm::TargetOptions targetOptions;
+			String              cpuName = "generic";
+			String              cpuFeatures;
+			if (not cfg->has_target_triple() && not cfg->has_cpu_name()) {
+				cpuName = llvm::sys::getHostCPUName().str();
+				SHOW("CPU name is " << cpuName);
+				// auto features = llvm::sys::getHostCPUFeatures();
+				// for (auto& item : features) {
+				// 	if (item.getValue()) {
+				// 		SHOW("Enabling CPU feature " << item.getKey().str());
+				// 		if (not cpuFeatures.empty()) {
+				// 			cpuFeatures += ",";
+				// 		}
+				// 		cpuFeatures += item.getKey();
+				// 	}
+				// }
+			}
+			if (cfg->has_cpu_name()) {
+				cpuName = cfg->get_cpu_name();
+			}
+			if (cfg->has_cpu_features()) {
+				cpuFeatures = cfg->get_cpu_features();
+			}
+			auto       targetMachine  = target->createTargetMachine(cfg->get_target_triple(), cpuName, cpuFeatures,
+			                                                        targetOptions, llvm::Reloc::PIC_);
+			const auto clangStartTime = std::chrono::high_resolution_clock::now();
+			for (auto* entity : fileEntities) {
+				entity->compile_to_object(ctx, targetMachine, passBuilder);
+			}
+			ir::Mod::find_native_library_paths();
+			for (auto* entity : fileEntities) {
+				entity->handle_native_libs(ctx);
+			}
+			for (auto* entity : fileEntities) {
+				entity->bundle_modules(ctx);
+			}
+			ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
+			                                std::chrono::high_resolution_clock::now() - clangStartTime)
+			                                .count();
+			display_stats();
+			SHOW("Displayed stats")
+			ctx->write_json_result(true);
+			SHOW("Wrote JSON result")
+			clear_llvm_files();
+			SHOW("Cleared llvm files")
+			log->say("Cleared LLVM files");
+			if (cfg->is_workflow_run() && not ctx->executablePaths.empty()) {
+				if (llvm::Triple(cfg->get_target_triple()) != llvm::Triple(LLVM_HOST_TRIPLE)) {
+					ctx->Error("The target provided for compilation is " + ctx->color(cfg->get_target_triple()) +
+					               " which does not match the host target triplet of this compiler, which is " +
+					               ctx->color(LLVM_HOST_TRIPLE) + ". Cannot run built executables due to this mismatch",
+					           None);
+				}
+				for (const auto& exePath : ctx->executablePaths) {
+					std::cout << "\n===== Output of \"" << exePath.lexically_relative(fs::current_path()).string()
+					          << "\"\n";
+					auto exitCode = run_command_with_output(fs::absolute(exePath).string(), {});
+					std::cout << "\n===== Status Code: " << std::to_string(exitCode) << "\n";
+					if (exitCode) {
+						std::cout << "\nThe built executable at " + ctx->color(exePath.string()) + " exited with error";
+					}
+				}
+			}
+			SHOW("Workflow run check complete")
 		} else {
 			display_stats();
 			clear_llvm_files();

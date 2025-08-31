@@ -17,7 +17,9 @@
 #include "./value.hpp"
 
 #include <lld/Common/Driver.h>
+#include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <set>
 
 LLD_HAS_DRIVER(elf)
@@ -25,6 +27,10 @@ LLD_HAS_DRIVER(coff)
 LLD_HAS_DRIVER(macho)
 LLD_HAS_DRIVER(mingw)
 LLD_HAS_DRIVER(wasm)
+
+namespace llvm {
+class TargetMachine;
+};
 
 namespace qat {
 class QatSitter;
@@ -961,7 +967,7 @@ class Mod final : public Uniq, public EntityOverview {
 	void node_update_dependencies(Ctx* irCtx);
 
 	void setup_llvm_file(Ctx* irCtx);
-	void compile_to_object(Ctx* irCtx);
+	void compile_to_object(Ctx* irCtx, llvm::TargetMachine* machine, llvm::PassBuilder passBuilder);
 	void handle_native_libs(Ctx* irCtx);
 	void bundle_modules(Ctx* irCtx);
 

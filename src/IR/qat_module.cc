@@ -23,6 +23,9 @@
 #include "./types/toggle.hpp"
 #include "./types/void.hpp"
 #include "./value.hpp"
+#include "llvm/Analysis/CGSCCPassManager.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Transforms/Scalar/LowerMatrixIntrinsics.h"
 
 #include <filesystem>
 #include <fstream>
@@ -34,10 +37,15 @@
 #include <llvm/IR/GlobalValue.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Type.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/CodeGen.h>
+#include <llvm/Support/FileSystem.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Triple.h>
+#include <llvm/Transforms/Scalar.h>
 #include <memory>
 #include <system_error>
 
@@ -2687,38 +2695,13 @@ bool Mod::find_clang_path(Ctx* ctx) {
 	return usableClangPath.has_value();
 }
 
-void Mod::compile_to_object(Ctx* ctx) {
+void Mod::compile_to_object(Ctx* ctx, llvm::TargetMachine* machine, llvm::PassBuilder passBuilder) {
 	if (not isCompiledToObject) {
 		auto& log = Logger::get();
 		log->say("Compiling module `" + name.value + "` from file " + filePath.string());
-		auto*       cfg = cli::Config::get();
-		Vec<String> compileArgs;
-		if (cfg->should_build_shared()) {
-			compileArgs.push_back("-fPIC");
-			compileArgs.push_back("-c");
-			compileArgs.push_back("-mllvm");
-			compileArgs.push_back("-enable-matrix");
-		} else {
-			compileArgs.push_back("-c");
-			compileArgs.push_back("-mllvm");
-			compileArgs.push_back("-enable-matrix");
-		}
-		if (linkPthread &&
-		    (ctx->clangTargetInfo->getTriple().isOSLinux() || ctx->clangTargetInfo->getTriple().isOSCygMing() ||
-		     (ctx->clangTargetInfo->getTriple().isWasm() && ctx->clangTargetInfo->getTriple().isOSWASI()))) {
-			compileArgs.push_back("-pthread");
-		}
-		compileArgs.push_back("--target=" + ctx->clangTargetInfo->getTriple().getTriple());
-		if (cfg->has_sysroot()) {
-			compileArgs.push_back("--sysroot=" + cfg->get_sysroot());
-		}
-		// if (ctx->clangTargetInfo->getTriple().isWasm()) {
-		// 	if (not hasMain || not ctx->clangTargetInfo->getTriple().isOSWASI()) {
-		// 		compileArgs.push_back("-nostartfiles");
-		// 	}
-		// }
+		auto* cfg = cli::Config::get();
 		for (auto* sub : submodules) {
-			sub->compile_to_object(ctx);
+			sub->compile_to_object(ctx, machine, passBuilder);
 		}
 		objectFilePath = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "object" /
 		                              filePath.lexically_relative(basePath).replace_filename(get_writable_name().append(
@@ -2726,9 +2709,9 @@ void Mod::compile_to_object(Ctx* ctx) {
 		                                      ? ".obj"
 		                                      : (ctx->clangTargetInfo->getTriple().isWasm() ? ".wasm" : ".o"))))
 		                     .lexically_normal();
-		SHOW("Got object file path")
+		SHOW("Created object file path");
+		std::error_code errorCode;
 		if (not fs::exists(objectFilePath.value().parent_path())) {
-			std::error_code errorCode;
 			SHOW("Creating all folders in object file output path: " << objectFilePath.value())
 			fs::create_directories(objectFilePath.value().parent_path(), errorCode);
 			if (errorCode) {
@@ -2738,17 +2721,42 @@ void Mod::compile_to_object(Ctx* ctx) {
 				           None);
 			}
 		}
-		compileArgs.push_back(llPath.string());
-		compileArgs.push_back("-o");
-		compileArgs.push_back(objectFilePath.value().string());
-		auto clangFound = find_clang_path(ctx);
-		SHOW("Clang is found: " << clangFound)
-		auto cmdRes = run_command_get_stderr(usableClangPath.value(), compileArgs);
-		if (cmdRes.first) {
-			ctx->Error("Could not compile the LLVM file: " + ctx->color(filePath.string()) + ". The output is\n" +
-			               cmdRes.second,
+		SHOW("Created file stream for the object file");
+		llvm::raw_fd_ostream stream(objectFilePath.value().string(), errorCode, (llvm::sys::fs::OpenFlags)0);
+		if (errorCode) {
+			ctx->Error("Could not create output file stream for the object file " +
+			               ctx->color(objectFilePath.value().string()),
 			           None);
 		}
+		SHOW("Creating function pass manager");
+		llvm::FunctionPassManager     fnPass;
+		llvm::FunctionAnalysisManager fnAnalysis;
+		if (isMatrixIntrinsicsUsed) {
+			fnPass.addPass(llvm::LowerMatrixIntrinsicsPass(false));
+			SHOW("Added lower matrix intrinsics");
+		}
+		passBuilder.registerFunctionAnalyses(fnAnalysis);
+		SHOW("Creating module pass manager")
+		llvm::ModulePassManager     modPass;
+		llvm::ModuleAnalysisManager modAnalysis;
+		passBuilder.registerModuleAnalyses(modAnalysis);
+		llvm::LoopAnalysisManager  loopAnalysis;
+		llvm::CGSCCAnalysisManager cgsccAnalysis;
+		passBuilder.registerLoopAnalyses(loopAnalysis);
+		passBuilder.registerCGSCCAnalyses(cgsccAnalysis);
+		passBuilder.crossRegisterProxies(loopAnalysis, fnAnalysis, cgsccAnalysis, modAnalysis);
+		SHOW("Adding function pass to module");
+		modPass.addPass(llvm::createModuleToFunctionPassAdaptor(std::move(fnPass)));
+		SHOW("Running module passes");
+		modPass.run(*llvmModule, modAnalysis);
+		SHOW("Creating emit pass");
+		llvm::legacy::PassManager emitPass;
+		if (machine->addPassesToEmitFile(emitPass, stream, nullptr, llvm::CodeGenFileType::ObjectFile)) {
+			ctx->Error("Could not create a pass to emit the object file " + objectFilePath.value().string(), None);
+		}
+		SHOW("Running emit pass");
+		emitPass.run(*llvmModule);
+		stream.flush();
 		isCompiledToObject = true;
 	}
 }

@@ -572,6 +572,8 @@ class Mod final : public Uniq, public EntityOverview {
 
 	std::set<FloatTypeKind> floatKinds;
 
+	bool isMatrixIntrinsicsUsed = false;
+
 	Vec<Pair<Mod*, FileRangePtr>> fsBroughtMentions;
 
 	Vec<ast::Node*> nodes;
@@ -939,6 +941,8 @@ class Mod final : public Uniq, public EntityOverview {
 	                                   Maybe<Identifier> bName = None);
 	void bring_skill(Skill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
 	void bring_generic_skill(GenericSkill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
+
+	void set_matrix_intrinsic_used() { isMatrixIntrinsicsUsed = true; }
 
 	useit fs::path get_resolved_output_path(const String& extension, Ctx* irCtx);
 	useit llvm::Module* get_llvm_module() const;

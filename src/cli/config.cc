@@ -531,25 +531,53 @@ Config::Config(u64 count, const char** args)
 				} else {
 					cli::Error("Expected a valid path for the sysroot after the --sysroot parameter", None);
 				}
+			} else if (arg.find("--cpu=") == 0) {
+				if (arg.length() > String::traits_type::length("--cpu=")) {
+					cpuName = arg.substr(String::traits_type::length("--cpu="));
+				} else {
+					cli::Error("Expected valid name of the target CPU after --cpu=", None);
+				}
+			} else if (String(arg) == "--cpu") {
+				if (hasNext()) {
+					cpuName = (getNext());
+				} else {
+					cli::Error(
+					    "Expected argument after '--cpu' which would be the name of the CPU of the target machine",
+					    None);
+				}
+			} else if (arg.find("--cpu-features=") == 0) {
+				if (arg.length() > String::traits_type::length("--cpu-features=")) {
+					cpuFeatures = arg.substr(String::traits_type::length("--cpu-features="));
+				} else {
+					cli::Error(
+					    "Expected list of CPU features to be enabled after --cpu-features=. It should be a list separated by commas and the features should start with a +",
+					    None);
+				}
+			} else if (arg == "--cpu-features") {
+				if (hasNext()) {
+					cpuFeatures = (getNext());
+				} else {
+					cli::Error(
+					    "Expected argument after '--cpu-features' which would be the list of CPU features to be enabled separated by commas. The features should start with a +",
+					    None);
+				}
 			} else if (arg.find("--clang=") == 0) {
 				if (arg.length() > String::traits_type::length("--clang=")) {
 					clangPath = arg.substr(String::traits_type::length("--clang="));
 					if (not fs::exists(clangPath.value())) {
-						cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
+						cli::Error("The path provided for the clang executable does not exist", None);
 					}
 				} else {
-					cli::Error("Expected valid path after --clang=", None);
+					cli::Error("Expected a path after --clang= for the path of the clang executable to use", None);
 				}
-			} else if (String(arg) == "--clang") {
+			} else if (arg == "--clang") {
 				if (hasNext()) {
-					clangPath = (getNext());
+					clangPath = getNext();
 					if (not fs::exists(clangPath.value())) {
-						cli::Error("Provided path for '--clang' does not exist: " + clangPath.value(), None);
+						cli::Error("The path provided for the clang executable does not exist", None);
 					}
 				} else {
-					cli::Error(
-					    "Expected argument after '--clang' which would be the path to the clang executable to be used",
-					    None);
+					cli::Error("Expected path after '--clang' for the path to the clang executable to be used", None);
 				}
 			} else if (arg.find("--linker=") == 0) {
 				if (arg.length() > String::traits_type::length("--linker=")) {

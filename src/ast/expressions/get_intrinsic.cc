@@ -134,7 +134,8 @@ ir::Value* GetIntrinsic::emit(EmitCtx* ctx) {
 				         ->getValue()
 				         .getRawData(),
 				    ir::VectorKind::fixed, ctx->irCtx);
-				auto mod    = ctx->mod;
+				auto mod = ctx->mod;
+				mod->set_matrix_intrinsic_used();
 				auto intrFn = llvm::Intrinsic::getOrInsertDeclaration(
 				    mod->get_llvm_module(), llvm::Intrinsic::matrix_multiply,
 				    {retTy->get_llvm_type(), oneTy->get_llvm_type(), twoTy->get_llvm_type()});

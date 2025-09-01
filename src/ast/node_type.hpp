@@ -118,6 +118,8 @@ enum class NodeType {
 	DEFINE_TOGGLE_TYPE,
 	PRERUN_CHOICE_INITIALISER,
 	IS_VARIANT,
+	META_REGISTER_READ,
+	META_REGISTER_WRITE,
 };
 
 } // namespace qat::ast

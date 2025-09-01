@@ -31,7 +31,6 @@
 #include "../ast/expressions/error.hpp"
 #include "../ast/expressions/function_call.hpp"
 #include "../ast/expressions/generic_entity.hpp"
-#include "../ast/expressions/get_intrinsic.hpp"
 #include "../ast/expressions/get_poly.hpp"
 #include "../ast/expressions/heap.hpp"
 #include "../ast/expressions/in.hpp"
@@ -55,6 +54,7 @@
 #include "../ast/function.hpp"
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
+#include "../ast/meta/intrinsic.hpp"
 #include "../ast/meta/todo.hpp"
 #include "../ast/method.hpp"
 #include "../ast/mod_info.hpp"
@@ -4539,7 +4539,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error("Expected ] to end the parameter list", RangeAt(i + 1));
 						}
 						auto params = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
-						setCachedExpr(ast::GetIntrinsic::create(params, RangeSpan(start, gEnd.value())), gEnd.value());
+						setCachedExpr(ast::MetaIntrinsic::create(params, RangeSpan(start, gEnd.value())), gEnd.value());
 						i = gEnd.value();
 					} else {
 						add_error("Expected :[ here to start the parameters required to get intrinsics",

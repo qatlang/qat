@@ -125,8 +125,10 @@ class Type : public Uniq {
 	useit bool          is_unsigned() const;
 	useit UnsignedType* as_unsigned() const;
 
-	useit bool          is_underlying_type_integer() const;
-	useit bool          is_underlying_type_unsigned() const;
+	useit bool is_underlying_type_integer() const;
+	useit bool is_underlying_type_unsigned() const;
+	useit bool is_underlying_type_float() const;
+
 	useit IntegerType*  get_underlying_integer_type() const;
 	useit UnsignedType* get_underlying_unsigned_type() const;
 

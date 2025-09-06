@@ -458,6 +458,10 @@ bool Type::is_underlying_type_integer() const {
 	return is_integer() || (is_native_type() && as_native_type()->get_subtype()->is_integer());
 }
 
+bool Type::is_underlying_type_float() const {
+	return is_float() || (is_native_type() && as_native_type()->get_subtype()->is_float());
+}
+
 IntegerType* Type::get_underlying_integer_type() const {
 	if (is_integer()) {
 		return as_integer();

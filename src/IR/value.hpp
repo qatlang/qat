@@ -42,9 +42,7 @@ class Value {
 
 	Value(llvm::Value* _llValue, ir::Type* _type, bool _isVariable);
 
-	useit static Value* get(llvm::Value* ll, ir::Type* type, bool isVar) {
-		return std::construct_at(OwnNormal(Value), ll, type, isVar);
-	}
+	useit static Value* get(llvm::Value* ll, ir::Type* type, bool isVar);
 
 	virtual ~Value() = default;
 
@@ -121,7 +119,7 @@ class Value {
 
 class PrerunValue : public Value {
   public:
-	PrerunValue(llvm::Constant* _llConst, ir::Type* _type) : Value(_llConst, _type, false) {}
+	PrerunValue(llvm::Constant* _llConst, ir::Type* _type) : Value(_llConst, _type, true) {}
 
 	useit static PrerunValue* get(llvm::Constant* ll, ir::Type* type) {
 		return std::construct_at(OwnNormal(PrerunValue), ll, type);

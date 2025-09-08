@@ -16,6 +16,14 @@ Value::Value(llvm::Value* _llvmValue, ir::Type* _type, bool _isVariable)
 	allValues.push_back(this);
 }
 
+Value* Value::get(llvm::Value* ll, ir::Type* type, bool isVar) {
+	if (llvm::isa<llvm::Constant>(ll)) {
+		return ir::PrerunValue::get(llvm::cast<llvm::Constant>(ll), type);
+	} else {
+		return std::construct_at(OwnNormal(Value), ll, type, isVar);
+	}
+}
+
 Vec<Value*> Value::allValues = {};
 
 Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRangePtr fileRange) {

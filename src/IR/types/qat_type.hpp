@@ -87,8 +87,9 @@ class Type : public Uniq {
 	useit String                get_name_for_linking() const;
 
 	useit static Vec<Region*> allRegions();
-	useit bool                is_same(Type* other);
-	useit bool                isCompatible(Type* other);
+
+	useit bool is_same(Type const* other) const;
+	useit bool is_compatible_with(Type const* candidate) const;
 
 	useit virtual bool  is_expanded() const;
 	useit ExpandedType* as_expanded() const;

@@ -240,7 +240,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		for (usize i = 1; i < fnTy->get_argument_count(); i++) {
 			auto fnArgType = fnArgsTy[i]->get_type();
 			auto argType   = argsEmit[i - 1]->get_ir_type();
-			if (not(fnArgType->is_same(argType) || fnArgType->isCompatible(argType) ||
+			if (not(fnArgType->is_compatible_with(argType) ||
 			        (fnArgType->is_ref() && argsEmit[i - 1]->is_ghost_ref() &&
 			         fnArgType->as_ref()->get_subtype()->is_same(argType)) ||
 			        (argType->is_ref() && argType->as_ref()->get_subtype()->is_same(fnArgType)))) {

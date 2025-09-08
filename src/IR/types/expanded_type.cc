@@ -200,14 +200,12 @@ Maybe<ir::Method*> ExpandedType::check_constructor_with_types(Vec<ir::Method*> c
 			bool result = true;
 			for (usize i = 1; i < argTys.size(); i++) {
 				auto* argType = argTys.at(i)->get_type();
-				if (not argType->is_same(types.at(i - 1).second) && not argType->isCompatible(types.at(i - 1).second) &&
+				if (not argType->is_compatible_with(types.at(i - 1).second) &&
 				    (not(types.at(i - 1).first.has_value() && argType->is_ref() &&
 				         (argType->as_ref()->has_variability() ? types.at(i - 1).first.value() : true) &&
-				         (argType->as_ref()->get_subtype()->is_same(types.at(i - 1).second) ||
-				          argType->as_ref()->get_subtype()->isCompatible(types.at(i - 1).second)))) &&
+				         argType->as_ref()->get_subtype()->is_compatible_with(types.at(i - 1).second))) &&
 				    (not(types.at(i - 1).second->is_ref() &&
-				         (types.at(i - 1).second->as_ref()->get_subtype()->is_same(argType) ||
-				          types.at(i - 1).second->as_ref()->get_subtype()->isCompatible(argType))))) {
+				         types.at(i - 1).second->as_ref()->get_subtype()->is_compatible_with(argType)))) {
 					result = false;
 					break;
 				}
@@ -234,11 +232,10 @@ Maybe<ir::Method*> ExpandedType::check_from_convertor(Vec<ir::Method*> const& fr
                                                       ir::Type* candTy) {
 	for (auto* fconv : fromConvs) {
 		auto* argTy = fconv->get_ir_type()->as_function()->get_argument_type_at(1)->get_type();
-		if (argTy->is_same(candTy) || argTy->isCompatible(candTy) ||
+		if (argTy->is_compatible_with(candTy) ||
 		    (isValueVar.has_value() && argTy->is_ref() &&
 		     (argTy->as_ref()->has_variability() ? isValueVar.value() : true) &&
-		     (argTy->as_ref()->get_subtype()->is_same(candTy) ||
-		      argTy->as_ref()->get_subtype()->isCompatible(candTy))) ||
+		     argTy->as_ref()->get_subtype()->is_compatible_with(candTy)) ||
 		    (candTy->is_ref() && candTy->as_ref()->get_subtype()->is_same(argTy))) {
 			return fconv;
 		}

@@ -109,27 +109,7 @@ bool Type::is_type_sized() const { return false; }
 
 Maybe<bool> Type::equality_of(ir::Ctx*, ir::PrerunValue*, ir::PrerunValue*) const { return None; }
 
-bool Type::isCompatible(Type* other) {
-	if (is_ptr() && other->is_ptr()) {
-		if ((as_ptr()->get_subtype()->is_same(other->as_ptr()->get_subtype())) &&
-		    (as_ptr()->get_owner().is_same(other->as_ptr()->get_owner()) || as_ptr()->get_owner().is_of_anonymous() ||
-		     (as_ptr()->get_owner().is_of_any_region() && other->as_ptr()->get_owner().is_of_region())) &&
-		    (as_ptr()->is_subtype_variable() ? other->as_ptr()->is_subtype_variable() : true) &&
-		    (as_ptr()->is_non_nullable() ? other->as_ptr()->is_non_nullable() : true) &&
-		    (as_ptr()->is_multi() == other->as_ptr()->is_multi())) {
-			return true;
-		} else {
-			return is_same(other);
-		}
-	} else if (is_ref() && other->is_ref()) {
-		return (as_ref()->get_subtype()->is_same(other->as_ref()->get_subtype()) &&
-		        (as_ref()->has_variability() ? other->as_ref()->has_variability() : true));
-	} else {
-		return is_same(other);
-	}
-}
-
-bool Type::is_same(Type* other) {
+bool Type::is_same(Type const* other) const {
 	if (type_kind() != other->type_kind()) {
 		if (type_kind() == TypeKind::DEFINITION) {
 			return ((DefinitionType*)this)->get_subtype()->is_same(other);
@@ -313,6 +293,38 @@ bool Type::is_same(Type* other) {
 			}
 		}
 	}
+}
+
+bool Type::is_compatible_with(Type const* candidate) const {
+	if (this->is_same(candidate)) {
+		SHOW("Checking if candidate is same as this type")
+		return true;
+	} else if (this->is_ptr() && candidate->is_ptr()) {
+		SHOW("Target and candidate are pointers")
+		auto targPtr = this->as_ptr();
+		auto candPtr = this->as_ptr();
+		if ((not targPtr->get_subtype()->is_same(candPtr->get_subtype())) ||
+		    (targPtr->is_multi() != candPtr->is_multi()) ||
+		    (targPtr->is_non_nullable() != candPtr->is_non_nullable()) ||
+		    (targPtr->is_subtype_variable() ? candPtr->is_subtype_variable() : true)) {
+			return false;
+		}
+		auto targOwn = targPtr->get_owner();
+		auto candOwn = candPtr->get_owner();
+		if (targOwn.is_of_anonymous() &&
+		    (candOwn.is_of_heap() || candOwn.is_of_any_region() || candOwn.is_of_region() || candOwn.is_of_static())) {
+			return true;
+		} else if (targOwn.is_of_static() && (candOwn.is_of_region() || candOwn.is_of_any_region())) {
+			return true;
+		} else if (targOwn.is_of_any_region() && candOwn.is_of_region()) {
+			return true;
+		}
+		return false;
+	} else if (this->is_ref() && candidate->is_ref() &&
+	           (this->as_ref()->has_variability() ? candidate->as_ref()->has_variability() : true)) {
+		return true;
+	}
+	return false;
 }
 
 bool Type::is_expanded() const { return false; }

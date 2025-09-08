@@ -84,12 +84,10 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 			auto fnArgTy = fnArgsTy[i];
 			SHOW("FnArg type is " << fnArgTy->to_string() << " and arg emit type is "
 			                      << argsEmit.at(i)->get_ir_type()->to_string())
-			if ((not fnArgTy->get_type()->is_same(argsEmit.at(i)->get_ir_type())) &&
-			    (not fnArgTy->get_type()->isCompatible(argsEmit.at(i)->get_ir_type())) &&
-			    (argsEmit.at(i)->get_ir_type()->is_ref()
-			         ? ((not fnArgTy->get_type()->is_same(argsEmit.at(i)->get_ir_type()->as_ref()->get_subtype())) &&
-			            (not fnArgTy->get_type()->isCompatible(argsEmit.at(i)->get_ir_type()->as_ref()->get_subtype())))
-			         : true)) {
+			if ((not fnArgTy->get_type()->is_compatible_with(argsEmit.at(i)->get_ir_type())) &&
+			    (argsEmit.at(i)->get_ir_type()->is_ref() ? (not fnArgTy->get_type()->is_compatible_with(
+			                                                   argsEmit.at(i)->get_ir_type()->as_ref()->get_subtype()))
+			                                             : true)) {
 				ctx->Error(
 				    "Type of this expression is " + ctx->color(argsEmit.at(i)->get_ir_type()->to_string()) +
 				        " which is not compatible with the type " + ctx->color(fnArgTy->get_type()->to_string()) +

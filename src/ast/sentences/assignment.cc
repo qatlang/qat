@@ -41,7 +41,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 			SHOW("Getting IR types")
 			auto* lhsTy = lhsVal->get_ir_type();
 			auto* expTy = expVal->get_ir_type();
-			if (lhsTy->is_same(expTy) || lhsTy->isCompatible(expTy) ||
+			if (lhsTy->is_compatible_with(expTy) ||
 			    (lhsTy->is_ref() &&
 			     lhsTy->as_ref()->get_subtype()->is_same(expTy->is_ref() ? expTy->as_ref()->get_subtype() : expTy)) ||
 			    (expTy->is_ref() &&

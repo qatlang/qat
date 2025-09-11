@@ -120,6 +120,7 @@ enum class NodeType {
 	IS_VARIANT,
 	META_REGISTER_READ,
 	META_REGISTER_WRITE,
+	META_MATH,
 };
 
 } // namespace qat::ast

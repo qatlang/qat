@@ -55,6 +55,8 @@
 #include "../ast/global_declaration.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/meta/intrinsic.hpp"
+#include "../ast/meta/math.hpp"
+#include "../ast/meta/registers.hpp"
 #include "../ast/meta/todo.hpp"
 #include "../ast/method.hpp"
 #include "../ast/mod_info.hpp"
@@ -4530,23 +4532,116 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 			}
 			case TokenType::meta: {
 				auto start = i;
-				if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1) &&
-				    (ValueAt(i + 2) == "intrinsic")) {
-					i = i + 2;
-					if (is_next(TokenType::genericTypeStart, i)) {
-						auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
-						if (not gEnd.has_value()) {
-							add_error("Expected ] to end the parameter list", RangeAt(i + 1));
-						}
-						auto params = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
-						setCachedExpr(ast::MetaIntrinsic::create(params, RangeSpan(start, gEnd.value())), gEnd.value());
-						i = gEnd.value();
-					} else {
-						add_error("Expected :[ here to start the parameters required to get intrinsics",
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Invalid token found after this", RangeAt(i));
+				}
+				if (not is_next(TokenType::identifier, i + 1)) {
+					add_error("Expected an identifier after this", RangeSpan(start, i + 1));
+				}
+				i += 2;
+				if (ValueAt(i) == "intrinsic") {
+					if (not is_next(TokenType::genericTypeStart, i)) {
+						add_error("Expected :[ here to start the generic arguments required to get intrinsics",
 						          RangeSpan(start, i));
 					}
+					auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+					if (not gEnd.has_value()) {
+						add_error("Expected ] to end the parameter list", RangeAt(i + 1));
+					}
+					auto params = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
+					if (params.size() == 0) {
+						add_error("Expected at least one generic argument here, for the ID of the intrinsic",
+						          RangeSpan(start, gEnd.value()));
+					}
+					auto                        name = params[0];
+					Vec<ast::PrerunExpression*> genParams;
+					for (usize j = 1; j < params.size(); j++) {
+						genParams.push_back(params[j]);
+					}
+					i = gEnd.value();
+					if (not is_next(TokenType::parenthesisOpen, i)) {
+						add_error("Expected ( after this to start the list of arguments for this intrinsic call",
+						          RangeSpan(start, i));
+					}
+					auto pEnd = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+					if (not pEnd.has_value()) {
+						add_error("Expected ) to end the list of arguments for this intrinsic call", RangeAt(i + 1));
+					}
+					auto args = do_separated_expressions(preCtx, i + 1, pEnd.value());
+					i         = pEnd.value();
+					setCachedExpr(ast::MetaIntrinsic::create(name, genParams, std::move(args), RangeSpan(start, i)), i);
+					i = pEnd.value();
+				} else if (ast::MetaMath::functionNames.contains(ValueAt(i))) {
+					auto name = IdentifierAt(i);
+					if (not is_next(TokenType::parenthesisOpen, i)) {
+						add_error("Expected ( after this for the meta function call", RangeSpan(start, i));
+					}
+					auto pEnd = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
+					if (not pEnd.has_value()) {
+						add_error("Expected ) to end the list of arguments for the meta function call", RangeAt(i + 1));
+					}
+					auto args = do_separated_expressions(preCtx, i + 1, pEnd.value());
+					i         = pEnd.value();
+					setCachedExpr(ast::MetaMath::create(name, std::move(args), RangeSpan(start, i)), i);
+				} else if ((ValueAt(i) == "read") || (ValueAt(i) == "read_volatile")) {
+					const auto regFn = ValueAt(i);
+					if (not is_next(TokenType::genericTypeStart, i)) {
+						add_error(
+						    "Expected :[ after this to start the list of generic arguments for this meta function call",
+						    RangeSpan(start, i));
+					}
+					auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+					if (not gEnd.has_value()) {
+						add_error("Expected ] to end the list of generic arguments for this meta function call",
+						          RangeAt(i + 1));
+					}
+					auto genArgs = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
+					if (genArgs.size() != 2) {
+						add_error("meta functions for register read expects 2 generic arguments to be provided",
+						          RangeSpan(i + 1, gEnd.value()));
+					}
+					i = gEnd.value();
+					if (not is_next(TokenType::parenthesisOpen, i)) {
+						add_error("Expected ( after this for the meta function call", RangeSpan(start, i));
+					}
+					if (not is_next(TokenType::parenthesisClose, i + 1)) {
+						add_error(
+						    "Expected ) after this for the meta function call, as register reads do not require any arguments",
+						    RangeSpan(start, i + 1));
+					}
+					i += 2;
+					setCachedExpr(ast::MetaRegisterRead::create(regFn == "read_volatile", genArgs[0], genArgs[1],
+					                                            RangeSpan(start, i)),
+					              i);
+				} else if (ValueAt(i) == "write") {
+					if (not is_next(TokenType::genericTypeStart, i)) {
+						add_error(
+						    "Expected :[ after this to start the list of generic arguments for the register write meta function",
+						    RangeSpan(start, i));
+					}
+					auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
+					if (not gEnd.has_value()) {
+						add_error("Expected ] to tned the list of generic arguments for this meta function call",
+						          RangeAt(i + 1));
+					}
+					auto genArgs = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
+					if (genArgs.size() != 2) {
+						add_error("meta function for register write expects 2 generic arguments to be provided");
+					}
+					i = gEnd.value();
+					if (not is_next(TokenType::parenthesisOpen, i)) {
+						add_error("Expected ( after this for the meta function call", RangeSpan(start, i));
+					}
+					auto expRes = do_expression(preCtx, None, i + 1, None);
+					i           = expRes.second;
+					if (not is_next(TokenType::parenthesisClose, i)) {
+						add_error("Expected ) after this for the meta function call", RangeSpan(start, i));
+					}
+					i += 1;
+					setCachedExpr(
+					    ast::MetaRegisterWrite::create(genArgs[0], genArgs[1], expRes.first, RangeSpan(start, i)), i);
 				} else {
-					add_error("Invalid token found here", RangeAt(i));
+					add_error("Invalid identifier found after this", RangeSpan(start, i));
 				}
 				break;
 			}

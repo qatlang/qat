@@ -7,6 +7,10 @@
 
 namespace qat::ast {
 
+const std::set<String> MetaMath::functionNames = {"abs",   "max",  "min",  "powi",  "sqrt",  "sin",  "cos",   "tan",
+                                                  "asin",  "acos", "atan", "sinh",  "cosh",  "tanh", "exp",   "exp2",
+                                                  "exp10", "log",  "log2", "log10", "floor", "ceil", "trunc", "round"};
+
 ir::Value* MetaMath::emit(EmitCtx* ctx) {
 	auto oneArgCheck = [&]() {
 		if (arguments.size() != 1) {

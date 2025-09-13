@@ -6,7 +6,7 @@
 namespace qat::ast {
 
 // NOTE - !!! Update the standard library if this is updated
-enum class IntrinsicID : u32 {
+enum class IntrinsicID : u8 {
 	matrix_multiply = 0,
 	matrix_transpose,
 	matrix_column_major_load,

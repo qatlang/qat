@@ -1,14 +1,15 @@
 #include "./intrinsic.hpp"
 #include "../../IR/logic.hpp"
+#include "../../IR/metalib.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/pointer.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 #include "../../IR/types/void.hpp"
 #include "../../IR/value.hpp"
-#include "llvm/IR/ConstantFold.h"
 
 #include <llvm/Analysis/ConstantFolding.h>
+#include <llvm/IR/ConstantFold.h>
 #include <llvm/IR/Instruction.h>
 #include <llvm/IR/Intrinsics.h>
 
@@ -17,17 +18,11 @@
 namespace qat::ast {
 
 ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
+	auto intrChTy = ir::MetaLib::get_intrinsic_id(ctx->irCtx);
+	if (name->has_type_inferrance()) {
+		name->as_type_inferrable()->set_inference_type(intrChTy);
+	}
 	auto nameIR = name->emit(ctx);
-	if (not ir::StdLib::is_std_lib_found()) {
-		ctx->Error("The standard library could not be found, and hence cannot retrieve intrinsic", fileRange);
-	}
-	if (not ir::StdLib::stdLib->has_choice_type(INTRINSIC_CHOICE_NAME, AccessInfo::get_privileged())) {
-		ctx->Error(
-		    "The choice type " + ctx->color(INTRINSIC_CHOICE_NAME) +
-		        " is not found in the standard library, and hence the ID of the intrinsic could not be determined",
-		    fileRange);
-	}
-	auto intrChTy = ir::StdLib::stdLib->get_choice_type(INTRINSIC_CHOICE_NAME, AccessInfo::get_privileged());
 	if (not nameIR->get_ir_type()->is_same(intrChTy)) {
 		ctx->Error("The first generic parameter should be the ID of the intrinsic of type " +
 		               ctx->color(intrChTy->to_string()),
@@ -36,8 +31,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 	auto nmVal = (u32)(*llvm::cast<llvm::ConstantInt>(nameIR->get_llvm_constant())->getValue().getRawData());
 	if (nmVal == (u32)IntrinsicID::matrix_multiply) {
 		if (genArgs.size() != 2u) {
-			ctx->Error("This intrinsic requires 2 generic arguments to be provided after the Intrinsic ID. "
-			           "The generic arguments are the underlying vectors types of the matrices to be multiplied",
+			ctx->Error("This intrinsic requires 2 generic parameters to be provided after the Intrinsic ID. "
+			           "The generic parameters are the underlying vectors types of the matrices to be multiplied",
 			           fileRange);
 		}
 		auto firstVal  = genArgs[0]->emit(ctx);
@@ -184,7 +179,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 	} else if (nmVal == (u32)IntrinsicID::matrix_transpose) {
 		if (genArgs.size() != 1) {
 			ctx->Error(
-			    "This intrinsic requires 1 generic argument to be provided after the Intrinsic ID. The generic argument"
+			    "This intrinsic requires 1 generic parameter to be provided after the Intrinsic ID. The generic parameter"
 			    " is the underlying vector type of the matrix",
 			    fileRange);
 		}
@@ -196,14 +191,14 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		}
 		auto firstTy = ir::TypeInfo::get_for(firstVal->get_llvm_constant())->type;
 		if (not(firstTy->is_vector() && firstTy->as_vector()->is_fixed())) {
-			ctx->Error("The generic argument should be a fixed vector type, got " + ctx->color(firstTy->to_string()) +
+			ctx->Error("The generic parameter should be a fixed vector type, got " + ctx->color(firstTy->to_string()) +
 			               " instead",
 			           genArgs[0]->fileRange);
 		}
 		if (arguments.size() != 3u) {
 			ctx->Error(
 			    "This intrinsic call expects 3 arguments to be provided. The first argument is the vector value of the matrix"
-			    " to be transposed. The second value is the number of rows and the third argument is the number of columns",
+			    " to be transposed. The second argument is the number of rows and the third argument is the number of columns",
 			    fileRange);
 		}
 		auto secondVal = arguments[1]->emit(ctx);
@@ -257,8 +252,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		    firstTy, true);
 	} else if (nmVal == (u32)IntrinsicID::matrix_column_major_load) {
 		if (genArgs.size() != 1u) {
-			ctx->Error("This intrinsic requires 1 generic argument to be provided, which should be "
-			           "the underlying vector type of the matrix type. But could not find any generic arguments here",
+			ctx->Error("This intrinsic requires 1 generic parameter to be provided, which should be "
+			           "the underlying vector type of the matrix type. But could not find any generic parameters here",
 			           fileRange);
 		}
 		auto firstVal = genArgs[0]->emit(ctx);
@@ -269,7 +264,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		}
 		auto firstTy = ir::TypeInfo::get_for(firstVal->get_llvm_constant())->type;
 		if (not(firstTy->is_vector() && firstTy->as_vector()->is_fixed())) {
-			ctx->Error("The generic argument should be a fixed vector type, but got " +
+			ctx->Error("The generic parameter should be a fixed vector type, but got " +
 			               ctx->color(firstTy->to_string()) + " instead",
 			           genArgs[0]->fileRange);
 		}
@@ -373,8 +368,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		    firstTy, true);
 	} else if (nmVal == (u32)IntrinsicID::matrix_column_major_store) {
 		if (genArgs.size() != 1u) {
-			ctx->Error("This intrinsic requires 1 generic argument to be provided, which should be "
-			           "the underlying vector type of the matrix type. But could not find any generic arguments here",
+			ctx->Error("This intrinsic requires 1 generic parameter to be provided, which should be "
+			           "the underlying vector type of the matrix type. But could not find any generic parameters here",
 			           fileRange);
 		}
 		auto firstVal = genArgs[0]->emit(ctx);
@@ -385,7 +380,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		}
 		auto firstTy = ir::TypeInfo::get_for(firstVal->get_llvm_constant())->type;
 		if (not(firstTy->is_vector() && firstTy->as_vector()->is_fixed())) {
-			ctx->Error("The generic argument should be a fixed vector type, but got " +
+			ctx->Error("The generic parameter should be a fixed vector type, but got " +
 			               ctx->color(firstTy->to_string()) + " instead",
 			           genArgs[0]->fileRange);
 		}

@@ -66,14 +66,15 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 		SHOW("Storing the size of the multi pointer")
 		ctx->irCtx->builder.CreateStore(countRes->get_llvm(),
 		                                ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), llAlloca, 1u));
-		return ir::Value::get(llAlloca, resTy, false);
+		return ir::Value::get(llAlloca, resTy, false)->with_range(fileRange);
 	} else {
 		return ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
 		                          ctx->irCtx->builder.CreateCall(
 		                              mallocFn->getFunctionType(), mallocFn,
 		                              {count ? ctx->irCtx->builder.CreateMul(size, countRes->get_llvm()) : size}),
 		                          resTy->get_llvm_type()),
-		                      resTy, false);
+		                      resTy, false)
+		    ->with_range(fileRange);
 	}
 }
 
@@ -117,12 +118,14 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 	auto* mod      = ctx->mod;
 	auto  freeName = mod->link_internal_dependency(ir::InternalDependency::free, ctx->irCtx, fileRange);
 	auto* freeFn   = mod->get_llvm_module()->getFunction(freeName);
-	ctx->irCtx->builder.CreateCall(
-	    freeFn->getFunctionType(), freeFn,
-	    {ctx->irCtx->builder.CreatePointerCast(
-	        candExp, llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-	                                        ctx->irCtx->dataLayout.getProgramAddressSpace()))});
-	return ir::Value::get(nullptr, ir::VoidType::get(ctx->irCtx->llctx), false);
+	SHOW("Returning emit value of HeapPut")
+	return ir::Value::get(ctx->irCtx->builder.CreateCall(
+	                          freeFn->getFunctionType(), freeFn,
+	                          {ctx->irCtx->builder.CreatePointerCast(
+	                              candExp, llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+	                                                              ctx->irCtx->dataLayout.getProgramAddressSpace()))}),
+	                      ir::VoidType::get(ctx->irCtx->llctx), false)
+	    ->with_range(fileRange);
 }
 
 Json HeapPut::to_json() const {
@@ -237,7 +240,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		SHOW("Storing count into multipointer")
 		ctx->irCtx->builder.CreateStore(countVal->get_llvm(),
 		                                ctx->irCtx->builder.CreateStructGEP(ptrType->get_llvm_type(), resAlloc, 1u));
-		return ir::Value::get(resAlloc, ptrType, false);
+		return ir::Value::get(resAlloc, ptrType, false)->with_range(fileRange);
 	} else {
 		ctx->Error("The number of units to reallocate should be of " +
 		               ctx->color(ir::NativeType::get_usize(ctx->irCtx)->to_string()) + " type",

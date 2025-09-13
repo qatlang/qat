@@ -1,0 +1,23 @@
+#ifndef QAT_IR_METALIB_HPP
+#define QAT_IR_METALIB_HPP
+
+#include "../utils/macros.hpp"
+
+namespace qat::ir {
+
+class Mod;
+class Ctx;
+class ChoiceType;
+
+class MetaLib {
+  public:
+	static Mod* lib;
+
+	static void create(Ctx* irCtx);
+
+	useit static ChoiceType* get_intrinsic_id(Ctx* irCtx);
+};
+
+} // namespace qat::ir
+
+#endif

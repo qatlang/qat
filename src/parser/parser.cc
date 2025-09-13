@@ -174,6 +174,8 @@
 	case TokenType::multiPtrType:                                                                                      \
 	case TokenType::sliceType:
 
+#define META_INTRINSICS_NAME "Intrinsics"
+
 namespace qat::parser {
 
 Parser::Parser(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
@@ -950,6 +952,34 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					}
 				}
 				setCachedPreExp(ast::PrerunDefault::create(None, RangeAt(i)), i);
+				break;
+			}
+			case TokenType::meta: {
+				const auto start = i;
+				if (not is_next(TokenType::colon, i)) {
+					add_error("Expected : after this", RangeAt(i));
+				}
+				i++;
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this", RangeSpan(start, i));
+				}
+				i++;
+				if (ValueAt(i) == META_INTRINSICS_NAME) {
+					setCachedPreExp(ast::TypeWrap::create(
+					                    ast::NamedType::create(
+					                        0, {Identifier::named("meta"), Identifier::named(META_INTRINSICS_NAME)},
+					                        RangeSpan(start, i)),
+					                    false, RangeSpan(start, i)),
+					                i);
+				} else if (ValueAt(i) == "intrinsic") {
+					add_error(
+					    "Cannot use intrinsics in a prerun expression, as they behave similar to normal functions",
+					    RangeSpan(start, i));
+				} else {
+					add_error("Unexpected identifier found here. There is no entity in the meta module named " +
+					              color_error(ValueAt(i)),
+					          RangeAt(i));
+				}
 				break;
 			}
 			case TokenType::from:
@@ -4541,7 +4571,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				i += 2;
 				if (ValueAt(i) == "intrinsic") {
 					if (not is_next(TokenType::genericTypeStart, i)) {
-						add_error("Expected :[ here to start the generic arguments required to get intrinsics",
+						add_error("Expected :[ here to start the generic parameters required to get intrinsics",
 						          RangeSpan(start, i));
 					}
 					auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
@@ -4550,7 +4580,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					}
 					auto params = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
 					if (params.size() == 0) {
-						add_error("Expected at least one generic argument here, for the ID of the intrinsic",
+						add_error("Expected at least one generic parameter here, for the ID of the intrinsic",
 						          RangeSpan(start, gEnd.value()));
 					}
 					auto                        name = params[0];
@@ -4587,17 +4617,17 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					const auto regFn = ValueAt(i);
 					if (not is_next(TokenType::genericTypeStart, i)) {
 						add_error(
-						    "Expected :[ after this to start the list of generic arguments for this meta function call",
+						    "Expected :[ after this to start the list of generic parameters for this meta function call",
 						    RangeSpan(start, i));
 					}
 					auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
 					if (not gEnd.has_value()) {
-						add_error("Expected ] to end the list of generic arguments for this meta function call",
+						add_error("Expected ] to end the list of generic parameters for this meta function call",
 						          RangeAt(i + 1));
 					}
 					auto genArgs = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
 					if (genArgs.size() != 2) {
-						add_error("meta functions for register read expects 2 generic arguments to be provided",
+						add_error("meta functions for register read expects 2 generic parameters to be provided",
 						          RangeSpan(i + 1, gEnd.value()));
 					}
 					i = gEnd.value();
@@ -4616,17 +4646,18 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				} else if (ValueAt(i) == "write") {
 					if (not is_next(TokenType::genericTypeStart, i)) {
 						add_error(
-						    "Expected :[ after this to start the list of generic arguments for the register write meta function",
+						    "Expected :[ after this to start the list of generic parameters for the register write meta function",
 						    RangeSpan(start, i));
 					}
 					auto gEnd = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i + 1);
 					if (not gEnd.has_value()) {
-						add_error("Expected ] to tned the list of generic arguments for this meta function call",
+						add_error("Expected ] to tned the list of generic parameters for this meta function call",
 						          RangeAt(i + 1));
 					}
 					auto genArgs = do_separated_prerun_expressions(preCtx, i + 1, gEnd.value());
 					if (genArgs.size() != 2) {
-						add_error("meta function for register write expects 2 generic arguments to be provided");
+						add_error("meta function for register write expects 2 generic parameters to be provided",
+						          RangeSpan(start, gEnd.value()));
 					}
 					i = gEnd.value();
 					if (not is_next(TokenType::parenthesisOpen, i)) {
@@ -4640,6 +4671,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					i += 1;
 					setCachedExpr(
 					    ast::MetaRegisterWrite::create(genArgs[0], genArgs[1], expRes.first, RangeSpan(start, i)), i);
+				} else if (ValueAt(i) == META_INTRINSICS_NAME) {
+					setCachedType(ast::NamedType::create(
+					    0u, {Identifier::named("meta"), Identifier::named(META_INTRINSICS_NAME)}, RangeSpan(start, i)));
 				} else {
 					add_error("Invalid identifier found after this", RangeSpan(start, i));
 				}

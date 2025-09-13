@@ -8,6 +8,7 @@ add_library(QAT_IR STATIC
 	function.cc
 	global_entity.cc
 	link_names.cc
+	metalib.cc
 	method.cc
 	prerun_function.cc
 	qat_module.cc

@@ -1,4 +1,5 @@
 #include "./named.hpp"
+#include "../../IR/metalib.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/choice.hpp"
 #include "../../IR/types/region.hpp"
@@ -26,6 +27,10 @@ void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
+			} else if (i == 0 && split.value == "meta") {
+				ir::MetaLib::create(ctx->irCtx);
+				mod = ir::MetaLib::lib;
+				break;
 			} else if (relative == 0 && i == 0 && mod->has_entity_with_name(split.value)) {
 				ent->addDependency(ir::EntityDependency{mod->get_entity(split.value),
 				                                        expect.value_or(ir::DependType::complete), phase});
@@ -128,12 +133,19 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		}
 		SHOW("Checked generic parameters")
 	}
+	bool isMetaLib = false;
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
-				mod = ir::StdLib::stdLib;
-				continue;
+			if (i == 0) {
+				if (split.value == "std" && ir::StdLib::is_std_lib_found()) {
+					mod = ir::StdLib::stdLib;
+					continue;
+				} else if (split.value == "meta") {
+					ir::MetaLib::create(ctx->irCtx);
+					isMetaLib = true;
+					continue;
+				}
 			}
 			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
@@ -159,6 +171,9 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	//   SHOW("Module name is " << mod->get_file_path())
 	//   SHOW("Module is " << mod->get_name() << " at file: " << mod->get_file_path()
 	//                     << " has submods: " << (mod->has_submodules() ? "true" : "false"))
+	if (isMetaLib && (names.size() == 2u) && entityName.value == "Intrinsics") {
+		return ir::MetaLib::get_intrinsic_id(ctx->irCtx);
+	}
 	if (mod->has_opaque_type(entityName.value, reqInfo) || mod->has_brought_opaque_type(entityName.value, reqInfo) ||
 	    mod->has_opaque_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has opaque")

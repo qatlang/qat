@@ -290,12 +290,14 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			if (inst->is_prerun_value()) {
 				return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(
 				                                instType->as_struct()->get_index_of(name.value).value()),
-				                            mem->type);
+				                            mem->type)
+				    ->with_range(fileRange);
 			} else if (inst->is_value()) {
 				return ir::Value::get(
-				    ctx->irCtx->builder.CreateExtractValue(
-				        inst->get_llvm(), {(u32)instType->as_struct()->get_index_of(name.value).value()}),
-				    instType->as_struct()->get_type_of_field(name.value), true);
+				           ctx->irCtx->builder.CreateExtractValue(
+				               inst->get_llvm(), {(u32)instType->as_struct()->get_index_of(name.value).value()}),
+				           instType->as_struct()->get_type_of_field(name.value), true)
+				    ->with_range(fileRange);
 			} else {
 				auto llVal =
 				    ctx->irCtx->builder.CreateStructGEP(instType->as_struct()->get_llvm_type(), inst->get_llvm(),
@@ -304,7 +306,8 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				if (memValTy->is_ref()) {
 					llVal = ctx->irCtx->builder.CreateLoad(memValTy->get_llvm_type(), llVal);
 				}
-				return ir::Value::get(llVal, ir::RefType::get(isVar, memValTy, ctx->irCtx), false);
+				return ir::Value::get(llVal, ir::RefType::get(isVar, memValTy, ctx->irCtx), false)
+				    ->with_range(fileRange);
 			}
 		} else if (eTy->has_normal_method(name.value) || eTy->has_variation(name.value)) {
 			ctx->Error("Extracting pointers to normal and variation methods are not supported", fileRange);

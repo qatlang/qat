@@ -2128,7 +2128,7 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 				i++;
 				break;
 			}
-			case TokenType::Public: {
+			case TokenType::pub: {
 				if (hasVisibSpec()) {
 					add_error("Visibility is already provided before this, found another visibility specifier here.",
 					          RangeAt(i));
@@ -2343,7 +2343,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				addComment({i, token.value, token.fileRange});
 				break;
 			}
-			case TokenType::Public: {
+			case TokenType::pub: {
 				auto kindRes = do_visibility_kind(i);
 				setVisibility(kindRes.first);
 				i = kindRes.second;
@@ -3189,7 +3189,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 	for (usize i = from + 1; i < upto; i++) {
 		Token& token = tokens->at(i);
 		switch (token.type) {
-			case TokenType::Public: {
+			case TokenType::pub: {
 				if (visibility.has_value()) {
 					add_error("There is already a visibility specifier before this, that is unused", RangeAt(i));
 				}

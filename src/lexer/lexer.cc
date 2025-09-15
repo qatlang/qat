@@ -338,25 +338,7 @@ Token Lexer::tokeniser() {
 		}
 		case '?': {
 			read();
-			if (current == '?') {
-				read();
-				if (current == '=') {
-					read();
-					return Token::normal(TokenType::assignToNullPointer, this->get_position(3));
-				} else {
-					return Token::normal(TokenType::isNullPointer, this->get_position(2));
-				}
-			} else if (current == '!') {
-				read();
-				if (current == '=') {
-					read();
-					return Token::normal(TokenType::assignToNonNullPointer, this->get_position(3));
-				} else {
-					return Token::normal(TokenType::isNotNullPointer, this->get_position(2));
-				}
-			} else {
-				return Token::normal(TokenType::questionMark, this->get_position(1));
-			}
+			return Token::normal(TokenType::questionMark, this->get_position(1));
 		}
 		case '+':
 		case '-':
@@ -1215,7 +1197,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 
 	Check_Normal_Keyword("null", null);
 	else Check_Normal_Keyword("bring", bring);
-	else Check_Normal_Keyword("pub", Public);
+	else Check_Normal_Keyword("pub", pub);
 	else Check_Normal_Keyword("let", let);
 	else Check_Normal_Keyword("self", selfWord);
 	else Check_Normal_Keyword("void", voidType);

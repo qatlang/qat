@@ -1,15 +1,17 @@
 #ifndef QAT_LEXER_TOKEN_TYPE_HPP
 #define QAT_LEXER_TOKEN_TYPE_HPP
 
+#include "../utils/helpers.hpp"
+
 namespace qat::lexer {
 
-enum class TokenType {
-	null  = -1,
-	FALSE = 0,
-	TRUE  = 1,
+enum class TokenType : u8 {
+	null,
+	FALSE,
+	TRUE,
 	startOfFile,
 	give,
-	Public,
+	pub,
 	stop,
 	voidType,
 	ptrType,
@@ -56,7 +58,6 @@ enum class TokenType {
 	endOfFile,
 	packed,
 	var,
-	obtainPointer,
 	givenTypeSeparator,
 	Operator,
 	binaryOperator,
@@ -72,10 +73,6 @@ enum class TokenType {
 	genericTypeEnd,
 	Await,
 	semiColon,
-	isNullPointer,
-	isNotNullPointer,
-	assignToNullPointer,
-	assignToNonNullPointer,
 	super,
 	variadic,
 	Break,

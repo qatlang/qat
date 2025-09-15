@@ -11,6 +11,10 @@ enum class IntrinsicID : u8 {
 	matrix_transpose,
 	matrix_column_major_load,
 	matrix_column_major_store,
+	read_cycle_counter,
+	read_steady_counter,
+	give_address,
+	caller_give_address,
 };
 
 class MetaIntrinsic final : public Expression {

@@ -28,8 +28,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		               ctx->color(intrChTy->to_string()),
 		           genArgs[0]->fileRange);
 	}
-	auto nmVal = (u32)(*llvm::cast<llvm::ConstantInt>(nameIR->get_llvm_constant())->getValue().getRawData());
-	if (nmVal == (u32)IntrinsicID::matrix_multiply) {
+	auto nmVal = (IntrinsicID)(*llvm::cast<llvm::ConstantInt>(nameIR->get_llvm_constant())->getValue().getRawData());
+	if (nmVal == IntrinsicID::matrix_multiply) {
 		if (genArgs.size() != 2u) {
 			ctx->Error("This intrinsic requires 2 generic parameters to be provided after the Intrinsic ID. "
 			           "The generic parameters are the underlying vectors types of the matrices to be multiplied",
@@ -176,7 +176,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		                                   {firstArg->get_llvm(), secondArg->get_llvm(), thirdVal->get_llvm(),
 		                                    fourthVal->get_llvm(), fifthVal->get_llvm()}),
 		    retTy, true);
-	} else if (nmVal == (u32)IntrinsicID::matrix_transpose) {
+	} else if (nmVal == IntrinsicID::matrix_transpose) {
 		if (genArgs.size() != 1) {
 			ctx->Error(
 			    "This intrinsic requires 1 generic parameter to be provided after the Intrinsic ID. The generic parameter"
@@ -250,7 +250,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		    ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn,
 		                                   {argVal->get_llvm(), secondVal->get_llvm(), thirdVal->get_llvm()}),
 		    firstTy, true);
-	} else if (nmVal == (u32)IntrinsicID::matrix_column_major_load) {
+	} else if (nmVal == IntrinsicID::matrix_column_major_load) {
 		if (genArgs.size() != 1u) {
 			ctx->Error("This intrinsic requires 1 generic parameter to be provided, which should be "
 			           "the underlying vector type of the matrix type. But could not find any generic parameters here",
@@ -366,7 +366,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		                                   {ptrVal->get_llvm(), strideVal->get_llvm(), volVal->get_llvm(),
 		                                    rowVal->get_llvm(), colVal->get_llvm()}),
 		    firstTy, true);
-	} else if (nmVal == (u32)IntrinsicID::matrix_column_major_store) {
+	} else if (nmVal == IntrinsicID::matrix_column_major_store) {
 		if (genArgs.size() != 1u) {
 			ctx->Error("This intrinsic requires 1 generic parameter to be provided, which should be "
 			           "the underlying vector type of the matrix type. But could not find any generic parameters here",
@@ -491,6 +491,73 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		                                   {vecVal->get_llvm(), ptrVal->get_llvm(), strideVal->get_llvm(),
 		                                    volVal->get_llvm(), rowVal->get_llvm(), colVal->get_llvm()}),
 		    ir::VoidType::get(ctx->irCtx->llctx), true);
+	} else if (nmVal == IntrinsicID::read_cycle_counter) {
+		if (not genArgs.empty()) {
+			ctx->Error("This intrinsic does not require any generic parameters to be provided after the intrinsic ID",
+			           fileRange);
+		}
+		if (not arguments.empty()) {
+			ctx->Error("This intrinsic call does not require any arguments to be provided", fileRange);
+		}
+		auto intrFn =
+		    llvm::Intrinsic::getOrInsertDeclaration(ctx->mod->get_llvm_module(), llvm::Intrinsic::readcyclecounter, {});
+		return ir::Value::get(ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn, {}),
+		                      ir::UnsignedType::create(64u, ctx->irCtx), true);
+	} else if (nmVal == IntrinsicID::read_steady_counter) {
+		if (not genArgs.empty()) {
+			ctx->Error("This intrinsic does not require any generic parameters to be provided after the intrinsic ID",
+			           fileRange);
+		}
+		if (not arguments.empty()) {
+			ctx->Error("This intrinsic call does not require any arguments to be provided", fileRange);
+		}
+		auto intrFn = llvm::Intrinsic::getOrInsertDeclaration(ctx->mod->get_llvm_module(),
+		                                                      llvm::Intrinsic::readsteadycounter, {});
+		return ir::Value::get(ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn, {}),
+		                      ir::UnsignedType::create(64u, ctx->irCtx), true);
+	} else if (nmVal == IntrinsicID::give_address) {
+		if (not genArgs.empty()) {
+			ctx->Error("This intrinsic does not require any generic parameters to be provided after the Intrinsic ID",
+			           fileRange);
+		}
+		if (not arguments.empty()) {
+			ctx->Error("This intrinsic call does not require any arguments to be provided", fileRange);
+		}
+		if (not ctx->has_fn()) {
+			ctx->Error("This intrinsic can only be used within a function", fileRange);
+		}
+		if (ctx->fn->get_ir_type()->as_function()->get_return_type()->get_type()->is_void()) {
+			ctx->irCtx->Warning("The current function has a given type of " + ctx->color("void") +
+			                        ", so this intrinsic will always return a " + ctx->color("null") + " pointer",
+			                    fileRange);
+		}
+		auto intrFn =
+		    llvm::Intrinsic::getOrInsertDeclaration(ctx->mod->get_llvm_module(), llvm::Intrinsic::returnaddress, {});
+		return ir::Value::get(
+		    ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn,
+		                                   {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 0u)}),
+		    ir::PtrType::get(true, ir::VoidType::get(ctx->irCtx->llctx), false, ir::PtrOwner::of_anonymous(), false,
+		                     ctx->irCtx),
+		    false);
+	} else if (nmVal == IntrinsicID::caller_give_address) {
+		if (not genArgs.empty()) {
+			ctx->Error("This intrinsic does not require any generic parameters to be provided after the Intrinsic ID",
+			           fileRange);
+		}
+		if (not arguments.empty()) {
+			ctx->Error("This intrinsic call does not require any arguments to be provided", fileRange);
+		}
+		if (not ctx->has_fn()) {
+			ctx->Error("This intrinsic can only be used within a function", fileRange);
+		}
+		auto intrFn =
+		    llvm::Intrinsic::getOrInsertDeclaration(ctx->mod->get_llvm_module(), llvm::Intrinsic::returnaddress, {});
+		return ir::Value::get(
+		    ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn,
+		                                   {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 1u)}),
+		    ir::PtrType::get(true, ir::VoidType::get(ctx->irCtx->llctx), false, ir::PtrOwner::of_anonymous(), false,
+		                     ctx->irCtx),
+		    false);
 	} else {
 		ctx->Error("Unknown intrinsic found here", name->fileRange);
 	}

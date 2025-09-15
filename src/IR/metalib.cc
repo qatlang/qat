@@ -27,6 +27,10 @@ ChoiceType* MetaLib::get_intrinsic_id(Ctx* irCtx) {
 	                              {Identifier::named("matrix_transpose")},
 	                              {Identifier::named("matrix_column_major_load")},
 	                              {Identifier::named("matrix_column_major_store")},
+	                              {Identifier::named("read_cycle_counter")},
+	                              {Identifier::named("read_steady_counter")},
+	                              {Identifier::named("give_address")},
+	                              {Identifier::named("caller_give_address")},
 	                          },
 	                          None, ir::UnsignedType::create(sizeof(ast::IntrinsicID), irCtx), true, None,
 	                          VisibilityInfo::pub(), irCtx, FileRange::null, None);

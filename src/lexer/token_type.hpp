@@ -118,6 +118,7 @@ enum class TokenType : u8 {
 	byteLiteral,
 	polymorph,
 	toggle,
+	of,
 };
 
 } // namespace qat::lexer

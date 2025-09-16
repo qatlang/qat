@@ -31,6 +31,7 @@ ChoiceType* MetaLib::get_intrinsic_id(Ctx* irCtx) {
 	                              {Identifier::named("read_steady_counter")},
 	                              {Identifier::named("give_address")},
 	                              {Identifier::named("caller_give_address")},
+	                              {Identifier::named("thread_pointer")},
 	                          },
 	                          None, ir::UnsignedType::create(sizeof(ast::IntrinsicID), irCtx), true, None,
 	                          VisibilityInfo::pub(), irCtx, FileRange::null, None);

@@ -15,6 +15,7 @@ enum class IntrinsicID : u8 {
 	read_steady_counter,
 	give_address,
 	caller_give_address,
+	thread_pointer,
 };
 
 class MetaIntrinsic final : public Expression {

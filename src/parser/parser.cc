@@ -5627,16 +5627,90 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							}
 							i++;
 						}
+						bool foundSeparator = false;
+						if (is_next(TokenType::separator, i)) {
+							foundSeparator = true;
+							i++;
+						}
+						Maybe<ast::AddressSpace> addressSpace;
+						if (foundSeparator) {
+							if (is_next(TokenType::heap, i)) {
+								ptrOwner = ast::PtrOwner::of_heap(RangeAt(i + 1));
+								i++;
+							} else if (is_next(TokenType::Static, i)) {
+								ptrOwner = ast::PtrOwner::of_static(RangeAt(i + 1));
+								i++;
+							} else if (is_next(TokenType::own, i)) {
+								ptrOwner = ast::PtrOwner::of_own(RangeAt(i + 1));
+								i++;
+							} else if (is_next(TokenType::selfInstance, i)) {
+								ptrOwner = ast::PtrOwner::of_self_instance(RangeAt(i + 1));
+								i++;
+							} else if (is_next(TokenType::region, i)) {
+								const auto oStart = i + 1;
+								if (is_next(TokenType::parenthesisOpen, i + 1)) {
+									const auto pStart = i + 2;
+									auto       ownTy  = do_type(preCtx, i + 2, None);
+									i                 = ownTy.second;
+									if (not is_next(TokenType::parenthesisClose, i)) {
+										add_error("Expected ) after this", RangeSpan(pStart, i));
+									}
+									i++;
+									ptrOwner = ast::PtrOwner::of_region_type(ownTy.first, RangeSpan(oStart, i));
+								} else {
+									ptrOwner = ast::PtrOwner::of_any_region(RangeAt(i + 1));
+									i++;
+								}
+							}
+							if (ptrOwner.has_value()) {
+								foundSeparator = false;
+								if (is_next(TokenType::separator, i)) {
+									foundSeparator = true;
+									i++;
+								}
+							}
+							if (foundSeparator) {
+								if (is_next(TokenType::of, i)) {
+									const auto oStart = i + 1;
+									if (is_next(TokenType::colon, i + 1) && is_next(TokenType::identifier, i + 2)) {
+										i += 3;
+										addressSpace = ast::AddressSpace{
+										    .name      = IdentifierAt(i),
+										    .value     = nullptr,
+										    .fileRange = RangeSpan(oStart, i),
+										};
+									} else if (is_next(TokenType::parenthesisOpen, i)) {
+										i++;
+										auto valRes = do_prerun_expression(preCtx, i, None);
+										i           = valRes.second;
+										if (not is_next(TokenType::parenthesisClose, i)) {
+											add_error("Expected ) after this", RangeSpan(oStart, i));
+										}
+										i++;
+										addressSpace = ast::AddressSpace{
+										    .name      = Identifier::named(""),
+										    .value     = valRes.first,
+										    .fileRange = RangeSpan(oStart, i),
+										};
+									} else {
+										add_error("Invalid address-space specification", RangeAt(i + 1));
+									}
+								} else if (ptrOwner.has_value()) {
+									add_error("Expected the address-space specification after this", RangeAt(i));
+								}
+							}
+						}
 						if (not is_next(TokenType::genericTypeEnd, i)) {
 							add_error("Expected ] after this to end the polymorph specification",
 							          RangeSpan(specStart, i));
 						}
 						i++;
 						if (not ptrOwner.has_value() && isPtrPoly) {
-							ptrOwner = ast::PtrOwner::of_anonymous(RangeSpan(start, i));
+							ptrOwner = ast::PtrOwner::of_none(RangeSpan(start, i));
 						}
 						setCachedExpr(ast::GetPolymorph::create(exp, isVar, std::move(typeRange), std::move(skillSpec),
-						                                        std::move(ptrOwner), RangeSpan(start, i)),
+						                                        std::move(ptrOwner), std::move(addressSpace),
+						                                        RangeSpan(start, i)),
 						              i);
 						break;
 					} else if ((is_next(TokenType::var, i) && is_next(TokenType::colon, i + 1) &&

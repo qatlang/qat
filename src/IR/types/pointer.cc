@@ -64,43 +64,63 @@ String PtrOwner::to_string() const {
 	}
 }
 
+u32 AddressSpace::get_number(ir::Ctx* irCtx) const {
+	if (name.empty()) {
+		return value;
+	}
+	if (name == "global") {
+		return irCtx->dataLayout.getDefaultGlobalsAddressSpace();
+	} else if (name == "program") {
+		return irCtx->dataLayout.getProgramAddressSpace();
+	}
+	return 0;
+}
+
 PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
-                 ir::Ctx* irCtx)
-    : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable) {
+                 Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx)
+    : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable),
+      addressSpace(std::move(_addressSpace)) {
 	if (_hasMulti) {
 		linkingName = (nonNullable ? "qat'multi![" : "qat'multi:[") + String(isSubtypeVar ? "var " : "") +
-		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
+		              subType->get_name_for_linking() + (owner.is_none() ? "" : ",") + owner.to_string() +
+		              (addressSpace.has_value() ? ("," + addressSpace.value().to_string()) : "") + "]";
 		if (llvm::StructType::getTypeByName(irCtx->llctx, linkingName)) {
 			llvmType = llvm::StructType::getTypeByName(irCtx->llctx, linkingName);
 		} else {
 			llvmType = llvm::StructType::create(
 			    {llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-			                            irCtx->dataLayout.getProgramAddressSpace()),
+			                            addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
+			                                                     : irCtx->dataLayout.getProgramAddressSpace()),
 			     llvm::Type::getIntNTy(irCtx->llctx,
 			                           irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()))},
 			    linkingName);
 		}
 	} else {
 		linkingName = (nonNullable ? "qat'ptr![" : "qat'ptr:[") + String(isSubtypeVar ? "var " : "") +
-		              subType->get_name_for_linking() + (owner.is_of_anonymous() ? "" : ",") + owner.to_string() + "]";
-		llvmType =
-		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace());
+		              subType->get_name_for_linking() + (owner.is_none() ? "" : ",") + owner.to_string() + "]";
+		llvmType = llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
+		                                  addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
+		                                                           : irCtx->dataLayout.getProgramAddressSpace());
 	}
 }
 
-PtrType* PtrType::get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
-                      ir::Ctx* irCtx) {
+PtrType* PtrType::get(bool isSubtypeVariable, Type* type, bool nonNullable, PtrOwner owner, bool hasMulti,
+                      Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->is_ptr()) {
-			if (typ->as_ptr()->get_subtype()->is_same(_type) &&
-			    (typ->as_ptr()->is_subtype_variable() == _isSubtypeVariable) &&
-			    typ->as_ptr()->get_owner().is_same(_owner) && (typ->as_ptr()->is_multi() == _hasMulti) &&
-			    (typ->as_ptr()->nonNullable == _nonNullable)) {
+			if (typ->as_ptr()->get_subtype()->is_same(type) &&
+			    (typ->as_ptr()->is_subtype_variable() == isSubtypeVariable) &&
+			    typ->as_ptr()->get_owner().is_same(owner) && (typ->as_ptr()->is_multi() == hasMulti) &&
+			    (typ->as_ptr()->nonNullable == nonNullable) &&
+			    (typ->as_ptr()->get_address_space().has_value() == addressSpace.has_value()) &&
+			    (addressSpace.has_value() ? (typ->as_ptr()->get_address_space().value().is_same(addressSpace.value()))
+			                              : true)) {
 				return typ->as_ptr();
 			}
 		}
 	}
-	return std::construct_at(OwnNormal(PtrType), _isSubtypeVariable, _type, _nonNullable, _owner, _hasMulti, irCtx);
+	return std::construct_at(OwnNormal(PtrType), isSubtypeVariable, type, nonNullable, owner, hasMulti,
+	                         std::move(addressSpace), irCtx);
 }
 
 bool PtrType::is_subtype_variable() const { return isSubtypeVar; }
@@ -112,13 +132,7 @@ bool PtrType::has_prerun_default_value() const { return not nonNullable; }
 PrerunValue* PtrType::get_prerun_default_value(ir::Ctx* irCtx) {
 	if (has_prerun_default_value()) {
 		if (is_multi()) {
-			return ir::PrerunValue::get(
-			    llvm::ConstantStruct::get(
-			        llvm::cast<llvm::StructType>(get_llvm_type()),
-			        {llvm::ConstantPointerNull::get(llvm::PointerType::get(
-			            get_subtype()->is_void() ? llvm::Type::getInt8Ty(irCtx->llctx) : get_subtype()->get_llvm_type(),
-			            irCtx->dataLayout.getProgramAddressSpace()))}),
-			    this);
+			return ir::PrerunValue::get(llvm::ConstantAggregateZero::get(llvmType), this);
 		} else {
 			return ir::PrerunValue::get(llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(get_llvm_type())),
 			                            this);
@@ -141,7 +155,7 @@ bool PtrType::is_non_nullable() const { return nonNullable; }
 
 Type* PtrType::get_subtype() const { return subType; }
 
-u32 PtrType::get_address_space() const { return llvm::cast<llvm::PointerType>(llvmType)->getAddressSpace(); }
+Maybe<AddressSpace> const& PtrType::get_address_space() const { return addressSpace; }
 
 PtrOwner PtrType::get_owner() const { return owner; }
 
@@ -149,7 +163,7 @@ TypeKind PtrType::type_kind() const { return TypeKind::POINTER; }
 
 String PtrType::to_string() const {
 	return String(is_multi() ? (nonNullable ? "multi![" : "multi:[") : (nonNullable ? "ptr![" : "ptr:[")) +
-	       String(is_subtype_variable() ? "var " : "") + subType->to_string() + (owner.is_of_anonymous() ? "" : " ") +
+	       String(is_subtype_variable() ? "var " : "") + subType->to_string() + (owner.is_none() ? "" : " ") +
 	       owner.to_string() + "]";
 }
 

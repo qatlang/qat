@@ -58,24 +58,47 @@ class PtrOwner {
 	useit String to_string() const;
 };
 
+struct AddressSpace {
+	String name;
+	u32    value;
+
+	useit static AddressSpace from_value(u32 _value) { return AddressSpace{.name = "", .value = _value}; }
+
+	useit static AddressSpace from_name(String _name) { return AddressSpace{.name = std::move(_name), .value = 0}; }
+
+	useit bool is_same(AddressSpace const& other) const { return (name == other.name) && (value == other.value); }
+
+	useit String to_string() const {
+		if (name.empty()) {
+			return "of(" + std::to_string(value) + ")";
+		} else {
+			return "of:" + name;
+		}
+	}
+
+	useit u32 get_number(ir::Ctx* irCtx) const;
+};
+
 class PtrType : public Type {
   private:
-	Type*    subType;
-	bool     isSubtypeVar;
-	PtrOwner owner;
-	bool     hasMulti;
-	bool     nonNullable;
+	Type*               subType;
+	bool                isSubtypeVar;
+	PtrOwner            owner;
+	bool                hasMulti;
+	bool                nonNullable;
+	Maybe<AddressSpace> addressSpace;
 
   public:
-	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, PtrOwner _owner, bool _hasMulti, ir::Ctx* irCtx);
+	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, PtrOwner _owner, bool _hasMulti,
+	        Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx);
 
 	useit static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
-	                          ir::Ctx* irCtx);
+	                          Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
 	useit Type*    get_subtype() const;
 	useit PtrOwner get_owner() const;
 
-	useit u32 get_address_space() const;
+	useit Maybe<AddressSpace> const& get_address_space() const;
 
 	useit bool is_subtype_variable() const;
 	useit bool is_multi() const;

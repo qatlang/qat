@@ -8,11 +8,13 @@
 
 namespace qat::ir {
 
-Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner, ir::Ctx* ctx)
-    : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)) {
-	auto objPtrTy    = ir::PtrType::get(isVar, ir::UnsignedType::create(8u, ctx), true,
-	                                    owner.value_or(PtrOwner::of_anonymous()), false, ctx);
-	//auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
+Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner,
+                     Maybe<ir::AddressSpace> _addressSpace, ir::Ctx* ctx)
+    : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
+      addressSpace(std::move(_addressSpace)) {
+	auto objPtrTy = ir::PtrType::get(isVar, ir::UnsignedType::create(8u, ctx), true,
+	                                 owner.value_or(PtrOwner::of_none()), false, addressSpace, ctx);
+	// auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
 	auto globalPtrTy = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 
 	Vec<llvm::Type*> subTys = {objPtrTy->get_llvm_type()};
@@ -40,7 +42,8 @@ Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrO
 	llvmType = llvm::StructType::create(subTys, linkingName, false);
 }
 
-Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<PtrOwner> owner, ir::Ctx* ctx) {
+Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<PtrOwner> owner,
+                             Maybe<AddressSpace> addressSpace, ir::Ctx* ctx) {
 	std::sort(skills.begin(), skills.end(), [](Skill* first, Skill* second) -> bool {
 		return utils::bytewise_comparison(first->get_full_name(), second->get_full_name());
 	});
@@ -70,7 +73,8 @@ Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe
 			}
 		}
 	}
-	return std::construct_at(OwnNormal(Polymorph), isTyped, isVar, std::move(skills), std::move(owner), ctx);
+	return std::construct_at(OwnNormal(Polymorph), isTyped, isVar, std::move(skills), std::move(owner),
+	                         std::move(addressSpace), ctx);
 }
 
 String Polymorph::to_string() const {
@@ -81,9 +85,13 @@ String Polymorph::to_string() const {
 			skillStr += " + ";
 		}
 	}
-	if (owner.has_value() && not owner.value().is_of_anonymous()) {
+	if (owner.has_value() && not owner.value().is_none()) {
 		skillStr += ", ";
 		skillStr += owner.value().to_string();
+	}
+	if (addressSpace.has_value()) {
+		skillStr += ", ";
+		skillStr += addressSpace.value().to_string();
 	}
 	return String(isTyped ? (owner.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
 	                      : (owner.has_value() ? "poly:ptr:[" : "poly:[")) +

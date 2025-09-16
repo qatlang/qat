@@ -592,8 +592,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 		if (mFn->get_method_type() == MethodType::destructor) {
 			for (usize i = 0; i < cTy->get_members().size(); i++) {
 				auto& mem = cTy->get_members().at(i);
-				if (mem->type->is_ptr() && mem->type->as_ptr()->get_owner().is_of_type() &&
-				    (mem->type->as_ptr()->get_owner().owner_as_type()->get_id() == mem->type->get_id())) {
+				if (mem->type->is_ptr() && mem->type->as_ptr()->get_owner().is_of_parent_instance()) {
 					auto* ptrTy  = mem->type->as_ptr();
 					auto* memPtr = irCtx->builder.CreateStructGEP(
 					    ptrTy->get_llvm_type(),

@@ -8,20 +8,20 @@
 namespace qat::ir {
 
 FunctionType* Internal::printf_signature(Ctx* irCtx) {
-	return FunctionType::create(
-	    ReturnType::get(NativeType::get_int(irCtx)),
-	    {ArgumentType::create_normal(NativeType::get_cstr(irCtx), None, false), ArgumentType::create_variadic(None)},
-	    irCtx->llctx);
+	return FunctionType::create(ReturnType::get(NativeType::get_int(irCtx)),
+	                            {ArgumentType::create_normal(NativeType::get_bytestring(None, irCtx), None, false),
+	                             ArgumentType::create_variadic(None)},
+	                            irCtx->llctx);
 }
 
 FunctionType* Internal::malloc_signature(Ctx* irCtx) {
-	return FunctionType::create(
-	    ReturnType::get(PtrType::get(true, VoidType::get(irCtx->llctx), false, PtrOwner::of_anonymous(), false, irCtx)),
-	    {ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)}, irCtx->llctx);
+	return FunctionType::create(ReturnType::get(PtrType::get(true, VoidType::get(irCtx->llctx), false,
+	                                                         PtrOwner::of_none(), false, None, irCtx)),
+	                            {ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)}, irCtx->llctx);
 }
 
 FunctionType* Internal::realloc_signature(Ctx* irCtx) {
-	auto ptrTy = PtrType::get(true, VoidType::get(irCtx->llctx), false, PtrOwner::of_anonymous(), false, irCtx);
+	auto ptrTy = PtrType::get(true, VoidType::get(irCtx->llctx), false, PtrOwner::of_none(), false, None, irCtx);
 	return FunctionType::create(ReturnType::get(ptrTy),
 	                            {ArgumentType::create_normal(ptrTy, None, false),
 	                             ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)},
@@ -31,7 +31,7 @@ FunctionType* Internal::realloc_signature(Ctx* irCtx) {
 FunctionType* Internal::free_signature(Ctx* irCtx) {
 	return FunctionType::create(ReturnType::get(VoidType::get(irCtx->llctx)),
 	                            {ArgumentType::create_normal(PtrType::get(true, VoidType::get(irCtx->llctx), false,
-	                                                                      PtrOwner::of_anonymous(), false, irCtx),
+	                                                                      PtrOwner::of_none(), false, None, irCtx),
 	                                                         None, false)},
 	                            irCtx->llctx);
 }

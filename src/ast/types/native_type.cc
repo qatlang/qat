@@ -1,12 +1,24 @@
 #include "./native_type.hpp"
 #include "../../IR/context.hpp"
+#include "../expression.hpp"
 
 namespace qat::ast {
 
+void NativeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
+	if (addressSpace.has_value() && addressSpace.value().value) {
+		UPDATE_DEPS(addressSpace.value().value);
+	}
+}
+
 ir::Type* NativeType::emit(EmitCtx* ctx) {
 	switch (nativeKind) {
-		case ir::NativeTypeKind::String:
-			return ir::NativeType::get_cstr(ctx->irCtx);
+		case ir::NativeTypeKind::ByteString: {
+			Maybe<ir::AddressSpace> addr = None;
+			if (addressSpace.has_value()) {
+				addr = addressSpace.value().to_ir(ctx);
+			}
+			return ir::NativeType::get_bytestring(std::move(addr), ctx->irCtx);
+		}
 		case ir::NativeTypeKind::Bool:
 			return ir::NativeType::get_bool(ctx->irCtx);
 		case ir::NativeTypeKind::Int:
@@ -70,7 +82,7 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 
 Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 	switch (nativeKind) {
-		case ir::NativeTypeKind::String:
+		case ir::NativeTypeKind::ByteString:
 			return ctx->irCtx->clangTargetInfo->getPointerWidth(ctx->irCtx->get_language_address_space());
 		case ir::NativeTypeKind::Bool:
 			return ctx->irCtx->clangTargetInfo->getBoolWidth();

@@ -7,19 +7,19 @@ namespace qat::ast {
 
 String PtrOwner::to_string() const {
 	switch (kind) {
-		case PtrOwnType::type:
-			return "type(" + candidate->to_string() + ")";
-		case PtrOwnType::typeParent:
+		case OwnerKind::STATIC:
+			return "static";
+		case OwnerKind::SELF_INSTANCE:
 			return "''";
-		case PtrOwnType::function:
+		case OwnerKind::OWN:
 			return "own";
-		case PtrOwnType::anonymous:
+		case OwnerKind::NONE:
 			return "";
-		case PtrOwnType::heap:
+		case OwnerKind::HEAP:
 			return "heap";
-		case PtrOwnType::region:
+		case OwnerKind::REGION_TYPE:
 			return "region(" + candidate->to_string() + ")";
-		case PtrOwnType::anyRegion:
+		case OwnerKind::ANY_REGION:
 			return "region";
 	}
 }
@@ -31,33 +31,32 @@ Json PtrOwner::to_json() const {
 	    ._("associatedType", candidate ? candidate->to_json() : JsonValue());
 }
 
-String ptr_owner_to_string(PtrOwnType ownType) {
+String ptr_owner_to_string(OwnerKind ownType) {
 	switch (ownType) {
-		case PtrOwnType::type:
-			return "type";
-		case PtrOwnType::typeParent:
+		case OwnerKind::STATIC:
+			return "static";
+		case OwnerKind::SELF_INSTANCE:
 			return "typeParent";
-		case PtrOwnType::function:
+		case OwnerKind::OWN:
 			return "function";
-		case PtrOwnType::anonymous:
+		case OwnerKind::NONE:
 			return "anonymous";
-		case PtrOwnType::heap:
+		case OwnerKind::HEAP:
 			return "heap";
-		case PtrOwnType::region:
+		case OwnerKind::REGION_TYPE:
 			return "region";
-		case PtrOwnType::anyRegion:
+		case OwnerKind::ANY_REGION:
 			return "anyRegion";
 	}
 }
 
 ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange) {
-
-	if (owner.kind == PtrOwnType::function) {
+	if (owner.kind == OwnerKind::OWN) {
 		if (not ctx->get_fn()) {
 			ctx->Error("This pointer type is not inside a function and hence cannot have function ownership",
 			           fileRange);
 		}
-	} else if (owner.kind == PtrOwnType::typeParent) {
+	} else if (owner.kind == OwnerKind::SELF_INSTANCE) {
 		if (not ctx->has_member_parent()) {
 			ctx->Error("No parent type found in scope and hence the pointer "
 			           "cannot be owned by the parent type instance",
@@ -65,18 +64,7 @@ ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange)
 		}
 	}
 	ir::Type* ownerVal = nullptr;
-	if (owner.kind == PtrOwnType::type) {
-		if (not owner.candidate) {
-			ctx->Error("Expected a type to be provided for pointer ownership", fileRange);
-		}
-		auto* typVal = owner.candidate->emit(ctx);
-		if (typVal->is_region()) {
-			ctx->Error("The type provided is a region and hence pointer ownership has to be " +
-			               ctx->color("'region(" + typVal->to_string() = ")") + " or " + ctx->color("'region"),
-			           fileRange);
-		}
-		ownerVal = typVal;
-	} else if (owner.kind == PtrOwnType::region) {
+	if (owner.kind == OwnerKind::REGION_TYPE) {
 		if (owner.candidate) {
 			auto* regTy = owner.candidate->emit(ctx);
 			if (not regTy->is_region()) {
@@ -89,24 +77,24 @@ ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange)
 		}
 	}
 	switch (owner.kind) {
-		case PtrOwnType::type:
-			return ir::PtrOwner::of_type(ownerVal);
-		case PtrOwnType::typeParent: {
+		case OwnerKind::SELF_INSTANCE: {
 			if (ctx->has_member_parent()) {
-				return ir::PtrOwner::of_parent_instance(ctx->get_member_parent()->get_parent_type());
+				return ir::PtrOwner::of_self(ctx->get_member_parent()->get_parent_type());
 			} else {
 				ctx->Error("No parent type or skill found", fileRange);
 			}
 		}
-		case PtrOwnType::anonymous:
-			return ir::PtrOwner::of_anonymous();
-		case PtrOwnType::heap:
+		case OwnerKind::NONE:
+			return ir::PtrOwner::of_none();
+		case OwnerKind::HEAP:
 			return ir::PtrOwner::of_heap();
-		case PtrOwnType::function:
-			return ir::PtrOwner::of_parent_function(ctx->get_fn());
-		case PtrOwnType::region:
-			return ir::PtrOwner::of_region(ownerVal->as_region());
-		case PtrOwnType::anyRegion:
+		case OwnerKind::STATIC:
+			return ir::PtrOwner::of_static();
+		case OwnerKind::OWN:
+			return ir::PtrOwner::of_own(ctx->get_fn());
+		case OwnerKind::REGION_TYPE:
+			return ir::PtrOwner::of_region_type(ownerVal->as_region());
+		case OwnerKind::ANY_REGION:
 			return ir::PtrOwner::of_any_region();
 	}
 }

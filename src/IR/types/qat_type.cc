@@ -311,12 +311,12 @@ bool Type::is_compatible_with(Type const* candidate) const {
 		}
 		auto targOwn = targPtr->get_owner();
 		auto candOwn = candPtr->get_owner();
-		if (targOwn.is_of_anonymous() &&
-		    (candOwn.is_of_heap() || candOwn.is_of_any_region() || candOwn.is_of_region() || candOwn.is_of_static())) {
+		if (targOwn.is_none() &&
+		    (candOwn.is_heap() || candOwn.is_any_region() || candOwn.is_region_type() || candOwn.is_static())) {
 			return true;
-		} else if (targOwn.is_of_static() && (candOwn.is_of_region() || candOwn.is_of_any_region())) {
+		} else if (targOwn.is_static() && (candOwn.is_region_type() || candOwn.is_any_region())) {
 			return true;
-		} else if (targOwn.is_of_any_region() && candOwn.is_of_region()) {
+		} else if (targOwn.is_any_region() && candOwn.is_region_type()) {
 			return true;
 		}
 		return false;

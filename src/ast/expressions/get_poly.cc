@@ -31,7 +31,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		}
 		auto origTy = val->get_ir_type()->as_poly();
 		if (resTy->has_owner() != origTy->has_owner()) {
-			if (not resTy->has_owner() && not origTy->get_owner().is_of_anonymous()) {
+			if (not resTy->has_owner() && not origTy->get_owner().is_none()) {
 				ctx->Error(
 				    "The existing polymorph here of type " + ctx->color(origTy->to_string()) +
 				        " is a pointer polymorph, but the resultant polymorph of type " +
@@ -40,7 +40,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				        " Please check the existing pointer polymorph to be safe, and retrieve a reference polymorph from it"
 				        " if you want to do so, via pattern matching or conversion",
 				    fileRange);
-			} else if (not origTy->has_owner() && not resTy->get_owner().is_of_anonymous()) {
+			} else if (not origTy->has_owner() && not resTy->get_owner().is_none()) {
 				ctx->Error(
 				    "The existing polymorph here of type " + ctx->color(origTy->to_string()) +
 				        " is a reference polymorph, but the resultant polymorph of type " +
@@ -50,7 +50,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				    fileRange);
 			}
 		} else if ((resTy->has_owner() && origTy->has_owner()) && not resTy->get_owner().is_same(origTy->get_owner()) &&
-		           not resTy->get_owner().is_of_anonymous()) {
+		           not resTy->get_owner().is_none()) {
 			ctx->Error(
 			    "The pointer ownership of the resultant pointer polymorph of type " + ctx->color(resTy->to_string()) +
 			        " is not compatible with the pointer ownership of the existing polymorph of type " +
@@ -79,9 +79,9 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		}
 		auto loc =
 		    ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false, fileRange);
-		if (origTy->has_owner() && not origTy->get_owner().is_of_anonymous() &&
+		if (origTy->has_owner() && not origTy->get_owner().is_none() &&
 		    llvm::cast<llvm::StructType>(origTy->get_llvm_type())->getElementType(0)->isStructTy() &&
-		    (not resTy->has_owner() || resTy->get_owner().is_of_anonymous())) {
+		    (not resTy->has_owner() || resTy->get_owner().is_none())) {
 			ctx->irCtx->builder.CreateStore(
 			    ctx->irCtx->builder.CreateExtractValue(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
 			                                           {0u}),
@@ -194,14 +194,14 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		auto resTy             = ir::Polymorph::create(isTypeRange.has_value(), isVar, skillsIR, ptrOwner, ctx->irCtx);
 		bool storeInstanceAsIs = true;
 		if (not ptrOwner.has_value()) {
-			if (val->is_ptr() && not val->get_ir_type()->as_ptr()->get_owner().is_of_anonymous()) {
+			if (val->is_ptr() && not val->get_ir_type()->as_ptr()->get_owner().is_none()) {
 				ctx->Error(
 				    "Trying to get a reference polymorph of " + ctx->color(resTy->to_string()) +
 				        " from an expression which is a pointer with ownership. Reference polymorphs can be extracted only from reference-like expressions or from pointers with anonymous ownership",
 				    fileRange);
 			}
 		} else {
-			if (not ptrOwner.value().is_of_anonymous() && val->is_ptr() &&
+			if (not ptrOwner.value().is_none() && val->is_ptr() &&
 			    not ptrOwner.value().is_same(val->get_ir_type()->as_ptr()->get_owner())) {
 				ctx->Error(
 				    "Trying to get a pointer polymorph of " + ctx->color(resTy->to_string()) +
@@ -209,7 +209,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				        ". The ownership of the pointer polymorph and that of the pointer expression does not match",
 				    fileRange);
 			}
-			if (ptrOwner.value().is_of_anonymous() && val->is_ptr() &&
+			if (ptrOwner.value().is_none() && val->is_ptr() &&
 			    llvm::isa<llvm::StructType>(val->get_ir_type()->get_llvm_type())) {
 				storeInstanceAsIs = false;
 			}

@@ -81,11 +81,11 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			if (inst->is_prerun_value()) {
 				return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(0u),
 				                            ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                             ir::PtrOwner::of_anonymous(), false, ctx->irCtx));
+				                                             ir::PtrOwner::of_none(), false, None, ctx->irCtx));
 			} else if (inst->is_value()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
 				                      ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                       ir::PtrOwner::of_anonymous(), false, ctx->irCtx),
+				                                       ir::PtrOwner::of_none(), false, None, ctx->irCtx),
 				                      false);
 			} else {
 				SHOW("Text is an implicit pointer or a reference or pointer")
@@ -95,7 +95,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				    ir::RefType::get(false,
 				                     ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
 				                                      false, // NOLINT(readability-magic-numbers)
-				                                      ir::PtrOwner::of_anonymous(), false, ctx->irCtx),
+				                                      ir::PtrOwner::of_none(), false, None, ctx->irCtx),
 				                     ctx->irCtx),
 				    false);
 			}

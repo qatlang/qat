@@ -47,7 +47,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				auto targetTy =
 				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_ptr() : destTy->as_ptr();
 				if (not valType->as_ptr()->get_owner().is_same(targetTy->get_owner()) &&
-				    not targetTy->get_owner().is_of_anonymous()) {
+				    not targetTy->get_owner().is_none()) {
 					ctx->Error(
 					    "This change of ownership of the pointer type is not allowed. Pointers with valid ownership can only be converted to anonymous ownership",
 					    fileRange);
@@ -144,7 +144,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			           (destValTy->as_ptr()->get_subtype()->is_unsigned() ||
 			            (destValTy->as_ptr()->get_subtype()->is_native_type() &&
 			             destValTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
-			           destValTy->as_ptr()->get_owner().is_of_anonymous() &&
+			           destValTy->as_ptr()->get_owner().is_none() &&
 			           (destValTy->as_ptr()->get_subtype()->is_unsigned()
 			                ? (destValTy->as_ptr()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
 			                : (destValTy->as_ptr()

@@ -91,7 +91,7 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 		                       ->get_subtype()
 		                       ->as_unsigned()
 		                       ->get_bitwidth() == 8u)) &&
-		           (valTy->as_ptr()->get_owner().is_of_anonymous()) && (not valTy->as_ptr()->is_subtype_variable())) {
+		           (valTy->as_ptr()->get_owner().is_none()) && (not valTy->as_ptr()->is_subtype_variable())) {
 			if (valTy->as_ptr()->is_multi()) {
 				return ir::PrerunValue::get(
 				    llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()),

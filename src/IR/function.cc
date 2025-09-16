@@ -200,7 +200,7 @@ void Block::destroy_locals(ast::EmitCtx* ctx) {
 	for (auto* loc : values) {
 		if (loc->get_ir_type()->is_destructible()) {
 			if (loc->get_ir_type()->is_ptr()
-			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_of_parent_function() &&
+			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_own() &&
 			           (loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() ==
 			            ctx->get_fn()->get_id()))
 			        : true) {
@@ -483,7 +483,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 		} else if (loc->get_ir_type()->is_destructible()) {
 			loc->get_ir_type()->destroy_value(irCtx, loc->to_new_ir_value(), fun);
 			SHOW("Destroyed value using type level feature")
-		} else if (loc->get_ir_type()->is_ptr() && loc->get_ir_type()->as_ptr()->get_owner().is_of_parent_function() &&
+		} else if (loc->get_ir_type()->is_ptr() && loc->get_ir_type()->as_ptr()->get_owner().is_own() &&
 		           loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
 			auto* ptrTy = loc->get_ir_type()->as_ptr();
 			if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
@@ -592,7 +592,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 		if (mFn->get_method_type() == MethodType::destructor) {
 			for (usize i = 0; i < cTy->get_members().size(); i++) {
 				auto& mem = cTy->get_members().at(i);
-				if (mem->type->is_ptr() && mem->type->as_ptr()->get_owner().is_of_parent_instance()) {
+				if (mem->type->is_ptr() && mem->type->as_ptr()->get_owner().is_self()) {
 					auto* ptrTy  = mem->type->as_ptr();
 					auto* memPtr = irCtx->builder.CreateStructGEP(
 					    ptrTy->get_llvm_type(),
@@ -756,7 +756,7 @@ void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block) {
 	for (auto* loc : locals) {
 		if (loc->get_ir_type()->is_destructible()) {
 			if (loc->get_ir_type()->is_ptr()
-			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_of_parent_function() &&
+			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_own() &&
 			           (loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() ==
 			            block->get_fn()->get_id()))
 			        : true) {

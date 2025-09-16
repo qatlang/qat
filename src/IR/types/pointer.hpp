@@ -8,28 +8,27 @@ namespace qat::ir {
 class Function;
 class Region;
 
-enum class PointerOwnerType {
-	anyRegion,
-	region,
-	heap,
-	anonymous,
-	type,
-	parentFunction,
-	parentInstance,
-	Static,
+enum class OwnerKind {
+	NONE,
+	ANY_REGION,
+	REGION_TYPE,
+	HEAP,
+	OWN,
+	SELF,
+	STATIC,
 };
 
 class PtrOwner {
   public:
-	void*            owner;
-	PointerOwnerType ownerTy;
+	void*     owner;
+	OwnerKind ownerTy;
 
 	useit static PtrOwner of_heap();
-	useit static PtrOwner of_anonymous();
-	useit static PtrOwner of_type(Type* type);
-	useit static PtrOwner of_parent_function(Function* fun);
-	useit static PtrOwner of_parent_instance(Type* type);
-	useit static PtrOwner of_region(Region* region);
+	useit static PtrOwner of_static();
+	useit static PtrOwner of_none();
+	useit static PtrOwner of_own(Function* fun);
+	useit static PtrOwner of_self(Type* type);
+	useit static PtrOwner of_region_type(Region* region);
 	useit static PtrOwner of_any_region();
 
 	useit Type* owner_as_type() const { return (Type*)owner; }
@@ -40,21 +39,19 @@ class PtrOwner {
 
 	useit Type* owner_as_parent_type() const { return (Type*)owner; }
 
-	useit bool is_of_type() const { return ownerTy == PointerOwnerType::type; }
+	useit bool is_none() const { return ownerTy == OwnerKind::NONE; }
 
-	useit bool is_of_anonymous() const { return ownerTy == PointerOwnerType::anonymous; }
+	useit bool is_any_region() const { return ownerTy == OwnerKind::ANY_REGION; }
 
-	useit bool is_of_any_region() const { return ownerTy == PointerOwnerType::anyRegion; }
+	useit bool is_region_type() const { return ownerTy == OwnerKind::REGION_TYPE; }
 
-	useit bool is_of_region() const { return ownerTy == PointerOwnerType::region; }
+	useit bool is_heap() const { return ownerTy == OwnerKind::HEAP; }
 
-	useit bool is_of_heap() const { return ownerTy == PointerOwnerType::heap; }
+	useit bool is_own() const { return ownerTy == OwnerKind::OWN; }
 
-	useit bool is_of_parent_function() const { return ownerTy == PointerOwnerType::parentFunction; }
+	useit bool is_self() const { return ownerTy == OwnerKind::SELF; }
 
-	useit bool is_of_parent_instance() const { return ownerTy == PointerOwnerType::parentInstance; }
-
-	useit bool is_of_static() const { return ownerTy == PointerOwnerType::Static; }
+	useit bool is_static() const { return ownerTy == OwnerKind::STATIC; }
 
 	useit bool is_same(const PtrOwner& other) const;
 

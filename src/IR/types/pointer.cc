@@ -9,39 +9,35 @@
 
 namespace qat::ir {
 
-PtrOwner PtrOwner::of_heap() { return PtrOwner{.owner = nullptr, .ownerTy = PointerOwnerType::heap}; }
+PtrOwner PtrOwner::of_heap() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::HEAP}; }
 
-PtrOwner PtrOwner::of_type(Type* type) { return PtrOwner{.owner = (void*)type, .ownerTy = PointerOwnerType::type}; }
+PtrOwner PtrOwner::of_static() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::STATIC}; }
 
-PtrOwner PtrOwner::of_anonymous() { return PtrOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anonymous}; }
+PtrOwner PtrOwner::of_none() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::NONE}; }
 
-PtrOwner PtrOwner::of_parent_function(Function* fun) {
-	return PtrOwner{.owner = (void*)fun, .ownerTy = PointerOwnerType::parentFunction};
+PtrOwner PtrOwner::of_own(Function* fun) { return PtrOwner{.owner = (void*)fun, .ownerTy = OwnerKind::OWN}; }
+
+PtrOwner PtrOwner::of_self(Type* typ) { return PtrOwner{.owner = (void*)typ, .ownerTy = OwnerKind::SELF}; }
+
+PtrOwner PtrOwner::of_region_type(Region* region) {
+	return PtrOwner{.owner = region, .ownerTy = OwnerKind::REGION_TYPE};
 }
 
-PtrOwner PtrOwner::of_parent_instance(Type* typ) {
-	return PtrOwner{.owner = (void*)typ, .ownerTy = PointerOwnerType::parentInstance};
-}
-
-PtrOwner PtrOwner::of_region(Region* region) { return PtrOwner{.owner = region, .ownerTy = PointerOwnerType::region}; }
-
-PtrOwner PtrOwner::of_any_region() { return PtrOwner{.owner = nullptr, .ownerTy = PointerOwnerType::anyRegion}; }
+PtrOwner PtrOwner::of_any_region() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::ANY_REGION}; }
 
 bool PtrOwner::is_same(const PtrOwner& other) const {
 	if (ownerTy == other.ownerTy) {
 		switch (ownerTy) {
-			case PointerOwnerType::anonymous:
-			case PointerOwnerType::Static:
-			case PointerOwnerType::heap:
-			case PointerOwnerType::anyRegion:
+			case OwnerKind::NONE:
+			case OwnerKind::STATIC:
+			case OwnerKind::HEAP:
+			case OwnerKind::ANY_REGION:
 				return true;
-			case PointerOwnerType::region:
+			case OwnerKind::REGION_TYPE:
 				return owner_as_region()->is_same(other.owner_as_region());
-			case PointerOwnerType::type:
-				return owner_as_type()->is_same(other.owner_as_type());
-			case PointerOwnerType::parentFunction:
+			case OwnerKind::OWN:
 				return owner_as_parent_function()->get_id() == other.owner_as_parent_function()->get_id();
-			case PointerOwnerType::parentInstance:
+			case OwnerKind::SELF:
 				return owner_as_parent_type()->get_id() == other.owner_as_parent_type()->get_id();
 		}
 	} else {
@@ -51,21 +47,19 @@ bool PtrOwner::is_same(const PtrOwner& other) const {
 
 String PtrOwner::to_string() const {
 	switch (ownerTy) {
-		case PointerOwnerType::anyRegion:
+		case OwnerKind::ANY_REGION:
 			return "region";
-		case PointerOwnerType::region:
+		case OwnerKind::REGION_TYPE:
 			return "region(" + owner_as_region()->to_string() + ")";
-		case PointerOwnerType::heap:
+		case OwnerKind::HEAP:
 			return "heap";
-		case PointerOwnerType::anonymous:
+		case OwnerKind::NONE:
 			return "";
-		case PointerOwnerType::type:
-			return "type(" + owner_as_type()->to_string() + ")";
-		case PointerOwnerType::parentInstance:
+		case OwnerKind::SELF:
 			return "''(" + owner_as_parent_type()->to_string() + ")";
-		case PointerOwnerType::parentFunction:
+		case OwnerKind::OWN:
 			return "own(" + owner_as_parent_function()->get_full_name() + ")";
-		case PointerOwnerType::Static:
+		case OwnerKind::STATIC:
 			return "static";
 	}
 }

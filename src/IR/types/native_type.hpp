@@ -2,12 +2,13 @@
 #define QAT_IR_TYPES_NATIVE_TYPE_HPP
 
 #include "./qat_type.hpp"
+#include "pointer.hpp"
 
 namespace qat::ir {
 
 // TODO - Support C arrays
 enum class NativeTypeKind {
-	String,
+	ByteString,
 	Bool,
 	Int,
 	Uint,
@@ -111,7 +112,7 @@ class NativeType : public Type {
 
 	useit bool is_native_sig_atomic() const { return nativeKind == NativeTypeKind::SigAtomic; }
 
-	useit bool is_native_bytestring() const { return nativeKind == NativeTypeKind::String; }
+	useit bool is_native_bytestring() const { return nativeKind == NativeTypeKind::ByteString; }
 
 	useit bool is_native_long_double() const { return nativeKind == NativeTypeKind::LongDouble; }
 
@@ -141,7 +142,7 @@ class NativeType : public Type {
 	useit static NativeType* get_ptrdiff_unsigned(ir::Ctx* irCtx);
 	// TODO - Check if there is more to SigAtomic than just an integer type
 	useit static NativeType* get_sigatomic(ir::Ctx* irCtx);
-	useit static NativeType* get_cstr(ir::Ctx* irCtx);
+	useit static NativeType* get_bytestring(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
 	useit static bool        has_long_double(ir::Ctx* irCtx);
 	useit static NativeType* get_long_double(ir::Ctx* irCtx);

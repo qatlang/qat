@@ -10,7 +10,7 @@ namespace qat::ir {
 
 Maybe<NativeTypeKind> native_type_kind_from_string(String const& val) {
 	if (val == "bytestring") {
-		return NativeTypeKind::String;
+		return NativeTypeKind::ByteString;
 	} else if (val == "int") {
 		return NativeTypeKind::Int;
 	} else if (val == "uint") {
@@ -115,7 +115,7 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 			return "uptrdiff";
 		case NativeTypeKind::SigAtomic:
 			return "sigatomic";
-		case NativeTypeKind::String:
+		case NativeTypeKind::ByteString:
 			return "bytestring";
 		case NativeTypeKind::Bool:
 			return "widebool";
@@ -133,8 +133,8 @@ ir::Type* NativeType::get_subtype() const { return subType; }
 
 NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 	switch (kind) {
-		case NativeTypeKind::String:
-			return get_cstr(irCtx);
+		case NativeTypeKind::ByteString:
+			return get_bytestring(None, irCtx);
 		case NativeTypeKind::Bool:
 			return get_bool(irCtx);
 		case NativeTypeKind::Int:
@@ -575,19 +575,19 @@ NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
 	    NativeTypeKind::SigAtomic);
 }
 
-NativeType* NativeType::get_cstr(ir::Ctx* irCtx) {
+NativeType* NativeType::get_bytestring(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
 			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::String) {
+			if (cTyp->nativeKind == NativeTypeKind::ByteString) {
 				return cTyp;
 			}
 		}
 	}
-	return std::construct_at(
-	    OwnNormal(NativeType),
-	    ir::PtrType::get(false, ir::IntegerType::get(8, irCtx), false, PtrOwner::of_anonymous(), false, irCtx),
-	    NativeTypeKind::String);
+	return std::construct_at(OwnNormal(NativeType),
+	                         ir::PtrType::get(false, ir::IntegerType::get(8u, irCtx), false, PtrOwner::of_none(), false,
+	                                          addressSpace, irCtx),
+	                         NativeTypeKind::ByteString);
 }
 
 bool NativeType::has_long_double(ir::Ctx* irCtx) { return irCtx->clangTargetInfo->hasLongDoubleType(); }

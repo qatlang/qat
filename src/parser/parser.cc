@@ -1837,136 +1837,122 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 			}
 			case TokenType::multiPtrType:
 			case TokenType::ptrType: {
+				const auto start   = i;
 				const bool isMulti = token.type == TokenType::multiPtrType;
 				if (is_next(TokenType::genericTypeStart, i) || is_next(TokenType::exclamation, i)) {
 					bool      isSubtypeVar  = false;
 					bool      isNonNullable = false;
-					TokenType startTy       = TokenType::genericTypeStart;
 					TokenType endTy         = TokenType::genericTypeEnd;
 					if (is_next(TokenType::exclamation, i)) {
 						if (is_next(TokenType::bracketOpen, i + 1)) {
 							isNonNullable = true;
-							startTy       = TokenType::bracketOpen;
 							endTy         = TokenType::bracketClose;
-							i++;
+							i += 2;
 						} else {
-							add_error("Expected [ to start the subtype of the " +
+							add_error("Expected [ after this to start the subtype of this non-nullable " +
 							              String(isMulti ? "multi-pointer" : "pointer") + " type",
 							          RangeSpan(i, i + 1));
 						}
+					} else {
+						i++;
 					}
-					if (is_next(TokenType::var, i + 1)) {
+					if (is_next(TokenType::var, i)) {
 						isSubtypeVar = true;
 						i++;
 					}
-					auto bCloseRes = get_pair_end(startTy, endTy, i + 1);
-					if (bCloseRes.has_value() && (not upto.has_value() || (bCloseRes.value() < upto.value()))) {
-						auto bClose = bCloseRes.value();
-						if (is_primary_within(TokenType::separator, i + 1, bClose)) {
-							auto sepPos     = first_primary_position(TokenType::separator, i + 1).value();
-							auto subTypeRes = do_type(ctx, i + 1, sepPos);
-							if (is_next(TokenType::own, sepPos)) {
-								if (sepPos + 2 != bClose) {
-									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
-								}
-								cacheTy = ast::PtrType::create(
-								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_function(RangeAt(sepPos + 1)),
-								    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
-							} else if (is_next(TokenType::heap, sepPos)) {
-								if (sepPos + 2 != bClose) {
-									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
-								}
-								cacheTy = ast::PtrType::create(
-								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_heap(RangeAt(sepPos + 1)),
-								    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
-							} else if (is_next(TokenType::Type, sepPos)) {
-								if (is_next(TokenType::parenthesisOpen, sepPos + 1)) {
-									auto pCloseRes = get_pair_end(TokenType::parenthesisOpen,
-									                              TokenType::parenthesisClose, sepPos + 2);
-									if (pCloseRes.has_value()) {
-										if (pCloseRes.value() + 1 != bClose) {
-											add_error("Ownership did not span till ]",
-											          RangeSpan(pCloseRes.value() + 1, bClose));
-										}
-										auto ownTy = do_type(preCtx, sepPos + 2, pCloseRes.value());
-										if (ownTy.second + 1 != pCloseRes.value()) {
-											add_error("Owner type did not span till )",
-											          RangeSpan(ownTy.second + 1, pCloseRes.value()));
-										}
-										cacheTy = ast::PtrType::create(
-										    subTypeRes.first, isSubtypeVar,
-										    ast::PtrOwner::of_type(ownTy.first,
-										                           RangeSpan(sepPos + 1, pCloseRes.value())),
-										    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
-									} else {
-										add_error("Expected end for (", RangeAt(sepPos + 2));
-									}
-								} else {
-									add_error("Expected a type to be provided to be the owner of this " +
-									              String(isMulti ? "multi-pointer" : "pointer") + " type like " +
-									              color_error(String(isMulti ? "multi" : "ptr") +
-									                          (isNonNullable ? "![" : ":[") +
-									                          subTypeRes.first->to_string() + ", type(OwnerType)]"),
-									          RangeSpan(sepPos, bClose));
-								}
-							} else if (is_next(TokenType::region, sepPos)) {
-								if (is_next(TokenType::parenthesisOpen, sepPos + 1)) {
-									auto pCloseRes = get_pair_end(TokenType::parenthesisOpen,
-									                              TokenType::parenthesisClose, sepPos + 2);
-									if (pCloseRes.has_value()) {
-										if (pCloseRes.value() + 1 != bClose) {
-											add_error("Ownership did not span till ]",
-											          RangeSpan(pCloseRes.value() + 1, bClose));
-										}
-										auto regTy = do_type(preCtx, sepPos + 1, pCloseRes.value());
-										if (regTy.second + 1 != pCloseRes.value()) {
-											add_error("Owner region specified did not span till )",
-											          RangeSpan(regTy.second + 1, pCloseRes.value()));
-										}
-										cacheTy = ast::PtrType::create(
-										    subTypeRes.first, isSubtypeVar,
-										    ast::PtrOwner::of_region(regTy.first,
-										                             RangeSpan(sepPos + 1, pCloseRes.value())),
-										    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
-									} else {
-										add_error("Expected end for (", RangeAt(sepPos + 2));
-									}
-								} else {
-									cacheTy = ast::PtrType::create(subTypeRes.first, isSubtypeVar,
-									                               ast::PtrOwner::of_any_region(RangeAt(sepPos + 1)),
-									                               isNonNullable, isMulti,
-									                               FileRange::merge(token.fileRange, RangeAt(bClose)));
-								}
-							} else if (is_next(TokenType::selfInstance, sepPos)) {
-								if (sepPos + 2 != bClose) {
-									add_error("Ownership did not span till ]", RangeSpan(sepPos + 2, bClose));
-								}
-								cacheTy = ast::PtrType::create(
-								    subTypeRes.first, isSubtypeVar, ast::PtrOwner::of_type_parent(RangeAt(sepPos + 1)),
-								    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
-							} else {
-								add_error("Invalid ownership of the " +
-								              color_error(isMulti ? "multi-pointer" : "pointer"),
-								          FileRange::merge(token.fileRange, RangeAt(sepPos)));
-							}
-						} else {
-							auto subTypeRes = do_type(ctx, i + 1, bClose);
-							if (subTypeRes.second + 1 != bClose) {
-								add_error("Subtype of the pointer did not span till ]",
-								          RangeSpan(subTypeRes.second + 1, bClose));
-							}
-							cacheTy = ast::PtrType::create(
-							    subTypeRes.first, isSubtypeVar,
-							    ast::PtrOwner::of_anonymous(FileRange::merge(token.fileRange, RangeAt(bClose))),
-							    isNonNullable, isMulti, FileRange::merge(token.fileRange, RangeAt(bClose)));
-						}
-						i = bClose;
-						break;
-					} else {
-						add_error("Could not find " TOKEN_GENERIC_LIST_END " for the end of the " +
-						              String(isMulti ? "multi-pointer" : "pointer") + " subtype",
-						          RangeAt(i + 1));
+					auto                     ptrOwner     = ast::PtrOwner::of_none(FileRange::null);
+					Maybe<ast::AddressSpace> addressSpace = None;
+					auto                     subRes       = do_type(preCtx, i, None);
+					i                                     = subRes.second;
+					bool foundSeparator                   = false;
+					if (is_next(TokenType::separator, i)) {
+						i++;
+						foundSeparator = true;
 					}
+					if (foundSeparator) {
+						bool parsedOwnership = false;
+						if (is_next(TokenType::heap, i)) {
+							i++;
+							ptrOwner        = ast::PtrOwner::of_heap(RangeAt(i));
+							parsedOwnership = true;
+						} else if (is_next(TokenType::Static, i)) {
+							i++;
+							ptrOwner        = ast::PtrOwner::of_static(RangeAt(i));
+							parsedOwnership = true;
+						} else if (is_next(TokenType::own, i)) {
+							i++;
+							ptrOwner        = ast::PtrOwner::of_own(RangeAt(i));
+							parsedOwnership = true;
+						} else if (is_next(TokenType::selfInstance, i)) {
+							i++;
+							ptrOwner        = ast::PtrOwner::of_self_instance(RangeAt(i));
+							parsedOwnership = true;
+						} else if (is_next(TokenType::region, i)) {
+							const auto oStart = i + 1;
+							i++;
+							if (is_next(TokenType::parenthesisOpen, i)) {
+								const auto pStart = i + 1;
+								auto       ownTy  = do_type(preCtx, i + 1, None);
+								i                 = ownTy.second;
+								if (not is_next(TokenType::parenthesisClose, i)) {
+									add_error("Expected ) after this", RangeSpan(pStart, i));
+								}
+								i++;
+								ptrOwner = ast::PtrOwner::of_region_type(ownTy.first, RangeSpan(oStart, i));
+							} else {
+								ptrOwner = ast::PtrOwner::of_any_region(RangeAt(i));
+							}
+							parsedOwnership = true;
+						}
+						if (parsedOwnership) {
+							foundSeparator = false;
+							if (is_next(TokenType::separator, i)) {
+								foundSeparator = true;
+								i++;
+							}
+						}
+						if (foundSeparator) {
+							if (is_next(TokenType::of, i)) {
+								const auto addrOpen = i + 1;
+								if (is_next(TokenType::colon, i + 1) && is_next(TokenType::identifier, i + 2)) {
+									i += 3;
+									addressSpace = ast::AddressSpace{
+									    .name = IdentifierAt(i), .value = nullptr, .fileRange = RangeSpan(addrOpen, i)};
+								} else if (is_next(TokenType::parenthesisOpen, i + 1)) {
+									const auto pOpen = i + 2;
+									auto       addr  = do_prerun_expression(preCtx, i + 2, None);
+									i                = addr.second;
+									if (not is_next(TokenType::parenthesisClose, i)) {
+										add_error("Expected ) after this", RangeSpan(pOpen, i));
+									}
+									i++;
+									addressSpace = ast::AddressSpace{.name      = Identifier{"", FileRange::null},
+									                                 .value     = addr.first,
+									                                 .fileRange = RangeSpan(addrOpen, i)};
+								} else {
+									add_error("Invalid format for address-space specification", RangeAt(i + 1));
+								}
+							} else {
+								if (parsedOwnership) {
+									add_error("Expected the address-space specification after this",
+									          RangeSpan(start, i));
+								} else {
+									add_error("Expected either the ownership of the " +
+									              String(isMulti ? "multi-pointer" : "pointer") +
+									              " type or the address-space specification after this",
+									          RangeAt(i));
+								}
+							}
+						}
+					}
+					if (not is_next(endTy, i)) {
+						add_error("Expected ] after this to end the " + String(isMulti ? "multi-pointer" : "pointer") +
+						              " type",
+						          RangeSpan(start, i));
+					}
+					i++;
+					cacheTy = ast::PtrType::create(subRes.first, isSubtypeVar, ptrOwner, isNonNullable, isMulti,
+					                               std::move(addressSpace), RangeSpan(start, i));
 				} else {
 					if (is_next(TokenType::bracketOpen, i)) {
 						add_error("Found [ after " + color_error(isMulti ? "multi-pointer" : "pointer") +

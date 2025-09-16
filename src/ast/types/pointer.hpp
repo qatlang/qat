@@ -6,23 +6,36 @@
 
 namespace qat::ast {
 
+struct AddressSpace {
+	Identifier        name;
+	PrerunExpression* value;
+	FileRangePtr      fileRange;
+
+	useit ir::AddressSpace to_ir(EmitCtx* ctx) const;
+
+	useit String to_string() const;
+
+	useit Json to_json() const;
+};
+
 class PtrType final : public Type {
-	Type*    type;
-	PtrOwner owner;
-	bool     isMulti;
-	bool     isSubtypeVar;
-	bool     isNonNullable;
+	Type*               type;
+	PtrOwner            owner;
+	bool                isMulti;
+	bool                isSubtypeVar;
+	bool                isNonNullable;
+	Maybe<AddressSpace> addressSpace;
 
   public:
 	PtrType(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti,
-	        FileRangePtr _fileRange)
+	        Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Type(_fileRange), type(_type), owner(_owner), isMulti(_isMulti), isSubtypeVar(_isSubtypeVar),
-	      isNonNullable(_isNonNullable) {}
+	      isNonNullable(_isNonNullable), addressSpace(std::move(_addressSpace)) {}
 
-	useit static PtrType* create(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti,
-	                             FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(PtrType), _type, _isSubtypeVar, _owner, _isNonNullable, _isMulti,
-		                         _fileRange);
+	useit static PtrType* create(Type* type, bool isSubtypeVar, PtrOwner owner, bool isNonNullable, bool isMulti,
+	                             Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(PtrType), type, isSubtypeVar, owner, isNonNullable, isMulti,
+		                         std::move(addressSpace), fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,

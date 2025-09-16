@@ -17,9 +17,14 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 			}
 			skillsIR.push_back(sk.as_skill().find_skill(ctx));
 		}
+		Maybe<ir::AddressSpace> addr;
+		if (addressSpace.has_value()) {
+			addr = addressSpace.value().to_ir(ctx);
+		}
 		auto resTy = ir::Polymorph::create(
 		    isTypeRange.has_value(), isVar, std::move(skillsIR),
-		    owner.has_value() ? Maybe<ir::PtrOwner>(get_ptr_owner(ctx, owner.value(), fileRange)) : None, ctx->irCtx);
+		    owner.has_value() ? Maybe<ir::PtrOwner>(get_ptr_owner(ctx, owner.value(), fileRange)) : None,
+		    std::move(addr), ctx->irCtx);
 
 		if (val->get_ir_type()->is_ref()) {
 			val->load_ghost_ref(ctx->irCtx->builder);
@@ -57,6 +62,18 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 			        ctx->color(origTy->to_string()) +
 			        ". Only pointer polymorphs with anonymous ownership can be extracted from pointer polymorphs with other ownership types",
 			    fileRange);
+		} else if (resTy->has_address_space() != origTy->has_address_space()) {
+			ctx->Error("The existing polymorph is of type " + ctx->color(origTy->to_string()) +
+			               ", but the resultant polymorph is of type " + ctx->color(resTy->to_string()) +
+			               ". The address-space specification does not match",
+			           fileRange);
+		} else if (resTy->has_address_space() && origTy->has_address_space() &&
+		           not resTy->get_address_space().value().is_same(origTy->get_address_space().value())) {
+			ctx->Error("The existing polymorph has an address-space of " +
+			               ctx->color(origTy->get_address_space().value().to_string()) +
+			               ", but the resultant polymorph has an address-space of " +
+			               ctx->color(resTy->get_address_space().value().to_string()) + ". These do not match",
+			           fileRange);
 		}
 		if (resTy->is_typed_poly() && not origTy->is_typed_poly()) {
 			ctx->Error("The existing polymorph here of type " + ctx->color(origTy->to_string()) +
@@ -191,7 +208,12 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		if (owner.has_value()) {
 			ptrOwner = get_ptr_owner(ctx, owner.value(), owner.value().range);
 		}
-		auto resTy             = ir::Polymorph::create(isTypeRange.has_value(), isVar, skillsIR, ptrOwner, ctx->irCtx);
+		Maybe<ir::AddressSpace> addr;
+		if (addressSpace.has_value()) {
+			addr = addressSpace.value().to_ir(ctx);
+		}
+		auto resTy             = ir::Polymorph::create(isTypeRange.has_value(), isVar, skillsIR, std::move(ptrOwner),
+		                                               std::move(addr), ctx->irCtx);
 		bool storeInstanceAsIs = true;
 		if (not ptrOwner.has_value()) {
 			if (val->is_ptr() && not val->get_ir_type()->as_ptr()->get_owner().is_none()) {

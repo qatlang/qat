@@ -3,7 +3,9 @@
 
 #include "../expression.hpp"
 #include "../skill_entity.hpp"
+#include "../types/pointer.hpp"
 #include "../types/pointer_owner.hpp"
+
 #include <variant>
 
 namespace qat::ast {
@@ -49,18 +51,20 @@ class GetPolymorph final : public Expression {
 	Maybe<FileRangePtr> isTypeRange;
 	Vec<PolySkillSpec>  skills;
 
-	Maybe<PtrOwner> owner;
+	Maybe<PtrOwner>     owner;
+	Maybe<AddressSpace> addressSpace;
 
   public:
 	GetPolymorph(Expression* _value, bool _isVar, Maybe<FileRangePtr> _isTypeRange, Vec<PolySkillSpec> _skills,
-	             Maybe<PtrOwner> _owner, FileRangePtr _fileRange)
+	             Maybe<PtrOwner> _owner, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), value(_value), isVar(_isVar), isTypeRange(std::move(_isTypeRange)),
-	      skills(std::move(_skills)), owner(std::move(_owner)) {}
+	      skills(std::move(_skills)), owner(std::move(_owner)), addressSpace(std::move(_addressSpace)) {}
 
 	useit static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRangePtr> isTypeRange,
-	                                  Vec<PolySkillSpec> skills, Maybe<PtrOwner> owner, FileRangePtr fileRange) {
+	                                  Vec<PolySkillSpec> skills, Maybe<PtrOwner> owner,
+	                                  Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(GetPolymorph), value, isVar, std::move(isTypeRange), std::move(skills),
-		                         owner, std::move(fileRange));
+		                         std::move(owner), std::move(addressSpace), std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
@@ -73,6 +77,9 @@ class GetPolymorph final : public Expression {
 		}
 		if (owner.has_value() && owner.value().candidate) {
 			owner.value().candidate->update_dependencies(phase, ir::DependType::complete, ent, ctx);
+		}
+		if (addressSpace.has_value() && addressSpace.value().value) {
+			UPDATE_DEPS(addressSpace.value().value);
 		}
 	}
 

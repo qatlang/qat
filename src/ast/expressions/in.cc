@@ -9,8 +9,7 @@
 
 namespace qat::ast {
 
-void InExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-                                       EmitCtx* ctx) {
+void InExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	UPDATE_DEPS(candidate);
 	if (is_target_expression()) {
 		UPDATE_DEPS(target_as_expression());
@@ -36,22 +35,22 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    fileRange);
 		}
 		finalTy = inferredType->as_ptr();
-		if (is_target_heap() && not finalTy->get_owner().is_of_heap()) {
-			ctx->Error(
-			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			        ", which is a pointer type without heap ownership. This expression expects to be of type " +
-			        ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
-			                                    finalTy->is_non_nullable(), ir::PtrOwner::of_heap(), false, ctx->irCtx)
-			                       ->to_string()),
-			    fileRange);
+		if (is_target_heap() && not finalTy->get_owner().is_heap()) {
+			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
+			               ", which is a pointer type without heap ownership. This expression expects to be of type " +
+			               ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
+			                                           finalTy->is_non_nullable(), ir::PtrOwner::of_heap(), false,
+			                                           finalTy->get_address_space(), ctx->irCtx)
+			                              ->to_string()),
+			           fileRange);
 		} else if (is_target_region() &&
-		           not(finalTy->get_owner().is_of_region() || finalTy->get_owner().is_of_any_region())) {
+		           not(finalTy->get_owner().is_region_type() || finalTy->get_owner().is_any_region())) {
 			ctx->Error(
 			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
 			        ", which is a pointer type without region ownership. This expression expects either to be of type " +
 			        ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
 			                                    finalTy->is_non_nullable(), ir::PtrOwner::of_any_region(), false,
-			                                    ctx->irCtx)
+			                                    finalTy->get_address_space(), ctx->irCtx)
 			                       ->to_string()) +
 			        " or of type " +
 			        ctx->color("ptr" + String(finalTy->is_non_nullable() ? "!" : ":") + "[" +
@@ -92,7 +91,8 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    {llvm::ConstantInt::get(mallocFn->getArg(0)->getType(),
 			                            (usize)ctx->irCtx->dataLayout.getTypeAllocSize(exprTy->get_llvm_type()))});
 			result = ir::Value::get(
-			    mallocCall, ir::PtrType::get(true, exprTy, false, ir::PtrOwner::of_heap(), false, ctx->irCtx), false);
+			    mallocCall, ir::PtrType::get(true, exprTy, false, ir::PtrOwner::of_heap(), false, None, ctx->irCtx),
+			    false);
 		} else if (is_target_region()) {
 			auto regRes = target_as_region()->emit(ctx);
 			if (not regRes->is_region()) {
@@ -138,7 +138,8 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    {llvm::ConstantInt::get(mallocFn->getArg(0)->getType(),
 			                            (usize)ctx->irCtx->dataLayout.getTypeAllocSize(expTy->get_llvm_type()))});
 			result = ir::Value::get(
-			    mallocCall, ir::PtrType::get(true, expTy, false, ir::PtrOwner::of_heap(), false, ctx->irCtx), false);
+			    mallocCall, ir::PtrType::get(true, expTy, false, ir::PtrOwner::of_heap(), false, None, ctx->irCtx),
+			    false);
 		} else if (is_target_region()) {
 			auto regRes = target_as_region()->emit(ctx);
 			if (not regRes->is_region()) {

@@ -50,8 +50,8 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 		                           mod->get_llvm_module()->getDataLayout().getTypeAllocSize(typRes->get_llvm_type()));
 	}
 	auto  mallocName = mod->link_internal_dependency(ir::InternalDependency::malloc, ctx->irCtx, fileRange);
-	auto* resTy      = ir::PtrType::get(true, typRes, false, ir::PtrOwner::of_heap(), count != nullptr, ctx->irCtx);
-	auto* mallocFn   = mod->get_llvm_module()->getFunction(mallocName);
+	auto* resTy    = ir::PtrType::get(true, typRes, false, ir::PtrOwner::of_heap(), count != nullptr, None, ctx->irCtx);
+	auto* mallocFn = mod->get_llvm_module()->getFunction(mallocName);
 	if (resTy->is_multi()) {
 		SHOW("Creating alloca for multi pointer")
 		auto* llAlloca = ir::Logic::newAlloca(ctx->get_fn(), None, resTy->get_llvm_type());

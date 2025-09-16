@@ -192,8 +192,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			        ir::UnsignedType::create(32u, irCtx), 0u));
 			args.push_back(ir::Argument::Create(
 			    Identifier(arguments.at(0)->get_name().value + "'data", arguments.at(0)->get_name().range),
-			    ir::PtrType::get(false, ir::NativeType::get_cstr(irCtx), true, ir::PtrOwner::of_anonymous(), false,
-			                     irCtx),
+			    ir::PtrType::get(false, ir::NativeType::get_bytestring(None, irCtx), true, ir::PtrOwner::of_none(),
+			                     false, None, irCtx),
 			    1u));
 		}
 	} else {
@@ -357,8 +357,8 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 		if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
 			auto* cmdArgsVal =
 			    block->new_local(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
-			                     ir::PtrType::get(false, ir::NativeType::get_cstr(irCtx), false,
-			                                      ir::PtrOwner::of_anonymous(), true, irCtx),
+			                     ir::PtrType::get(false, ir::NativeType::get_bytestring(None, irCtx), false,
+			                                      ir::PtrOwner::of_none(), true, None, irCtx),
 			                     false, fnEmit->arg_name_at(0).range);
 			SHOW("Storing argument pointer")
 			irCtx->builder.CreateStore(

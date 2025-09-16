@@ -147,7 +147,10 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 				llvm::Value* cand      = nullptr;
 				const auto   boolTy    = ir::UnsignedType::create_bool(ctx->irCtx);
 				auto         ptrTy     = valTy->as_ptr();
-				auto         llvmPtrTy = llvm::PointerType::get(ctx->irCtx->llctx, ptrTy->get_address_space());
+				auto         llvmPtrTy = llvm::PointerType::get(ctx->irCtx->llctx,
+                                                        ptrTy->get_address_space().has_value()
+				                                                    ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
+				                                                    : ctx->irCtx->dataLayout.getProgramAddressSpace());
 				if (ptrTy->is_multi()) {
 					if (isRef || val->is_ghost_ref()) {
 						cand = ctx->irCtx->builder.CreateLoad(

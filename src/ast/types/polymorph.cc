@@ -20,7 +20,11 @@ ir::Type* PolymorphType::emit(EmitCtx* ctx) {
 	}
 	auto ptrOwner =
 	    owner.has_value() ? Maybe<ir::PtrOwner>(get_ptr_owner(ctx, owner.value(), owner.value().range)) : None;
-	return ir::Polymorph::create(isTyped, isVar, std::move(irSkills), ptrOwner, ctx->irCtx);
+	Maybe<ir::AddressSpace> addr;
+	if (addressSpace.has_value()) {
+		addr = addressSpace.value().to_ir(ctx);
+	}
+	return ir::Polymorph::create(isTyped, isVar, std::move(irSkills), std::move(ptrOwner), std::move(addr), ctx->irCtx);
 }
 
 } // namespace qat::ast

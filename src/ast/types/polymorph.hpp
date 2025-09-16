@@ -5,6 +5,7 @@
 #include "./pointer_owner.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
+#include "pointer.hpp"
 
 namespace qat::ir {
 class Skill;
@@ -13,23 +14,33 @@ class Skill;
 namespace qat::ast {
 
 class PolymorphType final : public Type {
-	bool             isTyped;
-	bool             isVar;
-	Vec<SkillEntity> skills;
-	Maybe<PtrOwner>  owner;
+	bool                isTyped;
+	bool                isVar;
+	Vec<SkillEntity>    skills;
+	Maybe<PtrOwner>     owner;
+	Maybe<AddressSpace> addressSpace;
 
   public:
-	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<PtrOwner> _owner, FileRangePtr _range)
-	    : Type(std::move(_range)), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(_owner) {}
+	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<PtrOwner> _owner,
+	              Maybe<AddressSpace> _addressSpace, FileRangePtr _range)
+	    : Type(_range), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
+	      addressSpace(std::move(_addressSpace)) {}
 
 	useit static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<PtrOwner> owner,
-	                                   FileRangePtr range) {
-		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), owner, std::move(range));
+	                                   Maybe<AddressSpace> addressSpace, FileRangePtr range) {
+		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), std::move(owner),
+		                         std::move(addressSpace), std::move(range));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 		for (auto& sk : skills) {
 			sk.update_dependencies(phase, ir::DependType::complete, ent, ctx);
+		}
+		if (owner.has_value() && owner.value().candidate) {
+			owner.value().candidate->update_dependencies(phase, ir::DependType::complete, ent, ctx);
+		}
+		if (addressSpace.has_value() && addressSpace.value().value) {
+			UPDATE_DEPS(addressSpace.value().value);
 		}
 	}
 
@@ -61,10 +72,11 @@ class PolymorphType final : public Type {
 				skillStr += " + ";
 			}
 		}
-		return String(isTyped ? "poly:[type, " : "poly:[") + (isVar ? "var " : "") + skillStr +
-		       (owner.has_value() && owner.value().kind != PtrOwnType::anonymous ? (", " + owner.value().to_string())
-		                                                                         : "") +
-		       "]";
+		return String(isTyped ? (owner.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
+		                      : (owner.has_value() ? "poly:ptr[" : "poly:[")) +
+		       (isVar ? "var " : "") + skillStr +
+		       (owner.has_value() && owner.value().kind != OwnerKind::NONE ? (", " + owner.value().to_string()) : "") +
+		       (addressSpace.has_value() ? (", " + addressSpace.value().to_string()) : "") + "]";
 	}
 };
 

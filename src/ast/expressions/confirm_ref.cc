@@ -33,7 +33,7 @@ ir::Value* ConfirmRef::emit(EmitCtx* ctx) {
 		    ctx->irCtx->builder.CreatePointerCast(
 		        expr->get_llvm(),
 		        llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace())),
-		    expr->get_ir_type(), false);
+		    ir::RefType::get(isVar, expr->get_ir_type(), ctx->irCtx), false);
 		res->set_confirmed_ref();
 		return res->with_range(fileRange);
 	} else {

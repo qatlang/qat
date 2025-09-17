@@ -121,6 +121,7 @@ enum class NodeType {
 	META_REGISTER_READ,
 	META_REGISTER_WRITE,
 	META_MATH,
+	NON_NULL,
 };
 
 } // namespace qat::ast

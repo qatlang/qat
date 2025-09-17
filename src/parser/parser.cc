@@ -43,6 +43,7 @@
 #include "../ast/expressions/method_call.hpp"
 #include "../ast/expressions/move.hpp"
 #include "../ast/expressions/negative.hpp"
+#include "../ast/expressions/non_null.hpp"
 #include "../ast/expressions/not.hpp"
 #include "../ast/expressions/ok.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
@@ -5378,6 +5379,21 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					    "Expected an expression after is. Did you forget to provide one? The syntax for `is` expression is `is(myexpr)`",
 					    RangeAt(i));
 				}
+				break;
+			}
+			case TokenType::exclamation: {
+				if (hasCachedExpr() || hasCachedSymbol()) {
+					if ((not hasCachedExpr()) && hasCachedSymbol()) {
+						auto symbol = consumeCachedSymbol();
+						setCachedExpr(ast::Entity::create(symbol.relative, symbol.name, symbol.fileRange),
+						              symbol.tokenIndex);
+					} else if (hasCachedExpr() && hasCachedSymbol()) {
+						add_error("Internal error - Cached expressions are not empty and also found symbol",
+						          consumeCachedExpr()->fileRange);
+					}
+				}
+				auto exp = consumeCachedExpr();
+				setCachedExpr(ast::NonNull::create(exp, FileRange::merge(exp->fileRange, RangeAt(i))), i);
 				break;
 			}
 			case TokenType::child: {

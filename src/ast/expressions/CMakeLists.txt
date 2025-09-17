@@ -26,6 +26,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	member_access.cc
 	move.cc
 	negative.cc
+	non_null.cc
 	not.cc
 	ok.cc
 	operator.cc

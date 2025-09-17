@@ -288,7 +288,6 @@ Token Lexer::tokeniser() {
 					read();
 					commRange = this->get_position(commentValue.length());
 				}
-				SHOW("Single line comment value is " << commentValue)
 				return Token::valued(TokenType::comment, commentValue, commRange);
 			} else {
 				return Token::valued(TokenType::binaryOperator, value, this->get_position(1));

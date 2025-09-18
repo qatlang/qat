@@ -151,7 +151,7 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 	} else {
 		ctx->Error("Found an expression of type " + ctx->color(candTy->to_string()) +
 		               " here, which is not supported for non-null affirmation. Expected either a value or"
-		               " reference to a maybe type, a pointer value, or a value or reference to a result type",
+		               " reference to a maybe type, a nullable pointer type, or a value or reference to a result type",
 		           fileRange);
 	}
 	std::unreachable();

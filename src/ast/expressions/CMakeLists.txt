@@ -30,6 +30,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	not.cc
 	ok.cc
 	operator.cc
+	or_use_value.cc
 	plain_initialiser.cc
 	self_instance.cc
 	sub_entity.cc

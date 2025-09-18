@@ -17,7 +17,6 @@ class Token {
 
   public:
 	static Token valued(TokenType _type, String _value, FileRangePtr fileRange);
-
 	static Token normal(TokenType _type, FileRangePtr fileRange);
 
 	TokenType    type;

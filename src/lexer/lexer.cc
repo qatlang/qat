@@ -1258,6 +1258,8 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("in", in);
 	else Check_Normal_Keyword("ok", ok);
 	else Check_Normal_Keyword("of", of);
+	else Check_Normal_Keyword("or", orWord);
+	else Check_Normal_Keyword("and", andWord);
 	else Check_Normal_Keyword("range", range);
 	else Check_Normal_Keyword("result", result);
 	else Check_Normal_Keyword("error", error);

@@ -46,6 +46,7 @@
 #include "../ast/expressions/non_null.hpp"
 #include "../ast/expressions/not.hpp"
 #include "../ast/expressions/ok.hpp"
+#include "../ast/expressions/or_use_value.hpp"
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self_instance.hpp"
 #include "../ast/expressions/sub_entity.hpp"
@@ -5444,6 +5445,23 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							i++;
 						}
 						setCachedExpr(ast::IsVariant::create(exp, kind, std::move(name), RangeSpan(start, i)), i);
+					} else if (is_next(TokenType::orWord, i)) {
+						if (is_next(TokenType::colon, i + 1) && is_next(TokenType::use, i + 2)) {
+							i += 3;
+							if (not is_next(TokenType::parenthesisOpen, i)) {
+								add_error("Expected ( after this", RangeSpan(start, i));
+							}
+							i++;
+							auto candRes = do_expression(preCtx, None, i, None);
+							i            = candRes.second;
+							if (not is_next(TokenType::parenthesisClose, i)) {
+								add_error("Expected ) after this", RangeSpan(start, i));
+							}
+							i++;
+							setCachedExpr(ast::OrUseValue::create(exp, candRes.first, RangeSpan(start, i)), i);
+						} else {
+							add_error("Unexpected token found here", RangeAt(i + 1));
+						}
 					} else if (is_next(TokenType::match, i)) {
 						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
 							add_error(

@@ -3,7 +3,7 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/macros.hpp"
-#include <iostream>
+
 #include <llvm/Support/VersionTuple.h>
 
 namespace qat::cli {

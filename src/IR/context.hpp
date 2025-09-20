@@ -174,7 +174,7 @@ class Ctx {
 		allActiveGenerics.pop_back();
 	}
 
-	useit String joinActiveGenericNames(bool highlight) const {
+	useit String join_active_generic_names(bool highlight) const {
 		String result;
 		for (usize i = 0; i < allActiveGenerics.size(); i++) {
 			result.append(highlight ? color(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);

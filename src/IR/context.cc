@@ -347,7 +347,7 @@ void Ctx::Warning(String const& message, FileRangePtr fileRange) {
 		get_active_generic().warningCount++;
 	}
 	codeProblems.push_back(CodeProblem(
-	    false, (has_active_generic() ? ("Creating " + joinActiveGenericNames(false) + " => ") : "") + message,
+	    false, (has_active_generic() ? ("Creating " + join_active_generic_names(false) + " => ") : "") + message,
 	    fileRange));
 	// auto* cfg = cli::Config::get();
 	std::cout << "\n"
@@ -355,7 +355,7 @@ void Ctx::Warning(String const& message, FileRangePtr fileRange) {
 	          << cli::get_color(cli::Color::cyan) << " --> " << cli::get_color(cli::Color::reset)
 	          << fileRange->file.string() << ":" << fileRange->start.line << ":" << fileRange->start.byteOffset
 	          << cli::get_color(cli::Color::white) << "\n"
-	          << (has_active_generic() ? ("Creating " + joinActiveGenericNames(true) + " => ") : "") << message
+	          << (has_active_generic() ? ("Creating " + join_active_generic_names(true) + " => ") : "") << message
 	          << cli::get_color(cli::Color::reset) << "\n";
 	print_range_content(fileRange, false, false);
 }

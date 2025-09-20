@@ -9,15 +9,30 @@ namespace qat::ast {
 
 class NativeType final : public Type {
 	ir::NativeTypeKind  nativeKind;
+	bool                isNonNullable;
+	Maybe<FileRangePtr> varRange;
 	Maybe<AddressSpace> addressSpace;
 
   public:
-	NativeType(ir::NativeTypeKind _cTypeKind, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
-	    : Type(_fileRange), nativeKind(_cTypeKind), addressSpace(std::move(_addressSpace)) {}
+	NativeType(ir::NativeTypeKind _cTypeKind, bool _isNonNullable, Maybe<FileRangePtr> _varRange,
+	           Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
+	    : Type(_fileRange), nativeKind(_cTypeKind), isNonNullable(_isNonNullable), varRange(_varRange),
+	      addressSpace(std::move(_addressSpace)) {}
 
-	useit static NativeType* create(ir::NativeTypeKind cTypeKind, Maybe<AddressSpace> addressSpace,
-	                                FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(NativeType), cTypeKind, std::move(addressSpace), fileRange);
+	useit static NativeType* create_bytestring(bool isNonNullable, Maybe<FileRangePtr> varRange,
+	                                           Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(NativeType), ir::NativeTypeKind::ByteString, isNonNullable, varRange,
+		                         std::move(addressSpace), fileRange);
+	}
+
+	useit static NativeType* create_ptrdiff(bool isUnsigned, Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(NativeType),
+		                         isUnsigned ? ir::NativeTypeKind::UPtrDiff : ir::NativeTypeKind::PtrDiff, false, None,
+		                         std::move(addressSpace), fileRange);
+	}
+
+	useit static NativeType* create(ir::NativeTypeKind cTypeKind, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(NativeType), cTypeKind, false, None, None, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*);

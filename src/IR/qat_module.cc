@@ -2695,13 +2695,13 @@ bool Mod::find_clang_path(Ctx* ctx) {
 	return usableClangPath.has_value();
 }
 
-void Mod::compile_to_object(Ctx* ctx, llvm::TargetMachine* machine, llvm::PassBuilder passBuilder) {
+void Mod::compile_to_object(Ctx* ctx, llvm::PassBuilder passBuilder) {
 	if (not isCompiledToObject) {
 		auto& log = Logger::get();
 		log->say("Compiling module `" + name.value + "` from file " + filePath.string());
 		auto* cfg = cli::Config::get();
 		for (auto* sub : submodules) {
-			sub->compile_to_object(ctx, machine, passBuilder);
+			sub->compile_to_object(ctx, passBuilder);
 		}
 		objectFilePath = fs::absolute((cfg->has_output_path() ? cfg->get_output_path() : basePath) / "object" /
 		                              filePath.lexically_relative(basePath).replace_filename(get_writable_name().append(
@@ -2751,7 +2751,7 @@ void Mod::compile_to_object(Ctx* ctx, llvm::TargetMachine* machine, llvm::PassBu
 		modPass.run(*llvmModule, modAnalysis);
 		SHOW("Creating emit pass");
 		llvm::legacy::PassManager emitPass;
-		if (machine->addPassesToEmitFile(emitPass, stream, nullptr, llvm::CodeGenFileType::ObjectFile)) {
+		if (ctx->targetMachine->addPassesToEmitFile(emitPass, stream, nullptr, llvm::CodeGenFileType::ObjectFile)) {
 			ctx->Error("Could not create a pass to emit the object file " + objectFilePath.value().string(), None);
 		}
 		SHOW("Running emit pass");

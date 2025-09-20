@@ -114,7 +114,45 @@ void QatSitter::initialise() {
 	}
 	SHOW("Module count: " << ir::Mod::allModules.size())
 	if (config->is_workflow_build() || config->is_workflow_analyse()) {
-		auto qatStartTime = std::chrono::high_resolution_clock::now();
+		auto cfg = cli::Config::get();
+		llvm::InitializeAllTargetInfos();
+		llvm::InitializeAllTargets();
+		llvm::InitializeAllTargetMCs();
+		llvm::InitializeAllAsmParsers();
+		llvm::InitializeAllAsmPrinters();
+		String errStr;
+		auto   target = llvm::TargetRegistry::lookupTarget(cfg->get_target_triple(), errStr);
+		if (not target) {
+			ctx->Error("The target triple " + cfg->get_target_triple() +
+			               " is invalid. The error returned from LLVM is " + errStr,
+			           None);
+		}
+		llvm::TargetOptions targetOptions;
+		String              cpuName = "generic";
+		String              cpuFeatures;
+		if (not cfg->has_target_triple() && not cfg->has_cpu_name()) {
+			cpuName = llvm::sys::getHostCPUName().str();
+			SHOW("CPU name is " << cpuName);
+			// auto features = llvm::sys::getHostCPUFeatures();
+			// for (auto& item : features) {
+			// 	if (item.getValue()) {
+			// 		SHOW("Enabling CPU feature " << item.getKey().str());
+			// 		if (not cpuFeatures.empty()) {
+			// 			cpuFeatures += ",";
+			// 		}
+			// 		cpuFeatures += item.getKey();
+			// 	}
+			// }
+		}
+		if (cfg->has_cpu_name()) {
+			cpuName = cfg->get_cpu_name();
+		}
+		if (cfg->has_cpu_features()) {
+			cpuFeatures = cfg->get_cpu_features();
+		}
+		ctx->targetMachine = target->createTargetMachine(cfg->get_target_triple(), cpuName, cpuFeatures, targetOptions,
+		                                                 llvm::Reloc::PIC_);
+		auto qatStartTime  = std::chrono::high_resolution_clock::now();
 		SHOW("Module count: " << ir::Mod::allModules.size())
 		for (auto* entity : fileEntities) {
 			entity->node_handle_fs_brings(ctx);
@@ -223,7 +261,6 @@ void QatSitter::initialise() {
 		                          std::chrono::high_resolution_clock::now() - qatStartTime)
 		                          .count();
 		ctx->qatCompileTimeInMs = qatCompileTime;
-		auto* cfg               = cli::Config::get();
 		// if (cfg->export_code_metadata()) {
 		// 	log->say("Exporting code metadata");
 		// 	Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
@@ -304,47 +341,10 @@ void QatSitter::initialise() {
 			}
 		};
 		if (cfg->is_workflow_build()) {
-			llvm::InitializeAllTargetInfos();
-			llvm::InitializeAllTargets();
-			llvm::InitializeAllTargetMCs();
-			llvm::InitializeAllAsmParsers();
-			llvm::InitializeAllAsmPrinters();
-			String errStr;
-			auto   target = llvm::TargetRegistry::lookupTarget(cfg->get_target_triple(), errStr);
-			if (not target) {
-				ctx->Error("The target triple " + cfg->get_target_triple() +
-				               " is invalid. The error returned from LLVM is " + errStr,
-				           None);
-			}
-			llvm::PassBuilder   passBuilder;
-			llvm::TargetOptions targetOptions;
-			String              cpuName = "generic";
-			String              cpuFeatures;
-			if (not cfg->has_target_triple() && not cfg->has_cpu_name()) {
-				cpuName = llvm::sys::getHostCPUName().str();
-				SHOW("CPU name is " << cpuName);
-				// auto features = llvm::sys::getHostCPUFeatures();
-				// for (auto& item : features) {
-				// 	if (item.getValue()) {
-				// 		SHOW("Enabling CPU feature " << item.getKey().str());
-				// 		if (not cpuFeatures.empty()) {
-				// 			cpuFeatures += ",";
-				// 		}
-				// 		cpuFeatures += item.getKey();
-				// 	}
-				// }
-			}
-			if (cfg->has_cpu_name()) {
-				cpuName = cfg->get_cpu_name();
-			}
-			if (cfg->has_cpu_features()) {
-				cpuFeatures = cfg->get_cpu_features();
-			}
-			auto       targetMachine  = target->createTargetMachine(cfg->get_target_triple(), cpuName, cpuFeatures,
-			                                                        targetOptions, llvm::Reloc::PIC_);
-			const auto clangStartTime = std::chrono::high_resolution_clock::now();
+			llvm::PassBuilder passBuilder;
+			const auto        clangStartTime = std::chrono::high_resolution_clock::now();
 			for (auto* entity : fileEntities) {
-				entity->compile_to_object(ctx, targetMachine, passBuilder);
+				entity->compile_to_object(ctx, passBuilder);
 			}
 			ir::Mod::find_native_library_paths();
 			for (auto* entity : fileEntities) {

@@ -128,7 +128,9 @@ class Ctx {
 		return instance;
 	}
 
-	llvm::LLVMContext        llctx;
+	llvm::LLVMContext    llctx;
+	llvm::TargetMachine* targetMachine = nullptr;
+
 	clang::DiagnosticsEngine diagnosticsEngine;
 	clang::TargetInfo*       clangTargetInfo;
 	llvm::DataLayout         dataLayout;

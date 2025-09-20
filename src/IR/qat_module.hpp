@@ -967,7 +967,7 @@ class Mod final : public Uniq, public EntityOverview {
 	void node_update_dependencies(Ctx* irCtx);
 
 	void setup_llvm_file(Ctx* irCtx);
-	void compile_to_object(Ctx* irCtx, llvm::TargetMachine* machine, llvm::PassBuilder passBuilder);
+	void compile_to_object(Ctx* irCtx, llvm::PassBuilder passBuilder);
 	void handle_native_libs(Ctx* irCtx);
 	void bundle_modules(Ctx* irCtx);
 

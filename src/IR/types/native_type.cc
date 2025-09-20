@@ -1,10 +1,10 @@
 #include "./native_type.hpp"
 #include "../context.hpp"
-#include "float.hpp"
-#include "integer.hpp"
-#include "pointer.hpp"
-#include "type_kind.hpp"
-#include "unsigned.hpp"
+#include "./float.hpp"
+#include "./integer.hpp"
+#include "./pointer.hpp"
+#include "./type_kind.hpp"
+#include "./unsigned.hpp"
 
 namespace qat::ir {
 
@@ -122,7 +122,8 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 	}
 }
 
-NativeType::NativeType(ir::Type* actual, NativeTypeKind c_kind) : subType(actual), nativeKind(c_kind) {
+NativeType::NativeType(ir::Type* actual, NativeTypeKind c_kind, Maybe<AddressSpace> _addressSpace)
+    : subType(actual), nativeKind(c_kind), addressSpace(std::move(_addressSpace)) {
 	llvmType    = actual->get_llvm_type();
 	linkingName = "qat'nativetype:[" + to_string() + "]";
 }
@@ -134,7 +135,7 @@ ir::Type* NativeType::get_subtype() const { return subType; }
 NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 	switch (kind) {
 		case NativeTypeKind::ByteString:
-			return get_bytestring(None, irCtx);
+			return get_bytestring(false, false, None, irCtx);
 		case NativeTypeKind::Bool:
 			return get_bool(irCtx);
 		case NativeTypeKind::Int:
@@ -178,9 +179,9 @@ NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 		case NativeTypeKind::UintPtr:
 			return get_uintptr(irCtx);
 		case NativeTypeKind::PtrDiff:
-			return get_ptrdiff(irCtx);
+			return get_ptrdiff(None, irCtx);
 		case NativeTypeKind::UPtrDiff:
-			return get_ptrdiff_unsigned(irCtx);
+			return get_ptrdiff_unsigned(None, irCtx);
 		case NativeTypeKind::SigAtomic:
 			return get_sigatomic(irCtx);
 		case NativeTypeKind::LongDouble:
@@ -526,38 +527,44 @@ NativeType* NativeType::get_uintptr(ir::Ctx* irCtx) {
 	    NativeTypeKind::UintPtr);
 }
 
-NativeType* NativeType::get_ptrdiff(ir::Ctx* irCtx) {
+NativeType* NativeType::get_ptrdiff(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
 			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::PtrDiff) {
+			if ((cTyp->nativeKind == NativeTypeKind::PtrDiff) &&
+			    ir::AddressSpace::compare(cTyp->addressSpace, addressSpace)) {
 				return cTyp;
 			}
 		}
 	}
 	return std::construct_at(
 	    OwnNormal(NativeType),
-	    ir::IntegerType::get(irCtx->clangTargetInfo->getTypeWidth(
-	                             irCtx->clangTargetInfo->getPtrDiffType(irCtx->get_language_address_space())),
-	                         irCtx),
-	    NativeTypeKind::PtrDiff);
+	    ir::IntegerType::get(
+	        irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getPtrDiffType(
+	            clang::getLangASFromTargetAS(addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
+	                                                                  : irCtx->dataLayout.getProgramAddressSpace()))),
+	        irCtx),
+	    NativeTypeKind::PtrDiff, std::move(addressSpace));
 }
 
-NativeType* NativeType::get_ptrdiff_unsigned(ir::Ctx* irCtx) {
+NativeType* NativeType::get_ptrdiff_unsigned(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
 			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UPtrDiff) {
+			if ((cTyp->nativeKind == NativeTypeKind::UPtrDiff) &&
+			    ir::AddressSpace::compare(cTyp->addressSpace, addressSpace)) {
 				return cTyp;
 			}
 		}
 	}
 	return std::construct_at(
 	    OwnNormal(NativeType),
-	    ir::UnsignedType::create(irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUnsignedPtrDiffType(
-	                                 irCtx->get_language_address_space())),
-	                             irCtx),
-	    NativeTypeKind::UPtrDiff);
+	    ir::UnsignedType::create(
+	        irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUnsignedPtrDiffType(
+	            clang::getLangASFromTargetAS(addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
+	                                                                  : irCtx->dataLayout.getProgramAddressSpace()))),
+	        irCtx),
+	    NativeTypeKind::UPtrDiff, std::move(addressSpace));
 }
 
 NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
@@ -575,19 +582,23 @@ NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
 	    NativeTypeKind::SigAtomic);
 }
 
-NativeType* NativeType::get_bytestring(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
+NativeType* NativeType::get_bytestring(bool hasVar, bool isNonNullable, Maybe<AddressSpace> addressSpace,
+                                       ir::Ctx* irCtx) {
 	for (auto* typ : allTypes) {
 		if (typ->type_kind() == TypeKind::NATIVE) {
 			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::ByteString) {
+			if ((cTyp->nativeKind == NativeTypeKind::ByteString) &&
+			    (cTyp->get_subtype()->as_ptr()->is_subtype_variable() == hasVar) &&
+			    (cTyp->get_subtype()->as_ptr()->is_non_nullable() == isNonNullable) &&
+			    ir::AddressSpace::compare(cTyp->get_subtype()->as_ptr()->get_address_space(), addressSpace)) {
 				return cTyp;
 			}
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-	                         ir::PtrType::get(false, ir::IntegerType::get(8u, irCtx), false, PtrOwner::of_none(), false,
-	                                          addressSpace, irCtx),
-	                         NativeTypeKind::ByteString);
+	                         ir::PtrType::get(hasVar, ir::IntegerType::get(8u, irCtx), isNonNullable,
+	                                          PtrOwner::of_none(), false, addressSpace, irCtx),
+	                         NativeTypeKind::ByteString, std::move(addressSpace));
 }
 
 bool NativeType::has_long_double(ir::Ctx* irCtx) { return irCtx->clangTargetInfo->hasLongDoubleType(); }
@@ -635,6 +646,38 @@ Maybe<bool> NativeType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::
 	return None;
 }
 
-String NativeType::to_string() const { return native_type_kind_to_string(nativeKind); }
+String NativeType::to_string() const {
+	if (nativeKind == NativeTypeKind::ByteString) {
+		String res = "bytestring";
+		if (subType->as_ptr()->is_non_nullable()) {
+			res += "!";
+		}
+		if (subType->as_ptr()->is_subtype_variable() || subType->as_ptr()->has_address_space()) {
+			if (subType->as_ptr()->is_non_nullable()) {
+				res += "[";
+			} else {
+				res += ":[";
+			}
+			if (subType->as_ptr()->is_subtype_variable()) {
+				res += "var";
+				if (subType->as_ptr()->has_address_space()) {
+					res += ", ";
+				}
+			}
+			if (subType->as_ptr()->has_address_space()) {
+				res += subType->as_ptr()->get_address_space().value().to_string();
+			}
+			res += "]";
+		}
+		return res;
+	} else if (nativeKind == NativeTypeKind::PtrDiff || nativeKind == NativeTypeKind::UPtrDiff) {
+		String res = nativeKind == NativeTypeKind::PtrDiff ? "ptrdiff" : "uptrdiff";
+		if (addressSpace.has_value()) {
+			res += ":[" + addressSpace.value().to_string() + "]";
+		}
+		return res;
+	}
+	return native_type_kind_to_string(nativeKind);
+}
 
 } // namespace qat::ir

@@ -42,14 +42,17 @@ String native_type_kind_to_string(NativeTypeKind kind);
 
 class NativeType : public Type {
   private:
-	ir::Type*      subType;
-	NativeTypeKind nativeKind;
+	ir::Type*           subType;
+	NativeTypeKind      nativeKind;
+	Maybe<AddressSpace> addressSpace;
 
   public:
-	NativeType(ir::Type* actual, NativeTypeKind c_kind);
+	NativeType(ir::Type* actual, NativeTypeKind c_kind, Maybe<AddressSpace> addressSpace = None);
 
 	useit NativeTypeKind get_c_type_kind() const;
 	useit ir::Type* get_subtype() const;
+
+	useit Maybe<AddressSpace> const& get_address_space() const { return addressSpace; }
 
 	useit bool can_be_prerun() const final { return subType->can_be_prerun(); }
 
@@ -138,11 +141,12 @@ class NativeType : public Type {
 	useit static NativeType* get_uintmax(ir::Ctx* irCtx);
 	useit static NativeType* get_intptr(ir::Ctx* irCtx);
 	useit static NativeType* get_uintptr(ir::Ctx* irCtx);
-	useit static NativeType* get_ptrdiff(ir::Ctx* irCtx);
-	useit static NativeType* get_ptrdiff_unsigned(ir::Ctx* irCtx);
+	useit static NativeType* get_ptrdiff(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
+	useit static NativeType* get_ptrdiff_unsigned(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 	// TODO - Check if there is more to SigAtomic than just an integer type
 	useit static NativeType* get_sigatomic(ir::Ctx* irCtx);
-	useit static NativeType* get_bytestring(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
+	useit static NativeType* get_bytestring(bool isVar, bool isNonNullable, Maybe<AddressSpace> addressSpace,
+	                                        ir::Ctx* irCtx);
 
 	useit static bool        has_long_double(ir::Ctx* irCtx);
 	useit static NativeType* get_long_double(ir::Ctx* irCtx);

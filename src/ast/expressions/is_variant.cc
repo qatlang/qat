@@ -115,7 +115,13 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 						    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(errTy->get_llvm_type())));
 						cand = ctx->irCtx->builder.CreateICmp(
 						    kind == IsVariantKind::RESULT_OK ? llvm::CmpInst::ICMP_EQ : llvm::CmpInst::ICMP_NE, cand,
-						    llvm::ConstantInt::get(ir::NativeType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u));
+						    llvm::ConstantInt::get(
+						        ir::NativeType::get_ptrdiff(
+						            ir::AddressSpace::from_value(
+						                llvm::cast<llvm::PointerType>(errTy->get_llvm_type())->getAddressSpace()),
+						            ctx->irCtx)
+						            ->get_llvm_type(),
+						        0u));
 					} else {
 						auto intTy = llvm::Type::getIntNTy(
 						    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getTypeSizeInBits(errTy->get_llvm_type()));
@@ -148,7 +154,7 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 				const auto   boolTy    = ir::UnsignedType::create_bool(ctx->irCtx);
 				auto         ptrTy     = valTy->as_ptr();
 				auto         llvmPtrTy = llvm::PointerType::get(ctx->irCtx->llctx,
-                                                        ptrTy->get_address_space().has_value()
+                                                        ptrTy->has_address_space()
 				                                                    ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
 				                                                    : ctx->irCtx->dataLayout.getProgramAddressSpace());
 				if (ptrTy->is_multi()) {
@@ -169,7 +175,8 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 				    ctx->irCtx->builder.CreateICmpEQ(
 				        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), cand,
 				                                          llvm::ConstantPointerNull::get(llvmPtrTy)),
-				        llvm::ConstantInt::get(ir::NativeType::get_ptrdiff_unsigned(ctx->irCtx)->get_llvm_type(), 0u)),
+				        llvm::ConstantInt::get(
+				            ir::NativeType::get_ptrdiff(ptrTy->get_address_space(), ctx->irCtx)->get_llvm_type(), 0u)),
 				    boolTy, true);
 			}
 			case IsVariantKind::NONE: {
@@ -257,8 +264,14 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 						    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(errTy->get_llvm_type())));
 						return ir::Value::get(
 						    ctx->irCtx->builder.CreateICmpEQ(
-						        cand, llvm::ConstantInt::get(
-						                  ir::NativeType::get_ptrdiff_unsigned(ctx->irCtx)->get_llvm_type(), 0u)),
+						        cand,
+						        llvm::ConstantInt::get(
+						            ir::NativeType::get_ptrdiff_unsigned(
+						                ir::AddressSpace::from_value(
+						                    llvm::cast<llvm::PointerType>(errTy->get_llvm_type())->getAddressSpace()),
+						                ctx->irCtx)
+						                ->get_llvm_type(),
+						            0u)),
 						    boolTy, true);
 					} else if (llvm::isa<llvm::IntegerType>(errTy->get_llvm_type())) {
 						return ir::Value::get(

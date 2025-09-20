@@ -70,7 +70,7 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 			        llvm::Type::getInt8Ty(ctx->irCtx->llctx),
 			        ctx->irCtx->builder.CreateExtractValue(cand->get_llvm(), {0u}),
 			        llvm::ConstantPointerNull::get(llvm::PointerType::get(
-			            ctx->irCtx->llctx, ptrTy->get_address_space().has_value()
+			            ctx->irCtx->llctx, ptrTy->has_address_space()
 			                                   ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
 			                                   : ctx->irCtx->dataLayout.getProgramAddressSpace()))),
 			    llvm::ConstantInt::get(ptrDiffTy, 0u, true));

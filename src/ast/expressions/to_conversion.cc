@@ -73,8 +73,10 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						                                           ? valType->as_ptr()->get_subtype()->get_llvm_type()
 						                                           : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
 						                                       ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-						        llvm::ConstantInt::get(ir::NativeType::get_ptrdiff(ctx->irCtx)->get_llvm_type(), 0u,
-						                               true)),
+						        llvm::ConstantInt::get(
+						            ir::NativeType::get_ptrdiff(valType->as_ptr()->get_address_space(), ctx->irCtx)
+						                ->get_llvm_type(),
+						            0u, true)),
 						    nullTrueBlock->get_bb(), restBlock->get_bb());
 						nullTrueBlock->set_active(ctx->irCtx->builder);
 						ir::Logic::panic_in_function(

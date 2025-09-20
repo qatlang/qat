@@ -8,10 +8,11 @@
 namespace qat::ir {
 
 FunctionType* Internal::printf_signature(Ctx* irCtx) {
-	return FunctionType::create(ReturnType::get(NativeType::get_int(irCtx)),
-	                            {ArgumentType::create_normal(NativeType::get_bytestring(None, irCtx), None, false),
-	                             ArgumentType::create_variadic(None)},
-	                            irCtx->llctx);
+	return FunctionType::create(
+	    ReturnType::get(NativeType::get_int(irCtx)),
+	    {ArgumentType::create_normal(NativeType::get_bytestring(false, false, None, irCtx), None, false),
+	     ArgumentType::create_variadic(None)},
+	    irCtx->llctx);
 }
 
 FunctionType* Internal::malloc_signature(Ctx* irCtx) {

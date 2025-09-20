@@ -112,9 +112,7 @@ PtrType* PtrType::get(bool isSubtypeVariable, Type* type, bool nonNullable, PtrO
 			    (typ->as_ptr()->is_subtype_variable() == isSubtypeVariable) &&
 			    typ->as_ptr()->get_owner().is_same(owner) && (typ->as_ptr()->is_multi() == hasMulti) &&
 			    (typ->as_ptr()->nonNullable == nonNullable) &&
-			    (typ->as_ptr()->get_address_space().has_value() == addressSpace.has_value()) &&
-			    (addressSpace.has_value() ? (typ->as_ptr()->get_address_space().value().is_same(addressSpace.value()))
-			                              : true)) {
+			    ir::AddressSpace::compare(typ->as_ptr()->get_address_space(), addressSpace)) {
 				return typ->as_ptr();
 			}
 		}

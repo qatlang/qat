@@ -68,7 +68,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 			               ". The address-space specification does not match",
 			           fileRange);
 		} else if (resTy->has_address_space() && origTy->has_address_space() &&
-		           not resTy->get_address_space().value().is_same(origTy->get_address_space().value())) {
+		           not ir::AddressSpace::compare(resTy->get_address_space(), origTy->get_address_space())) {
 			ctx->Error("The existing polymorph has an address-space of " +
 			               ctx->color(origTy->get_address_space().value().to_string()) +
 			               ", but the resultant polymorph has an address-space of " +

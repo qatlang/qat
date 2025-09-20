@@ -66,7 +66,10 @@ struct AddressSpace {
 
 	useit static AddressSpace from_name(String _name) { return AddressSpace{.name = std::move(_name), .value = 0}; }
 
-	useit bool is_same(AddressSpace const& other) const { return (name == other.name) && (value == other.value); }
+	useit static bool compare(Maybe<AddressSpace> const& first, Maybe<AddressSpace> const& second) {
+		return (first.has_value() == second.has_value()) &&
+		       (first.has_value() ? ((first->name == second->name) && (first->value == second->value)) : true);
+	}
 
 	useit String to_string() const {
 		if (name.empty()) {
@@ -97,6 +100,8 @@ class PtrType : public Type {
 
 	useit Type*    get_subtype() const;
 	useit PtrOwner get_owner() const;
+
+	useit bool has_address_space() const { return addressSpace.has_value(); }
 
 	useit Maybe<AddressSpace> const& get_address_space() const;
 

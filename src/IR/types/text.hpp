@@ -11,6 +11,8 @@ class TextType : public Type {
   private:
 	bool isPack;
 
+	static Vec<TextType*> allTextTypes;
+
   public:
 	TextType(ir::Ctx* irCtx, bool isPacked = false);
 

@@ -15,6 +15,8 @@ class UnsignedType : public Type {
 
 	ir::Ctx* irCtx;
 
+	static Vec<UnsignedType*> allUnsignedTypes;
+
   public:
 	UnsignedType(u64 _bitWidth, ir::Ctx* irCtx, bool _isBool);
 

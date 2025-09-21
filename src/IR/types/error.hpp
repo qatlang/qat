@@ -10,17 +10,19 @@ class ErrorType final : public Type {
 	bool  hasNoneVariant;
 	Type* subType;
 
+	static Vec<ErrorType*> allErrorTypes;
+
   public:
 	ErrorType(bool _hasNoneVariant, Type* _subType) : hasNoneVariant(_hasNoneVariant), subType(_subType) {
 		linkingName = (hasNoneVariant ? "qat'error:[" : "qat'error![") + subType->get_name_for_linking() + "]";
 		llvmType    = subType->get_llvm_type();
+		allErrorTypes.push_back(this);
 	}
 
 	useit static ErrorType* get(bool hasNoneVariant, Type* subType) {
-		for (auto typ : allTypes) {
-			if (typ->is_error() && (typ->as_error()->hasNoneVariant == hasNoneVariant) &&
-			    typ->as_error()->get_subtype()->is_same(subType)) {
-				return typ->as_error();
+		for (auto typ : allErrorTypes) {
+			if ((typ->hasNoneVariant == hasNoneVariant) && typ->get_subtype()->is_same(subType)) {
+				return typ;
 			}
 		}
 		return std::construct_at(OwnNormal(ErrorType), hasNoneVariant, subType);

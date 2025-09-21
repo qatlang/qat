@@ -10,6 +10,8 @@ class SliceType : public Type {
 	Type* subType;
 	bool  isVar;
 
+	static Vec<SliceType*> allSliceTypes;
+
   public:
 	SliceType(bool isVar, Type* subType, ir::Ctx* ctx);
 

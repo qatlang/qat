@@ -16,8 +16,11 @@ class ResultType : public Type {
 	ir::Type* errorType;
 	bool      isPacked = false;
 
+	static Vec<ResultType*> allResultTypes;
+
   public:
 	ResultType(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
+
 	static ResultType* get(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx);
 
 	useit ir::Type* get_valid_type() const;

@@ -15,6 +15,8 @@ class VectorType : public Type {
 	usize      count;
 	VectorKind kind;
 
+	static Vec<VectorType*> allVectorTypes;
+
   public:
 	VectorType(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);
 	useit static VectorType* create(ir::Type* subType, usize count, VectorKind kind, ir::Ctx* irCtx);

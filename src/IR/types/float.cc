@@ -11,6 +11,8 @@
 
 namespace qat::ir {
 
+Vec<FloatType*> FloatType::allFloatTypes = {};
+
 FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx) : kind(_kind) {
 	switch (kind) {
 		case FloatTypeKind::_brain: {
@@ -43,14 +45,13 @@ FloatType::FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx) : kind(_kind) 
 		}
 	}
 	linkingName = "qat'" + to_string();
+	allFloatTypes.push_back(this);
 }
 
 FloatType* FloatType::get(FloatTypeKind _kind, llvm::LLVMContext& llctx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_float()) {
-			if (typ->as_float()->get_float_kind() == _kind) {
-				return typ->as_float();
-			}
+	for (auto* typ : allFloatTypes) {
+		if (typ->get_float_kind() == _kind) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(FloatType), _kind, llctx);

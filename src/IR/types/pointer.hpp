@@ -91,6 +91,8 @@ class PtrType : public Type {
 	bool                nonNullable;
 	Maybe<AddressSpace> addressSpace;
 
+	static Vec<PtrType*> allPtrTypes;
+
   public:
 	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, PtrOwner _owner, bool _hasMulti,
 	        Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx);

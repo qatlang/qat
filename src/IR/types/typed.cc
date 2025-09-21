@@ -10,19 +10,20 @@
 
 namespace qat::ir {
 
-TypedType* TypedType::instance = nullptr;
+TypedType* TypedType::typedType = nullptr;
 
 TypedType::TypedType(ir::Ctx* _ctx) {
 	ctx         = _ctx;
 	llvmType    = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 	linkingName = "qat'type";
+	typedType   = this;
 }
 
 TypedType* TypedType::get(ir::Ctx* ctx) {
-	if (not instance) {
-		instance = std::construct_at(OwnNormal(TypedType), ctx);
+	if (typedType) {
+		return typedType;
 	}
-	return instance;
+	return std::construct_at(OwnNormal(TypedType), ctx);
 }
 
 Maybe<bool> TypedType::equality_of(ir::Ctx*, ir::PrerunValue* first, ir::PrerunValue* second) const {

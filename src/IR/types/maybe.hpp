@@ -12,6 +12,8 @@ class MaybeType : public Type {
 	Type* subTy;
 	bool  isPacked;
 
+	static Vec<MaybeType*> allMaybeTypes;
+
   public:
 	MaybeType(Type* subTy, bool isPacked, ir::Ctx* irCtx);
 	useit static MaybeType* get(Type* subTy, bool isPacked, ir::Ctx* irCtx);

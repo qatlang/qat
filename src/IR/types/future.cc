@@ -13,6 +13,8 @@
 
 namespace qat::ir {
 
+Vec<FutureType*> FutureType::allFutureTypes = {};
+
 FutureType::FutureType(Type* _subType, bool _isPacked, ir::Ctx* irCtx) : subTy(_subType), isPacked(_isPacked) {
 	linkingName = "qat'future:[" + String(isPacked ? "pack," : "") + subTy->get_name_for_linking() + "]";
 	llvmType    = llvm::StructType::create(
@@ -22,14 +24,13 @@ FutureType::FutureType(Type* _subType, bool _isPacked, ir::Ctx* irCtx) : subTy(_
             llvm::PointerType::get(llvm::Type::getInt64Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace()),
         },
         linkingName, isPacked);
+	allFutureTypes.push_back(this);
 }
 
 FutureType* FutureType::get(Type* subType, bool isPacked, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_future()) {
-			if (typ->as_future()->get_subtype()->is_same(subType) && (typ->as_future()->isPacked == isPacked)) {
-				return typ->as_future();
-			}
+	for (auto* typ : allFutureTypes) {
+		if (typ->get_subtype()->is_same(subType) && (typ->isPacked == isPacked)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(FutureType), subType, isPacked, irCtx);

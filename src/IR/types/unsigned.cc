@@ -10,30 +10,28 @@
 
 namespace qat::ir {
 
+Vec<UnsignedType*> UnsignedType::allUnsignedTypes = {};
+
 UnsignedType::UnsignedType(u64 _bitWidth, ir::Ctx* _ctx, bool _isBool)
     : bitWidth(_bitWidth), isTypeBool(_isBool), irCtx(_ctx) {
 	llvmType    = llvm::IntegerType::get(irCtx->llctx, bitWidth);
 	linkingName = "qat'" + to_string();
+	allUnsignedTypes.push_back(this);
 }
 
 UnsignedType* UnsignedType::create(u64 bits, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_unsigned()) {
-			auto candidate = typ->as_unsigned();
-			if (candidate->is_bitwidth(bits) && not candidate->isTypeBool) {
-				return typ->as_unsigned();
-			}
+	for (auto* typ : allUnsignedTypes) {
+		if (typ->is_bitwidth(bits) && not typ->isTypeBool) {
+			return typ->as_unsigned();
 		}
 	}
 	return std::construct_at(OwnNormal(UnsignedType), bits, irCtx, false);
 }
 
 UnsignedType* UnsignedType::create_bool(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_unsigned()) {
-			if (typ->as_unsigned()->isTypeBool) {
-				return typ->as_unsigned();
-			}
+	for (auto* typ : allUnsignedTypes) {
+		if (typ->as_unsigned()->isTypeBool) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(UnsignedType), 1u, irCtx, true);

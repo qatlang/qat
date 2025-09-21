@@ -7,14 +7,14 @@
 namespace qat::ir {
 
 class CharType final : public Type {
+	static CharType* charType;
+
   public:
 	CharType(llvm::LLVMContext& llctx);
 
 	useit static CharType* get(llvm::LLVMContext& llctx) {
-		for (auto* typ : allTypes) {
-			if (typ->type_kind() == TypeKind::CHAR) {
-				return typ->as_char();
-			}
+		if (charType) {
+			return charType;
 		}
 		return std::construct_at(OwnNormal(CharType), llctx);
 	}

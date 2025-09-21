@@ -6,6 +6,8 @@
 
 namespace qat::ir {
 
+Vec<RefType*> RefType::allRefTypes = {};
+
 RefType::RefType(bool _isSubtypeVariable, Type* _type, ir::Ctx* irCtx)
     : subType(_type), isSubVariable(_isSubtypeVariable) {
 	if (subType->is_type_sized()) {
@@ -15,18 +17,16 @@ RefType::RefType(bool _isSubtypeVariable, Type* _type, ir::Ctx* irCtx)
 		    llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace());
 	}
 	linkingName = "qat'ref:[" + String(isSubVariable ? "var " : "") + subType->get_name_for_linking() + "]";
+	allRefTypes.push_back(this);
 }
 
-RefType* RefType::get(bool _isSubtypeVariable, Type* _subtype, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_ref()) {
-			if (typ->as_ref()->get_subtype()->is_same(_subtype) &&
-			    (typ->as_ref()->has_variability() == _isSubtypeVariable)) {
-				return typ->as_ref();
-			}
+RefType* RefType::get(bool isSubtypeVariable, Type* subType, ir::Ctx* irCtx) {
+	for (auto* typ : allRefTypes) {
+		if (typ->get_subtype()->is_same(subType) && (typ->has_variability() == isSubtypeVariable)) {
+			return typ;
 		}
 	}
-	return std::construct_at(OwnNormal(RefType), _isSubtypeVariable, _subtype, irCtx);
+	return std::construct_at(OwnNormal(RefType), isSubtypeVariable, subType, irCtx);
 }
 
 Type* RefType::get_subtype() const { return subType; }

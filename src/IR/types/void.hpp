@@ -7,14 +7,14 @@
 namespace qat::ir {
 
 class VoidType : public Type {
+	static VoidType* voidType;
+
   public:
 	explicit VoidType(llvm::LLVMContext& llctx);
 
 	useit static VoidType* get(llvm::LLVMContext& llctx) {
-		for (auto* typ : allTypes) {
-			if (typ->type_kind() == TypeKind::VOID) {
-				return (VoidType*)typ;
-			}
+		if (voidType) {
+			return voidType;
 		}
 		return std::construct_at(OwnNormal(VoidType), llctx);
 	}

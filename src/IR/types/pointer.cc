@@ -10,6 +10,8 @@
 
 namespace qat::ir {
 
+Vec<PtrType*> PtrType::allPtrTypes = {};
+
 PtrOwner PtrOwner::of_heap() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::HEAP}; }
 
 PtrOwner PtrOwner::of_static() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::STATIC}; }
@@ -105,19 +107,16 @@ PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwn
 		                                  addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
 		                                                           : irCtx->dataLayout.getProgramAddressSpace());
 	}
+	allPtrTypes.push_back(this);
 }
 
 PtrType* PtrType::get(bool isSubtypeVariable, Type* type, bool nonNullable, PtrOwner owner, bool hasMulti,
                       Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_ptr()) {
-			if (typ->as_ptr()->get_subtype()->is_same(type) &&
-			    (typ->as_ptr()->is_subtype_variable() == isSubtypeVariable) &&
-			    typ->as_ptr()->get_owner().is_same(owner) && (typ->as_ptr()->is_multi() == hasMulti) &&
-			    (typ->as_ptr()->nonNullable == nonNullable) &&
-			    ir::AddressSpace::compare(typ->as_ptr()->get_address_space(), addressSpace)) {
-				return typ->as_ptr();
-			}
+	for (auto* typ : allPtrTypes) {
+		if (typ->get_subtype()->is_same(type) && (typ->is_subtype_variable() == isSubtypeVariable) &&
+		    typ->get_owner().is_same(owner) && (typ->is_multi() == hasMulti) && (typ->nonNullable == nonNullable) &&
+		    ir::AddressSpace::compare(typ->get_address_space(), addressSpace)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(PtrType), isSubtypeVariable, type, nonNullable, owner, hasMulti,

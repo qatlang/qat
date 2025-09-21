@@ -13,6 +13,8 @@ class FloatType : public Type {
   private:
 	FloatTypeKind kind;
 
+	static Vec<FloatType*> allFloatTypes;
+
   public:
 	FloatType(FloatTypeKind _kind, llvm::LLVMContext& ctx);
 

@@ -46,6 +46,8 @@ class NativeType : public Type {
 	NativeTypeKind      nativeKind;
 	Maybe<AddressSpace> addressSpace;
 
+	static Vec<NativeType*> allNativeTypes;
+
   public:
 	NativeType(ir::Type* actual, NativeTypeKind c_kind, Maybe<AddressSpace> addressSpace = None);
 

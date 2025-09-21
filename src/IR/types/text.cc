@@ -8,6 +8,8 @@
 
 namespace qat::ir {
 
+Vec<TextType*> TextType::allTextTypes = {};
+
 TextType::TextType(ir::Ctx* irCtx, bool _isPacked) : isPack(_isPacked) {
 	linkingName = "qat'text" + String(isPack ? ":[pack]" : "");
 	if (llvm::StructType::getTypeByName(irCtx->llctx, linkingName)) {
@@ -21,15 +23,16 @@ TextType::TextType(ir::Ctx* irCtx, bool _isPacked) : isPack(_isPacked) {
 		    },
 		    linkingName, isPack);
 	}
+	allTextTypes.push_back(this);
 }
 
 ir::PrerunValue* TextType::create_value(ir::Ctx* irCtx, ir::Mod* mod, String value) {
 	auto strTy = ir::TextType::get(irCtx);
 	return ir::PrerunValue::get(
 	    llvm::ConstantStruct::get(llvm::cast<llvm::StructType>(strTy->get_llvm_type()),
-	                              {irCtx->builder.CreateGlobalString(
-	                                   value, irCtx->get_global_string_name(),
-	                                   irCtx->dataLayout.getDefaultGlobalsAddressSpace(), mod->get_llvm_module()),
+	                              {irCtx->builder.CreateGlobalString(value, irCtx->get_global_string_name(),
+	                                                                 irCtx->dataLayout.getDefaultGlobalsAddressSpace(),
+	                                                                 mod->get_llvm_module()),
 	                               llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), value.length())}),
 	    strTy);
 }
@@ -39,9 +42,9 @@ bool TextType::is_packed() const { return isPack; }
 bool TextType::is_type_sized() const { return true; }
 
 TextType* TextType::get(ir::Ctx* irCtx, bool isPacked) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::TEXT && (((TextType*)typ)->isPack = isPacked)) {
-			return (TextType*)typ;
+	for (auto* typ : allTextTypes) {
+		if (typ->isPack == isPacked) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(TextType), irCtx, isPacked);

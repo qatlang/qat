@@ -14,6 +14,8 @@ class TupleType : public Type {
 	Vec<Identifier> names;
 	bool            isPacked;
 
+	static Vec<TupleType*> allTupleTypes;
+
   public:
 	TupleType(Vec<Type*> _types, Vec<Identifier> _names, bool _isPacked, llvm::LLVMContext& llctx);
 	useit static TupleType* get(Vec<Type*> types, bool isPacked, llvm::LLVMContext& llctx);

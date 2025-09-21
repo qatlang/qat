@@ -10,17 +10,19 @@
 
 namespace qat::ir {
 
+Vec<ArrayType*> ArrayType::allArrayTypes = {};
+
 ArrayType::ArrayType(Type* _element_type, u64 _length, llvm::LLVMContext&)
     : elementType(_element_type), length(_length) {
 	llvmType    = llvm::ArrayType::get(elementType->get_llvm_type(), length);
 	linkingName = "qat'array:[" + elementType->get_name_for_linking() + "," + std::to_string(length) + "]";
+	allArrayTypes.push_back(this);
 }
 
 ArrayType* ArrayType::get(Type* elementType, u64 _length, llvm::LLVMContext& llctx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_array() && (typ->as_array()->get_length() == _length) &&
-		    (typ->as_array()->get_element_type()->is_same(elementType))) {
-			return typ->as_array();
+	for (auto* typ : allArrayTypes) {
+		if ((typ->get_length() == _length) && typ->get_element_type()->is_same(elementType)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(ArrayType), elementType, _length, llctx);
@@ -62,10 +64,10 @@ Maybe<bool> ArrayType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::P
 			auto* array1 = llvm::cast<llvm::ConstantArray>(first->get_llvm_constant());
 			auto* array2 = llvm::cast<llvm::ConstantArray>(second->get_llvm_constant());
 			for (usize i = 0; i < length; i++) {
-				if (!(elementType
-				          ->equality_of(irCtx, ir::PrerunValue::get(array1->getAggregateElement(i), elementType),
-				                        ir::PrerunValue::get(array2->getAggregateElement(i), elementType))
-				          .value())) {
+				if (not elementType
+				            ->equality_of(irCtx, ir::PrerunValue::get(array1->getAggregateElement(i), elementType),
+				                          ir::PrerunValue::get(array2->getAggregateElement(i), elementType))
+				            .value()) {
 					return false;
 				}
 			}

@@ -8,6 +8,8 @@
 
 namespace qat::ir {
 
+Vec<Polymorph*> Polymorph::allPolyTypes = {};
+
 Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner,
                      Maybe<ir::AddressSpace> _addressSpace, ir::Ctx* ctx)
     : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
@@ -40,6 +42,7 @@ Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrO
 	}
 	linkingName += "]";
 	llvmType = llvm::StructType::create(subTys, linkingName, false);
+	allPolyTypes.push_back(this);
 }
 
 Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<PtrOwner> owner,
@@ -47,29 +50,28 @@ Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe
 	std::sort(skills.begin(), skills.end(), [](Skill* first, Skill* second) -> bool {
 		return utils::bytewise_comparison(first->get_full_name(), second->get_full_name());
 	});
-	for (auto* type : allTypes) {
-		if (type->is_poly() && (type->as_poly()->get_skills().size() == skills.size())) {
-			auto exPoly = type->as_poly();
-			if (exPoly->isTyped != isTyped) {
+	for (auto* type : allPolyTypes) {
+		if (type->get_skills().size() == skills.size()) {
+			if (type->isTyped != isTyped) {
 				continue;
 			}
-			if (exPoly->isVar != isVar) {
+			if (type->isVar != isVar) {
 				continue;
 			}
-			if (exPoly->owner.has_value() && owner.has_value() && not exPoly->owner.value().is_same(owner.value())) {
+			if (type->owner.has_value() && owner.has_value() && not type->owner.value().is_same(owner.value())) {
 				continue;
-			} else if (exPoly->owner.has_value() != owner.has_value()) {
+			} else if (type->owner.has_value() != owner.has_value()) {
 				continue;
 			}
 			bool sameSkills = true;
-			for (usize i = 0; i < exPoly->get_skills().size(); i++) {
-				if (exPoly->get_skills()[i]->get_id() != skills[i]->get_id()) {
+			for (usize i = 0; i < type->get_skills().size(); i++) {
+				if (type->get_skills()[i]->get_id() != skills[i]->get_id()) {
 					sameSkills = false;
 					break;
 				}
 			}
 			if (sameSkills) {
-				return exPoly;
+				return type;
 			}
 		}
 	}

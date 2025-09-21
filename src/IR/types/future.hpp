@@ -12,6 +12,8 @@ class FutureType final : public Type {
 	Type* subTy;
 	bool  isPacked;
 
+	static Vec<FutureType*> allFutureTypes;
+
   public:
 	FutureType(Type* subType, bool isPacked, ir::Ctx* irCtx);
 	useit static FutureType* get(Type* subType, bool isPacked, ir::Ctx* irCtx);
@@ -24,8 +26,11 @@ class FutureType final : public Type {
 
 	useit bool is_copy_constructible() const final;
 	useit bool is_copy_assignable() const final;
+
 	useit bool is_move_constructible() const final { return false; }
+
 	useit bool is_move_assignable() const final { return false; }
+
 	void       copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 	void       copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 	useit bool is_destructible() const final;

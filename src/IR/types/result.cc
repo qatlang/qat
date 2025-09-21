@@ -4,6 +4,8 @@
 
 namespace qat::ir {
 
+Vec<ResultType*> ResultType::allResultTypes = {};
+
 ResultType::ResultType(ir::Type* _resTy, ir::Type* _errTy, bool _isPacked, ir::Ctx* irCtx)
     : validType(_resTy), errorType(_errTy), isPacked(_isPacked) {
 	const usize validTypeSize =
@@ -26,13 +28,14 @@ ResultType::ResultType(ir::Type* _resTy, ir::Type* _errTy, bool _isPacked, ir::C
 	        : llvm::Type::getIntNTy(irCtx->llctx, (validTypeSize > errorTypeSize) ? validTypeSize : errorTypeSize);
 	llvmType =
 	    llvm::StructType::create(irCtx->llctx, {llvm::Type::getInt1Ty(irCtx->llctx), dataType}, linkingName, isPacked);
+	allResultTypes.push_back(this);
 }
 
 ResultType* ResultType::get(ir::Type* validType, ir::Type* errorType, bool isPacked, ir::Ctx* irCtx) {
-	for (auto typ : allTypes) {
-		if (typ->is_result() && typ->as_result()->get_valid_type()->is_same(validType) &&
-		    typ->as_result()->get_error_type()->is_same(errorType) && (typ->as_result()->isPacked == isPacked)) {
-			return typ->as_result();
+	for (auto typ : allResultTypes) {
+		if (typ->get_valid_type()->is_same(validType) && typ->get_error_type()->is_same(errorType) &&
+		    (typ->isPacked == isPacked)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(ResultType), validType, errorType, isPacked, irCtx);

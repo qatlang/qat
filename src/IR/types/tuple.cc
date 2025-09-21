@@ -7,6 +7,8 @@
 
 namespace qat::ir {
 
+Vec<TupleType*> TupleType::allTupleTypes = {};
+
 TupleType::TupleType(Vec<Type*> _types, Vec<Identifier> _names, bool _isPacked, llvm::LLVMContext& llctx)
     : subTypes(std::move(_types)), names(std::move(_names)), isPacked(_isPacked) {
 	Vec<llvm::Type*> subTypesLLVM;
@@ -26,6 +28,7 @@ TupleType::TupleType(Vec<Type*> _types, Vec<Identifier> _names, bool _isPacked, 
 		}
 	}
 	linkingName += "]";
+	allTupleTypes.push_back(this);
 }
 
 bool TupleType::is_copy_constructible() const {
@@ -176,11 +179,11 @@ void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 }
 
 TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMContext& llctx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_tuple() && not typ->as_tuple()->has_named_elements()) {
-			auto& subTys  = typ->as_tuple()->get_all_types();
+	for (auto* typ : allTupleTypes) {
+		if (not typ->has_named_elements()) {
+			auto& subTys  = typ->get_all_types();
 			bool  is_same = true;
-			if (typ->as_tuple()->is_packed_tuple() != isPacked) {
+			if (typ->is_packed_tuple() != isPacked) {
 				is_same = false;
 			} else if (newSubTypes.size() != subTys.size()) {
 				is_same = false;
@@ -193,7 +196,7 @@ TupleType* TupleType::get(Vec<Type*> newSubTypes, bool isPacked, llvm::LLVMConte
 				}
 			}
 			if (is_same) {
-				return typ->as_tuple();
+				return typ;
 			}
 		}
 	}

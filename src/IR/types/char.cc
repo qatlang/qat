@@ -6,9 +6,12 @@
 
 namespace qat::ir {
 
+CharType* CharType::charType = nullptr;
+
 CharType::CharType(llvm::LLVMContext& llctx) {
 	llvmType    = llvm::cast<llvm::Type>(llvm::Type::getIntNTy(llctx, 21u));
 	linkingName = "qat'char";
+	charType    = this;
 }
 
 Maybe<String> CharType::to_prerun_generic_string(ir::PrerunValue* val) const {

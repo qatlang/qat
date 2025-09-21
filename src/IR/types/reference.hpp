@@ -9,6 +9,8 @@ class RefType : public Type {
 	Type* subType;
 	bool  isSubVariable;
 
+	static Vec<RefType*> allRefTypes;
+
   public:
 	RefType(bool isSubtypeVariable, Type* _type, ir::Ctx* irCtx);
 

@@ -13,6 +13,8 @@ class ArrayType : public Type {
 	Type* elementType;
 	u64   length;
 
+	static Vec<ArrayType*> allArrayTypes;
+
   public:
 	ArrayType(Type* _element_type, u64 _length, llvm::LLVMContext& llctx);
 	useit static ArrayType* get(Type* elementType, u64 length, llvm::LLVMContext& llctx);

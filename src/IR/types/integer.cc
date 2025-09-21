@@ -13,17 +13,18 @@
 
 namespace qat::ir {
 
+Vec<IntegerType*> IntegerType::allIntegerTypes = {};
+
 IntegerType::IntegerType(u64 _bitWidth, ir::Ctx* _ctx) : bitWidth(_bitWidth), irCtx(_ctx) {
 	llvmType    = llvm::IntegerType::get(irCtx->llctx, bitWidth);
 	linkingName = "qat'" + to_string();
+	allIntegerTypes.push_back(this);
 }
 
 IntegerType* IntegerType::get(u64 bits, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_integer()) {
-			if (typ->as_integer()->is_bitwidth(bits)) {
-				return typ->as_integer();
-			}
+	for (auto* typ : allIntegerTypes) {
+		if (typ->is_bitwidth(bits)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(IntegerType), bits, irCtx);

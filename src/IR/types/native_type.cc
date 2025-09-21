@@ -122,10 +122,13 @@ String native_type_kind_to_string(NativeTypeKind kind) {
 	}
 }
 
+Vec<NativeType*> NativeType::allNativeTypes = {};
+
 NativeType::NativeType(ir::Type* actual, NativeTypeKind c_kind, Maybe<AddressSpace> _addressSpace)
     : subType(actual), nativeKind(c_kind), addressSpace(std::move(_addressSpace)) {
 	llvmType    = actual->get_llvm_type();
 	linkingName = "qat'nativetype:[" + to_string() + "]";
+	allNativeTypes.push_back(this);
 }
 
 NativeTypeKind NativeType::get_c_type_kind() const { return nativeKind; }
@@ -190,12 +193,9 @@ NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_bool(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Bool) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Bool) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -204,12 +204,9 @@ NativeType* NativeType::get_bool(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_int(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Int) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Int) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getIntWidth(), irCtx),
@@ -217,12 +214,9 @@ NativeType* NativeType::get_int(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_uint(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Uint) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Uint) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -231,12 +225,9 @@ NativeType* NativeType::get_uint(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_byte(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Byte) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Byte) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getCharWidth(), irCtx),
@@ -244,12 +235,9 @@ NativeType* NativeType::get_byte(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_byte_unsigned(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UByte) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::UByte) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -258,12 +246,9 @@ NativeType* NativeType::get_byte_unsigned(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_short(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Short) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Short) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -272,12 +257,9 @@ NativeType* NativeType::get_short(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_short_unsigned(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UShort) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::UShort) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -286,12 +268,9 @@ NativeType* NativeType::get_short_unsigned(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_wide_char(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::WideChar) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::WideChar) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -300,12 +279,9 @@ NativeType* NativeType::get_wide_char(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_wide_char_unsigned(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UWideChar) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::UWideChar) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -314,12 +290,9 @@ NativeType* NativeType::get_wide_char_unsigned(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_long_int(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::LongInt) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::LongInt) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType), ir::IntegerType::get(irCtx->clangTargetInfo->getLongWidth(), irCtx),
@@ -327,12 +300,9 @@ NativeType* NativeType::get_long_int(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_long_int_unsigned(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::ULongInt) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::ULongInt) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -341,12 +311,9 @@ NativeType* NativeType::get_long_int_unsigned(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_long_long(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::LongLong) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::LongLong) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -355,12 +322,9 @@ NativeType* NativeType::get_long_long(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_long_long_unsigned(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::ULongLong) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::ULongLong) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -369,12 +333,9 @@ NativeType* NativeType::get_long_long_unsigned(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_isize(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Isize) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Isize) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -384,12 +345,9 @@ NativeType* NativeType::get_isize(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_usize(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Usize) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Usize) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -399,12 +357,9 @@ NativeType* NativeType::get_usize(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_float(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto* cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Float) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Float) {
+			return typ;
 		}
 	}
 	FloatTypeKind floatKind = FloatTypeKind::_32;
@@ -434,12 +389,9 @@ NativeType* NativeType::get_float(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_double(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::Double) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::Double) {
+			return typ;
 		}
 	}
 	FloatTypeKind floatKind = FloatTypeKind::_64;
@@ -470,12 +422,9 @@ NativeType* NativeType::get_double(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_intmax(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::IntMax) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::IntMax) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -484,12 +433,9 @@ NativeType* NativeType::get_intmax(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_uintmax(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UintMax) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::UintMax) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -498,12 +444,9 @@ NativeType* NativeType::get_uintmax(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_intptr(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::IntPtr) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::IntPtr) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -513,12 +456,9 @@ NativeType* NativeType::get_intptr(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_uintptr(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::UintPtr) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::UintPtr) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -528,13 +468,10 @@ NativeType* NativeType::get_uintptr(ir::Ctx* irCtx) {
 }
 
 NativeType* NativeType::get_ptrdiff(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if ((cTyp->nativeKind == NativeTypeKind::PtrDiff) &&
-			    ir::AddressSpace::compare(cTyp->addressSpace, addressSpace)) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if ((typ->nativeKind == NativeTypeKind::PtrDiff) &&
+		    ir::AddressSpace::compare(typ->addressSpace, addressSpace)) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -548,13 +485,10 @@ NativeType* NativeType::get_ptrdiff(Maybe<AddressSpace> addressSpace, ir::Ctx* i
 }
 
 NativeType* NativeType::get_ptrdiff_unsigned(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if ((cTyp->nativeKind == NativeTypeKind::UPtrDiff) &&
-			    ir::AddressSpace::compare(cTyp->addressSpace, addressSpace)) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if ((typ->nativeKind == NativeTypeKind::UPtrDiff) &&
+		    ir::AddressSpace::compare(typ->addressSpace, addressSpace)) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -568,12 +502,9 @@ NativeType* NativeType::get_ptrdiff_unsigned(Maybe<AddressSpace> addressSpace, i
 }
 
 NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::SigAtomic) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::SigAtomic) {
+			return typ;
 		}
 	}
 	return std::construct_at(
@@ -584,15 +515,12 @@ NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
 
 NativeType* NativeType::get_bytestring(bool hasVar, bool isNonNullable, Maybe<AddressSpace> addressSpace,
                                        ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if ((cTyp->nativeKind == NativeTypeKind::ByteString) &&
-			    (cTyp->get_subtype()->as_ptr()->is_subtype_variable() == hasVar) &&
-			    (cTyp->get_subtype()->as_ptr()->is_non_nullable() == isNonNullable) &&
-			    ir::AddressSpace::compare(cTyp->get_subtype()->as_ptr()->get_address_space(), addressSpace)) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if ((typ->nativeKind == NativeTypeKind::ByteString) &&
+		    (typ->get_subtype()->as_ptr()->is_subtype_variable() == hasVar) &&
+		    (typ->get_subtype()->as_ptr()->is_non_nullable() == isNonNullable) &&
+		    ir::AddressSpace::compare(typ->get_subtype()->as_ptr()->get_address_space(), addressSpace)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
@@ -604,12 +532,9 @@ NativeType* NativeType::get_bytestring(bool hasVar, bool isNonNullable, Maybe<Ad
 bool NativeType::has_long_double(ir::Ctx* irCtx) { return irCtx->clangTargetInfo->hasLongDoubleType(); }
 
 NativeType* NativeType::get_long_double(ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->type_kind() == TypeKind::NATIVE) {
-			auto cTyp = (NativeType*)typ;
-			if (cTyp->nativeKind == NativeTypeKind::LongDouble) {
-				return cTyp;
-			}
+	for (auto* typ : allNativeTypes) {
+		if (typ->nativeKind == NativeTypeKind::LongDouble) {
+			return typ;
 		}
 	}
 	FloatTypeKind floatKind = FloatTypeKind::_80;

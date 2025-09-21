@@ -11,6 +11,8 @@
 
 namespace qat::ir {
 
+Vec<MaybeType*> MaybeType::allMaybeTypes = {};
+
 MaybeType::MaybeType(Type* _subType, bool _isPacked, ir::Ctx* irCtx) : subTy(_subType), isPacked(_isPacked) {
 	linkingName = "qat'maybe:[" + String(isPacked ? "pack," : "") + subTy->get_name_for_linking() + "]";
 	// TODO - Error/warn if subtype is opaque
@@ -19,14 +21,13 @@ MaybeType::MaybeType(Type* _subType, bool _isPacked, ir::Ctx* irCtx) : subTy(_su
 	    {llvm::Type::getInt1Ty(irCtx->llctx),
 	     has_sized_sub_type(irCtx) ? subTy->get_llvm_type() : llvm::Type::getInt8Ty(irCtx->llctx)},
 	    linkingName, false);
+	allMaybeTypes.push_back(this);
 }
 
 MaybeType* MaybeType::get(Type* subTy, bool isPacked, ir::Ctx* irCtx) {
-	for (auto* typ : allTypes) {
-		if (typ->is_maybe()) {
-			if (typ->as_maybe()->get_subtype()->is_same(subTy)) {
-				return typ->as_maybe();
-			}
+	for (auto* typ : allMaybeTypes) {
+		if (typ->get_subtype()->is_same(subTy) && (typ->is_type_packed() == isPacked)) {
+			return typ;
 		}
 	}
 	return std::construct_at(OwnNormal(MaybeType), subTy, isPacked, irCtx);

@@ -4,6 +4,8 @@
 
 namespace qat::ir {
 
+Vec<ErrorType*> ErrorType::allErrorTypes = {};
+
 ir::PrerunValue* ErrorType::get_prerun_default_value(ir::Ctx*) {
 	return ir::PrerunValue::get(llvm::Constant::getNullValue(llvmType), this);
 }

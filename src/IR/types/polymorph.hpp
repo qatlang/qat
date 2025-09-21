@@ -17,6 +17,8 @@ class Polymorph final : public Type {
 	Maybe<PtrOwner>     owner;
 	Maybe<AddressSpace> addressSpace;
 
+	static Vec<Polymorph*> allPolyTypes;
+
   public:
 	Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner, Maybe<AddressSpace>,
 	          ir::Ctx* ctx);

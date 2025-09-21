@@ -12,7 +12,7 @@ class TypedType : public Type {
   public:
 	explicit TypedType(ir::Ctx* ctx);
 
-	static TypedType* instance;
+	static TypedType* typedType;
 
 	useit static TypedType* get(ir::Ctx* ctx);
 

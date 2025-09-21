@@ -2,6 +2,7 @@
 #include "./array.hpp"
 #include "./choice.hpp"
 #include "./definition.hpp"
+#include "./error.hpp"
 #include "./flag.hpp"
 #include "./float.hpp"
 #include "./function.hpp"
@@ -144,10 +145,14 @@ bool Type::is_same(Type const* other) const {
 				}
 			}
 			case TypeKind::POINTER: {
-				return (((PtrType*)this)->is_subtype_variable() == ((PtrType*)other)->is_subtype_variable()) &&
-				       (((PtrType*)this)->is_nullable() == ((PtrType*)other)->is_nullable()) &&
-				       (((PtrType*)this)->get_subtype()->is_same(((PtrType*)other)->get_subtype())) &&
-				       (((PtrType*)this)->get_owner().is_same(((PtrType*)other)->get_owner()));
+				auto thisTy  = (PtrType*)this;
+				auto otherTy = (PtrType*)other;
+				return (thisTy->is_subtype_variable() == otherTy->is_subtype_variable()) &&
+				       (thisTy->has_address_space() == otherTy->has_address_space()) &&
+				       ir::AddressSpace::compare(thisTy->get_address_space(), otherTy->get_address_space()) &&
+				       (thisTy->is_nullable() == otherTy->is_nullable()) &&
+				       (thisTy->get_subtype()->is_same(otherTy->get_subtype())) &&
+				       (thisTy->get_owner().is_same(otherTy->get_owner()));
 			}
 			case TypeKind::REFERENCE: {
 				return (((RefType*)this)->has_variability() == ((RefType*)other)->has_variability()) &&
@@ -178,7 +183,19 @@ bool Type::is_same(Type const* other) const {
 			case TypeKind::NATIVE: {
 				auto* thisVal  = (NativeType*)this;
 				auto* otherVal = (NativeType*)other;
-				return thisVal->get_c_type_kind() == otherVal->get_c_type_kind();
+				auto  sameKind = thisVal->get_c_type_kind() == otherVal->get_c_type_kind();
+				if (not sameKind) {
+					return false;
+				} else {
+					if (thisVal->get_c_type_kind() == ir::NativeTypeKind::ByteString) {
+						return thisVal->get_subtype()->as_ptr()->is_same(otherVal->get_subtype()->as_ptr());
+					} else if (thisVal->get_c_type_kind() == ir::NativeTypeKind::PtrDiff ||
+					           thisVal->get_c_type_kind() == ir::NativeTypeKind::UPtrDiff) {
+						return ir::AddressSpace::compare(thisVal->get_address_space(), otherVal->get_address_space());
+					} else {
+						return true;
+					}
+				}
 			}
 			case TypeKind::TEXT: {
 				auto* thisVal  = (TextType*)this;
@@ -230,6 +247,12 @@ bool Type::is_same(Type const* other) const {
 					return false;
 				}
 				if (thisVal->isTyped != otherVal->isTyped) {
+					return false;
+				}
+				if (thisVal->has_address_space() != otherVal->has_address_space()) {
+					return false;
+				}
+				if (ir::AddressSpace::compare(thisVal->get_address_space(), otherVal->get_address_space())) {
 					return false;
 				}
 				if (thisVal->get_skills().size() != otherVal->get_skills().size()) {

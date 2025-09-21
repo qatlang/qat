@@ -328,8 +328,13 @@ bool Type::is_compatible_with(Type const* candidate) const {
 		auto candPtr = this->as_ptr();
 		if ((not targPtr->get_subtype()->is_same(candPtr->get_subtype())) ||
 		    (targPtr->is_multi() != candPtr->is_multi()) ||
-		    (targPtr->is_non_nullable() != candPtr->is_non_nullable()) ||
 		    (targPtr->is_subtype_variable() ? candPtr->is_subtype_variable() : true)) {
+			return false;
+		}
+		if (not(targPtr->is_non_nullable() ? candPtr->is_non_nullable() : true)) {
+			return false;
+		}
+		if (not ir::AddressSpace::compare(targPtr->get_address_space(), candPtr->get_address_space())) {
 			return false;
 		}
 		auto targOwn = targPtr->get_owner();
@@ -343,6 +348,9 @@ bool Type::is_compatible_with(Type const* candidate) const {
 			return true;
 		}
 		return false;
+	} else if (this->is_native_type() && candidate->is_native_type() &&
+	           this->as_native_type()->is_native_bytestring() && candidate->as_native_type()->is_native_bytestring()) {
+		return this->as_native_type()->get_subtype()->is_compatible_with(candidate->as_native_type()->get_subtype());
 	} else if (this->is_ref() && candidate->is_ref() &&
 	           (this->as_ref()->has_variability() ? candidate->as_ref()->has_variability() : true)) {
 		return true;

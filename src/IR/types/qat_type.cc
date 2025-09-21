@@ -158,6 +158,12 @@ bool Type::is_same(Type const* other) const {
 				return (((RefType*)this)->has_variability() == ((RefType*)other)->has_variability()) &&
 				       (((RefType*)this)->get_subtype()->is_same(((RefType*)other)->get_subtype()));
 			}
+			case TypeKind::ERROR: {
+				auto thisTy  = (ErrorType*)this;
+				auto otherTy = (ErrorType*)other;
+				return thisTy->get_subtype()->is_same(otherTy->get_subtype()) &&
+				       (thisTy->has_none_variant() == otherTy->has_none_variant());
+			}
 			case TypeKind::FUTURE: {
 				auto* thisVal  = (FutureType*)this;
 				auto* otherVal = (FutureType*)other;

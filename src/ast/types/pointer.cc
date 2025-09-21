@@ -27,7 +27,7 @@ ir::AddressSpace AddressSpace::to_ir(EmitCtx* ctx) const {
 		               ->getValue()
 		               .getRawData()));
 	} else {
-		if (name.value == "program" || name.value == "global") {
+		if (name.value == "program" || name.value == "global" || name.value == "local") {
 			return ir::AddressSpace::from_name(name.value);
 		} else {
 			ctx->Error("The address-space " + ctx->color(name.value) + " is unrecognisable", name.range);

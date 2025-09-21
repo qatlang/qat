@@ -6,6 +6,7 @@
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Type.h>
+#include <llvm/Target/TargetMachine.h>
 
 namespace qat::ir {
 
@@ -72,6 +73,8 @@ u32 AddressSpace::get_number(ir::Ctx* irCtx) const {
 		return irCtx->dataLayout.getDefaultGlobalsAddressSpace();
 	} else if (name == "program") {
 		return irCtx->dataLayout.getProgramAddressSpace();
+	} else if (name == "local") {
+		return irCtx->dataLayout.getAllocaAddrSpace();
 	}
 	return 0;
 }

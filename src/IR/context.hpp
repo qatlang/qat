@@ -187,10 +187,6 @@ class Ctx {
 		return result;
 	}
 
-	useit clang::LangAS get_language_address_space() const {
-		return clang::getLangASFromTargetAS(dataLayout.getProgramAddressSpace());
-	}
-
 	useit String get_global_string_name() const {
 		auto res = "qat'text'" + std::to_string(stringCount);
 		stringCount++;

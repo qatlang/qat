@@ -3,6 +3,8 @@
 
 #include "./qat_type.hpp"
 
+#include <clang/Basic/AddressSpaces.h>
+
 namespace qat::ast {
 
 class SliceType final : public Type {
@@ -22,7 +24,8 @@ class SliceType final : public Type {
 	}
 
 	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const {
-		return ctx->irCtx->clangTargetInfo->getPointerWidth(ctx->irCtx->get_language_address_space());
+		return ctx->irCtx->clangTargetInfo->getPointerWidth(
+		    clang::getLangASFromTargetAS(ctx->irCtx->dataLayout.getProgramAddressSpace()));
 	}
 
 	useit ir::Type* emit(EmitCtx* ctx) final;

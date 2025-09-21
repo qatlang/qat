@@ -5,6 +5,8 @@
 #include "../../IR/types/pointer.hpp"
 #include "../../IR/types/result.hpp"
 
+#include <clang/Basic/AddressSpaces.h>
+
 namespace qat::ast {
 
 ir::Value* NonNull::emit(EmitCtx* ctx) {
@@ -62,8 +64,11 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 		auto         ptrTy     = candTy->as_ptr();
 		llvm::Value* condition = nullptr;
 		auto         ptrDiffTy = llvm::Type::getIntNTy(
-            ctx->irCtx->llctx, ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getPtrDiffType(
-                                   ctx->irCtx->get_language_address_space())));
+            ctx->irCtx->llctx,
+            ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getPtrDiffType(
+                clang::getLangASFromTargetAS(ptrTy->has_address_space()
+		                                                 ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
+		                                                 : ctx->irCtx->dataLayout.getProgramAddressSpace()))));
 		if (ptrTy->is_multi()) {
 			condition = ctx->irCtx->builder.CreateICmpEQ(
 			    ctx->irCtx->builder.CreatePtrDiff(

@@ -1383,40 +1383,99 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					} else {
 						add_error("Expected ] after this to end the type", RangeSpan(start, i));
 					}
-				} else if (ValueAt(i) == "bytestring" && is_next(TokenType::genericTypeStart, i)) {
-					auto                     nativeKind = ir::native_type_kind_from_string(ValueAt(i));
-					Maybe<ast::AddressSpace> addressSpace;
-					i++;
-					if (not is_next(TokenType::of, i)) {
-						add_error("Expected the address-space specification after this", RangeSpan(start, i));
-					}
-					i++;
-					const auto oStart = i;
-					if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
-						i += 2;
-						addressSpace = ast::AddressSpace{
-						    .name = IdentifierAt(i), .value = nullptr, .fileRange = RangeSpan(oStart, i)};
-					} else if (is_next(TokenType::parenthesisOpen, i)) {
+				} else if (ValueAt(i) == "ptrdiff" || ValueAt(i) == "uptrdiff") {
+					Maybe<ast::AddressSpace> addr;
+					if (is_next(TokenType::genericTypeStart, i)) {
 						i++;
-						const auto pStart = i;
-						auto       valRes = do_prerun_expression(preCtx, i, None);
-						i                 = valRes.second;
-						if (not is_next(TokenType::parenthesisClose, i)) {
-							add_error("Expected ) after this to end the address-space specification",
-							          RangeSpan(pStart, i));
+						if (not is_next(TokenType::of, i)) {
+							add_error("Expected the address-specification after this", RangeSpan(start, i));
 						}
-					} else {
-						add_error("Invalid address-space specification", RangeAt(oStart));
+						i++;
+						const auto aStart = i;
+						if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+							i += 2;
+							addr = ast::AddressSpace{
+							    .name = IdentifierAt(i), .value = nullptr, .fileRange = RangeSpan(aStart, i)};
+						} else if (is_next(TokenType::parenthesisOpen, i)) {
+							i++;
+							auto expRes = do_prerun_expression(preCtx, i, None);
+							i           = expRes.second;
+							if (not is_next(TokenType::parenthesisClose, i)) {
+								add_error("Expected ) after this", RangeSpan(aStart, i));
+							}
+							i++;
+							addr = ast::AddressSpace{.name      = Identifier::named(""),
+							                         .value     = expRes.first,
+							                         .fileRange = RangeSpan(aStart, i)};
+						} else {
+							add_error("Invalid address-space specification", RangeSpan(start, i));
+						}
+						if (not is_next(TokenType::genericTypeEnd, i)) {
+							add_error("Expected ] after this", RangeSpan(start, i));
+						}
+						i++;
 					}
-					if (not is_next(TokenType::genericTypeEnd, i)) {
-						add_error("Expected ] after this to end the native type", RangeSpan(start, i));
+					cacheTy =
+					    ast::NativeType::create_ptrdiff(ValueAt(i) == "uptrdiff", std::move(addr), RangeSpan(start, i));
+				} else if (ValueAt(i) == "bytestring") {
+					bool isNonNullable = false;
+					auto startTy       = TokenType::genericTypeStart;
+					auto endTy         = TokenType::genericTypeEnd;
+					if (is_next(TokenType::exclamation, i)) {
+						i++;
+						isNonNullable = true;
+						startTy       = TokenType::bracketOpen;
+						endTy         = TokenType::bracketClose;
 					}
-					i++;
-					cacheTy = ast::NativeType::create(nativeKind.value(), std::move(addressSpace), RangeSpan(start, i));
+					Maybe<ast::AddressSpace> addressSpace;
+					Maybe<FileRangePtr>      varRange;
+					if (is_next(startTy, i)) {
+						i++;
+						if (is_next(TokenType::var, i)) {
+							i++;
+							varRange = RangeAt(i);
+							if (is_next(TokenType::separator, i)) {
+								i++;
+							} else if (not is_next(endTy, i)) {
+								add_error("Expected ] after this", RangeSpan(start, i));
+							}
+						}
+						if (not varRange.has_value() && not is_next(TokenType::of, i)) {
+							add_error("Expected either " + color_error("var") +
+							              " or the address-space specification after this",
+							          RangeSpan(start, i));
+						}
+						if (is_next(TokenType::of, i)) {
+							i++;
+							const auto oStart = i;
+							if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+								i += 2;
+								addressSpace = ast::AddressSpace{
+								    .name = IdentifierAt(i), .value = nullptr, .fileRange = RangeSpan(oStart, i)};
+							} else if (is_next(TokenType::parenthesisOpen, i)) {
+								i++;
+								const auto pStart = i;
+								auto       valRes = do_prerun_expression(preCtx, i, None);
+								i                 = valRes.second;
+								if (not is_next(TokenType::parenthesisClose, i)) {
+									add_error("Expected ) after this to end the address-space specification",
+									          RangeSpan(pStart, i));
+								}
+							} else {
+								add_error("Invalid address-space specification", RangeAt(oStart));
+							}
+						}
+						if (not is_next(endTy, i)) {
+							add_error("Expected ] after this", RangeSpan(start, i));
+						}
+						i++;
+					}
+					cacheTy = ast::NativeType::create_bytestring(isNonNullable, std::move(varRange),
+					                                             std::move(addressSpace), RangeSpan(start, i));
 				} else {
 					auto nativeKind = ir::native_type_kind_from_string(ValueAt(i));
 					if (nativeKind.has_value()) {
-						cacheTy = ast::NativeType::create(nativeKind.value(), None, RangeAt(i));
+						cacheTy = ast::NativeType::create(nativeKind.value(), RangeAt(i));
 					} else {
 						add_error("Invalid native type", RangeAt(i));
 					}

@@ -1,22 +1,11 @@
 #ifndef QAT_TYPES_POINTER_HPP
 #define QAT_TYPES_POINTER_HPP
 
+#include "./address_space.hpp"
 #include "./pointer_owner.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {
-
-struct AddressSpace {
-	Identifier        name;
-	PrerunExpression* value;
-	FileRangePtr      fileRange;
-
-	useit ir::AddressSpace to_ir(EmitCtx* ctx) const;
-
-	useit String to_string() const;
-
-	useit Json to_json() const;
-};
 
 class PtrType final : public Type {
 	Type*               type;

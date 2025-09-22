@@ -2,10 +2,10 @@
 #define QAT_AST_TYPES_POLYMORPH_HPP
 
 #include "../skill_entity.hpp"
+#include "./address_space.hpp"
 #include "./pointer_owner.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
-#include "pointer.hpp"
 
 namespace qat::ir {
 class Skill;

@@ -1,4 +1,5 @@
 #include "./address_space.hpp"
+#include "../context.hpp"
 
 namespace qat::ir {
 

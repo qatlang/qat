@@ -2,7 +2,7 @@
 #define QAT_AST_NATIVE_TYPE_HPP
 
 #include "../../IR/types/native_type.hpp"
-#include "./pointer.hpp"
+#include "./address_space.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {

@@ -1,4 +1,5 @@
 add_library(QAT_AST_TYPES
+	address_space.cc
 	array.cc
 	char.cc
 	error.cc

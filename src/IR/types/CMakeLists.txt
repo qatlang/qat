@@ -1,4 +1,5 @@
 add_library(QAT_IR_TYPES STATIC
+	address_space.cc
 	array.cc
 	char.cc
 	choice.cc

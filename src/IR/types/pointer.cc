@@ -67,20 +67,6 @@ String PtrOwner::to_string() const {
 	}
 }
 
-u32 AddressSpace::get_number(ir::Ctx* irCtx) const {
-	if (name.empty()) {
-		return value;
-	}
-	if (name == "global") {
-		return irCtx->dataLayout.getDefaultGlobalsAddressSpace();
-	} else if (name == "program") {
-		return irCtx->dataLayout.getProgramAddressSpace();
-	} else if (name == "local") {
-		return irCtx->dataLayout.getAllocaAddrSpace();
-	}
-	return 0;
-}
-
 PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
                  Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx)
     : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable),

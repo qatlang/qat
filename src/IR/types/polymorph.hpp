@@ -1,7 +1,6 @@
 #ifndef QAT_IR_TYPES_POLYMORPH_HPP
 #define QAT_IR_TYPES_POLYMORPH_HPP
 
-#include "../../utils/qat_region.hpp"
 #include "./pointer.hpp"
 #include "./qat_type.hpp"
 

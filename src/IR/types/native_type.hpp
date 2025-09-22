@@ -1,8 +1,8 @@
 #ifndef QAT_IR_TYPES_NATIVE_TYPE_HPP
 #define QAT_IR_TYPES_NATIVE_TYPE_HPP
 
+#include "./address_space.hpp"
 #include "./qat_type.hpp"
-#include "pointer.hpp"
 
 namespace qat::ir {
 

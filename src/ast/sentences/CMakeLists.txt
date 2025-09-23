@@ -5,6 +5,7 @@ add_library(QAT_AST_SENTENCES
 	expression_sentence.cc
 	give_sentence.cc
 	if_else.cc
+	ignore_value.cc
 	local_declaration.cc
 	loop_infinite.cc
 	loop_if.cc

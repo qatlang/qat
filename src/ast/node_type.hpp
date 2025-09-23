@@ -123,6 +123,7 @@ enum class NodeType {
 	META_MATH,
 	NON_NULL,
 	OR_USE_VALUE,
+	IGNORE_VALUE,
 };
 
 } // namespace qat::ast

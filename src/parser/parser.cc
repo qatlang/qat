@@ -103,6 +103,7 @@
 #include "../ast/sentences/expression_sentence.hpp"
 #include "../ast/sentences/give_sentence.hpp"
 #include "../ast/sentences/if_else.hpp"
+#include "../ast/sentences/ignore_value.hpp"
 #include "../ast/sentences/local_declaration.hpp"
 #include "../ast/sentences/loop_if.hpp"
 #include "../ast/sentences/loop_in.hpp"
@@ -6478,6 +6479,22 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					auto expRes = do_expression(preCtx, None, i - 1, None);
 					setCachedExprForSentences(expRes.first);
 					i = expRes.second;
+				}
+				break;
+			}
+			case TokenType::ignore: {
+				const auto start = i;
+				if (is_next(TokenType::assignment, i)) {
+					i++;
+					auto exp = do_expression(preCtx, None, i, None);
+					i        = exp.second;
+					if (not is_next(TokenType::stop, i)) {
+						add_error("Expected . after this", RangeSpan(start, i));
+					}
+					i++;
+					addSentence(ast::IgnoreValue::create(exp.first, RangeSpan(start, i)));
+				} else {
+					add_error("Unexpected token after this", RangeAt(i));
 				}
 				break;
 			}

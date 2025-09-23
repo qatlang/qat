@@ -16,6 +16,10 @@ struct AddressSpace {
 
 	useit static AddressSpace from_name(String _name) { return AddressSpace{.name = std::move(_name), .value = 0}; }
 
+	useit static Maybe<AddressSpace> get_simplified_local_space(Ctx* irCtx);
+
+	useit static Maybe<AddressSpace> get_simplified_global_space(Ctx* irCtx);
+
 	useit static bool compare(Maybe<AddressSpace> const& first, Maybe<AddressSpace> const& second) {
 		return (first.has_value() == second.has_value()) &&
 		       (first.has_value() ? ((first->name == second->name) && (first->value == second->value)) : true);

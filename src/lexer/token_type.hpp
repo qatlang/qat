@@ -121,6 +121,7 @@ enum class TokenType : u8 {
 	of,
 	orWord,
 	andWord,
+	ignore,
 };
 
 } // namespace qat::lexer

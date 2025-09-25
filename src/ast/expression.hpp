@@ -43,7 +43,8 @@ class InPlaceCreatable {
 		unsetCreateIn();
 		if (created->is_ref()) {
 			return ir::Value::get(created->get_llvm(),
-			                      ir::RefType::get(created->get_ir_type()->as_ref()->has_variability(), type, irCtx),
+			                      ir::RefType::get(created->get_ir_type()->as_ref()->has_variability(), type,
+			                                       created->get_ir_type()->as_ref()->get_address_space(), irCtx),
 			                      false)
 			    ->with_range(rangeVal);
 		} else {

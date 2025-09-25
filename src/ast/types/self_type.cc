@@ -1,6 +1,5 @@
 #include "./self_type.hpp"
 #include "../../IR/method.hpp"
-#include "../../IR/types/opaque.hpp"
 #include "../../IR/types/reference.hpp"
 
 namespace qat::ast {
@@ -17,6 +16,8 @@ ir::Type* SelfType::emit(EmitCtx* ctx) {
 		}
 		return ir::RefType::get(
 		    isVarRef, ctx->has_member_parent() ? ctx->get_member_parent()->get_parent_type() : ctx->get_opaque_parent(),
+		    ctx->has_member_parent() ? ctx->get_member_parent()->get_self_address_space()
+		                             : ctx->get_address_space_from_opaque(),
 		    ctx->irCtx);
 	} else if (ctx->has_skill()) {
 		ctx->Error(

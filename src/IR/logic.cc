@@ -356,10 +356,10 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				}
 				formatValue(ir::Value::get(subVal,
 				                           (val->is_ref() || val->is_ghost_ref())
-				                               ? ir::RefType::get(val->is_ref()
-				                                                      ? val->get_ir_type()->as_ref()->has_variability()
-				                                                      : val->is_variable(),
-				                                                  subTypes.at(i), ctx->irCtx)
+				                               ? ir::RefType::get(
+				                                     val->is_ref() ? val->get_ir_type()->as_ref()->has_variability()
+				                                                   : val->is_variable(),
+				                                     subTypes.at(i), val->extract_address_space(ctx->irCtx), ctx->irCtx)
 				                               : subTypes.at(i),
 				                           val->is_variable()),
 				            valRange);
@@ -397,7 +397,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 					                               ? (ir::RefType::get(
 					                                     val->is_ref() ? val->get_ir_type()->as_ref()->has_variability()
 					                                                   : val->is_variable(),
-					                                     subType, ctx->irCtx))
+					                                     subType, val->extract_address_space(ctx->irCtx), ctx->irCtx))
 					                               : subType,
 					                           val->is_variable()),
 					            valRange);

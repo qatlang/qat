@@ -244,10 +244,11 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	self->load_ghost_ref(irCtx->builder);
 	SHOW("Loaded self instance")
 	if ((prototype->type == ConstructorType::copy) || (prototype->type == ConstructorType::move)) {
-		auto* argVal = block->new_local(
-		    prototype->argName->value,
-		    ir::RefType::get(prototype->type == ConstructorType::move, state.parent->get_parent_type(), irCtx), false,
-		    prototype->argName->range);
+		auto* argVal =
+		    block->new_local(prototype->argName->value,
+		                     ir::RefType::get(prototype->type == ConstructorType::move, state.parent->get_parent_type(),
+		                                      state.parent->get_self_address_space(), irCtx),
+		                     false, prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_alloca(), false);
 		argVal->load_ghost_ref(irCtx->builder);
 	} else {
@@ -393,7 +394,9 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					mem->type->default_construct_value(
 					    irCtx,
 					    ir::Value::get(irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i),
-					                   ir::RefType::get(true, mem->type, irCtx), false),
+					                   ir::RefType::get(true, mem->type,
+					                                    self->get_ir_type()->as_ref()->get_address_space(), irCtx),
+					                   false),
 					    fnEmit);
 				}
 				fnEmit->add_init_member({i, fileRange});

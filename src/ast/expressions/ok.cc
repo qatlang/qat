@@ -5,8 +5,7 @@
 
 namespace qat::ast {
 
-void OkExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-                                       EmitCtx* ctx) {
+void OkExpression::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	if (subExpr) {
 		UPDATE_DEPS(subExpr);
 	}
@@ -99,11 +98,16 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 		}
 		const auto shouldCreateIn = not resTy->is_void() && subExpr && subExpr->isInPlaceCreatable();
 		if (shouldCreateIn) {
+			auto subRefTy = ir::RefType::get(
+			    true, valTy,
+			    createIn->is_ref() ? createIn->get_ir_type()->as_ref()->get_address_space()
+			                       : ir::AddressSpace::get_space_for_llvm_value(ctx->irCtx, createIn->get_llvm()),
+			    ctx->irCtx);
 			subExpr->asInPlaceCreatable()->setCreateIn(ir::Value::get(
 			    ctx->irCtx->builder.CreatePointerCast(
 			        ctx->irCtx->builder.CreateStructGEP(usableType->get_llvm_type(), createIn->get_llvm(), 1u),
-			        llvm::PointerType::get(valTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
-			    ir::RefType::get(true, valTy, ctx->irCtx), false));
+			        subRefTy->get_llvm_type()),
+			    subRefTy, false));
 		}
 		auto* validVal = subExpr ? subExpr->emit(ctx) : nullptr;
 		if (valTy->is_void()) {
@@ -126,10 +130,11 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 		// NOTE - The following function does further type checking
 		auto* finalVal = ir::Logic::handle_pass_semantics(ctx, valTy, validVal, subExpr->fileRange);
 		resTy->handle_tag_store(createIn->get_llvm(), true, ctx->irCtx);
-		ctx->irCtx->builder.CreateStore(finalVal->get_llvm(), ctx->irCtx->builder.CreatePointerCast(
-		                                                          ctx->irCtx->builder.CreateStructGEP(
-		                                                              resTy->get_llvm_type(), createIn->get_llvm(), 1u),
-		                                                          llvm::PointerType::get(valTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
+		ctx->irCtx->builder.CreateStore(
+		    finalVal->get_llvm(),
+		    ctx->irCtx->builder.CreatePointerCast(
+		        ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), createIn->get_llvm(), 1u),
+		        llvm::PointerType::get(valTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
 		return get_creation_result(ctx->irCtx, resTy, fileRange);
 	} else {
 		ctx->Error("No inferred type found for this expression, and no type were provided. "

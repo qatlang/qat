@@ -44,12 +44,13 @@ ir::Value* OrUseValue::emit(EmitCtx* ctx) {
 		auto cand           = candidate->emit(ctx);
 		auto candTy         = cand->get_pass_type();
 		cand                = ir::Logic::handle_pass_semantics(ctx, candTy, cand, candidate->fileRange);
-		auto expectedCandTy = expTy->is_ref()
-		                          ? ir::RefType::get(expTy->as_ref()->has_variability(), mTy->get_subtype(), ctx->irCtx)
-		                          : mTy->get_subtype();
-		auto otherCandTy    = (expTy->is_ref() && (not expTy->as_ref()->has_variability()))
-		                          ? ir::RefType::get(true, mTy->get_subtype(), ctx->irCtx)
-		                          : mTy->get_subtype();
+		auto expectedCandTy = expTy->is_ref() ? ir::RefType::get(expTy->as_ref()->has_variability(), mTy->get_subtype(),
+		                                                         expTy->as_ref()->get_address_space(), ctx->irCtx)
+		                                      : mTy->get_subtype();
+		auto otherCandTy =
+		    (expTy->is_ref() && (not expTy->as_ref()->has_variability()))
+		        ? ir::RefType::get(true, mTy->get_subtype(), expTy->as_ref()->get_address_space(), ctx->irCtx)
+		        : mTy->get_subtype();
 		if (not candTy->is_same(expectedCandTy) && not candTy->is_same(otherCandTy)) {
 			if (expTy->is_ref()) {
 				ctx->Error("The main expression is of type " + ctx->color(expTy->to_string()) +
@@ -169,15 +170,17 @@ ir::Value* OrUseValue::emit(EmitCtx* ctx) {
 		}
 		(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 		falseBlock->set_active(ctx->irCtx->builder);
-		auto cand   = candidate->emit(ctx);
-		auto candTy = cand->get_pass_type();
-		cand        = ir::Logic::handle_pass_semantics(ctx, candTy, cand, candidate->fileRange);
-		auto expectedCandTy =
-		    expTy->is_ref() ? ir::RefType::get(expTy->as_ref()->has_variability(), rTy->get_valid_type(), ctx->irCtx)
-		                    : rTy->get_valid_type();
-		auto otherCandTy = (expTy->is_ref() && (not expTy->as_ref()->has_variability()))
-		                       ? ir::RefType::get(true, rTy->get_valid_type(), ctx->irCtx)
-		                       : rTy->get_valid_type();
+		auto cand           = candidate->emit(ctx);
+		auto candTy         = cand->get_pass_type();
+		cand                = ir::Logic::handle_pass_semantics(ctx, candTy, cand, candidate->fileRange);
+		auto expectedCandTy = expTy->is_ref()
+		                          ? ir::RefType::get(expTy->as_ref()->has_variability(), rTy->get_valid_type(),
+		                                             expTy->as_ref()->get_address_space(), ctx->irCtx)
+		                          : rTy->get_valid_type();
+		auto otherCandTy =
+		    (expTy->is_ref() && (not expTy->as_ref()->has_variability()))
+		        ? ir::RefType::get(true, rTy->get_valid_type(), expTy->as_ref()->get_address_space(), ctx->irCtx)
+		        : rTy->get_valid_type();
 		if (not candTy->is_same(expectedCandTy) && not candTy->is_same(otherCandTy)) {
 			if (expTy->is_ref()) {
 				ctx->Error("The main expression is of type " + ctx->color(expTy->to_string()) +

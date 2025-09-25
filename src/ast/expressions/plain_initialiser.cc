@@ -212,15 +212,15 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 					if (strData->is_ref()) {
 						strData->load_ghost_ref(ctx->irCtx->builder);
 					}
-					return ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
-					                          strData->get_llvm(),
-					                          llvm::PointerType::get(strTy->get_llvm_type(),
-					                                                 ctx->irCtx->dataLayout.getProgramAddressSpace())),
-					                      ir::RefType::get(strData->is_ghost_ref()
-					                                           ? strData->is_variable()
-					                                           : strData->get_ir_type()->as_ref()->has_variability(),
-					                                       strTy, ctx->irCtx),
-					                      false);
+					return ir::Value::get(
+					    ctx->irCtx->builder.CreatePointerCast(
+					        strData->get_llvm(),
+					        llvm::PointerType::get(strTy->get_llvm_type(),
+					                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
+					    ir::RefType::get(strData->is_ghost_ref() ? strData->is_variable()
+					                                             : strData->get_ir_type()->as_ref()->has_variability(),
+					                     strTy, strData->extract_address_space(ctx->irCtx), ctx->irCtx),
+					    false);
 				} else {
 					return ir::Value::get(
 					    ctx->irCtx->builder.CreateBitCast(strData->get_llvm(), strDataTy->get_llvm_type()), strDataTy,

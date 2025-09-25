@@ -29,11 +29,11 @@ ir::Value* ConfirmRef::emit(EmitCtx* ctx) {
 			                                       expr->get_associated_range()))
 			                                 : None);
 		}
-		auto res = ir::Value::get(
-		    ctx->irCtx->builder.CreatePointerCast(
-		        expr->get_llvm(),
-		        llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace())),
-		    ir::RefType::get(isVar, expr->get_ir_type(), ctx->irCtx), false);
+		auto refTy =
+		    ir::RefType::get(isVar, expr->get_ir_type(),
+		                     ir::AddressSpace::get_space_for_llvm_value(ctx->irCtx, expr->get_llvm()), ctx->irCtx);
+		auto res = ir::Value::get(ctx->irCtx->builder.CreatePointerCast(expr->get_llvm(), refTy->get_llvm_type()),
+		                          refTy, false);
 		res->set_confirmed_ref();
 		return res->with_range(fileRange);
 	} else {

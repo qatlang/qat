@@ -501,7 +501,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			} else if (lhsType->is_ref()) {
 				lhsStr = ir::Value::get(
 				    ctx->irCtx->builder.CreateStructGEP(ir::TypeInfo::typeInfoType, lhsEmit->get_llvm(), 0u),
-				    ir::RefType::get(false, textTy, ctx->irCtx), false);
+				    ir::RefType::get(false, textTy, lhsType->as_ref()->get_address_space(), ctx->irCtx), false);
 			} else {
 				lhsStr =
 				    ir::Value::get(ctx->irCtx->builder.CreateExtractValue(lhsEmit->get_llvm(), {0u}), textTy, false);
@@ -512,7 +512,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			} else if (rhsType->is_ref()) {
 				rhsStr = ir::Value::get(
 				    ctx->irCtx->builder.CreateStructGEP(ir::TypeInfo::typeInfoType, rhsEmit->get_llvm(), 0u),
-				    ir::RefType::get(false, textTy, ctx->irCtx), false);
+				    ir::RefType::get(false, textTy, rhsType->as_ref()->get_address_space(), ctx->irCtx), false);
 			} else {
 				rhsStr =
 				    ir::Value::get(ctx->irCtx->builder.CreateExtractValue(rhsEmit->get_llvm(), {0u}), textTy, false);

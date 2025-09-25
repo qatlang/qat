@@ -1,6 +1,7 @@
 #include "./array.hpp"
 #include "../context.hpp"
 #include "../value.hpp"
+#include "./pointer.hpp"
 #include "./qat_type.hpp"
 #include "./reference.hpp"
 
@@ -121,8 +122,12 @@ void ArrayType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->copy_construct_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
+			    irCtx,
+			    ir::Value::get(firstIndexing,
+			                   ir::RefType::get(true, elementType, first->extract_address_space(irCtx), irCtx), false),
+			    ir::Value::get(secondIndexing,
+			                   ir::RefType::get(true, elementType, second->extract_address_space(irCtx), irCtx), false),
+			    fun);
 		}
 	} else {
 		irCtx->Error("Could not copy construct an instance of type " + irCtx->color(to_string()), None);
@@ -146,8 +151,12 @@ void ArrayType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->copy_assign_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
+			    irCtx,
+			    ir::Value::get(firstIndexing,
+			                   ir::RefType::get(true, elementType, first->extract_address_space(irCtx), irCtx), false),
+			    ir::Value::get(secondIndexing,
+			                   ir::RefType::get(true, elementType, second->extract_address_space(irCtx), irCtx), false),
+			    fun);
 		}
 	} else {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()), None);
@@ -171,8 +180,12 @@ void ArrayType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->move_construct_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
+			    irCtx,
+			    ir::Value::get(firstIndexing,
+			                   ir::RefType::get(true, elementType, first->extract_address_space(irCtx), irCtx), false),
+			    ir::Value::get(secondIndexing,
+			                   ir::RefType::get(true, elementType, second->extract_address_space(irCtx), irCtx), false),
+			    fun);
 		}
 	} else {
 		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()), None);
@@ -196,8 +209,12 @@ void ArrayType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 				                                                  {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->move_assign_value(
-			    irCtx, ir::Value::get(firstIndexing, ir::RefType::get(true, elementType, irCtx), false),
-			    ir::Value::get(secondIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
+			    irCtx,
+			    ir::Value::get(firstIndexing,
+			                   ir::RefType::get(true, elementType, first->extract_address_space(irCtx), irCtx), false),
+			    ir::Value::get(secondIndexing,
+			                   ir::RefType::get(true, elementType, second->extract_address_space(irCtx), irCtx), false),
+			    fun);
 		}
 	} else {
 		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
@@ -216,7 +233,11 @@ void ArrayType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 				                                                    {llvm::ConstantInt::get(Ty64Int, 1u)});
 			}
 			elementType->destroy_value(
-			    irCtx, ir::Value::get(instanceIndexing, ir::RefType::get(true, elementType, irCtx), false), fun);
+			    irCtx,
+			    ir::Value::get(instanceIndexing,
+			                   ir::RefType::get(true, elementType, instance->extract_address_space(irCtx), irCtx),
+			                   false),
+			    fun);
 		}
 	} else {
 		irCtx->Error("Could not destroy instance of type " + irCtx->color(to_string()), None);

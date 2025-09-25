@@ -164,7 +164,8 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	block->set_active(irCtx->builder);
 	SHOW("Set new block as the active block")
 	SHOW("About to allocate necessary arguments")
-	auto* parentRefType = ir::RefType::get(prototype->isFrom, state.parent->get_parent_type(), irCtx);
+	auto* parentRefType = ir::RefType::get(prototype->isFrom, state.parent->get_parent_type(),
+	                                       state.parent->get_self_address_space(), irCtx);
 	auto* self          = block->new_local("''", parentRefType, false, state.parent->get_type_range());
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0), self->get_llvm());
 	self->load_ghost_ref(irCtx->builder);
@@ -311,7 +312,9 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 						    irCtx,
 						    ir::Value::get(
 						        irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i),
-						        ir::RefType::get(true, mem->type, irCtx), false),
+						        ir::RefType::get(true, mem->type, self->get_ir_type()->as_ref()->get_address_space(),
+						                         irCtx),
+						        false),
 						    fnEmit);
 					}
 					fnEmit->add_init_member({i, fileRange});

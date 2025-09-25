@@ -120,7 +120,9 @@ void PatternChild::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 			} else {
 				(void)arm.as_block()->create_use_value(
 				    bind.name.value, value->get_llvm(),
-				    ir::RefType::get(bind.bindType == BindingType::VARIATION, fill->type, ctx->irCtx), bind.range);
+				    ir::RefType::get(bind.bindType == BindingType::VARIATION, fill->type,
+				                     value->extract_address_space(ctx->irCtx), ctx->irCtx),
+				    bind.range);
 			}
 		}
 	}
@@ -240,7 +242,8 @@ void PatternArray::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 			                                                         {0u, (uint)patternIndices[i]}),
 			                   ir::RefType::get(value->is_ref() ? value->get_ir_type()->as_ref()->has_variability()
 			                                                    : value->is_variable(),
-			                                    arrTy->get_element_type(), ctx->irCtx),
+			                                    arrTy->get_element_type(), value->extract_address_space(ctx->irCtx),
+			                                    ctx->irCtx),
 			                   true),
 			    arm, ctx);
 		}

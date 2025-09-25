@@ -153,10 +153,10 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					SHOW("Creating local entity for match case value named: " << uMatch->getValueName().value)
 					auto* loc = trueBlock->new_local(
 					    uMatch->getValueName().value,
-					    expEmit->is_value()
-					        ? mTy->get_variant_with_name(uMatch->get_name().value)
-					        : ir::RefType::get(uMatch->is_variable(),
-					                           mTy->get_variant_with_name(uMatch->get_name().value), ctx->irCtx),
+					    expEmit->is_value() ? mTy->get_variant_with_name(uMatch->get_name().value)
+					                        : ir::RefType::get(uMatch->is_variable(),
+					                                           mTy->get_variant_with_name(uMatch->get_name().value),
+					                                           expEmit->extract_address_space(ctx->irCtx), ctx->irCtx),
 					    false, uMatch->getValueName().range);
 					SHOW("Local Entity for match case created")
 					ctx->irCtx->builder.CreateStore(

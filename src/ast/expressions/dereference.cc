@@ -12,8 +12,8 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 	}
 	if (expTy->is_ptr()) {
 		llvm::Value* refVal = nullptr;
-		auto         refTy =
-		    ir::RefType::get(expTy->as_ptr()->is_subtype_variable(), expTy->as_ptr()->get_subtype(), ctx->irCtx);
+		auto         refTy  = ir::RefType::get(expTy->as_ptr()->is_subtype_variable(), expTy->as_ptr()->get_subtype(),
+		                                       expTy->as_ptr()->get_address_space(), ctx->irCtx);
 		if (expEmit->is_ref()) {
 			expEmit->load_ghost_ref(ctx->irCtx->builder);
 			if (expTy->as_ptr()->is_multi()) {

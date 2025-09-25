@@ -1,5 +1,6 @@
 #include "./pointer.hpp"
 #include "../../IR/types/pointer.hpp"
+#include "../expression.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/DerivedTypes.h>

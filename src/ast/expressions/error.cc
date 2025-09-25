@@ -104,11 +104,12 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	}
 	const auto shouldCreateIn = not errTy->is_void() && errorValue && errorValue->isInPlaceCreatable();
 	if (shouldCreateIn) {
+		auto createRefTy = ir::RefType::get(true, errTy, createIn->extract_address_space(ctx->irCtx), ctx->irCtx);
 		errorValue->asInPlaceCreatable()->setCreateIn(
 		    ir::Value::get(ctx->irCtx->builder.CreatePointerCast(
 		                       ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
-		                       llvm::PointerType::get(errTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())),
-		                   ir::RefType::get(true, errTy, ctx->irCtx), false));
+		                       createRefTy->get_llvm_type()),
+		                   createRefTy, false));
 	}
 	auto* errVal = errorValue ? errorValue->emit(ctx) : nullptr;
 	if (errTy->is_void()) {
@@ -131,8 +132,10 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	resTy->handle_tag_store(newAlloc, false, ctx->irCtx);
 	ctx->irCtx->builder.CreateStore(
 	    finalErr->get_llvm(),
-	    ctx->irCtx->builder.CreatePointerCast(ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
-	                                          llvm::PointerType::get(errTy->get_llvm_type(), ctx->irCtx->dataLayout.getProgramAddressSpace())));
+	    ctx->irCtx->builder.CreatePointerCast(
+	        ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), newAlloc, 1u),
+	        llvm::PointerType::get(errTy->get_llvm_type(),
+	                               llvm::cast<llvm::PointerType>(newAlloc->getType())->getAddressSpace())));
 	if (canCreateIn()) {
 		return get_creation_result(ctx->irCtx, resTy, fileRange);
 	}

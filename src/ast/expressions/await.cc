@@ -83,7 +83,8 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 			                                      ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			           ir::RefType::get(expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->has_variability()
 			                                              : expEmit->is_variable(),
-			                            futureTy->get_subtype(), ctx->irCtx),
+			                            futureTy->get_subtype(), expEmit->extract_address_space(ctx->irCtx),
+			                            ctx->irCtx),
 			           false)
 			    ->with_range(fileRange);
 		}

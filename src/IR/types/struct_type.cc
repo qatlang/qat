@@ -6,8 +6,9 @@
 #include "../logic.hpp"
 #include "../qat_module.hpp"
 #include "./expanded_type.hpp"
+#include "./pointer.hpp"
 #include "./qat_type.hpp"
-#include "reference.hpp"
+#include "./reference.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/LLVMContext.h>
@@ -321,9 +322,11 @@ void StructType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Valu
 			members.at(i)->type->copy_construct_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			                   ir::RefType::get(true, members.at(i)->type, first->extract_address_space(irCtx), irCtx),
+			                   false),
+			    ir::Value::get(
+			        irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			        ir::RefType::get(false, members.at(i)->type, second->extract_address_space(irCtx), irCtx), false),
 			    fun);
 		}
 	}
@@ -342,9 +345,11 @@ void StructType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 			members.at(i)->type->copy_assign_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			                   ir::RefType::get(true, members.at(i)->type, first->extract_address_space(irCtx), irCtx),
+			                   false),
+			    ir::Value::get(
+			        irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			        ir::RefType::get(false, members.at(i)->type, second->extract_address_space(irCtx), irCtx), false),
 			    fun);
 		}
 	}
@@ -364,9 +369,11 @@ void StructType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Valu
 			members.at(i)->type->move_construct_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			                   ir::RefType::get(true, members.at(i)->type, first->extract_address_space(irCtx), irCtx),
+			                   false),
+			    ir::Value::get(
+			        irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			        ir::RefType::get(false, members.at(i)->type, second->extract_address_space(irCtx), irCtx), false),
 			    fun);
 		}
 	}
@@ -386,9 +393,11 @@ void StructType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 			members.at(i)->type->move_assign_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), i),
-			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
-			                   ir::RefType::get(false, members.at(i)->type, irCtx), false),
+			                   ir::RefType::get(true, members.at(i)->type, first->extract_address_space(irCtx), irCtx),
+			                   false),
+			    ir::Value::get(
+			        irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), i),
+			        ir::RefType::get(false, members.at(i)->type, second->extract_address_space(irCtx), irCtx), false),
 			    fun);
 		}
 	}
@@ -406,8 +415,9 @@ void StructType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
 		for (usize i = 0; i < members.size(); i++) {
 			members.at(i)->type->destroy_value(
 			    irCtx,
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), i),
-			                   ir::RefType::get(true, members.at(i)->type, irCtx), false),
+			    ir::Value::get(
+			        irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), i),
+			        ir::RefType::get(true, members.at(i)->type, instance->extract_address_space(irCtx), irCtx), false),
 			    fun);
 		}
 	}

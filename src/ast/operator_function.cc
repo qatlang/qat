@@ -195,10 +195,11 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 	self->load_ghost_ref(irCtx->builder);
 	if ((prototype->opr == OperatorKind::COPY_ASSIGNMENT) || (prototype->opr == OperatorKind::MOVE_ASSIGNMENT)) {
-		auto* argVal = block->new_local(
-		    prototype->argName->value,
-		    ir::RefType::get(prototype->opr == OperatorKind::MOVE_ASSIGNMENT, structRefTy->get_subtype(), irCtx), false,
-		    prototype->argName->range);
+		auto* argVal = block->new_local(prototype->argName->value,
+		                                ir::RefType::get(prototype->opr == OperatorKind::MOVE_ASSIGNMENT,
+		                                                 structRefTy->get_subtype(),
+		                                                 state.parent->get_self_address_space(), irCtx),
+		                                false, prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1u), argVal->get_llvm());
 	} else {
 		for (usize i = 1; i < argIRTypes.size(); i++) {

@@ -55,9 +55,10 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		                     {"The local value was found here", block->get_value(indexName->value)->get_file_range()})
 		               : None);
 	}
-	auto candExp    = candidate->emit(ctx);
-	bool isRefUnder = candExp->get_ir_type()->is_ref() || candExp->is_local_value();
-	bool candHasVar = false;
+	auto candExp          = candidate->emit(ctx);
+	auto candAddressSpace = candExp->extract_address_space(ctx->irCtx);
+	bool isRefUnder       = candExp->get_ir_type()->is_ref() || candExp->is_local_value();
+	bool candHasVar       = false;
 	auto candType =
 	    candExp->get_ir_type()->is_ref() ? candExp->get_ir_type()->as_ref()->get_subtype() : candExp->get_ir_type();
 	auto const isTyArray = candType->is_array();
@@ -155,7 +156,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		                                     false, indexName.has_value() ? indexName->range : fileRange);
 		auto elemUseTy = elemTy;
 		if (not isTyVec) {
-			elemUseTy = ir::RefType::get(candHasVar, elemTy, ctx->irCtx);
+			elemUseTy = ir::RefType::get(candHasVar, elemTy, candAddressSpace, ctx->irCtx);
 		}
 		auto itemVar = mainBlock->new_local(itemName.value, elemUseTy, false, itemName.range);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),

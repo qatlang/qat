@@ -2,8 +2,9 @@
 #include "../context.hpp"
 #include "../control_flow.hpp"
 #include "../value.hpp"
-#include "./array.hpp"
-#include "reference.hpp"
+#include "./pointer.hpp"
+#include "./reference.hpp"
+#include "address_space.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/Constants.h>
@@ -64,9 +65,9 @@ void MaybeType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 			subTy->copy_construct_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                   ir::RefType::get(true, subTy, irCtx), false),
+			                   ir::RefType::get(true, subTy, first->extract_address_space(irCtx), irCtx), false),
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u),
-			                   ir::RefType::get(false, subTy, irCtx), false),
+			                   ir::RefType::get(false, subTy, second->extract_address_space(irCtx), irCtx), false),
 			    fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx)),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -94,6 +95,8 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			auto* secondTag =
 			    irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 			                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
+			auto  firstAddr          = first->extract_address_space(irCtx);
+			auto  secondAddr         = second->extract_address_space(irCtx);
 			auto* tagMatchTrueBlock  = ir::Block::create(fun, fun->get_block());
 			auto* tagMatchFalseBlock = ir::Block::create(fun, fun->get_block());
 			auto* restBlock          = ir::Block::create(fun, fun->get_block()->get_parent());
@@ -110,9 +113,9 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			subTy->copy_assign_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                   ir::RefType::get(true, subTy, irCtx), false),
+			                   ir::RefType::get(true, subTy, firstAddr, irCtx), false),
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u),
-			                   ir::RefType::get(false, subTy, irCtx), false),
+			                   ir::RefType::get(false, subTy, secondAddr, irCtx), false),
 			    fun);
 			(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 			tagFalseBlock->set_active(irCtx->builder);
@@ -126,7 +129,7 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			firstValueBlock->set_active(irCtx->builder);
 			subTy->destroy_value(irCtx,
 			                     ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                                    ir::RefType::get(true, subTy, irCtx), false),
+			                                    ir::RefType::get(true, subTy, firstAddr, irCtx), false),
 			                     fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::getFalse(llvm::Type::getInt1Ty(irCtx->llctx)),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -135,9 +138,9 @@ void MaybeType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			subTy->copy_construct_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                   ir::RefType::get(true, subTy, irCtx), false),
+			                   ir::RefType::get(true, subTy, firstAddr, irCtx), false),
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u),
-			                   ir::RefType::get(false, subTy, irCtx), false),
+			                   ir::RefType::get(false, subTy, secondAddr, irCtx), false),
 			    fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx)),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -171,9 +174,9 @@ void MaybeType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 			subTy->move_construct_value(
 			    irCtx,
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                   ir::RefType::get(true, subTy, irCtx), false),
+			                   ir::RefType::get(true, subTy, first->extract_address_space(irCtx), irCtx), false),
 			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u),
-			                   ir::RefType::get(false, subTy, irCtx), false),
+			                   ir::RefType::get(false, subTy, second->extract_address_space(irCtx), irCtx), false),
 			    fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx)),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -198,6 +201,8 @@ void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 	} else {
 		if (is_move_assignable()) {
+			auto  firstAddr  = first->extract_address_space(irCtx);
+			auto  secondAddr = second->extract_address_space(irCtx);
 			auto* firstTag =
 			    irCtx->builder.CreateLoad(llvm::Type::getInt1Ty(irCtx->llctx),
 			                              irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -217,12 +222,14 @@ void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			    irCtx->builder.CreateICmpEQ(firstTag, llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx))),
 			    tagTrueBlock->get_bb(), tagFalseBlock->get_bb());
 			tagTrueBlock->set_active(irCtx->builder);
+			auto firstRefTy  = ir::RefType::get(true, subTy, firstAddr, irCtx);
+			auto secondRefTy = ir::RefType::get(false, subTy, secondAddr, irCtx);
 			subTy->move_assign_value(
 			    irCtx,
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                   ir::RefType::get(true, subTy, irCtx), false),
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u),
-			                   ir::RefType::get(false, subTy, irCtx), false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u), firstRefTy,
+			                   false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u), secondRefTy,
+			                   false),
 			    fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(irCtx->llctx), 0u, false),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
@@ -238,7 +245,7 @@ void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			firstValueBlock->set_active(irCtx->builder);
 			subTy->destroy_value(irCtx,
 			                     ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                                    ir::RefType::get(true, subTy, irCtx), false),
+			                                    firstRefTy, false),
 			                     fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::getFalse(llvm::Type::getInt1Ty(irCtx->llctx)),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -246,10 +253,10 @@ void MaybeType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 			secondValueBlock->set_active(irCtx->builder);
 			subTy->move_construct_value(
 			    irCtx,
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u),
-			                   ir::RefType::get(true, subTy, irCtx), false),
-			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u),
-			                   ir::RefType::get(false, subTy, irCtx), false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u), firstRefTy,
+			                   false),
+			    ir::Value::get(irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u), secondRefTy,
+			                   false),
 			    fun);
 			irCtx->builder.CreateStore(llvm::ConstantInt::getTrue(llvm::Type::getInt1Ty(irCtx->llctx)),
 			                           irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 0u));
@@ -277,10 +284,11 @@ void MaybeType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 		                                                      irCtx->builder.CreateStructGEP(llvmType, inst, 0u)),
 		                            trueBlock->get_bb(), restBlock->get_bb());
 		trueBlock->set_active(irCtx->builder);
-		subTy->destroy_value(irCtx,
-		                     ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, inst, 1u),
-		                                    ir::RefType::get(false, subTy, irCtx), false),
-		                     fun);
+		subTy->destroy_value(
+		    irCtx,
+		    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, inst, 1u),
+		                   ir::RefType::get(false, subTy, instance->extract_address_space(irCtx), irCtx), false),
+		    fun);
 		(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 		restBlock->set_active(irCtx->builder);
 	} else {

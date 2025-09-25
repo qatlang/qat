@@ -313,8 +313,9 @@ Method* Method::Create(MethodParent* parent, bool is_variation, const Identifier
                        ReturnType* returnTy, const Vec<Argument>& args, Maybe<FileRangePtr> fileRange,
                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx) {
 	Vec<Argument> args_info;
-	args_info.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                     RefType::get(is_variation, parent->get_parent_type(), irCtx), 0));
+	args_info.push_back(Argument::Create(
+	    Identifier("''", parent->get_type_range()),
+	    RefType::get(is_variation, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	for (const auto& arg : args) {
 		args_info.push_back(arg);
 	}
@@ -337,8 +338,9 @@ Method* Method::CreateValued(MethodParent* parent, const Identifier& name, bool 
 Method* Method::DefaultConstructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
                                    const VisibilityInfo& visibInfo, Maybe<FileRangePtr> fileRange, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
-	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                    RefType::get(true, parent->get_parent_type(), irCtx), 0));
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	return std::construct_at(OwnNormal(Method), MethodType::defaultConstructor, true, parent,
 	                         Identifier("default", nameRange),
 	                         // FIXME - Make file range optional instead of creating it using empty values
@@ -350,8 +352,10 @@ Method* Method::CopyConstructor(MethodParent* parent, FileRangePtr nameRange, bo
                                 const Identifier& otherName, Maybe<FileRangePtr> fileRange, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
 	argsInfo.push_back(
-	    Argument::Create({"''", parent->get_type_range()}, RefType::get(true, parent->get_parent_type(), irCtx), 0));
-	argsInfo.push_back(Argument::Create(otherName, RefType::get(false, parent->get_parent_type(), irCtx), 0));
+	    Argument::Create({"''", parent->get_type_range()},
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
+	argsInfo.push_back(Argument::Create(
+	    otherName, RefType::get(false, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	return std::construct_at(OwnNormal(Method), MethodType::copyConstructor, true, parent,
 	                         Identifier{"copy", std::move(nameRange)}, isInline,
 	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
@@ -362,8 +366,10 @@ Method* Method::MoveConstructor(MethodParent* parent, FileRangePtr nameRange, bo
                                 const Identifier& otherName, Maybe<FileRangePtr> fileRange, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
 	argsInfo.push_back(
-	    Argument::Create({"''", parent->get_type_range()}, RefType::get(true, parent->get_parent_type(), irCtx), 0u));
-	argsInfo.push_back(Argument::Create(otherName, RefType::get(true, parent->get_parent_type(), irCtx), 0u));
+	    Argument::Create({"''", parent->get_type_range()},
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
+	argsInfo.push_back(Argument::Create(
+	    otherName, RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
 	return std::construct_at(OwnNormal(Method), MethodType::moveConstructor, true, parent,
 	                         Identifier{"move", std::move(nameRange)}, isInline,
 	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
@@ -373,9 +379,11 @@ Method* Method::MoveConstructor(MethodParent* parent, FileRangePtr nameRange, bo
 Method* Method::CopyAssignment(MethodParent* parent, FileRangePtr nameRange, bool isInline, const Identifier& otherName,
                                Maybe<FileRangePtr> fileRange, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
-	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                    RefType::get(true, parent->get_parent_type(), irCtx), 0u));
-	argsInfo.push_back(Argument::Create(otherName, RefType::get(true, parent->get_parent_type(), irCtx), 0u));
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
+	argsInfo.push_back(Argument::Create(
+	    otherName, RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
 	return std::construct_at(OwnNormal(Method), MethodType::copyAssignment, true, parent,
 	                         Identifier{"copy=", nameRange}, isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)),
 	                         std::move(argsInfo), false, fileRange, VisibilityInfo::pub(), irCtx);
@@ -384,9 +392,11 @@ Method* Method::CopyAssignment(MethodParent* parent, FileRangePtr nameRange, boo
 Method* Method::MoveAssignment(MethodParent* parent, FileRangePtr nameRange, bool isInline, const Identifier& otherName,
                                FileRangePtr fileRange, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
-	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                    RefType::get(true, parent->get_parent_type(), irCtx), 0u));
-	argsInfo.push_back(Argument::Create(otherName, RefType::get(true, parent->get_parent_type(), irCtx), 0u));
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
+	argsInfo.push_back(Argument::Create(
+	    otherName, RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
 	return std::construct_at(OwnNormal(Method), MethodType::moveAssignment, true, parent,
 	                         Identifier{"move=", nameRange}, isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)),
 	                         std::move(argsInfo), false, fileRange, VisibilityInfo::pub(), irCtx);
@@ -396,8 +406,9 @@ Method* Method::CreateConstructor(MethodParent* parent, FileRangePtr nameRange, 
                                   const Vec<Argument>& args, Maybe<FileRangePtr> fileRange,
                                   const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
-	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                    RefType::get(true, parent->get_parent_type(), irCtx), 0));
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	for (const auto& arg : args) {
 		argsInfo.push_back(arg);
 	}
@@ -410,8 +421,9 @@ Method* Method::CreateFromConvertor(MethodParent* parent, FileRangePtr nameRange
                                     const Identifier& name, Maybe<FileRangePtr> fileRange,
                                     const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
-	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                    RefType::get(true, parent->get_parent_type(), irCtx), 0));
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	SHOW("Created parent pointer argument")
 	argsInfo.push_back(Argument::Create(name, sourceType, 1));
 	SHOW("Created candidate type")
@@ -424,8 +436,9 @@ Method* Method::CreateFromConvertor(MethodParent* parent, FileRangePtr nameRange
 Method* Method::CreateToConvertor(MethodParent* parent, FileRangePtr nameRange, bool isInline, Type* destType,
                                   Maybe<FileRangePtr> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
-	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                    RefType::get(false, parent->get_parent_type(), irCtx), 0));
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(false, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	return std::construct_at(OwnNormal(Method), MethodType::toConvertor, false, parent,
 	                         Identifier("to'" + destType->to_string(), nameRange), isInline, ReturnType::get(destType),
 	                         argsInfo, false, fileRange, visibInfo, irCtx);
@@ -442,19 +455,22 @@ Method* Method::CreateStatic(MethodParent* parent, const Identifier& name, bool 
 Method* Method::CreateDestructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
                                  Maybe<FileRangePtr> fileRange, ir::Ctx* irCtx) {
 	SHOW("Creating destructor")
-	return std::construct_at(OwnNormal(Method), MethodType::destructor, true, parent, Identifier("end", nameRange),
-	                         isInline, ReturnType::get(VoidType::get(irCtx->llctx)),
-	                         Vec<Argument>({Argument::Create(Identifier("''", parent->get_type_range()),
-	                                                         RefType::get(true, parent->get_parent_type(), irCtx), 0)}),
-	                         false, fileRange, VisibilityInfo::pub(), irCtx);
+	return std::construct_at(
+	    OwnNormal(Method), MethodType::destructor, true, parent, Identifier("end", nameRange), isInline,
+	    ReturnType::get(VoidType::get(irCtx->llctx)),
+	    Vec<Argument>({Argument::Create(
+	        Identifier("''", parent->get_type_range()),
+	        RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0)}),
+	    false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CreateOperator(MethodParent* parent, FileRangePtr nameRange, bool isBinary, bool isVariationFn,
                                const String& opr, bool isInline, ReturnType* returnType, const Vec<Argument>& args,
                                Maybe<FileRangePtr> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
 	Vec<Argument> args_info;
-	args_info.push_back(Argument::Create(Identifier("''", parent->get_type_range()),
-	                                     RefType::get(isVariationFn, parent->get_parent_type(), irCtx), 0));
+	args_info.push_back(Argument::Create(
+	    Identifier("''", parent->get_type_range()),
+	    RefType::get(isVariationFn, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	for (const auto& arg : args) {
 		args_info.push_back(arg);
 	}

@@ -16,8 +16,10 @@
 namespace qat::ast {
 
 ir::Value* IndexAccess::emit(EmitCtx* ctx) {
-	auto* inst     = instance->emit(ctx);
-	auto* instType = inst->get_ir_type();
+	auto* inst             = instance->emit(ctx);
+	auto  instAddressSpace = inst->is_ref() ? inst->get_ir_type()->as_ref()->get_address_space()
+	                                        : ir::AddressSpace::get_space_for_llvm_value(ctx->irCtx, inst->get_llvm());
+	auto* instType         = inst->get_ir_type();
 	if (instType->is_ref()) {
 		instType = instType->as_ref()->get_subtype();
 	}
@@ -62,7 +64,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				}
 				return ir::Value::get(
 				    ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), indPre),
-				    ir::RefType::get(isMemVar, instType->as_tuple()->get_type_at(indPre), ctx->irCtx), false);
+				    ir::RefType::get(isMemVar, instType->as_tuple()->get_type_at(indPre), instAddressSpace, ctx->irCtx),
+				    false);
 			} else if (inst->is_prerun_value()) {
 				if (llvm::isa<llvm::ConstantExpr>(inst->get_llvm_constant())) {
 					return ir::PrerunValue::get(
@@ -132,8 +135,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				            ctx->irCtx->builder.CreateStructGEP(instType->get_llvm_type(), inst->get_llvm(), 0u)),
 				        idxs),
 				    ir::RefType::get(instType->as_ptr()->is_subtype_variable(), instType->as_ptr()->get_subtype(),
-				                     ctx->irCtx),
-				    instType->as_ptr()->is_subtype_variable());
+				                     instType->as_ptr()->get_address_space(), ctx->irCtx),
+				    false);
 			} else {
 				if (inst->is_ref()) {
 					inst->load_ghost_ref(ctx->irCtx->builder);
@@ -142,20 +145,21 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 					SHOW("Index Access : Index is a constant")
 					if (llvm::cast<llvm::ConstantInt>(ind->get_llvm())->isZero()) {
 						SHOW("Returning the first element from inbounds")
-						return ir::Value::get(ctx->irCtx->builder.CreateInBoundsGEP(instType->get_llvm_type(),
-						                                                            inst->get_llvm(), {zero64, zero64}),
-						                      ir::RefType::get(inst->is_ref()
-						                                           ? inst->get_ir_type()->as_ref()->has_variability()
-						                                           : inst->is_variable(),
-						                                       instType->as_array()->get_element_type(), ctx->irCtx),
-						                      false);
+						return ir::Value::get(
+						    ctx->irCtx->builder.CreateInBoundsGEP(instType->get_llvm_type(), inst->get_llvm(),
+						                                          {zero64, zero64}),
+						    ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
+						                                    : inst->is_variable(),
+						                     instType->as_array()->get_element_type(), instAddressSpace, ctx->irCtx),
+						    false);
 					}
 				}
 				return ir::Value::get(ctx->irCtx->builder.CreateInBoundsGEP(instType->get_llvm_type(), inst->get_llvm(),
 				                                                            {zero64, ind->get_llvm()}),
 				                      ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
 				                                                      : inst->is_variable(),
-				                                       instType->as_array()->get_element_type(), ctx->irCtx),
+				                                       instType->as_array()->get_element_type(), instAddressSpace,
+				                                       ctx->irCtx),
 				                      false);
 			}
 		} else {
@@ -217,9 +221,10 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                                                     ctx->irCtx->dataLayout.getProgramAddressSpace()),
 			                              strData),
 			                          Vec<llvm::Value*>({ind->get_llvm()})),
+			                      // FIXME - Address space fix
 			                      ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
 			                                                      : inst->is_variable(),
-			                                       ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
+			                                       ir::UnsignedType::create(8u, ctx->irCtx), None, ctx->irCtx),
 			                      false);
 		} else if (inst->is_prerun_value() && ind->is_prerun_value()) {
 			if (llvm::cast<llvm::ConstantInt>(
@@ -267,9 +272,10 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			    ctx->irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
 			                                          ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
 			                                          {ind->get_llvm()}),
+			    // FIXME - Address space fix
 			    ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
 			                                    : inst->is_variable(),
-			                     ir::UnsignedType::create(8u, ctx->irCtx), ctx->irCtx),
+			                     ir::UnsignedType::create(8u, ctx->irCtx), None, ctx->irCtx),
 			    false);
 		}
 	} else if (instType->is_native_type() && instType->as_native_type()->is_native_bytestring()) {
@@ -282,7 +288,9 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		bool isVarExp = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->is_variable();
 		return ir::Value::get(
 		    ctx->irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->irCtx->llctx), instVal, {ind->get_llvm()}),
-		    ir::RefType::get(isVarExp, ir::NativeType::get_byte(ctx->irCtx), ctx->irCtx), false);
+		    ir::RefType::get(isVarExp, ir::NativeType::get_byte(ctx->irCtx),
+		                     instType->as_native_type()->get_subtype()->as_ptr()->get_address_space(), ctx->irCtx),
+		    false);
 	} else if (instType->is_expanded()) {
 		auto*       eTy      = instType->as_expanded();
 		ir::Method* opFn     = nullptr;

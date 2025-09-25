@@ -101,7 +101,10 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 								                                                selfVal->get_llvm(), 1u),
 								            llvm::PointerType::get(memTy->get_llvm_type(),
 								                                   ctx->irCtx->dataLayout.getProgramAddressSpace())),
-								        ir::RefType::get(true, memTy, ctx->irCtx), false),
+								        ir::RefType::get(true, memTy,
+								                         selfVal->get_ir_type()->as_ref()->get_address_space(),
+								                         ctx->irCtx),
+								        false),
 								    memFn);
 							} else {
 								ctx->Error(
@@ -132,15 +135,19 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 					SHOW("Getting value")
 					memRef = ir::Value::get(ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(),
 					                                                            selfRef->get_llvm(), memIndex.value()),
-					                        ir::RefType::get(true, memTy, ctx->irCtx), false);
+					                        ir::RefType::get(true, memTy,
+					                                         selfRef->get_ir_type()->as_ref()->get_address_space(),
+					                                         ctx->irCtx),
+					                        false);
 				} else {
+					auto memRefTy = ir::RefType::get(true, memTy, selfRef->get_ir_type()->as_ref()->get_address_space(),
+					                                 ctx->irCtx);
 					SHOW("Getting value")
 					memRef = ir::Value::get(
 					    ctx->irCtx->builder.CreatePointerCast(
 					        ctx->irCtx->builder.CreateStructGEP(parentTy->get_llvm_type(), selfRef->get_llvm(), 1u),
-					        llvm::PointerType::get(memTy->get_llvm_type(),
-					                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
-					    ir::RefType::get(true, memTy, ctx->irCtx), false);
+					        memRefTy->get_llvm_type()),
+					    memRefTy, false);
 				}
 				SHOW("Got value")
 				if (value->isInPlaceCreatable()) {

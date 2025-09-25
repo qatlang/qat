@@ -1,5 +1,6 @@
 #include "./tuple.hpp"
 #include "./pointer.hpp"
+#include "address_space.hpp"
 #include "reference.hpp"
 
 #include <llvm/IR/DerivedTypes.h>
@@ -86,9 +87,9 @@ void TupleType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				subTy->copy_construct_value(
 				    irCtx,
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                   ir::RefType::get(true, subTy, irCtx), false),
+				                   ir::RefType::get(true, subTy, first->extract_address_space(irCtx), irCtx), false),
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				                   ir::RefType::get(false, subTy, second->extract_address_space(irCtx), irCtx), false),
 				    fun);
 			}
 		} else {
@@ -104,12 +105,13 @@ void TupleType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 		if (is_copy_assignable()) {
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
-				subTy->copy_assign_value(irCtx,
-				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                                        ir::RefType::get(true, subTy, irCtx), false),
-				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                                        ir::RefType::get(false, subTy, irCtx), false),
-				                         fun);
+				subTy->copy_assign_value(
+				    irCtx,
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
+				                   ir::RefType::get(true, subTy, first->extract_address_space(irCtx), irCtx), false),
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
+				                   ir::RefType::get(false, subTy, second->extract_address_space(irCtx), irCtx), false),
+				    fun);
 			}
 		} else {
 			irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()), None);
@@ -128,9 +130,9 @@ void TupleType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value
 				subTy->move_construct_value(
 				    irCtx,
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                   ir::RefType::get(true, subTy, irCtx), false),
+				                   ir::RefType::get(true, subTy, first->extract_address_space(irCtx), irCtx), false),
 				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				                   ir::RefType::get(false, subTy, second->extract_address_space(irCtx), irCtx), false),
 				    fun);
 			}
 		} else {
@@ -147,12 +149,13 @@ void TupleType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* s
 		if (is_move_assignable()) {
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
-				subTy->move_assign_value(irCtx,
-				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
-				                                        ir::RefType::get(true, subTy, irCtx), false),
-				                         ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
-				                                        ir::RefType::get(false, subTy, irCtx), false),
-				                         fun);
+				subTy->move_assign_value(
+				    irCtx,
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), i),
+				                   ir::RefType::get(true, subTy, first->extract_address_space(irCtx), irCtx), false),
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), i),
+				                   ir::RefType::get(false, subTy, second->extract_address_space(irCtx), irCtx), false),
+				    fun);
 			}
 		} else {
 			irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
@@ -167,10 +170,12 @@ void TupleType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*
 		if (is_destructible()) {
 			for (usize i = 0; i < subTypes.size(); i++) {
 				auto* subTy = subTypes.at(i);
-				subTy->destroy_value(irCtx,
-				                     ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), i),
-				                                    ir::RefType::get(false, subTy, irCtx), false),
-				                     fun);
+				subTy->destroy_value(
+				    irCtx,
+				    ir::Value::get(irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), i),
+				                   ir::RefType::get(false, subTy, instance->extract_address_space(irCtx), irCtx),
+				                   false),
+				    fun);
 			}
 		} else {
 			irCtx->Error("Could not destroy an instance of type " + irCtx->color(to_string()), None);

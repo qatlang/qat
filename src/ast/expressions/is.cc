@@ -34,7 +34,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 			auto dummyValue = llvm::UndefValue::get(
 			    llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()));
 			subExpr->asInPlaceCreatable()->setCreateIn(ir::Value::get(
-			    dummyValue, ir::RefType::get(true, ir::IntegerType::get(8u, ctx->irCtx), ctx->irCtx), false));
+			    dummyValue, ir::RefType::get(true, ir::IntegerType::get(8u, ctx->irCtx), None, ctx->irCtx), false));
 			auto* subIR   = subExpr->emit(ctx);
 			auto* subType = subIR->get_pass_type();
 			auto  maybeTy = ir::MaybeType::get(subType, false, ctx->irCtx);

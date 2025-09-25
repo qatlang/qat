@@ -48,7 +48,8 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 		restBlock->set_active(ctx->irCtx->builder);
 		if (candTy->is_ref()) {
 			return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(mTy->get_llvm_type(), cand->get_llvm(), 1u),
-			                      ir::RefType::get(candTy->as_ref()->has_variability(), mTy->get_subtype(), ctx->irCtx),
+			                      ir::RefType::get(candTy->as_ref()->has_variability(), mTy->get_subtype(),
+			                                       candTy->as_ref()->get_address_space(), ctx->irCtx),
 			                      false);
 		} else {
 			return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(cand->get_llvm(), {1u}), mTy->get_subtype(),
@@ -144,7 +145,9 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 			    ctx->irCtx->builder.CreatePointerCast(
 			        ctx->irCtx->builder.CreateStructGEP(rTy->get_llvm_type(), cand->get_llvm(), 1u),
 			        llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace())),
-			    ir::RefType::get(candTy->as_ref()->has_variability(), rTy->get_valid_type(), ctx->irCtx), false);
+			    ir::RefType::get(candTy->as_ref()->has_variability(), rTy->get_valid_type(),
+			                     candTy->as_ref()->get_address_space(), ctx->irCtx),
+			    false);
 		} else {
 			return ir::Value::get(
 			    ctx->irCtx->builder.CreateTruncOrBitCast(

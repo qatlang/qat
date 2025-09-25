@@ -4,10 +4,10 @@
 #include "../control_flow.hpp"
 #include "../generics.hpp"
 #include "../qat_module.hpp"
+#include "./pointer.hpp"
 #include "./reference.hpp"
 #include "./type_kind.hpp"
 
-#include <algorithm>
 #include <cmath>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -248,6 +248,8 @@ void MixType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
 		auto*      prevDataPtr = irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u);
 		auto*      resDataPtr  = irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u);
+		auto       resAddr     = first->extract_address_space(irCtx);
+		auto       prevAddr    = second->extract_address_space(irCtx);
 		ir::Block* trueBlock   = nullptr;
 		ir::Block* falseBlock  = nullptr;
 		ir::Block* restBlock   = ir::Block::create(fun, fun->get_block()->get_parent());
@@ -262,16 +264,14 @@ void MixType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 				        prevTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    trueBlock->get_bb(), falseBlock->get_bb());
 				trueBlock->set_active(irCtx->builder);
+				auto prevRefTy = ir::RefType::get(false, subTy, prevAddr, irCtx);
+				auto resRefTy  = ir::RefType::get(true, subTy, resAddr, irCtx);
 				subTy->copy_construct_value(
 				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       resDataPtr, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                          irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       prevDataPtr, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                           irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(resDataPtr, resRefTy->get_llvm_type()), resRefTy,
+				                   false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(prevDataPtr, prevRefTy->get_llvm_type()), prevRefTy,
+				                   false),
 				    fun);
 				irCtx->builder.CreateStore(
 				    llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false),
@@ -294,6 +294,8 @@ void MixType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 0u));
 		auto*      prevDataPtr = irCtx->builder.CreateStructGEP(get_llvm_type(), second->get_llvm(), 1u);
 		auto*      resDataPtr  = irCtx->builder.CreateStructGEP(get_llvm_type(), first->get_llvm(), 1u);
+		auto       resAddr     = first->extract_address_space(irCtx);
+		auto       prevAddr    = second->extract_address_space(irCtx);
 		ir::Block* trueBlock   = nullptr;
 		ir::Block* falseBlock  = nullptr;
 		ir::Block* restBlock   = ir::Block::create(fun, fun->get_block()->get_parent());
@@ -308,16 +310,14 @@ void MixType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* 
 				        prevTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    trueBlock->get_bb(), falseBlock->get_bb());
 				trueBlock->set_active(irCtx->builder);
+				auto resRefTy  = ir::RefType::get(true, subTy, resAddr, irCtx);
+				auto prevRefTy = ir::RefType::get(false, subTy, prevAddr, irCtx);
 				subTy->move_construct_value(
 				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       resDataPtr, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                          irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       prevDataPtr, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                           irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(resDataPtr, resRefTy->get_llvm_type()), resRefTy,
+				                   false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(prevDataPtr, prevRefTy->get_llvm_type()), prevRefTy,
+				                   false),
 				    fun);
 				irCtx->builder.CreateStore(
 				    llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false),
@@ -343,6 +343,8 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		    irCtx->builder.CreateLoad(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth),
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), secondInst->get_llvm(), 0u));
 		auto* secondData        = irCtx->builder.CreateStructGEP(get_llvm_type(), firstInst->get_llvm(), 1u);
+		auto  firstAddr         = firstInst->extract_address_space(irCtx);
+		auto  secondAddr        = secondInst->extract_address_space(irCtx);
 		auto* sameTagTrueBlock  = ir::Block::create(fun, fun->get_block());
 		auto* sameTagFalseBlock = ir::Block::create(fun, fun->get_block());
 		auto* restBlock         = ir::Block::create(fun, fun->get_block()->get_parent());
@@ -362,16 +364,14 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    cmpTrueBlock->get_bb(), cmpFalseBlock->get_bb());
 				cmpTrueBlock->set_active(irCtx->builder);
+				auto firstRefTy  = ir::RefType::get(true, subTy, firstAddr, irCtx);
+				auto secondRefTy = ir::RefType::get(false, subTy, secondAddr, irCtx);
 				subTy->copy_assign_value(
 				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       firstData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                         irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       secondData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                          irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(firstData, firstRefTy->get_llvm_type()), firstRefTy,
+				                   false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(secondData, secondRefTy->get_llvm_type()),
+				                   secondRefTy, false),
 				    fun);
 				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 				cmpFalseBlock->set_active(irCtx->builder);
@@ -393,12 +393,11 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    firstCmpTrueBlock->get_bb(), firstCmpFalseBlock->get_bb());
 				firstCmpTrueBlock->set_active(irCtx->builder);
+				auto firstRefTy = ir::RefType::get(true, subTy, firstAddr, irCtx);
 				subTy->destroy_value(
 				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       firstData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                         irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(firstData, firstRefTy->get_llvm_type()), firstRefTy,
+				                   false),
 				    fun);
 				(void)ir::add_branch(irCtx->builder, firstCmpRestBlock->get_bb());
 				firstCmpFalseBlock->set_active(irCtx->builder);
@@ -420,17 +419,14 @@ void MixType::copy_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 				        secondTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    secondCmpTrueBlock->get_bb(), secondCmpFalseBlock->get_bb());
 				secondCmpTrueBlock->set_active(irCtx->builder);
+				auto firstRefTy  = ir::RefType::get(true, subTy, firstAddr, irCtx);
+				auto secondRefTy = ir::RefType::get(false, subTy, secondAddr, irCtx);
 				subTy->copy_construct_value(
 				    irCtx,
-
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       firstData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                         irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       secondData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                          irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(firstData, firstRefTy->get_llvm_type()), firstRefTy,
+				                   false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(secondData, secondRefTy->get_llvm_type()),
+				                   secondRefTy, false),
 				    fun);
 				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 				secondCmpFalseBlock->set_active(irCtx->builder);
@@ -453,6 +449,8 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 		    irCtx->builder.CreateLoad(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth),
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), secondInst->get_llvm(), 0u));
 		auto* secondData        = irCtx->builder.CreateStructGEP(get_llvm_type(), firstInst->get_llvm(), 1u);
+		auto  firstAddr         = firstInst->extract_address_space(irCtx);
+		auto  secondAddr        = secondInst->extract_address_space(irCtx);
 		auto* sameTagTrueBlock  = ir::Block::create(fun, fun->get_block());
 		auto* sameTagFalseBlock = ir::Block::create(fun, fun->get_block());
 		auto* restBlock         = ir::Block::create(fun, fun->get_block()->get_parent());
@@ -472,16 +470,14 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    cmpTrueBlock->get_bb(), cmpFalseBlock->get_bb());
 				cmpTrueBlock->set_active(irCtx->builder);
+				auto firstRefTy  = ir::RefType::get(true, subTy, firstAddr, irCtx);
+				auto secondRefTy = ir::RefType::get(false, subTy, firstAddr, irCtx);
 				subTy->move_assign_value(
 				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       firstData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                         irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       secondData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                          irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(firstData, firstRefTy->get_llvm_type()), firstRefTy,
+				                   false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(secondData, secondRefTy->get_llvm_type()),
+				                   secondRefTy, false),
 				    fun);
 				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 				cmpFalseBlock->set_active(irCtx->builder);
@@ -503,12 +499,11 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 				        firstTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    firstCmpTrueBlock->get_bb(), firstCmpFalseBlock->get_bb());
 				firstCmpTrueBlock->set_active(irCtx->builder);
+				auto firstRefTy = ir::RefType::get(true, subTy, firstAddr, irCtx);
 				subTy->destroy_value(
 				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       firstData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                         irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(firstData, firstRefTy->get_llvm_type()), firstRefTy,
+				                   false),
 				    fun);
 				(void)ir::add_branch(irCtx->builder, firstCmpRestBlock->get_bb());
 				firstCmpFalseBlock->set_active(irCtx->builder);
@@ -530,17 +525,14 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 				        secondTag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    secondCmpTrueBlock->get_bb(), secondCmpFalseBlock->get_bb());
 				secondCmpTrueBlock->set_active(irCtx->builder);
+				auto firstRefTy  = ir::RefType::get(true, subTy, firstAddr, irCtx);
+				auto secondRefTy = ir::RefType::get(false, subTy, secondAddr, irCtx);
 				subTy->move_construct_value(
 				    irCtx,
-
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       firstData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                         irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       secondData, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                          irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(false, subTy, irCtx), false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(firstData, firstRefTy->get_llvm_type()), firstRefTy,
+				                   false),
+				    ir::Value::get(irCtx->builder.CreatePointerCast(secondData, secondRefTy->get_llvm_type()),
+				                   secondRefTy, false),
 				    fun);
 				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 				secondCmpFalseBlock->set_active(irCtx->builder);
@@ -568,6 +560,7 @@ void MixType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* f
 		    irCtx->builder.CreateLoad(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth),
 		                              irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), 0u));
 		auto*      dataPtr    = irCtx->builder.CreateStructGEP(get_llvm_type(), instance->get_llvm(), 1u);
+		auto       addr       = instance->extract_address_space(irCtx);
 		ir::Block* trueBlock  = nullptr;
 		ir::Block* falseBlock = nullptr;
 		ir::Block* restBlock  = ir::Block::create(fun, fun->get_block()->get_parent());
@@ -582,13 +575,8 @@ void MixType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* f
 				        tag, llvm::ConstantInt::get(llvm::Type::getIntNTy(irCtx->llctx, tagBitWidth), i, false)),
 				    trueBlock->get_bb(), falseBlock->get_bb());
 				trueBlock->set_active(irCtx->builder);
-				subTy->destroy_value(
-				    irCtx,
-				    ir::Value::get(irCtx->builder.CreatePointerCast(
-				                       dataPtr, llvm::PointerType::get(subTy->get_llvm_type(),
-				                                                       irCtx->dataLayout.getProgramAddressSpace())),
-				                   ir::RefType::get(true, subTy, irCtx), false),
-				    fun);
+				auto refTy = ir::RefType::get(true, subTy, addr, irCtx);
+				subTy->destroy_value(irCtx, ir::Value::get(dataPtr, refTy, false), fun);
 				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
 				falseBlock->set_active(irCtx->builder);
 			}

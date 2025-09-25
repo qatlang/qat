@@ -5,7 +5,8 @@
 #include "../../IR/types/pointer.hpp"
 #include "../../IR/types/region.hpp"
 #include "../types/qat_type.hpp"
-#include "llvm/IR/Constants.h"
+
+#include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 
@@ -72,10 +73,8 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 	restBlock->link_previous_block(startBlock);
 	nonNullBlock->set_active(ctx->irCtx->builder);
 	if (candidate->isInPlaceCreatable()) {
-		auto dummyValue =
-		    ir::Value::get(llvm::UndefValue::get(llvm::PointerType::get(
-		                       ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace())),
-		                   ir::RefType::get(true, ir::IntegerType::get(8u, ctx->irCtx), ctx->irCtx), false);
+		auto dummyRefTy = ir::RefType::get(true, ir::IntegerType::get(8u, ctx->irCtx), None, ctx->irCtx);
+		auto dummyValue = ir::Value::get(llvm::UndefValue::get(dummyRefTy->get_llvm_type()), dummyRefTy, false);
 		candidate->asInPlaceCreatable()->setCreateIn(dummyValue);
 		candidate->asInPlaceCreatable()->ignoreCreateInType = true;
 		auto resExpr                                        = candidate->emit(ctx);
@@ -105,7 +104,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			ctx->Error("Unsupported type of allocator for in-expression", fileRange);
 		}
 		dummyValue->get_llvm()->replaceAllUsesWith(result->get_llvm());
-		auto ptrTy = llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace());
+		auto ptrTy = llvm::cast<llvm::PointerType>(dummyRefTy->get_llvm_type());
 		ctx->irCtx->builder.CreateCondBr(
 		    ctx->irCtx->builder.CreateICmpNE(
 		        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), result->get_llvm(),

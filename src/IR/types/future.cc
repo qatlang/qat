@@ -123,7 +123,7 @@ void FutureType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function
 		                                           irCtx->dataLayout.getProgramAddressSpace())),
 		                {llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 1u)}),
 		            llvm::PointerType::get(subTy->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace())),
-		        ir::RefType::get(false, subTy, irCtx), false),
+		        ir::RefType::get(false, subTy, instance->extract_address_space(irCtx), irCtx), false),
 		    fun);
 	}
 	irCtx->builder.CreateCall(

@@ -44,9 +44,11 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 		           isVarRange.value().second);
 	}
 
-	auto* inst     = instance->emit(ctx);
-	auto* instType = inst->get_ir_type();
-	bool  isVar    = inst->is_variable();
+	auto* inst             = instance->emit(ctx);
+	auto  instAddressSpace = inst->is_ref() ? inst->get_ir_type()->as_ref()->get_address_space()
+	                                        : ir::AddressSpace::get_space_for_llvm_value(ctx->irCtx, inst->get_llvm());
+	auto* instType         = inst->get_ir_type();
+	bool  isVar            = inst->is_variable();
 	if (instType->is_ref()) {
 		inst->load_ghost_ref(ctx->irCtx->builder);
 		isVar    = instType->as_ref()->has_variability();
@@ -72,10 +74,12 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {1u}),
 				                      ir::NativeType::get_usize(ctx->irCtx), false);
 			} else {
-				return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(
-				                          ir::TextType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(), 1u),
-				                      ir::RefType::get(false, ir::NativeType::get_usize(ctx->irCtx), ctx->irCtx),
-				                      false);
+				auto usizeTy = ir::NativeType::get_usize(ctx->irCtx);
+				return ir::Value::get(ctx->irCtx->builder.CreateLoad(
+				                          usizeTy->get_llvm_type(),
+				                          ctx->irCtx->builder.CreateStructGEP(
+				                              ir::TextType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(), 1u)),
+				                      usizeTy, true);
 			}
 		} else if (name.value == "data") {
 			if (inst->is_prerun_value()) {
@@ -89,15 +93,14 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				                      false);
 			} else {
 				SHOW("Text is an implicit pointer or a reference or pointer")
-				return ir::Value::get(
-				    ctx->irCtx->builder.CreateStructGEP(ir::TextType::get(ctx->irCtx)->get_llvm_type(),
-				                                        inst->get_llvm(), 0u),
-				    ir::RefType::get(false,
-				                     ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx),
-				                                      false, // NOLINT(readability-magic-numbers)
-				                                      ir::PtrOwner::of_none(), false, None, ctx->irCtx),
-				                     ctx->irCtx),
-				    false);
+				// FIXME - Address space fix
+				auto dataPtrTy = ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
+				                                  ir::PtrOwner::of_none(), false, None, ctx->irCtx);
+				return ir::Value::get(ctx->irCtx->builder.CreateLoad(
+				                          dataPtrTy->get_llvm_type(),
+				                          ctx->irCtx->builder.CreateStructGEP(
+				                              ir::TextType::get(ctx->irCtx)->get_llvm_type(), inst->get_llvm(), 0u)),
+				                      dataPtrTy, false);
 			}
 		} else {
 			ctx->Error("Invalid name for member access: " + ctx->color(name.value) + " for expression of type " +
@@ -224,8 +227,12 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			if (inst->is_value()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}), varTy, true);
 			} else {
-				return ir::Value::get(ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), inst->get_llvm(), 0u),
-				                      ir::RefType::get(isVar, varTy, ctx->irCtx), false);
+				auto varRefTy = ir::RefType::get(isVar, varTy, instAddressSpace, ctx->irCtx);
+				return ir::Value::get(
+				    ctx->irCtx->builder.CreatePointerCast(
+				        ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), inst->get_llvm(), 0u),
+				        varRefTy->get_llvm_type()),
+				    varRefTy, false);
 			}
 		} else {
 			if (inst->is_value()) {
@@ -238,12 +245,12 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				        {0u}),
 				    varTy, true);
 			} else {
+				auto varRefTy = ir::RefType::get(isVar, varTy, instAddressSpace, ctx->irCtx);
 				return ir::Value::get(
 				    ctx->irCtx->builder.CreatePointerCast(
 				        ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), inst->get_llvm(), 0u),
-				        llvm::PointerType::get(varTy->get_llvm_type(),
-				                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
-				    ir::RefType::get(isVar, varTy, ctx->irCtx), false);
+				        varRefTy->get_llvm_type()),
+				    varRefTy, false);
 			}
 		}
 	} else if (instType->is_expanded()) {
@@ -306,7 +313,9 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 				if (memValTy->is_ref()) {
 					llVal = ctx->irCtx->builder.CreateLoad(memValTy->get_llvm_type(), llVal);
 				}
-				return ir::Value::get(llVal, ir::RefType::get(isVar, memValTy, ctx->irCtx), false)
+				auto memRefTy = ir::RefType::get(isVar, memValTy, instAddressSpace, ctx->irCtx);
+				return ir::Value::get(ctx->irCtx->builder.CreatePointerCast(llVal, memRefTy->get_llvm_type()), memRefTy,
+				                      false)
 				    ->with_range(fileRange);
 			}
 		} else if (eTy->has_normal_method(name.value) || eTy->has_variation(name.value)) {

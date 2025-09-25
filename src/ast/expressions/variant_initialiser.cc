@@ -147,12 +147,11 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 				    fileRange);
 			}
 			auto elemPtr = ctx->irCtx->builder.CreateStructGEP(tgTy->get_llvm_type(), createIn->get_llvm(), 0u);
+			auto createInRefTy =
+			    ir::RefType::get(true, varType, createIn->extract_address_space(ctx->irCtx), ctx->irCtx);
 			expression->asInPlaceCreatable()->setCreateIn(ir::Value::get(
-			    isDefaultVar ? elemPtr
-			                 : ctx->irCtx->builder.CreatePointerCast(
-			                       elemPtr, llvm::PointerType::get(varType->get_llvm_type(),
-			                                                       ctx->irCtx->dataLayout.getProgramAddressSpace())),
-			    ir::RefType::get(true, varType, ctx->irCtx), true));
+			    isDefaultVar ? elemPtr : ctx->irCtx->builder.CreatePointerCast(elemPtr, createInRefTy->get_llvm_type()),
+			    createInRefTy, true));
 			(void)expression->emit(ctx);
 			if (llvm::cast<llvm::StructType>(tgTy->get_llvm_type())->getNumElements() == 2) {
 				ctx->irCtx->builder.CreateStore(

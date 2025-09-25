@@ -57,7 +57,10 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 				} else {
 					shouldLoadValue = true;
 					createIn        = ir::Value::get(ir::Logic::newAlloca(ctx->get_fn(), None, candTy->get_llvm_type()),
-					                                 ir::RefType::get(true, candTy, ctx->irCtx), false);
+					                                 ir::RefType::get(true, candTy,
+					                                                  ir::AddressSpace::get_simplified_local_space(ctx->irCtx),
+					                                                  ctx->irCtx),
+					                                 false);
 				}
 				(void)candTy->copy_construct_value(ctx->irCtx, createIn, expEmit, ctx->get_fn());
 				if (shouldLoadValue) {

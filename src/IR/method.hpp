@@ -4,10 +4,11 @@
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
 #include "./function.hpp"
-#include "link_names.hpp"
-#include "skill.hpp"
-#include "types/function.hpp"
-#include "types/qat_type.hpp"
+#include "./link_names.hpp"
+#include "./skill.hpp"
+#include "./types/address_space.hpp"
+#include "./types/function.hpp"
+#include "./types/qat_type.hpp"
 
 #include <set>
 #include <string>
@@ -51,6 +52,11 @@ class MethodParent {
 	MethodParent(MethodParentType _parentType, void* data);
 	useit static MethodParent* create_expanded_type(ir::ExpandedType* expTy);
 	useit static MethodParent* create_do_skill(ir::DoneSkill* doneSkill);
+
+	useit Maybe<ir::AddressSpace> get_self_address_space() {
+		// FIXME - Address space fix
+		return None;
+	}
 
 	useit bool is_expanded() const;
 	useit bool is_done_skill() const;

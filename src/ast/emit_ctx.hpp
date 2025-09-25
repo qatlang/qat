@@ -3,6 +3,7 @@
 
 #include "../IR/prerun_function.hpp"
 #include "../IR/qat_module.hpp"
+#include "../IR/types/address_space.hpp"
 
 namespace qat::ir {
 class MethodParent;
@@ -134,6 +135,11 @@ struct EmitCtx {
 	useit bool has_opaque_parent() const { return parentOpaque != nullptr; }
 
 	useit ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
+
+	useit Maybe<ir::AddressSpace> get_address_space_from_opaque() {
+		// FIXME - Address space fix
+		return None;
+	}
 
 	useit bool has_skill() const { return skill != nullptr; }
 

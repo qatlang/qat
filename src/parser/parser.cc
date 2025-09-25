@@ -1870,11 +1870,37 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				}
 				auto subRes = do_type(ctx, i, None);
 				i           = subRes.second;
+				Maybe<ast::AddressSpace> addressSpace;
+				if (is_next(TokenType::separator, i)) {
+					i++;
+					if (not is_next(TokenType::of, i)) {
+						add_error("Expected the address-space specification after this", RangeSpan(start, i));
+					}
+					i++;
+					auto aStart = i;
+					if (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1)) {
+						i += 2;
+						addressSpace = ast::AddressSpace{
+						    .name = IdentifierAt(i), .value = nullptr, .fileRange = RangeSpan(aStart, i)};
+					} else if (is_next(TokenType::parenthesisOpen, i)) {
+						i++;
+						auto exp = do_prerun_expression(preCtx, i, None);
+						i        = exp.second;
+						if (not is_next(TokenType::parenthesisClose, i)) {
+							add_error("Expected ) after this", RangeSpan(aStart, i));
+						}
+						i++;
+						addressSpace = ast::AddressSpace{
+						    .name = Identifier::named(""), .value = exp.first, .fileRange = RangeSpan(aStart, i)};
+					} else {
+						add_error("Invalid address-space specification", RangeAt(i));
+					}
+				}
 				if (not is_next(TokenType::genericTypeEnd, i)) {
 					add_error("Expected ] after this to end the subtype of the reference type", RangeSpan(start, i));
 				}
 				i++;
-				cacheTy = ast::ReferenceType::create(subRes.first, isRefVar, RangeSpan(start, i));
+				cacheTy = ast::RefType::create(subRes.first, isRefVar, std::move(addressSpace), RangeSpan(start, i));
 				break;
 			}
 			case TokenType::sliceType: {

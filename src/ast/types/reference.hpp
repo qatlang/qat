@@ -1,21 +1,25 @@
 #ifndef QAT_TYPES_REFERENCE_HPP
 #define QAT_TYPES_REFERENCE_HPP
 
+#include "./address_space.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {
 
-class ReferenceType final : public Type {
+class RefType final : public Type {
   private:
-	Type* type;
-	bool  isSubtypeVar;
+	Type*               type;
+	bool                isSubtypeVar;
+	Maybe<AddressSpace> addressSpace;
 
   public:
-	ReferenceType(Type* _type, bool _isSubtypeVar, FileRangePtr _fileRange)
-	    : Type(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar) {}
+	RefType(Type* _type, bool _isSubtypeVar, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
+	    : Type(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar),
+	      addressSpace(std::move(_addressSpace)) {}
 
-	useit static ReferenceType* create(Type* type, bool isSubtypeVar, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(ReferenceType), type, isSubtypeVar, std::move(fileRange));
+	useit static RefType* create(Type* type, bool isSubtypeVar, Maybe<AddressSpace> addressSpace,
+	                             FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(RefType), type, isSubtypeVar, std::move(addressSpace), std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,

@@ -3,6 +3,7 @@
 
 #include "../utils/file_range.hpp"
 #include "../utils/qat_region.hpp"
+#include "./types/address_space.hpp"
 #include "./types/qat_type.hpp"
 
 #include <llvm/IR/Constants.h>
@@ -80,6 +81,8 @@ class Value {
 	useit bool is_ref() const { return type->is_ref(); }
 
 	useit bool is_ptr() const { return type->is_ptr(); }
+
+	useit Maybe<AddressSpace> extract_address_space(ir::Ctx* irCtx) const;
 
 	useit bool is_ghost_ref() const {
 		return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&

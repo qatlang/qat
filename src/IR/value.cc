@@ -45,6 +45,14 @@ ir::Type* Value::get_pass_type() const {
 	}
 }
 
+Maybe<AddressSpace> Value::extract_address_space(ir::Ctx* irCtx) const {
+	if (is_ref()) {
+		return get_ir_type()->as_ref()->get_address_space();
+	} else {
+		return ir::AddressSpace::get_space_for_llvm_value(irCtx, ll);
+	}
+}
+
 bool Value::is_prerun_function() const { return is_prerun_value() && get_ir_type()->is_function(); }
 
 Value* Value::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> _localID, Mod*) {

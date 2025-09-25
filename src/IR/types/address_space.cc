@@ -21,6 +21,16 @@ Maybe<AddressSpace> AddressSpace::get_simplified_global_space(Ctx* irCtx) {
 	}
 }
 
+Maybe<AddressSpace> AddressSpace::get_space_for_llvm_value(Ctx* irCtx, llvm::Value* value) {
+	if (llvm::isa<llvm::GlobalValue>(value)) {
+		return get_simplified_global_space(irCtx);
+	} else if (llvm::isa<llvm::AllocaInst>(value)) {
+		return get_simplified_local_space(irCtx);
+	} else {
+		return None;
+	}
+}
+
 u32 AddressSpace::get_number(ir::Ctx* irCtx) const {
 	if (name.empty()) {
 		return value;

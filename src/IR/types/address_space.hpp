@@ -4,6 +4,10 @@
 #include "../../utils/helpers.hpp"
 #include "../../utils/macros.hpp"
 
+namespace llvm {
+class Value;
+};
+
 namespace qat::ir {
 
 class Ctx;
@@ -19,6 +23,8 @@ struct AddressSpace {
 	useit static Maybe<AddressSpace> get_simplified_local_space(Ctx* irCtx);
 
 	useit static Maybe<AddressSpace> get_simplified_global_space(Ctx* irCtx);
+
+	useit static Maybe<AddressSpace> get_space_for_llvm_value(Ctx* irCtx, llvm::Value* value);
 
 	useit static bool compare(Maybe<AddressSpace> const& first, Maybe<AddressSpace> const& second) {
 		return (first.has_value() == second.has_value()) &&

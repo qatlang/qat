@@ -2,20 +2,22 @@
 #define QAT_IR_TYPES_SLICE_HPP
 
 #include "../../utils/qat_region.hpp"
+#include "./address_space.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ir {
 
 class SliceType : public Type {
-	Type* subType;
-	bool  isVar;
+	Type*               subType;
+	bool                isVar;
+	Maybe<AddressSpace> addressSpace;
 
 	static Vec<SliceType*> allSliceTypes;
 
   public:
-	SliceType(bool isVar, Type* subType, ir::Ctx* ctx);
+	SliceType(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace, ir::Ctx* ctx);
 
-	useit static SliceType* get(bool isVar, Type* subType, ir::Ctx* ctx);
+	useit static SliceType* get(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace, ir::Ctx* ctx);
 
 	useit Type* get_subtype() const { return subType; }
 

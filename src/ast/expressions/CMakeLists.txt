@@ -20,6 +20,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	inline_let.cc
 	inline_match.cc
 	is.cc
+	is_flag_variant.cc
 	is_variant.cc
 	method_call.cc
 	index_access.cc

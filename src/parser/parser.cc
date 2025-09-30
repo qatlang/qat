@@ -38,6 +38,7 @@
 #include "../ast/expressions/inline_let.hpp"
 #include "../ast/expressions/inline_match.hpp"
 #include "../ast/expressions/is.hpp"
+#include "../ast/expressions/is_flag_variant.hpp"
 #include "../ast/expressions/is_variant.hpp"
 #include "../ast/expressions/member_access.hpp"
 #include "../ast/expressions/method_call.hpp"
@@ -5531,32 +5532,74 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						              i + 1);
 						i++;
 					} else if (is_next(TokenType::is, i)) {
-						ast::IsVariantKind kind = ast::IsVariantKind::MAYBE_VALUE;
-						Maybe<Identifier>  name;
-						if (is_next(TokenType::colon, i + 1)) {
-							if (is_next(TokenType::identifier, i + 2)) {
-								kind = ast::IsVariantKind::VARIANT_NAME;
-								name = IdentifierAt(i + 3);
-							} else if (is_next(TokenType::none, i + 2)) {
-								kind = ast::IsVariantKind::NONE;
-							} else if (is_next(TokenType::ok, i + 2)) {
-								kind = ast::IsVariantKind::RESULT_OK;
-							} else if (is_next(TokenType::error, i + 2)) {
-								kind = ast::IsVariantKind::RESULT_ERROR;
-							} else if (is_next(TokenType::TRUE, i + 2)) {
-								kind = ast::IsVariantKind::BOOL_TRUE;
-							} else if (is_next(TokenType::FALSE, i + 2)) {
-								kind = ast::IsVariantKind::BOOL_FALSE;
-							} else if (is_next(TokenType::null, i + 2)) {
-								kind = ast::IsVariantKind::POINTER_NULL;
-							} else if (is_next(TokenType::var, i + 2)) {
-								kind = ast::IsVariantKind::VARIABILITY;
+						if (is_next(TokenType::curlybraceOpen, i + 1)) {
+							i += 2;
+							ast::FlagVariantKind kind;
+							Vec<Identifier>      variants;
+							if (is_next(TokenType::Default, i)) {
+								kind = ast::FlagVariantKind::DEFAULT;
+								i++;
+							} else if (is_next(TokenType::none, i)) {
+								kind = ast::FlagVariantKind::NONE;
+								i++;
+							} else {
+								kind = ast::FlagVariantKind::VARIANTS;
+								if (not is_next(TokenType::identifier, i)) {
+									add_error("Expected an identifier for the name of a variant after this",
+									          RangeSpan(start, i));
+								}
+								while (is_next(TokenType::identifier, i)) {
+									i++;
+									variants.push_back(IdentifierAt(i));
+									if (is_next(TokenType::binaryOperator, i)) {
+										i++;
+										if (ValueAt(i) != "+") {
+											add_error("Expected + here, but found an unexpected token", RangeAt(i));
+										}
+										if (not is_next(TokenType::identifier, i)) {
+											add_error(
+											    "Expected an identifier for the name of the other variant after this",
+											    RangeAt(i));
+										}
+									} else {
+										break;
+									}
+								}
 							}
-							i += 3;
-						} else {
+							if (not is_next(TokenType::curlybraceClose, i)) {
+								add_error("Expected } after this", RangeSpan(start, i));
+							}
 							i++;
+							setCachedExpr(
+							    ast::IsFlagVariant::create(exp, kind, std::move(variants), RangeSpan(start, i)), i);
+						} else {
+							ast::IsVariantKind kind = ast::IsVariantKind::MAYBE_VALUE;
+							Maybe<Identifier>  name;
+							if (is_next(TokenType::colon, i + 1)) {
+								if (is_next(TokenType::identifier, i + 2)) {
+									kind = ast::IsVariantKind::VARIANT_NAME;
+									name = IdentifierAt(i + 3);
+								} else if (is_next(TokenType::none, i + 2)) {
+									kind = ast::IsVariantKind::NONE;
+								} else if (is_next(TokenType::ok, i + 2)) {
+									kind = ast::IsVariantKind::RESULT_OK;
+								} else if (is_next(TokenType::error, i + 2)) {
+									kind = ast::IsVariantKind::RESULT_ERROR;
+								} else if (is_next(TokenType::TRUE, i + 2)) {
+									kind = ast::IsVariantKind::BOOL_TRUE;
+								} else if (is_next(TokenType::FALSE, i + 2)) {
+									kind = ast::IsVariantKind::BOOL_FALSE;
+								} else if (is_next(TokenType::null, i + 2)) {
+									kind = ast::IsVariantKind::POINTER_NULL;
+								} else if (is_next(TokenType::var, i + 2)) {
+									kind = ast::IsVariantKind::VARIABILITY;
+								}
+								i += 3;
+							} else {
+								i++;
+							}
+							setCachedExpr(ast::IsVariant::create(exp, kind, std::move(name), RangeSpan(start, i)), i);
 						}
-						setCachedExpr(ast::IsVariant::create(exp, kind, std::move(name), RangeSpan(start, i)), i);
 					} else if (is_next(TokenType::orWord, i)) {
 						if (is_next(TokenType::colon, i + 1) && is_next(TokenType::use, i + 2)) {
 							i += 3;

@@ -2843,6 +2843,10 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					i            = typeRes.second;
 					providedType = typeRes.first;
 				}
+				if (not is_next(TokenType::curlybraceOpen, i)) {
+					add_error("Expected { after this to start the body of the flag type", RangeSpan(start, i));
+				}
+				i++;
 				auto flagRes = do_flag_type(i, name, providedType, get_visibility(), RangeAt(start));
 				addNode(flagRes.first);
 				i = flagRes.second;
@@ -4063,16 +4067,13 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 				add_error("A , separator was not expected here", RangeAt(i));
 				break;
 			}
-			case TokenType::comment: {
-				break;
-			}
 			case TokenType::curlybraceClose: {
 				shouldExit = true;
 				break;
 			}
 			default: {
 				add_error(
-				    "Found an unsupported token here. Expected an identifier for the name of a variant of this flag type, or a comment, or for the body of the flag type to end here",
+				    "Found an unsupported token here. Expected an identifier for the name of a variant of this flag type, or for the body of the flag type to end here",
 				    RangeAt(i));
 				break;
 			}

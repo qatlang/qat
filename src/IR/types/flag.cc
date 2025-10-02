@@ -25,6 +25,7 @@ FlagType::FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, M
 	if (parent) {
 		parent->flagTypes.push_back(this);
 	}
+	llvmType = underlyingType->get_llvm_type();
 }
 
 String FlagType::get_full_name() const { return parent->get_fullname_with_child(name.value); }

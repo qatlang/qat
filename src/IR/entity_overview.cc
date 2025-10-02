@@ -4,9 +4,9 @@
 namespace qat::ir {
 
 EntityOverview::EntityOverview(String _ovKind, Json _ovInfo, FileRangePtr _ovRange)
-    : ovKind(std::move(_ovKind)), ovInfo(std::move(_ovInfo)), ovRange(std::move(_ovRange)) {}
+    : ovKind(std::move(_ovKind)), ovInfo(std::move(_ovInfo)), ovRange(_ovRange) {}
 
-void EntityOverview::add_mention(FileRangePtr _range) { ovMentions.push_back(std::move(_range)); }
+void EntityOverview::add_mention(FileRangePtr _range) { ovMentions.push_back(_range); }
 
 void EntityOverview::add_bring_mention(ir::Mod* otherMod, FileRangePtr fileRange) {
 	ovBroughtMentions.push_back(Pair<ir::Mod*, FileRangePtr>(otherMod, fileRange));

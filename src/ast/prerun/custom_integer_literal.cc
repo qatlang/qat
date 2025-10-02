@@ -84,7 +84,7 @@ ir::PrerunValue* CustomIntegerLiteral::emit(EmitCtx* ctx) {
 
 	Maybe<ir::Type*> suffixType;
 	if (suffix.has_value()) {
-		auto nativeKind = ir::native_type_kind_from_string(suffix.value().value);
+		auto nativeKind = ir::NativeType::kind_from_string(suffix.value().value);
 		if (nativeKind.has_value()) {
 			suffixType = ir::NativeType::get_from_kind(nativeKind.value(), ctx->irCtx);
 		} else {

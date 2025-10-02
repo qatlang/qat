@@ -36,10 +36,6 @@ enum class NativeTypeKind {
 	LongDouble,
 };
 
-Maybe<NativeTypeKind> native_type_kind_from_string(String const& val);
-
-String native_type_kind_to_string(NativeTypeKind kind);
-
 class NativeType : public Type {
   private:
 	ir::Type*           subType;
@@ -50,6 +46,9 @@ class NativeType : public Type {
 
   public:
 	NativeType(ir::Type* actual, NativeTypeKind c_kind, Maybe<AddressSpace> addressSpace = None);
+
+	static Maybe<NativeTypeKind> kind_from_string(String const& val);
+	static String                kind_to_string(NativeTypeKind kind);
 
 	useit NativeTypeKind get_c_type_kind() const;
 	useit ir::Type* get_subtype() const;

@@ -8,7 +8,7 @@
 
 namespace qat::ir {
 
-Maybe<NativeTypeKind> native_type_kind_from_string(String const& val) {
+Maybe<NativeTypeKind> NativeType::kind_from_string(String const& val) {
 	if (val == "bytestring") {
 		return NativeTypeKind::ByteString;
 	} else if (val == "int") {
@@ -65,7 +65,7 @@ Maybe<NativeTypeKind> native_type_kind_from_string(String const& val) {
 	return None;
 }
 
-String native_type_kind_to_string(NativeTypeKind kind) {
+String NativeType::kind_to_string(NativeTypeKind kind) {
 	switch (kind) {
 		case NativeTypeKind::Int:
 			return "int";
@@ -602,7 +602,7 @@ String NativeType::to_string() const {
 		}
 		return res;
 	}
-	return native_type_kind_to_string(nativeKind);
+	return NativeType::kind_to_string(nativeKind);
 }
 
 } // namespace qat::ir

@@ -1475,7 +1475,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					cacheTy = ast::NativeType::create_bytestring(isNonNullable, std::move(varRange),
 					                                             std::move(addressSpace), RangeSpan(start, i));
 				} else {
-					auto nativeKind = ir::native_type_kind_from_string(ValueAt(i));
+					auto nativeKind = ir::NativeType::kind_from_string(ValueAt(i));
 					if (nativeKind.has_value()) {
 						cacheTy = ast::NativeType::create(nativeKind.value(), RangeAt(i));
 					} else {
@@ -2045,7 +2045,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 										add_error("Expected ) after this", RangeSpan(pOpen, i));
 									}
 									i++;
-									addressSpace = ast::AddressSpace{.name      = Identifier{"", FileRange::null},
+									addressSpace = ast::AddressSpace{.name      = Identifier::named(""),
 									                                 .value     = addr.first,
 									                                 .fileRange = RangeSpan(addrOpen, i)};
 								} else {

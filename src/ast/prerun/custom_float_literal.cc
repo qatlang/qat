@@ -36,8 +36,8 @@ ir::PrerunValue* CustomFloatLiteral::emit(EmitCtx* ctx) {
 			floatResTy = ir::FloatType::get(ir::FloatTypeKind::_128, ctx->irCtx->llctx);
 		} else if (kind == "f128ppc") {
 			floatResTy = ir::FloatType::get(ir::FloatTypeKind::_128PPC, ctx->irCtx->llctx);
-		} else if (ir::native_type_kind_from_string(kind).has_value()) {
-			floatResTy = ir::NativeType::get_from_kind(ir::native_type_kind_from_string(kind).value(), ctx->irCtx);
+		} else if (ir::NativeType::kind_from_string(kind).has_value()) {
+			floatResTy = ir::NativeType::get_from_kind(ir::NativeType::kind_from_string(kind).value(), ctx->irCtx);
 		} else {
 			ctx->Error("Invalid suffix provided for custom float literal", fileRange);
 		}

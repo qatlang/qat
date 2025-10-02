@@ -167,7 +167,7 @@ Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 Json NativeType::to_json() const {
 	return Json()
 	    ._("typeKind", "nativeType")
-	    ._("nativeKind", ir::native_type_kind_to_string(nativeKind))
+	    ._("nativeKind", ir::NativeType::kind_to_string(nativeKind))
 	    ._("isNonNullable", isNonNullable)
 	    ._("hasVar", varRange.has_value())
 	    ._("varRange", varRange.has_value() ? varRange.value()->to_json_value() : JsonValue())
@@ -205,7 +205,7 @@ String NativeType::to_string() const {
 		}
 		return res;
 	}
-	return ir::native_type_kind_to_string(nativeKind);
+	return ir::NativeType::kind_to_string(nativeKind);
 }
 
 } // namespace qat::ast

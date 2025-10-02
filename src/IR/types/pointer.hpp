@@ -17,6 +17,7 @@ enum class OwnerKind {
 	OWN,
 	SELF,
 	STATIC,
+	PRERUN,
 };
 
 class PtrOwner {
@@ -31,6 +32,7 @@ class PtrOwner {
 	useit static PtrOwner of_self(Type* type);
 	useit static PtrOwner of_region_type(Region* region);
 	useit static PtrOwner of_any_region();
+	useit static PtrOwner of_prerun();
 
 	useit Type* owner_as_type() const { return (Type*)owner; }
 
@@ -53,6 +55,8 @@ class PtrOwner {
 	useit bool is_self() const { return ownerTy == OwnerKind::SELF; }
 
 	useit bool is_static() const { return ownerTy == OwnerKind::STATIC; }
+
+	useit bool is_prerun() const { return ownerTy == OwnerKind::PRERUN; }
 
 	useit bool is_same(const PtrOwner& other) const;
 

@@ -28,6 +28,8 @@ PtrOwner PtrOwner::of_region_type(Region* region) {
 
 PtrOwner PtrOwner::of_any_region() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::ANY_REGION}; }
 
+PtrOwner PtrOwner::of_prerun() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::PRERUN}; }
+
 bool PtrOwner::is_same(const PtrOwner& other) const {
 	if (ownerTy == other.ownerTy) {
 		switch (ownerTy) {
@@ -35,6 +37,7 @@ bool PtrOwner::is_same(const PtrOwner& other) const {
 			case OwnerKind::STATIC:
 			case OwnerKind::HEAP:
 			case OwnerKind::ANY_REGION:
+			case OwnerKind::PRERUN:
 				return true;
 			case OwnerKind::REGION_TYPE:
 				return owner_as_region()->is_same(other.owner_as_region());
@@ -64,6 +67,8 @@ String PtrOwner::to_string() const {
 			return "own(" + owner_as_parent_function()->get_full_name() + ")";
 		case OwnerKind::STATIC:
 			return "static";
+		case OwnerKind::PRERUN:
+			return "pre";
 	}
 }
 

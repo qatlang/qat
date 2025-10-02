@@ -21,6 +21,8 @@ String PtrOwner::to_string() const {
 			return "region(" + candidate->to_string() + ")";
 		case OwnerKind::ANY_REGION:
 			return "region";
+		case OwnerKind::PRERUN:
+			return "pre";
 	}
 }
 
@@ -47,6 +49,8 @@ String ptr_owner_to_string(OwnerKind ownType) {
 			return "region";
 		case OwnerKind::ANY_REGION:
 			return "anyRegion";
+		case OwnerKind::PRERUN:
+			return "prerun";
 	}
 }
 
@@ -94,6 +98,8 @@ ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange)
 			return ir::PtrOwner::of_own(ctx->get_fn());
 		case OwnerKind::REGION_TYPE:
 			return ir::PtrOwner::of_region_type(ownerVal->as_region());
+		case OwnerKind::PRERUN:
+			return ir::PtrOwner::of_prerun();
 		case OwnerKind::ANY_REGION:
 			return ir::PtrOwner::of_any_region();
 	}

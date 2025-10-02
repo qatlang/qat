@@ -22,6 +22,7 @@ enum class OwnerKind : u8 {
 	REGION_TYPE,
 	ANY_REGION,
 	STATIC,
+	PRERUN,
 };
 
 struct PtrOwner {
@@ -55,6 +56,10 @@ struct PtrOwner {
 
 	useit static PtrOwner of_none(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::NONE, .candidate = nullptr, .range = range};
+	}
+
+	useit static PtrOwner of_prerun(FileRangePtr range) {
+		return PtrOwner{.kind = OwnerKind::PRERUN, .candidate = nullptr, .range = range};
 	}
 
 	useit Json to_json() const;

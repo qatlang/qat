@@ -2018,6 +2018,10 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 								ptrOwner = ast::PtrOwner::of_any_region(RangeAt(i));
 							}
 							parsedOwnership = true;
+						} else if (is_next(TokenType::pre, i)) {
+							i++;
+							ptrOwner        = ast::PtrOwner::of_prerun(RangeAt(i));
+							parsedOwnership = true;
 						}
 						if (parsedOwnership) {
 							foundSeparator = false;
@@ -5851,6 +5855,9 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 									ptrOwner = ast::PtrOwner::of_any_region(RangeAt(i + 1));
 									i++;
 								}
+							} else if (is_next(TokenType::pre, i)) {
+								ptrOwner = ast::PtrOwner::of_prerun(RangeAt(i + 1));
+								i++;
 							}
 							if (ptrOwner.has_value()) {
 								foundSeparator = false;

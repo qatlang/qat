@@ -2,6 +2,7 @@
 #include "../../IR/metalib.hpp"
 #include "../../IR/stdlib.hpp"
 #include "../../IR/types/choice.hpp"
+#include "../../IR/types/flag.hpp"
 #include "../../IR/types/region.hpp"
 #include "../../IR/types/struct_type.hpp"
 #include "../../IR/types/toggle.hpp"
@@ -196,7 +197,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Returning opaque type")
 		return oTy;
 	} else if (mod->has_struct_type(entityName.value, reqInfo) ||
-	           mod->has_brought_struct_type(entityName.value, ctx->get_access_info()) ||
+	           mod->has_brought_struct_type(entityName.value, reqInfo) ||
 	           mod->has_struct_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has struct")
 		auto* cTy = mod->get_struct_type(entityName.value, reqInfo);
@@ -209,7 +210,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Added mention, returning struct " << entityName.value)
 		return cTy;
 	} else if (mod->has_type_definition(entityName.value, reqInfo) ||
-	           mod->has_brought_type_definition(entityName.value, ctx->get_access_info()) ||
+	           mod->has_brought_type_definition(entityName.value, reqInfo) ||
 	           mod->has_type_definition_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has type def")
 		auto* dTy = mod->get_type_def(entityName.value, reqInfo);
@@ -223,8 +224,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		dTy->add_mention(entityName.range);
 		SHOW("Returning type def " << entityName.value)
 		return dTy;
-	} else if (mod->has_mix_type(entityName.value, reqInfo) ||
-	           mod->has_brought_mix_type(entityName.value, ctx->get_access_info()) ||
+	} else if (mod->has_mix_type(entityName.value, reqInfo) || mod->has_brought_mix_type(entityName.value, reqInfo) ||
 	           mod->has_mix_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has mix type")
 		auto* mTy = mod->get_mix_type(entityName.value, reqInfo);
@@ -236,7 +236,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		mTy->add_mention(entityName.range);
 		return mTy;
 	} else if (mod->has_toggle_type(entityName.value, reqInfo) ||
-	           mod->has_brought_toggle_type(entityName.value, ctx->get_access_info()) ||
+	           mod->has_brought_toggle_type(entityName.value, reqInfo) ||
 	           mod->has_toggle_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has toggle type")
 		auto* tgTy = mod->get_toggle_type(entityName.value, reqInfo);
@@ -248,7 +248,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		tgTy->add_mention(entityName.range);
 		return tgTy;
 	} else if (mod->has_choice_type(entityName.value, reqInfo) ||
-	           mod->has_brought_choice_type(entityName.value, ctx->get_access_info()) ||
+	           mod->has_brought_choice_type(entityName.value, reqInfo) ||
 	           mod->has_choice_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has choice type")
 		auto* chTy = mod->get_choice_type(entityName.value, reqInfo);
@@ -259,6 +259,20 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		}
 		chTy->add_mention(entityName.range);
 		return chTy;
+	} else if (mod->has_flag_type(entityName.value, reqInfo) || mod->has_brought_flag_type(entityName.value, reqInfo) ||
+	           mod->has_flag_type_in_imports(entityName.value, reqInfo).first) {
+		SHOW("Has flag type")
+		auto* fTy = mod->get_flag_type(entityName.value, reqInfo);
+		SHOW("Got flag type")
+		if (not fTy->get_visibility().is_accessible(reqInfo)) {
+			ctx->Error("Flag type " + ctx->color(fTy->get_full_name()) + " inside module " +
+			               ctx->color(mod->get_referrable_name()) + " is not accessible here",
+			           entityName.range);
+		}
+		SHOW("Adding flag type mention")
+		fTy->add_mention(entityName.range);
+		SHOW("Returning flag type")
+		return fTy;
 	} else if (mod->has_region(entityName.value, reqInfo) ||
 	           mod->has_brought_region(entityName.value, ctx->get_access_info()) ||
 	           mod->has_region_in_imports(entityName.value, reqInfo).first) {

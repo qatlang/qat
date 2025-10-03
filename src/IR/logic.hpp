@@ -39,6 +39,8 @@ class Logic {
 	/// NOTE - This function should ideally control copy & move semantics behaviour for the entire language
 	useit static ir::Value* handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedType, ir::Value* value,
 	                                              FileRangePtr valueRange, bool restricLocalRefs = false);
+
+	useit static Maybe<bool> is_atomic_qualified_type(llvm::Type* type, Ctx* ctx);
 };
 
 } // namespace qat::ir

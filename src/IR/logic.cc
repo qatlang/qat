@@ -1,5 +1,6 @@
 #include "./logic.hpp"
 #include "../ast/emit_ctx.hpp"
+#include "../cli/config.hpp"
 #include "../show.hpp"
 #include "./context.hpp"
 #include "./control_flow.hpp"
@@ -18,8 +19,8 @@
 #include "./types/tuple.hpp"
 #include "./types/unsigned.hpp"
 #include "./value.hpp"
-#include "llvm/IR/BasicBlock.h"
 
+#include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/GlobalVariable.h>
 #include <llvm/IR/Instructions.h>
@@ -729,6 +730,51 @@ useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Va
 	strCmpRes->addIncoming(llvm::ConstantInt::get(boolType, isEquality ? 1u : 0u), strCmpTrueBlock->get_bb());
 	strCmpRes->addIncoming(llvm::ConstantInt::get(boolType, isEquality ? 0u : 1u), strCmpFalseBlock->get_bb());
 	return ir::Value::get(strCmpRes, boolIRType, false)->with_range(fileRange);
+}
+
+Maybe<bool> Logic::is_atomic_qualified_type(llvm::Type* type, Ctx* ctx) {
+	const auto size   = (usize)ctx->dataLayout.getTypeStoreSizeInBits(type);
+	const auto cfg    = cli::Config::get();
+	const auto triple = llvm::Triple(cfg->get_target_triple());
+	if (triple.isX86()) {
+		return size <= 64u;
+	} else if (triple.isARM()) {
+		return size <= 32u;
+	} else if (triple.isAArch64()) {
+		return size <= 128u;
+	} else if (triple.getArch() == llvm::Triple::riscv32) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::riscv64) {
+		return size <= 64u; // FIXME - Consider 128-bit possibility via extensions
+	} else if (triple.isLoongArch32()) {
+		return size <= 32u;
+	} else if (triple.isLoongArch64()) {
+		return size <= 64u;
+	} else if (triple.getArch() == llvm::Triple::hexagon) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::mips || triple.getArch() == llvm::Triple::mipsel) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::mips64 || triple.getArch() == llvm::Triple::mips64el) {
+		return size <= 64u;
+	} else if (triple.getArch() == llvm::Triple::m68k) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::ppc || triple.getArch() == llvm::Triple::ppcle) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::ppc64 || triple.getArch() == llvm::Triple::ppc64le) {
+		return size <= 64u;
+	} else if (triple.getArch() == llvm::Triple::ArchType::wasm32) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::ArchType::wasm64) {
+		return size <= 64u;
+	} else if (triple.getArch() == llvm::Triple::nvptx) {
+		return size <= 32u;
+	} else if (triple.getArch() == llvm::Triple::nvptx64) {
+		return size <= 64u;
+	} else if (triple.getArch() == llvm::Triple::ArchType::spirv32 ||
+	           triple.getArch() == llvm::Triple::ArchType::spirv64) {
+		return size <= 32u;
+	}
+	return None;
 }
 
 } // namespace qat::ir

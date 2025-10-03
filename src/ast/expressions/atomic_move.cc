@@ -1,4 +1,5 @@
 #include "./atomic_move.hpp"
+#include "../../IR/logic.hpp"
 
 namespace qat::ast {
 
@@ -17,6 +18,20 @@ ir::Value* AtomicMove::emit(EmitCtx* ctx) {
 		ctx->Error("The type " + ctx->color(candTy->to_string()) +
 		               " does not have simple-move and hence does not support atomic move",
 		           fileRange);
+	}
+	auto atomicCheck = ir::Logic::is_atomic_qualified_type(candTy->get_llvm_type(), ctx->irCtx);
+	if (atomicCheck.has_value()) {
+		if (not atomicCheck.value()) {
+			ctx->Error("The size of the type " + ctx->color(candTy->to_string()) + " is " +
+			               std::to_string(ctx->irCtx->dataLayout.getTypeStoreSizeInBits(candTy->get_llvm_type())) +
+			               ", which exceeds the maximum limit allowed for atomic operations in the target architecture",
+			           fileRange);
+		}
+	} else {
+		ctx->irCtx->Warning("Could not determine whether the target architecture supports atomic operations for type " +
+		                        ctx->color(candTy->to_string()) +
+		                        ", so there is no guarantee that this operation will be atomic",
+		                    fileRange);
 	}
 	auto order = llvm::AtomicOrdering::SequentiallyConsistent;
 	if (ordering != nullptr) {

@@ -22,7 +22,7 @@ ir::Value* AtomicMove::emit(EmitCtx* ctx) {
 		               ctx->color(candTy->to_string()),
 		           fileRange);
 	}
-	if (not candTy->has_simple_copy()) {
+	if (not candTy->has_simple_move()) {
 		ctx->Error("The type " + ctx->color(candTy->to_string()) +
 		               " does not have simple-move and hence does not support atomic move",
 		           fileRange);

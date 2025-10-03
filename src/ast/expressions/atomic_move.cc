@@ -8,8 +8,16 @@ ir::Value* AtomicMove::emit(EmitCtx* ctx) {
 	auto candTy = cand->get_ir_type();
 	if (candTy->is_ref()) {
 		cand->load_ghost_ref(ctx->irCtx->builder);
+		if (not candTy->as_ref()->has_variability()) {
+			ctx->Error("This is a reference without variability and hence atomic-move cannot be performed", fileRange);
+		}
 		candTy = candTy->as_ref()->get_subtype();
 	} else if (not cand->is_ghost_ref()) {
+		if (not cand->is_variable()) {
+			ctx->Error(
+			    "This is a reference-like expression without variability and hence atomic-move cannot be performed",
+			    fileRange);
+		}
 		ctx->Error("Expected a reference or a reference-like expression here, got a value of type " +
 		               ctx->color(candTy->to_string()),
 		           fileRange);

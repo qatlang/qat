@@ -125,6 +125,7 @@ enum class NodeType {
 	OR_USE_VALUE,
 	IGNORE_VALUE,
 	IS_FLAG_VARIANT,
+	ATOMIC_COPY,
 };
 
 } // namespace qat::ast

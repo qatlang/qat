@@ -19,6 +19,8 @@
 #include "../ast/expressions/address_of.hpp"
 #include "../ast/expressions/array_literal.hpp"
 #include "../ast/expressions/assembly.hpp"
+#include "../ast/expressions/atomic_copy.hpp"
+#include "../ast/expressions/atomic_move.hpp"
 #include "../ast/expressions/await.hpp"
 #include "../ast/expressions/binary_expression.hpp"
 #include "../ast/expressions/cast.hpp"
@@ -5704,6 +5706,38 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					} else if (is_next(TokenType::move, i)) {
 						setCachedExpr(ast::Move::create(exp, false, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
 						i++;
+					} else if (is_next(TokenType::atomic, i)) {
+						if (is_next(TokenType::copy, i + 1)) {
+							i += 2;
+							ast::PrerunExpression* ordering = nullptr;
+							if (is_next(TokenType::genericTypeStart, i)) {
+								i++;
+								auto ordExp = do_prerun_expression(preCtx, i, None);
+								i           = ordExp.second;
+								ordering    = ordExp.first;
+								if (not is_next(TokenType::genericTypeEnd, i)) {
+									add_error("Expected ] after this", RangeSpan(start, i));
+								}
+								i++;
+							}
+							setCachedExpr(ast::AtomicCopy::create(exp, ordering, RangeSpan(start, i)), i);
+						} else if (is_next(TokenType::move, i)) {
+							i += 2;
+							ast::PrerunExpression* ordering = nullptr;
+							if (is_next(TokenType::genericTypeStart, i)) {
+								i++;
+								auto ordExp = do_prerun_expression(preCtx, i, None);
+								i           = ordExp.second;
+								ordering    = ordExp.first;
+								if (not is_next(TokenType::genericTypeEnd, i)) {
+									add_error("Expected ] after this", RangeSpan(start, i));
+								}
+								i++;
+							}
+							setCachedExpr(ast::AtomicMove::create(exp, ordering, RangeSpan(start, i)), i);
+						} else {
+							add_error("Invalid atomic operation", RangeSpan(start, i));
+						}
 					} else if (is_next(TokenType::to, i)) {
 						if (is_next(TokenType::genericTypeStart, i + 1)) {
 							auto destTyRes = do_type(preCtx, i + 2, None);

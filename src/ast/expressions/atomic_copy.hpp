@@ -19,6 +19,9 @@ class AtomicCopy : public Expression {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		UPDATE_DEPS(candidate);
+		if (ordering) {
+			UPDATE_DEPS(ordering);
+		}
 	}
 
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
@@ -29,6 +32,7 @@ class AtomicCopy : public Expression {
 		return Json()
 		    ._("nodeType", "atomicCopy")
 		    ._("candidate", candidate->to_json())
+		    ._("ordering", ordering->to_json())
 		    ._("fileRange", fileRange->to_json());
 	}
 };

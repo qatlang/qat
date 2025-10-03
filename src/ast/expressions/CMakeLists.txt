@@ -3,6 +3,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	array_literal.cc
 	assembly.cc
 	atomic_copy.cc
+	atomic_move.cc
 	await.cc
 	binary_expression.cc
 	cast.cc

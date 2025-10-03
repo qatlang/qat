@@ -1,8 +1,8 @@
-#include "./atomic_copy.hpp"
+#include "./atomic_move.hpp"
 
 namespace qat::ast {
 
-ir::Value* AtomicCopy::emit(EmitCtx* ctx) {
+ir::Value* AtomicMove::emit(EmitCtx* ctx) {
 	auto cand   = candidate->emit(ctx);
 	auto candTy = cand->get_ir_type();
 	if (candTy->is_ref()) {
@@ -15,10 +15,9 @@ ir::Value* AtomicCopy::emit(EmitCtx* ctx) {
 	}
 	if (not candTy->has_simple_copy()) {
 		ctx->Error("The type " + ctx->color(candTy->to_string()) +
-		               " does not have simple-copy and hence does not support atomic copy",
+		               " does not have simple-move and hence does not support atomic move",
 		           fileRange);
 	}
-	auto load  = ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), cand->get_llvm());
 	auto order = llvm::AtomicOrdering::SequentiallyConsistent;
 	if (ordering != nullptr) {
 		auto str = ir::TextType::value_to_string(ordering->emit(ctx));
@@ -38,8 +37,11 @@ ir::Value* AtomicCopy::emit(EmitCtx* ctx) {
 			ctx->Error("Unexpected atomic ordering " + ctx->color(str) + " found here", ordering->fileRange);
 		}
 	}
-	load->setAtomic(order);
-	return ir::Value::get(load, candTy, true)->with_range(fileRange);
+	return ir::Value::get(ctx->irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::BinOp::Xchg, cand->get_llvm(),
+	                                                          llvm::Constant::getNullValue(candTy->get_llvm_type()),
+	                                                          None, order),
+	                      candTy, true)
+	    ->with_range(fileRange);
 }
 
 } // namespace qat::ast

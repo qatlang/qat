@@ -127,6 +127,7 @@ enum class NodeType {
 	IS_FLAG_VARIANT,
 	ATOMIC_COPY,
 	ATOMIC_MOVE,
+	ATOMIC_OPERATIONS,
 };
 
 } // namespace qat::ast

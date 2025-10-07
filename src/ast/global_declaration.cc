@@ -67,8 +67,7 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 			        : llvm::Constant::getNullValue(typ->get_llvm_type()),
 			    linkingName);
 			value.value()->asInPlaceCreatable()->setCreateIn(ir::Value::get(gvar, typ, false));
-			SHOW("Emitting in-place creatable")
-			(void)value.value()->emit(valEmitCtx);
+			SHOW("Emitting in-place creatable")(void) value.value()->emit(valEmitCtx);
 			SHOW("Emitted in-place creatable")
 			value.value()->asInPlaceCreatable()->unsetCreateIn();
 		} else {
@@ -108,7 +107,7 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 						auto result  = irCtx->builder.CreateLoad(typ->get_llvm_type(), val->get_llvm());
 						if (not typ->has_simple_copy()) {
 							if (origVal->is_ref() ? origVal->get_ir_type()->as_ref()->has_variability()
-							                      : origVal->is_variable()) {
+							                      : origVal->has_variability()) {
 								irCtx->Error(
 								    "This expression does not have variability and hence simple-move is not possible",
 								    value.value()->fileRange);

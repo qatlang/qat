@@ -21,7 +21,7 @@ ir::Value* Cast::emit(EmitCtx* ctx) {
 						ctx->Error(
 						    "This expression is a reference without variability and hence simple-move is not possible",
 						    instance->fileRange);
-					} else if (not inst->is_variable()) {
+					} else if (not inst->has_variability()) {
 						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           fileRange);
 					}

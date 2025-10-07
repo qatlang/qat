@@ -19,7 +19,7 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 		}
 		return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
 		                                                   ((valTy->is_ref() && valTy->as_ref()->has_variability()) ||
-		                                                    (val->is_ghost_ref() && val->is_variable()))
+		                                                    (val->is_ghost_ref() && val->has_variability()))
 		                                                       ? 1u
 		                                                       : 0u),
 		                            ir::UnsignedType::create_bool(ctx->irCtx));

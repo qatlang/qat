@@ -74,7 +74,7 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 								               " is not a prerun value and hence cannot be used as a prerun expression",
 								           name.range);
 							}
-							if (stm->is_variable()) {
+							if (stm->has_variability()) {
 								ctx->Error(
 								    "Found a static field named " + ctx->color(stm->get_full_name()) +
 								        " here. But it has variability so its initial value cannot be used as a prerun expression",
@@ -94,7 +94,7 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 								           rangeAfter());
 							}
 							return SubEntityResult::get_expression(
-							    ir::Value::get(stm->get_llvm(), stm->get_ir_type(), stm->is_variable()));
+							    ir::Value::get(stm->get_llvm(), stm->get_ir_type(), stm->has_variability()));
 						}
 					}
 				}

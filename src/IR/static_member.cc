@@ -34,7 +34,7 @@ void StaticMember::update_overview() {
 	    ._("name", name)
 	    ._("fullName", get_full_name())
 	    ._("visibility", visibility)
-	    ._("isVariable", is_variable())
+	    ._("isVariable", has_variability())
 	    ._("moduleID", parent->get_module()->get_id());
 }
 

@@ -99,7 +99,8 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 	SHOW("Emitting argument values")
 	for (auto* arg : args) {
 		auto* argVal = arg->emit(ctx);
-		valsType.push_back({argVal->is_ghost_ref() ? Maybe<bool>(argVal->is_variable()) : None, argVal->get_ir_type()});
+		valsType.push_back(
+		    {argVal->is_ghost_ref() ? Maybe<bool>(argVal->has_variability()) : None, argVal->get_ir_type()});
 		valsIR.push_back(argVal);
 	}
 	auto access = ctx->get_access_info();

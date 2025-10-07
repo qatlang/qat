@@ -8,7 +8,7 @@ ir::Value* AddressOf::emit(EmitCtx* ctx) {
 	auto inst = instance->emit(ctx);
 	if (inst->is_ref() || inst->is_ghost_ref()) {
 		auto subTy    = inst->is_ref() ? inst->get_ir_type()->as_ref()->get_subtype() : inst->get_ir_type();
-		bool isPtrVar = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->is_variable();
+		bool isPtrVar = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->has_variability();
 		if (inst->is_ref()) {
 			inst->load_ghost_ref(ctx->irCtx->builder);
 		}

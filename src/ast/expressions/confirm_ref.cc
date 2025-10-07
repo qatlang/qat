@@ -20,7 +20,7 @@ ir::Value* ConfirmRef::emit(EmitCtx* ctx) {
 		res->set_confirmed_ref();
 		return res->with_range(fileRange);
 	} else if (expr->is_ghost_ref()) {
-		if (isVar && not expr->is_variable()) {
+		if (isVar && not expr->has_variability()) {
 			ctx->Error(
 			    "This reference-like expression does not have variability, hence it cannot be confirmed as a reference with variability",
 			    subExpr->fileRange,

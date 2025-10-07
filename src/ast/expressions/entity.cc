@@ -133,7 +133,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 			auto* local = fun->get_block()->get_value(singleName.value);
 			local->add_mention(singleName.range);
 			auto* alloca = local->get_alloca();
-			auto* val    = ir::Value::get(alloca, local->get_ir_type(), local->is_variable());
+			auto* val    = ir::Value::get(alloca, local->get_ir_type(), local->has_variability());
 			SHOW("Returning local value with alloca name: " << alloca->getName().str())
 			val->set_local_id(local->get_id());
 			return val;
@@ -162,11 +162,11 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 				if (not ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
 					ctx->mod->otherGlobals.push_back(
 					    std::construct_at(OwnNormal(llvm::GlobalVariable), *ctx->mod->get_llvm_module(),
-					                      gEnt->get_ir_type()->get_llvm_type(), not gEnt->is_variable(),
+					                      gEnt->get_ir_type()->get_llvm_type(), not gEnt->has_variability(),
 					                      llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, gName, nullptr,
 					                      llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true));
 				}
-				return ir::Value::get(gEnt->get_llvm(), gEnt->get_ir_type(), gEnt->is_variable());
+				return ir::Value::get(gEnt->get_llvm(), gEnt->get_ir_type(), gEnt->has_variability());
 			}
 		}
 	} else {
@@ -218,14 +218,14 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		if (not ctx->mod->get_llvm_module()->getNamedGlobal(gName)) {
 			ctx->mod->otherGlobals.push_back(std::construct_at(
 			    OwnNormal(llvm::GlobalVariable), *ctx->mod->get_llvm_module(), gEnt->get_ir_type()->get_llvm_type(),
-			    not gEnt->is_variable(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, gName, nullptr,
-			    llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true));
+			    not gEnt->has_variability(), llvm::GlobalValue::LinkageTypes::ExternalWeakLinkage, nullptr, gName,
+			    nullptr, llvm::GlobalValue::ThreadLocalMode::NotThreadLocal, std::nullopt, true));
 		}
 		if (not gEnt->get_visibility().is_accessible(reqInfo)) {
 			ctx->Error("Global entity " + ctx->color(gEnt->get_full_name()) + " is not accessible here", fileRange);
 		}
 		gEnt->add_mention(entityName.range);
-		return ir::Value::get(gEnt->get_llvm(), gEnt->get_ir_type(), gEnt->is_variable());
+		return ir::Value::get(gEnt->get_llvm(), gEnt->get_ir_type(), gEnt->has_variability());
 	} else {
 		if (mod->has_lib(entityName.value, reqInfo) || mod->has_brought_lib(entityName.value, reqInfo) ||
 		    mod->has_lib_in_imports(entityName.value, reqInfo).first) {

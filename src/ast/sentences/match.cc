@@ -47,7 +47,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 		isExpVariable = expTy->as_ref()->has_variability();
 		expTy         = expTy->as_ref()->get_subtype();
 	} else {
-		isExpVariable = expEmit->is_variable();
+		isExpVariable = expEmit->has_variability();
 	}
 	auto* curr      = ctx->get_fn()->get_block();
 	auto* restBlock = ir::Block::create(ctx->get_fn(), curr->get_parent());

@@ -164,7 +164,7 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		}
 	} else if (ptrVal->is_ghost_ref()) {
 		if (ptrVal->get_ir_type()->is_ptr()) {
-			if (ptrVal->is_variable()) {
+			if (ptrVal->has_variability()) {
 				ctx->Error("This expression is not a variable", fileRange);
 			}
 			ptrType = ptrVal->get_ir_type()->as_ptr();

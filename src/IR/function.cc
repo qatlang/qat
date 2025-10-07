@@ -55,7 +55,7 @@ llvm::AllocaInst* LocalValue::get_alloca() const { return (llvm::AllocaInst*)ll;
 FileRangePtr LocalValue::get_file_range() const { return associatedRange.value(); }
 
 ir::Value* LocalValue::to_new_ir_value() const {
-	auto* result = ir::Value::get(get_llvm(), get_ir_type(), is_variable());
+	auto* result = ir::Value::get(get_llvm(), get_ir_type(), has_variability());
 	result->set_local_id(get_local_id().value());
 	return result;
 }

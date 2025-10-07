@@ -36,7 +36,7 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 		}
 		if (value->should_be_ref()) {
 			ctx->Error("This reference-like expression was confirmed to be used as a reference using the " +
-			               ctx->color(value->is_variable() ? "'ref" : "'ref:var") +
+			               ctx->color(value->has_variability() ? "'ref" : "'ref:var") +
 			               " expression. Please avoid this to remove the reference confirmation",
 			           valueRange);
 		}
@@ -44,7 +44,7 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 		if (valueType->has_simple_copy() || valueType->has_simple_move()) {
 			auto* loadRes = ctx->irCtx->builder.CreateLoad(valueType->get_llvm_type(), value->get_llvm());
 			if (not valueType->has_simple_copy()) {
-				if (not value->is_variable()) {
+				if (not value->has_variability()) {
 					ctx->Error(
 					    "This reference-like expression does not have variability and hence simple-move is not possible",
 					    valueRange);
@@ -61,7 +61,8 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 			           valueRange);
 		}
 	} else if ((expectedType->is_ref() && expectedType->as_ref()->is_same(value->get_ir_type()) &&
-	            (value->is_ghost_ref() && (expectedType->as_ref()->has_variability() ? value->is_variable() : true))) ||
+	            (value->is_ghost_ref() &&
+	             (expectedType->as_ref()->has_variability() ? value->has_variability() : true))) ||
 	           (expectedType->is_ref() && value->is_ref() &&
 	            expectedType->as_ref()->get_subtype()->is_same(value->get_ir_type()->as_ref()->get_subtype()) &&
 	            (expectedType->as_ref()->has_variability() ? value->get_ir_type()->as_ref()->has_variability()
@@ -359,10 +360,10 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				                           (val->is_ref() || val->is_ghost_ref())
 				                               ? ir::RefType::get(
 				                                     val->is_ref() ? val->get_ir_type()->as_ref()->has_variability()
-				                                                   : val->is_variable(),
+				                                                   : val->has_variability(),
 				                                     subTypes.at(i), val->extract_address_space(ctx->irCtx), ctx->irCtx)
 				                               : subTypes.at(i),
-				                           val->is_variable()),
+				                           val->has_variability()),
 				            valRange);
 				if (i != (subTypes.size() - 1)) {
 					formatString += "; ";
@@ -397,10 +398,10 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 					                           (val->is_ref() || val->is_ghost_ref())
 					                               ? (ir::RefType::get(
 					                                     val->is_ref() ? val->get_ir_type()->as_ref()->has_variability()
-					                                                   : val->is_variable(),
+					                                                   : val->has_variability(),
 					                                     subType, val->extract_address_space(ctx->irCtx), ctx->irCtx))
 					                               : subType,
-					                           val->is_variable()),
+					                           val->has_variability()),
 					            valRange);
 					if (i != (valTy->as_array()->get_length() - 1)) {
 						formatString += ", ";

@@ -132,7 +132,7 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 					isRefVar = argTy->as_ref()->has_variability();
 					argTy    = argTy->as_ref()->get_subtype();
 				} else {
-					isRefVar = currArg->is_variable();
+					isRefVar = currArg->has_variability();
 				}
 				if (currArg->get_ir_type()->is_ref() || currArg->is_ghost_ref()) {
 					if (currArg->get_ir_type()->is_ref()) {

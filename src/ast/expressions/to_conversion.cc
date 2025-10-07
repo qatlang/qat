@@ -173,7 +173,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			    (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_integer())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateIntCast(val->get_llvm(), destTy->get_llvm_type(), true),
-				                      destTy, val->is_variable());
+				                      destTy, val->has_variability());
 			} else if (destTy->is_unsigned() ||
 			           (destTy->is_native_type() && destTy->as_native_type()->get_subtype()->is_unsigned())) {
 				loadRef();

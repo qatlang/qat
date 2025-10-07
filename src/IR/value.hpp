@@ -63,7 +63,7 @@ class Value {
 
 	useit bool is_self_value() const { return isSelf; }
 
-	useit bool is_variable() const { return variable; }
+	useit bool has_variability() const { return variable; }
 
 	useit bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
 

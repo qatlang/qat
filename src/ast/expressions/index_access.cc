@@ -58,7 +58,8 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				           index->fileRange);
 			}
 			if (inst->is_ref() || inst->is_ghost_ref()) {
-				bool isMemVar = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->is_variable();
+				bool isMemVar =
+				    inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->has_variability();
 				if (inst->is_ref()) {
 					inst->load_ghost_ref(ctx->irCtx->builder);
 				}
@@ -149,7 +150,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 						    ctx->irCtx->builder.CreateInBoundsGEP(instType->get_llvm_type(), inst->get_llvm(),
 						                                          {zero64, zero64}),
 						    ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
-						                                    : inst->is_variable(),
+						                                    : inst->has_variability(),
 						                     instType->as_array()->get_element_type(), instAddressSpace, ctx->irCtx),
 						    false);
 					}
@@ -157,7 +158,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				return ir::Value::get(ctx->irCtx->builder.CreateInBoundsGEP(instType->get_llvm_type(), inst->get_llvm(),
 				                                                            {zero64, ind->get_llvm()}),
 				                      ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
-				                                                      : inst->is_variable(),
+				                                                      : inst->has_variability(),
 				                                       instType->as_array()->get_element_type(), instAddressSpace,
 				                                       ctx->irCtx),
 				                      false);
@@ -223,7 +224,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                          Vec<llvm::Value*>({ind->get_llvm()})),
 			                      // FIXME - Address space fix
 			                      ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
-			                                                      : inst->is_variable(),
+			                                                      : inst->has_variability(),
 			                                       ir::UnsignedType::create(8u, ctx->irCtx), None, ctx->irCtx),
 			                      false);
 		} else if (inst->is_prerun_value() && ind->is_prerun_value()) {
@@ -274,7 +275,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                                          {ind->get_llvm()}),
 			    // FIXME - Address space fix
 			    ir::RefType::get(inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
-			                                    : inst->is_variable(),
+			                                    : inst->has_variability(),
 			                     ir::UnsignedType::create(8u, ctx->irCtx), None, ctx->irCtx),
 			    false);
 		}
@@ -285,7 +286,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		if (inst->is_ref()) {
 			instVal = ctx->irCtx->builder.CreateLoad(instType->get_llvm_type(), inst->get_llvm());
 		}
-		bool isVarExp = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->is_variable();
+		bool isVarExp = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability() : inst->has_variability();
 		return ir::Value::get(
 		    ctx->irCtx->builder.CreateInBoundsGEP(llvm::Type::getInt8Ty(ctx->irCtx->llctx), instVal, {ind->get_llvm()}),
 		    ir::RefType::get(isVarExp, ir::NativeType::get_byte(ctx->irCtx),
@@ -297,13 +298,13 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 		ir::Value*  operand  = nullptr;
 		auto        localID  = inst->get_local_id();
 		bool        isVarExp = inst->is_ref() ? inst->get_ir_type()->as_ref()->has_variability()
-		                                      : (inst->is_ghost_ref() ? inst->is_variable() : true);
+		                                      : (inst->is_ghost_ref() ? inst->has_variability() : true);
 		SHOW("Index access: isVarExp = " << isVarExp)
 		if (not indType->is_ref() &&
 		    ((isVarExp && eTy->has_variation_binary_operator(
-		                      "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->is_variable()) : None, indType})) ||
+		                      "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->has_variability()) : None, indType})) ||
 		     eTy->has_normal_binary_operator(
-		         "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->is_variable()) : None, indType}))) {
+		         "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->has_variability()) : None, indType}))) {
 			if ((isVarExp && eTy->has_variation_binary_operator("[]", {None, indType})) ||
 			    eTy->has_normal_binary_operator("[]", {None, indType})) {
 				opFn = (isVarExp && eTy->has_variation_binary_operator("[]", {None, indType}))
@@ -314,7 +315,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 						auto indVal = ir::Value::get(
 						    ctx->irCtx->builder.CreateLoad(indType->get_llvm_type(), ind->get_llvm()), indType, false);
 						if (not indType->has_simple_copy()) {
-							if (not ind->is_variable()) {
+							if (not ind->has_variability()) {
 								ctx->Error(
 								    "This expression does not have variability and hence simple-move is not possible",
 								    index->fileRange);
@@ -331,12 +332,13 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 				}
 				operand = ind;
 			} else {
-				opFn    = (isVarExp && eTy->has_variation_binary_operator(
-                                        "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->is_variable()) : None, indType}))
-				              ? eTy->get_variation_binary_operator(
-                                 "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->is_variable()) : None, indType})
-				              : eTy->get_normal_binary_operator(
-                                 "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->is_variable()) : None, indType});
+				opFn =
+				    (isVarExp && eTy->has_variation_binary_operator(
+				                     "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->has_variability()) : None, indType}))
+				        ? eTy->get_variation_binary_operator(
+				              "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->has_variability()) : None, indType})
+				        : eTy->get_normal_binary_operator(
+				              "[]", {ind->is_ghost_ref() ? Maybe<bool>(ind->has_variability()) : None, indType});
 				operand = ind;
 			}
 		} else if (indType->is_ref() &&

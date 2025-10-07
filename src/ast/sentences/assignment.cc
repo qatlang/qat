@@ -15,7 +15,7 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 		value->as_type_inferrable()->set_inference_type(lhsVal->get_ir_type());
 	}
 	SHOW("Emitted lhs of Assignment")
-	if (lhsVal->is_variable() ||
+	if (lhsVal->has_variability() ||
 	    (lhsVal->get_ir_type()->is_ref() && lhsVal->get_ir_type()->as_ref()->has_variability())) {
 		SHOW("Is variable nature")
 		if (lhsVal->get_ir_type()->is_ref() || lhsVal->is_ghost_ref()) {
@@ -62,14 +62,14 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 						auto prevRef = expVal->get_llvm();
 						expVal =
 						    ir::Value::get(ctx->irCtx->builder.CreateLoad(expTy->get_llvm_type(), expVal->get_llvm()),
-						                   expVal->get_ir_type(), expVal->is_variable());
+						                   expVal->get_ir_type(), expVal->has_variability());
 						if (not expTy->has_simple_copy()) {
 							if (expTy->is_ref() && not expTy->as_ref()->has_variability()) {
 								ctx->Error(
 								    "This expression is of type " + ctx->color(expTy->to_string()) +
 								        " which is a reference without variability and hence simple-move is not possible",
 								    value->fileRange);
-							} else if (not expVal->is_variable()) {
+							} else if (not expVal->has_variability()) {
 								ctx->Error(
 								    "This expression does not have variability and hence simple-move is not possible",
 								    fileRange);

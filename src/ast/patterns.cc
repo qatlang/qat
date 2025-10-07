@@ -241,7 +241,7 @@ void PatternArray::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 			    ir::Value::get(ctx->irCtx->builder.CreateInBoundsGEP(arrTy->get_llvm_type(), value->get_llvm(),
 			                                                         {0u, (uint)patternIndices[i]}),
 			                   ir::RefType::get(value->is_ref() ? value->get_ir_type()->as_ref()->has_variability()
-			                                                    : value->is_variable(),
+			                                                    : value->has_variability(),
 			                                    arrTy->get_element_type(), value->extract_address_space(ctx->irCtx),
 			                                    ctx->irCtx),
 			                   true),

@@ -1,5 +1,6 @@
 #include "./atomic_move.hpp"
 #include "../../IR/logic.hpp"
+#include "./atomic_operations.hpp"
 
 namespace qat::ast {
 
@@ -43,22 +44,15 @@ ir::Value* AtomicMove::emit(EmitCtx* ctx) {
 	}
 	auto order = llvm::AtomicOrdering::SequentiallyConsistent;
 	if (ordering != nullptr) {
-		auto str = ir::TextType::value_to_string(ordering->emit(ctx));
-		if (str == "unordered") {
-			order = llvm::AtomicOrdering::Unordered;
-		} else if (str == "relaxed") {
-			order = llvm::AtomicOrdering::Monotonic;
-		} else if (str == "acquire") {
-			order = llvm::AtomicOrdering::Acquire;
-		} else if (str == "release") {
-			order = llvm::AtomicOrdering::Release;
-		} else if (str == "acquire_release") {
-			order = llvm::AtomicOrdering::AcquireRelease;
-		} else if (str == "sequentially_consistent") {
-			order = llvm::AtomicOrdering::SequentiallyConsistent;
-		} else {
-			ctx->Error("Unexpected atomic ordering " + ctx->color(str) + " found here", ordering->fileRange);
+		auto ord = ordering->emit(ctx);
+		if (not ord->get_ir_type()->is_text()) {
+			ctx->Error("Expected an expression of type " + ir::TextType::get(ctx->irCtx, false)->to_string() +
+			               " here, but got an expression of type " + ctx->color(ord->get_ir_type()->to_string()) +
+			               " instead",
+			           fileRange);
 		}
+		auto str = ir::TextType::value_to_string(ord);
+		order    = AtomicOperations::parse_atomic_ordering(str, ordering->fileRange, ctx);
 	}
 	return ir::Value::get(ctx->irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::BinOp::Xchg, cand->get_llvm(),
 	                                                          llvm::Constant::getNullValue(candTy->get_llvm_type()),

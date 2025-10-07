@@ -719,12 +719,12 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			auto* eTy   = lhsType->is_ref() ? lhsType->as_ref()->get_subtype()->as_expanded() : lhsType->as_expanded();
 			auto  OpStr = operator_to_string(op);
 			bool  isVarExp = lhsType->is_ref() ? lhsType->as_ref()->has_variability()
-			                                   : (lhsEmit->is_ghost_ref() ? lhsEmit->is_variable() : true);
+			                                   : (lhsEmit->is_ghost_ref() ? lhsEmit->has_variability() : true);
 			if ((isVarExp &&
 			     eTy->has_variation_binary_operator(
-			         OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) ||
+			         OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->has_variability()) : None, rhsType})) ||
 			    eTy->has_normal_binary_operator(
-			        OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) {
+			        OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->has_variability()) : None, rhsType})) {
 				SHOW("RHS is matched exactly")
 				auto localID = lhsEmit->get_local_id();
 				if (not lhsType->is_ref() && not lhsEmit->is_ghost_ref()) {
@@ -735,11 +735,13 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				auto* opFn =
 				    (isVarExp &&
 				     eTy->has_variation_binary_operator(
-				         OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType}))
+				         OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->has_variability()) : None, rhsType}))
 				        ? eTy->get_variation_binary_operator(
-				              OpStr, {lhsEmit->is_ghost_ref() ? Maybe<bool>(lhsEmit->is_variable()) : None, rhsType})
+				              OpStr,
+				              {lhsEmit->is_ghost_ref() ? Maybe<bool>(lhsEmit->has_variability()) : None, rhsType})
 				        : eTy->get_normal_binary_operator(
-				              OpStr, {lhsEmit->is_ghost_ref() ? Maybe<bool>(lhsEmit->is_variable()) : None, rhsType});
+				              OpStr,
+				              {lhsEmit->is_ghost_ref() ? Maybe<bool>(lhsEmit->has_variability()) : None, rhsType});
 				if (not opFn->is_accessible(ctx->get_access_info())) {
 					ctx->Error(String(isVarExp ? "Variation b" : "B") + "inary operator " +
 					               ctx->color(operator_to_string(op)) + " of type " + ctx->color(eTy->get_full_name()) +
@@ -780,7 +782,7 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 			} else {
 				if (not isVarExp &&
 				    eTy->has_variation_binary_operator(
-				        OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->is_variable()) : None, rhsType})) {
+				        OpStr, {rhsEmit->is_ghost_ref() ? Maybe<bool>(rhsEmit->has_variability()) : None, rhsType})) {
 					ctx->Error("Binary Operator " + ctx->color(OpStr) + " with right hand side of type " +
 					               ctx->color(rhsType->to_string()) + " is a variation of type " +
 					               ctx->color(eTy->get_full_name()) +

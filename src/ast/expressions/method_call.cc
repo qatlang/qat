@@ -50,7 +50,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 	}
 	auto* inst     = instance->emit(ctx);
 	auto* instType = inst->get_ir_type();
-	bool  isVar    = inst->is_variable();
+	bool  isVar    = inst->has_variability();
 	if (instType->is_ref()) {
 		inst->load_ghost_ref(ctx->irCtx->builder);
 		isVar    = instType->as_ref()->has_variability();
@@ -196,7 +196,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 					if (inst->is_ref() && not inst->get_ir_type()->as_ref()->has_variability()) {
 						ctx->Error("This is a reference without variability and hence simple-move is not possible",
 						           instance->fileRange);
-					} else if (inst->is_ghost_ref() && not inst->is_variable()) {
+					} else if (inst->is_ghost_ref() && not inst->has_variability()) {
 						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           instance->fileRange);
 					}
@@ -271,7 +271,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 					ctx->Error("Cannot pass a value for the argument that expects a reference",
 					           arguments[i - 1]->fileRange);
 				} else if (fnArgsTy[i]->get_type()->as_ref()->has_variability()) {
-					if (not currArg->is_variable()) {
+					if (not currArg->has_variability()) {
 						ctx->Error(
 						    "The argument " + ctx->color(fnArgsTy.at(i)->get_name()) + " is of type " +
 						        ctx->color(fnArgsTy[i]->get_type()->to_string()) +
@@ -286,8 +286,8 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 				SHOW("Loading ref arg at " << i - 1 << " with type " << currArg->get_ir_type()->to_string())
 				auto* argTy    = fnArgsTy[i]->get_type();
 				auto* argValTy = currArg->get_ir_type();
-				auto  isRefVar =
-                    currArg->is_ref() ? currArg->get_ir_type()->as_ref()->has_variability() : currArg->is_variable();
+				auto  isRefVar = currArg->is_ref() ? currArg->get_ir_type()->as_ref()->has_variability()
+				                                   : currArg->has_variability();
 				if (argTy->has_simple_copy() || argTy->has_simple_move()) {
 					auto* argEmitLLVMValue = currArg->get_llvm();
 					argsEmit[i - 1]        = ir::Value::get(
@@ -327,7 +327,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 					isRefVar = argTy->as_ref()->has_variability();
 					argTy    = argTy->as_ref()->get_subtype();
 				} else {
-					isRefVar = currArg->is_variable();
+					isRefVar = currArg->has_variability();
 				}
 				if (currArg->get_ir_type()->is_ref() || currArg->is_ghost_ref()) {
 					if (currArg->get_ir_type()->is_ref()) {
@@ -364,7 +364,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		return handle_type_wrap_functions(inst->as_prerun(), arguments, memberName, ctx, fileRange);
 	} else if (instType->is_vector()) {
 		auto*      origInst        = ir::Value::get(inst->get_llvm(), inst->get_ir_type(), false);
-		const auto isOrigRefNotVar = (origInst->is_ghost_ref() && not origInst->is_variable()) ||
+		const auto isOrigRefNotVar = (origInst->is_ghost_ref() && not origInst->has_variability()) ||
 		                             (origInst->is_ref() && not origInst->get_ir_type()->as_ref()->has_variability());
 		const auto shouldStore = origInst->is_ghost_ref() || origInst->is_ref();
 		auto*      vecTy       = instType->as_vector();

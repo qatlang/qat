@@ -117,7 +117,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		}
 	}
 	if (declType->is_ref() && ((not expVal->get_ir_type()->is_ref()) && expVal->is_ghost_ref())) {
-		if (declType->as_ref()->has_variability() && (not expVal->is_variable())) {
+		if (declType->as_ref()->has_variability() && (not expVal->has_variability())) {
 			ctx->Error("The referred type of the left hand side has variability, but the "
 			           "value provided for initialisation do not have variability",
 			           value.value()->fileRange);
@@ -155,7 +155,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 						    "This expression is of type " + ctx->color(expVal->get_ir_type()->to_string()) +
 						        " which is a reference without variability and hence simple-move is not possible",
 						    value.value()->fileRange);
-					} else if (not expVal->is_variable()) {
+					} else if (not expVal->has_variability()) {
 						ctx->Error("This expression does not have variability and hence simple-move is not possible",
 						           value.value()->fileRange);
 					}

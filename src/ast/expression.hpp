@@ -48,7 +48,8 @@ class InPlaceCreatable {
 			                      false)
 			    ->with_range(rangeVal);
 		} else {
-			return ir::Value::get(created->get_llvm(), type, created->is_variable())->with_range(std::move(rangeVal));
+			return ir::Value::get(created->get_llvm(), type, created->has_variability())
+			    ->with_range(std::move(rangeVal));
 		}
 	}
 

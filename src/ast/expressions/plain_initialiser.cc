@@ -217,7 +217,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 					        strData->get_llvm(),
 					        llvm::PointerType::get(strTy->get_llvm_type(),
 					                               ctx->irCtx->dataLayout.getProgramAddressSpace())),
-					    ir::RefType::get(strData->is_ghost_ref() ? strData->is_variable()
+					    ir::RefType::get(strData->is_ghost_ref() ? strData->has_variability()
 					                                             : strData->get_ir_type()->as_ref()->has_variability(),
 					                     strTy, strData->extract_address_space(ctx->irCtx), ctx->irCtx),
 					    false);

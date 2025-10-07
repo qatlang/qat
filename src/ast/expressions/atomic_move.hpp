@@ -32,7 +32,8 @@ class AtomicMove : public Expression {
 		return Json()
 		    ._("nodeType", "atomicMove")
 		    ._("candidate", candidate->to_json())
-		    ._("ordering", ordering->to_json())
+		    ._("hasOrdering", ordering != nullptr)
+		    ._("ordering", ordering ? ordering->to_json() : JsonValue())
 		    ._("fileRange", fileRange->to_json());
 	}
 };

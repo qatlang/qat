@@ -163,7 +163,7 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 								    ctx->irCtx->builder.CreateLoad(memTy->get_llvm_type(), irVal->get_llvm()),
 								    memRef->get_llvm());
 								if (not memTy->has_simple_copy()) {
-									if (not irVal->is_variable()) {
+									if (not irVal->has_variability()) {
 										ctx->Error(
 										    "This expression does not have variability and hence simple-move is not possible",
 										    value->fileRange);

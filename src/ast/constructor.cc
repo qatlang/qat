@@ -321,7 +321,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 							    irCtx->builder.CreateLoad(mem->type->get_llvm_type(), memVal->get_llvm()),
 							    irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i));
 							if (not mem->type->has_simple_copy()) {
-								if (not memVal->is_variable()) {
+								if (not memVal->has_variability()) {
 									irCtx->Error(
 									    "This expression does not have variability and hence simple-move is not possible",
 									    mem->defaultValue.value()->fileRange);
@@ -363,7 +363,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 					}
 				} else if (mem->type->is_ref() && mem->type->as_ref()->get_subtype()->is_same(memVal->get_ir_type()) &&
 				           memVal->is_ghost_ref() &&
-				           (mem->type->as_ref()->has_variability() ? memVal->is_variable() : true)) {
+				           (mem->type->as_ref()->has_variability() ? memVal->has_variability() : true)) {
 					irCtx->builder.CreateStore(memVal->get_llvm(), irCtx->builder.CreateStructGEP(
 					                                                   structTy->get_llvm_type(), self->get_llvm(), i));
 				} else {

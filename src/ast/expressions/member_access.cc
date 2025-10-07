@@ -48,7 +48,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 	auto  instAddressSpace = inst->is_ref() ? inst->get_ir_type()->as_ref()->get_address_space()
 	                                        : ir::AddressSpace::get_space_for_llvm_value(ctx->irCtx, inst->get_llvm());
 	auto* instType         = inst->get_ir_type();
-	bool  isVar            = inst->is_variable();
+	bool  isVar            = inst->has_variability();
 	if (instType->is_ref()) {
 		inst->load_ghost_ref(ctx->irCtx->builder);
 		isVar    = instType->as_ref()->has_variability();

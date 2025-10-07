@@ -82,7 +82,7 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 			               llvm::PointerType::get(futureTy->get_subtype()->get_llvm_type(),
 			                                      ctx->irCtx->dataLayout.getProgramAddressSpace())),
 			           ir::RefType::get(expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->has_variability()
-			                                              : expEmit->is_variable(),
+			                                              : expEmit->has_variability(),
 			                            futureTy->get_subtype(), expEmit->extract_address_space(ctx->irCtx),
 			                            ctx->irCtx),
 			           false)

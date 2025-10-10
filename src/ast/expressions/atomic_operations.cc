@@ -5,11 +5,13 @@
 namespace qat::ast {
 
 ir::Value* AtomicOperations::emit(EmitCtx* ctx) {
-	auto cand   = candidate->emit(ctx);
-	auto candTy = cand->get_ir_type();
+	auto cand     = candidate->emit(ctx);
+	auto candTy   = cand->get_ir_type();
+	auto isRefVar = cand->has_variability();
 	if (candTy->is_ref()) {
 		cand->load_ghost_ref(ctx->irCtx->builder);
-		candTy = candTy->as_ref()->get_subtype();
+		isRefVar = candTy->as_ref()->has_variability();
+		candTy   = candTy->as_ref()->get_subtype();
 	} else if (not cand->is_ghost_ref()) {
 		ctx->Error("Expected a reference or a reference-like expression here, got a value of type " +
 		               ctx->color(candTy->to_string()),
@@ -36,6 +38,11 @@ ir::Value* AtomicOperations::emit(EmitCtx* ctx) {
 	};
 	switch (ops) {
 		case AtomicOps::EXCHANGE: {
+			if (not isRefVar) {
+				ctx->Error("This " + String(cand->get_ir_type()->is_ref() ? "reference" : "reference-like expression") +
+				               " does not have variability and hence the atomic exchange operation cannot be used",
+				           fileRange);
+			}
 			orderCheck(ordering, ctx);
 			if (arguments.size() != 1u) {
 				ctx->Error("The atomic exchange operation technically requires 1 argument to be provided, but got " +
@@ -55,6 +62,12 @@ ir::Value* AtomicOperations::emit(EmitCtx* ctx) {
 			                      candTy, true);
 		}
 		case AtomicOps::COMPARE_AND_EXCHANGE: {
+			if (not isRefVar) {
+				ctx->Error(
+				    "This " + String(cand->get_ir_type()->is_ref() ? "reference" : "reference-like expression") +
+				        " does not have variability and hence the atomic compare-and-exchange operation cannot be used",
+				    fileRange);
+			}
 			auto failureOrder = llvm::AtomicOrdering::SequentiallyConsistent;
 			if (ordering.size() > 2u) {
 				ctx->Error("The atomic compare-and-exchange operation can have atmost two atomic orderings, but got " +

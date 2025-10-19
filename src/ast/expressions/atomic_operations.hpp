@@ -8,6 +8,18 @@ namespace qat::ast {
 enum class AtomicOps {
 	EXCHANGE,
 	COMPARE_AND_EXCHANGE,
+	ADD,
+	SUB,
+	OR,
+	AND,
+	NAND,
+	XOR,
+	MAX,
+	MIN,
+	INCREMENT_WRAP,
+	DECREMENT_WRAP,
+	SUBTRACT_CONDITION,
+	SUBTRACT_SATURATED,
 };
 
 class AtomicOperations : public Expression {

@@ -14,7 +14,7 @@ ir::Value* AtomicMove::emit(EmitCtx* ctx) {
 		}
 		candTy = candTy->as_ref()->get_subtype();
 	} else if (not cand->is_ghost_ref()) {
-		if (not cand->is_variable()) {
+		if (not cand->has_variability()) {
 			ctx->Error(
 			    "This is a reference-like expression without variability and hence atomic-move cannot be performed",
 			    fileRange);

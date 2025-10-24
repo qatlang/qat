@@ -219,6 +219,15 @@ bool Type::is_same(Type const* other) const {
 				return thisVal->get_length() == otherVal->get_length() &&
 				       thisVal->get_element_type()->is_same(otherVal->get_element_type());
 			}
+			case TypeKind::ATOMIC: {
+				auto* thisVal  = (AtomicType*)this;
+				auto* otherVal = (AtomicType*)other;
+				return thisVal->get_subtype()->is_same(otherVal->get_subtype()) &&
+				       (thisVal->get_ordering().has_value() == otherVal->get_ordering().has_value()) &&
+				       (thisVal->get_ordering().has_value()
+				            ? (thisVal->get_ordering().value() == otherVal->get_ordering().value())
+				            : true);
+			}
 			case TypeKind::VECTOR: {
 				auto* thisVal  = (VectorType*)this;
 				auto* otherVal = (VectorType*)other;
@@ -478,6 +487,18 @@ bool Type::is_type_definition() const {
 }
 
 DefinitionType* Type::as_type_definition() const { return (DefinitionType*)this; }
+
+bool Type::is_atomic() const {
+	return (type_kind() == TypeKind::ATOMIC) ||
+	       (is_opaque() && as_opaque()->has_subtype() && as_opaque()->get_subtype()->is_atomic()) ||
+	       (type_kind() == TypeKind::DEFINITION && as_type_definition()->get_subtype()->is_atomic());
+}
+
+AtomicType* Type::as_atomic() const {
+	return (type_kind() == TypeKind::DEFINITION)
+	           ? ((DefinitionType*)this)->get_subtype()->as_atomic()
+	           : (is_opaque() ? as_opaque()->get_subtype()->as_atomic() : (AtomicType*)this);
+}
 
 bool Type::is_integer() const {
 	return (type_kind() == TypeKind::INTEGER) ||

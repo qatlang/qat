@@ -12,6 +12,7 @@ class LLVMContext;
 
 namespace qat::ir {
 
+class AtomicType;
 class ArrayType;
 class ChoiceType;
 class NativeType;
@@ -119,6 +120,9 @@ class Type : public Uniq {
 
 	useit bool            is_type_definition() const;
 	useit DefinitionType* as_type_definition() const;
+
+	useit bool        is_atomic() const;
+	useit AtomicType* as_atomic() const;
 
 	useit bool         is_integer() const;
 	useit IntegerType* as_integer() const;

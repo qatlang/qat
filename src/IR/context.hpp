@@ -4,8 +4,9 @@
 #include "../cli/color.hpp"
 #include "../cli/config.hpp"
 #include "../utils/file_range.hpp"
+#include "./function.hpp"
 #include "./qat_module.hpp"
-#include "function.hpp"
+#include "./types/atomic.hpp"
 
 #include <chrono>
 #include <clang/Basic/Diagnostic.h>
@@ -136,6 +137,8 @@ class Ctx {
 	llvm::DataLayout         dataLayout;
 	IRBuilderTy              builder;
 	Vec<fs::path>            executablePaths;
+
+	Maybe<Pair<ir::AtomicOrdering, FileRangePtr>> atomicScopeOrdering;
 
 	// META
 	bool                             hasMain;

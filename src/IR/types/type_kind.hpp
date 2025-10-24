@@ -7,6 +7,7 @@ namespace qat::ir {
 enum class TypeKind {
 	VOID,             // Void type
 	ARRAY,            // Array of elements of Type type
+	ATOMIC,           // Atomic wrapping for types
 	STRUCT,           // Struct type
 	FLOAT,            // Floating point number
 	INTEGER,          // Signed integer

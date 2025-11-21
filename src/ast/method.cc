@@ -338,7 +338,8 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	ir::LocalValue* self        = nullptr;
 	if (prototype->fnTy != MethodType::Static && prototype->fnTy != MethodType::valued) {
 		structRefTy = argIRTypes.at(0)->get_type()->as_ref();
-		self = block->new_local("''", structRefTy, false, structRefTy->get_subtype()->as_struct()->get_name().range);
+		self        = block->new_local("''", structRefTy, false, irCtx,
+		                               structRefTy->get_subtype()->as_struct()->get_name().range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 		self->load_ghost_ref(irCtx->builder);
 	}
@@ -357,9 +358,9 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr, false);
 		} else if (not argIRTypes.at(i)->is_variadic_argument()) {
 			if (not argIRTypes.at(i)->get_type()->has_simple_copy() || argIRTypes.at(i)->is_variable()) {
-				auto* argVal =
-				    block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
-				                     argIRTypes.at(i)->is_variable(), prototype->arguments.at(i - 1)->get_name().range);
+				auto* argVal = block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
+				                                argIRTypes.at(i)->is_variable(), irCtx,
+				                                prototype->arguments.at(i - 1)->get_name().range);
 				SHOW("Created local value for the argument")
 				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
 			}

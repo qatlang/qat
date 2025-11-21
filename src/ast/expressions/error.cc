@@ -79,7 +79,8 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	}
 	llvm::Value* newAlloc = nullptr;
 	if (isLocalDecl()) {
-		newAlloc = ctx->get_fn()->get_block()->new_local(irName->value, resTy, isVar, irName->range)->get_llvm();
+		newAlloc =
+		    ctx->get_fn()->get_block()->new_local(irName->value, resTy, isVar, ctx->irCtx, irName->range)->get_llvm();
 	}
 	if (canCreateIn()) {
 		if (not createIn->is_ref() && not createIn->is_ghost_ref()) {

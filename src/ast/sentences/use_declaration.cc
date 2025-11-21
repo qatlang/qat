@@ -43,7 +43,7 @@ ir::Value* UseDeclaration::emit(EmitCtx* ctx) {
 		           value->fileRange);
 	}
 	val = ir::Logic::handle_pass_semantics(ctx, val->get_pass_type(), val, fileRange);
-	return currBlock->create_use_value(name.value, val->get_llvm(), val->get_ir_type(), fileRange);
+	return currBlock->create_use_value(name.value, val->get_llvm(), val->get_ir_type(), ctx->irCtx, fileRange);
 }
 
 Json UseDeclaration::to_json() const {

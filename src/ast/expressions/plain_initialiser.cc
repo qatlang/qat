@@ -108,7 +108,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		}
 		if (isLocalDecl() || not areAllValsPrerun) {
 			createIn = ctx->get_fn()->get_block()->new_local(
-			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), cTy, isVar,
+			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), cTy, isVar, ctx->irCtx,
 			    irName.has_value() ? irName->range : fileRange);
 		}
 		llvm::Constant* constVal;
@@ -298,7 +298,8 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 		SHOW("Handled all vals")
 		if (areAllValuesConstant) {
 			if (isLocalDecl()) {
-				createIn = ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, fileRange);
+				createIn =
+				    ctx->get_fn()->get_block()->new_local(irName.value().value, vecTy, isVar, ctx->irCtx, fileRange);
 			}
 			if (canCreateIn()) {
 				ctx->irCtx->builder.CreateStore(llvm::ConstantVector::get(constVals), createIn->get_llvm());
@@ -313,7 +314,8 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 				lastValue = ctx->irCtx->builder.CreateInsertElement(lastValue, values[i]->get_llvm(), i);
 			}
 			if (isLocalDecl()) {
-				createIn = ctx->get_fn()->get_block()->new_local(irName->value, vecTy, isVar, irName->range);
+				createIn =
+				    ctx->get_fn()->get_block()->new_local(irName->value, vecTy, isVar, ctx->irCtx, irName->range);
 			}
 			if (canCreateIn()) {
 				ctx->irCtx->builder.CreateStore(lastValue, createIn->get_llvm());

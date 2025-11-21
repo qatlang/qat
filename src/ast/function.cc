@@ -141,6 +141,11 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			}
 		} else {
 			auto* genType = arg->get_type()->emit(EmitCtx::get(irCtx, mod));
+			if (genType->is_ptr() && genType->as_ptr()->get_owner().is_prerun()) {
+				irCtx->Error("Prerun " + String(genType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
+				                 " are not allowed for arguments of a normal function",
+				             arg->get_name().range);
+			}
 			generatedTypes.push_back(genType);
 		}
 	}
@@ -210,6 +215,11 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 	}
 	SHOW("Variability setting complete")
 	auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
+	if (retTy->is_ptr() && retTy->as_ptr()->get_owner().is_prerun()) {
+		irCtx->Error("Prerun " + String(retTy->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
+		                 " are not allowed to be the given type in normal functions",
+		             fileRange);
+	}
 	if (isMainFn) {
 		if (not(retTy->is_native_type() && retTy->as_native_type()->get_c_type_kind() == ir::NativeTypeKind::Int)) {
 			irCtx->Error(irCtx->color("main") + " function expects to have a given type of " + irCtx->color("int"),
@@ -359,7 +369,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 			    block->new_local(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
 			                     ir::PtrType::get(false, ir::NativeType::get_bytestring(false, true, None, irCtx),
 			                                      false, ir::PtrOwner::of_none(), true, None, irCtx),
-			                     false, fnEmit->arg_name_at(0).range);
+			                     false, irCtx, fnEmit->arg_name_at(0).range);
 			SHOW("Storing argument pointer")
 			irCtx->builder.CreateStore(
 			    fnEmit->get_llvm_function()->getArg(1u),
@@ -379,7 +389,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 			if (not argType->has_simple_copy() || argIRTypes[i]->is_variable()) {
 				SHOW("Argument name is " << argIRTypes[i]->get_name())
 				SHOW("Argument type is " << argType->to_string())
-				auto* argVal = block->new_local(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(),
+				auto* argVal = block->new_local(argIRTypes[i]->get_name(), argType, argIRTypes[i]->is_variable(), irCtx,
 				                                arguments[i]->get_name().range);
 				SHOW("Created local value for the argument")
 				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);

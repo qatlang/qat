@@ -67,7 +67,7 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
 	if (isLocalDecl() || not isAllMemsPre) {
 		createIn = ctx->get_fn()->get_block()->new_local(
 		    irName.has_value() ? irName.value().value : utils::uid_string(), tupleTy, irName.has_value() ? isVar : true,
-		    irName.has_value() ? irName.value().range : fileRange);
+		    ctx->irCtx, irName.has_value() ? irName.value().range : fileRange);
 	}
 	if (constVal) {
 		if (canCreateIn()) {

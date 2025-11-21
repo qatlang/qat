@@ -157,7 +157,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 					                        : ir::RefType::get(uMatch->is_variable(),
 					                                           mTy->get_variant_with_name(uMatch->get_name().value),
 					                                           expEmit->extract_address_space(ctx->irCtx), ctx->irCtx),
-					    false, uMatch->getValueName().range);
+					    false, ctx->irCtx, uMatch->getValueName().range);
 					SHOW("Local Entity for match case created")
 					ctx->irCtx->builder.CreateStore(
 					    expEmit->is_value()
@@ -407,7 +407,7 @@ ir::Value* Match::emit(EmitCtx* ctx) {
 				// FIXME - Add optimisation for constant strings
 				if (caseIR->get_ir_type()->is_text() ||
 				    (caseIR->is_ref() && caseIR->get_ir_type()->as_ref()->get_subtype()->is_text())) {
-					auto* elemIter = ctx->get_fn()->get_str_comparison_index();
+					auto* elemIter = ctx->get_fn()->get_str_comparison_index(ctx->irCtx);
 					if (caseIR->is_prerun_value()) {
 						caseStrBuff  = caseIR->get_llvm_constant()->getAggregateElement(0u);
 						caseStrCount = caseIR->get_llvm_constant()->getAggregateElement(1u);

@@ -109,6 +109,26 @@ LocalValue* Block::get_value(const String& name) const {
 	return nullptr;
 }
 
+LocalValue* Block::new_local(const String& name, ir::Type* type, bool isVar, Ctx* ctx, FileRangePtr fileRange) {
+	if (type->is_ptr() && type->as_ptr()->get_owner().is_prerun()) {
+		ctx->Error("Prerun " + String(type->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
+		               " are now allowed to be normal values, and hence cannot be allocated",
+		           fileRange);
+	}
+	values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
+	return values.back();
+}
+
+UseValue* Block::create_use_value(String name, llvm::Value* value, ir::Type* type, Ctx* ctx, FileRangePtr fileRange) {
+	if (type->is_ptr() && type->as_ptr()->get_owner().is_prerun()) {
+		ctx->Error("Prerun " + String(type->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
+		               " are now allowed to be normal values",
+		           fileRange);
+	}
+	usedValues.push_back(UseValue::create(std::move(name), value, type, std::move(fileRange)));
+	return usedValues.back();
+}
+
 bool Block::has_give_in_all_control_paths() const {
 	if (isGhost) {
 		return true;
@@ -361,11 +381,11 @@ void Function::update_overview() {
 
 String Function::get_full_name() const { return mod->get_fullname_with_child(name.value); }
 
-ir::LocalValue* Function::get_str_comparison_index() {
+ir::LocalValue* Function::get_str_comparison_index(ir::Ctx* irCtx) {
 	if (not strComparisonIndex) {
 		strComparisonIndex = get_first_block()->new_local("qat'strCmpInd",
 		                                                  // NOLINTNEXTLINE(readability-magic-numbers)
-		                                                  ir::UnsignedType::create(64u, ctx), true, name.range);
+		                                                  ir::UnsignedType::create(64u, ctx), true, irCtx, name.range);
 	}
 	return strComparisonIndex;
 }
@@ -496,7 +516,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					restBlock->link_previous_block(currBlock);
 					// NOLINTNEXTLINE(readability-magic-numbers)
 					auto* count = currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true,
-					                                   FileRange::null);
+					                                   irCtx, FileRange::null);
 					irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 					                           count->get_llvm());
 					irCtx->builder.CreateCondBr(
@@ -608,8 +628,9 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							auto* restBlock = ir::Block::create(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
 							// NOLINTNEXTLINE(readability-magic-numbers)
-							auto* count = currBlock->new_local(
-							    utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true, FileRange::null);
+							auto* count =
+							    currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true,
+							                         irCtx, FileRange::null);
 							irCtx->builder.CreateStore(
 							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 							    count->get_llvm());

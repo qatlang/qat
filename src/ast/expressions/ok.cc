@@ -72,7 +72,7 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 			subExpr->as_type_inferrable()->set_inference_type(usableType->as_result()->get_valid_type());
 		}
 		if (isLocalDecl()) {
-			createIn = ctx->get_fn()->get_block()->new_local(irName->value, resTy, isVar, irName->range);
+			createIn = ctx->get_fn()->get_block()->new_local(irName->value, resTy, isVar, ctx->irCtx, irName->range);
 		}
 		if (canCreateIn()) {
 			if (createIn->is_ref() || createIn->is_ghost_ref()) {

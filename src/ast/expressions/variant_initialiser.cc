@@ -73,7 +73,8 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 				    llvm::ConstantInt::get(llvm::Type::getIntNTy(ctx->irCtx->llctx, mixTy->get_tag_bitwidth()),
 				                           mixTy->get_index_of(subName.value));
 				if (isLocalDecl()) {
-					createIn = ctx->get_fn()->get_block()->new_local(irName->value, mixTy, isVar, irName->range);
+					createIn =
+					    ctx->get_fn()->get_block()->new_local(irName->value, mixTy, isVar, ctx->irCtx, irName->range);
 				}
 				if (canCreateIn()) {
 					SHOW("Is createIn")
@@ -94,7 +95,7 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 					}
 				} else {
 					createIn = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), mixTy,
-					                                                 true, fileRange);
+					                                                 true, ctx->irCtx, fileRange);
 				}
 				SHOW("Creating mix store")
 				ctx->irCtx->builder.CreateStore(
@@ -139,7 +140,7 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 			if (isLocalDecl() || (not canCreateIn())) {
 				createIn = ctx->get_fn()->get_block()->new_local(
 				    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
-				    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+				    irName.has_value() ? isVar : true, ctx->irCtx, irName.has_value() ? irName->range : fileRange);
 			}
 			if (not type_check_create_in(tgTy)) {
 				ctx->Error(
@@ -173,7 +174,7 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 			if (isLocalDecl() || (not subVal->is_prerun_value() && not canCreateIn())) {
 				createIn = ctx->get_fn()->get_block()->new_local(
 				    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), tgTy,
-				    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+				    irName.has_value() ? isVar : true, ctx->irCtx, irName.has_value() ? irName->range : fileRange);
 			}
 			if (subVal->is_prerun_value() && not canCreateIn()) {
 				if (isDefaultVar) {

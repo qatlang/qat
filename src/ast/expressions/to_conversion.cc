@@ -102,8 +102,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy,
 						                      false);
 					} else {
-						auto newVal =
-						    ctx->get_fn()->get_block()->new_local(utils::uid_string(), destTy, false, fileRange);
+						auto newVal = ctx->get_fn()->get_block()->new_local(utils::uid_string(), destTy, false,
+						                                                    ctx->irCtx, fileRange);
 						ctx->irCtx->builder.CreateStore(
 						    val->get_llvm(),
 						    ctx->irCtx->builder.CreateStructGEP(destTy->get_llvm_type(), newVal->get_llvm(), 0u));

@@ -153,12 +153,12 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		auto zeroU8    = llvm::ConstantInt::get(llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx), 0u, false);
 		auto zero64    = llvm::ConstantInt::get(llvm::IntegerType::getInt64Ty(ctx->irCtx->llctx), 0u);
 		auto indexVar  = mainBlock->new_local(indexName.has_value() ? indexName->value : utils::uid_string(), countTy,
-		                                     false, indexName.has_value() ? indexName->range : fileRange);
+		                                     false, ctx->irCtx, indexName.has_value() ? indexName->range : fileRange);
 		auto elemUseTy = elemTy;
 		if (not isTyVec) {
 			elemUseTy = ir::RefType::get(candHasVar, elemTy, candAddressSpace, ctx->irCtx);
 		}
-		auto itemVar = mainBlock->new_local(itemName.value, elemUseTy, false, itemName.range);
+		auto itemVar = mainBlock->new_local(itemName.value, elemUseTy, false, ctx->irCtx, itemName.range);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),
 		                                indexVar->get_llvm());
 		ctx->irCtx->builder.CreateCondBr(

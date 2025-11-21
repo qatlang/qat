@@ -237,7 +237,8 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("About to allocate necessary arguments")
 	auto  argIRTypes  = fnEmit->get_ir_type()->as_function()->get_argument_types();
 	auto* parentRefTy = argIRTypes.at(0)->get_type()->as_ref();
-	auto* self = block->new_local("''", parentRefTy, false, parentRefTy->get_subtype()->as_struct()->get_name().range);
+	auto* self =
+	    block->new_local("''", parentRefTy, false, irCtx, parentRefTy->get_subtype()->as_struct()->get_name().range);
 	SHOW("Storing self instance")
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 	SHOW("Loading implicit ptr")
@@ -248,7 +249,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 		    block->new_local(prototype->argName->value,
 		                     ir::RefType::get(prototype->type == ConstructorType::move, state.parent->get_parent_type(),
 		                                      state.parent->get_self_address_space(), irCtx),
-		                     false, prototype->argName->range);
+		                     false, irCtx, prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_alloca(), false);
 		argVal->load_ghost_ref(irCtx->builder);
 	} else {
@@ -285,7 +286,7 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			} else if (not argIRTypes[i]->is_variadic_argument()) {
 				SHOW("Argument is variable")
 				auto* argVal = block->new_local(argIRTypes[i]->get_name(), argIRTypes[i]->get_type(),
-				                                prototype->arguments[i - 1]->is_variable(),
+				                                prototype->arguments[i - 1]->is_variable(), irCtx,
 				                                prototype->arguments[i - 1]->get_name().range);
 				SHOW("Created local value for the argument")
 				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);

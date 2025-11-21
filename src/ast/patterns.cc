@@ -116,13 +116,14 @@ void PatternChild::match(PatternFill* fill, ir::Value* value, MatchArm& arm, Emi
 					                                   resVal->get_llvm()),
 					    resVal->get_ir_type()->as_ref()->get_subtype(), false);
 				}
-				(void)arm.as_block()->create_use_value(bind.name.value, resVal->get_llvm(), fill->type, bind.range);
+				(void)arm.as_block()->create_use_value(bind.name.value, resVal->get_llvm(), fill->type, ctx->irCtx,
+				                                       bind.range);
 			} else {
 				(void)arm.as_block()->create_use_value(
 				    bind.name.value, value->get_llvm(),
 				    ir::RefType::get(bind.bindType == BindingType::VARIATION, fill->type,
 				                     value->extract_address_space(ctx->irCtx), ctx->irCtx),
-				    bind.range);
+				    ctx->irCtx, bind.range);
 			}
 		}
 	}
@@ -219,7 +220,7 @@ void PatternArray::check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, E
 void PatternArray::match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const {
 	if (ctx->has_fn() && not value->is_ref() && not value->is_ghost_ref() && not value->is_prerun_value()) {
 		value = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), value->get_ir_type(),
-		                                              true, range);
+		                                              true, ctx->irCtx, range);
 	}
 	if (value->is_ref()) {
 		value->load_ghost_ref(ctx->irCtx->builder);

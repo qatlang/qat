@@ -166,7 +166,7 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("About to allocate necessary arguments")
 	auto* parentRefType = ir::RefType::get(prototype->isFrom, state.parent->get_parent_type(),
 	                                       state.parent->get_self_address_space(), irCtx);
-	auto* self          = block->new_local("''", parentRefType, false, state.parent->get_type_range());
+	auto* self          = block->new_local("''", parentRefType, false, irCtx, state.parent->get_type_range());
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0), self->get_llvm());
 	self->load_ghost_ref(irCtx->builder);
 	if (prototype->isFrom) {
@@ -202,9 +202,9 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 			}
 			SHOW("Member arg complete")
 		} else {
-			auto* argTy = fnEmit->get_ir_type()->as_function()->get_argument_type_at(1);
-			auto* argVal =
-			    block->new_local(argTy->get_name(), argTy->get_type(), argTy->is_variable(), prototype->argName->range);
+			auto* argTy  = fnEmit->get_ir_type()->as_function()->get_argument_type_at(1);
+			auto* argVal = block->new_local(argTy->get_name(), argTy->get_type(), argTy->is_variable(), irCtx,
+			                                prototype->argName->range);
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1), argVal->get_llvm());
 		}
 	}

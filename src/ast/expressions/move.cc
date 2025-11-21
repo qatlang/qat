@@ -36,7 +36,8 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 			if (candTy->is_move_constructible()) {
 				bool shouldLoadValue = false;
 				if (isLocalDecl()) {
-					createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
+					createIn =
+					    ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, ctx->irCtx, irName->range);
 				}
 				if (canCreateIn()) {
 					if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
@@ -72,7 +73,8 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 				}
 			} else if (candTy->has_simple_move()) {
 				if (isLocalDecl()) {
-					createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
+					createIn =
+					    ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, ctx->irCtx, irName->range);
 				}
 				if (canCreateIn()) {
 					if (not createIn->is_ref() && not createIn->is_ghost_ref()) {

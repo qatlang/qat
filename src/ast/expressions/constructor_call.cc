@@ -150,7 +150,7 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 	}
 	SHOW("Checking local decl")
 	if (isLocalDecl()) {
-		createIn = ctx->get_fn()->get_block()->new_local(irName->value, typ, isVar, irName->range);
+		createIn = ctx->get_fn()->get_block()->new_local(irName->value, typ, isVar, ctx->irCtx, irName->range);
 	}
 	if (canCreateIn()) {
 		if (not createIn->is_ref() && not createIn->is_ghost_ref()) {
@@ -169,8 +169,8 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 	} else {
-		createIn =
-		    ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), typ, isVar, fileRange);
+		createIn = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), typ, isVar,
+		                                                 ctx->irCtx, fileRange);
 	}
 	Vec<llvm::Value*> valsLLVM;
 	valsLLVM.push_back(createIn->get_llvm());

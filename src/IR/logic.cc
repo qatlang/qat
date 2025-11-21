@@ -134,11 +134,11 @@ ir::Value* Logic::int_to_std_string(bool isSigned, ast::EmitCtx* ctx, ir::Value*
 			}
 		}
 		auto strRes = convFn->call(ctx->irCtx, {value->get_llvm()}, None, ctx->mod);
-		ctx->irCtx->builder.CreateStore(
-		    strRes->get_llvm(), ctx->get_fn()
-		                            ->get_block()
-		                            ->new_local(ctx->get_fn()->get_random_alloca_name(), stringTy, true, fileRange)
-		                            ->get_llvm());
+		ctx->irCtx->builder.CreateStore(strRes->get_llvm(), ctx->get_fn()
+		                                                        ->get_block()
+		                                                        ->new_local(ctx->get_fn()->get_random_alloca_name(),
+		                                                                    stringTy, true, ctx->irCtx, fileRange)
+		                                                        ->get_llvm());
 		return strRes;
 	} else {
 		ctx->Error("Cannot convert integer of type " +
@@ -372,10 +372,11 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 			formatString += ")";
 			if (val->is_value()) {
 				ctx->irCtx->builder.CreateStore(
-				    val->get_llvm(), ctx->get_fn()
-				                         ->get_block()
-				                         ->new_local(ctx->get_fn()->get_random_alloca_name(), valTy, true, valRange)
-				                         ->get_llvm());
+				    val->get_llvm(),
+				    ctx->get_fn()
+				        ->get_block()
+				        ->new_local(ctx->get_fn()->get_random_alloca_name(), valTy, true, ctx->irCtx, valRange)
+				        ->get_llvm());
 			}
 		} else if (valTy->is_array()) {
 			formatString += "[";
@@ -419,7 +420,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				auto toFn     = eTy->get_to_convertor(stringTy);
 				if (not val->is_ref() && not val->is_ghost_ref()) {
 					auto candVal = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), valTy,
-					                                                     true, valRange);
+					                                                     true, ctx->irCtx, valRange);
 					ctx->irCtx->builder.CreateStore(val->get_llvm(), candVal->get_llvm());
 					val = candVal;
 				} else if (val->is_ref()) {
@@ -430,7 +431,7 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(stringVal->get_llvm(), {1u}));
 				printVals.push_back(ctx->irCtx->builder.CreateExtractValue(stringVal->get_llvm(), {0u, 0u}));
 				(void)ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), stringTy, false,
-				                                            valRange);
+				                                            ctx->irCtx, valRange);
 			} else if (not val->is_prerun_value() && ir::StdLib::is_std_lib_found() && ir::StdLib::has_string_type() &&
 			           valTy->is_same(ir::StdLib::get_string_type())) {
 				auto stringTy = ir::StdLib::get_string_type();
@@ -452,12 +453,12 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 					formatString += "%.*s";
 					printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {1u}));
 					printVals.push_back(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u, 0u}));
-					ctx->irCtx->builder.CreateStore(val->get_llvm(),
-					                                ctx->get_fn()
-					                                    ->get_block()
-					                                    ->new_local(ctx->get_fn()->get_random_alloca_name(),
-					                                                ir::StdLib::get_string_type(), true, valRange)
-					                                    ->get_llvm());
+					ctx->irCtx->builder.CreateStore(
+					    val->get_llvm(), ctx->get_fn()
+					                         ->get_block()
+					                         ->new_local(ctx->get_fn()->get_random_alloca_name(),
+					                                     ir::StdLib::get_string_type(), true, ctx->irCtx, valRange)
+					                         ->get_llvm());
 				}
 			} else {
 				ctx->Error("Cannot format expression of type " + ctx->color(valTy->to_string()), valRange);
@@ -673,7 +674,7 @@ useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Va
 	auto* iterFalseBlock    = ir::Block::create(ctx->get_fn(), lenCheckTrueBlock);
 	auto* restBlock         = ir::Block::create(ctx->get_fn(), curr->get_parent());
 	restBlock->link_previous_block(curr);
-	auto* qatStrCmpIndex = ctx->get_fn()->get_str_comparison_index();
+	auto* qatStrCmpIndex = ctx->get_fn()->get_str_comparison_index(ctx->irCtx);
 	// NOTE - Length equality check
 	ctx->irCtx->builder.CreateCondBr(ctx->irCtx->builder.CreateICmpEQ(lhsCount, rhsCount), lenCheckTrueBlock->get_bb(),
 	                                 strCmpFalseBlock->get_bb());

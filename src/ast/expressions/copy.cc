@@ -34,7 +34,8 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 		auto* candTy = expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->get_subtype() : expEmit->get_ir_type();
 		if (not isAssignment) {
 			if (isLocalDecl()) {
-				createIn = ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, irName->range);
+				createIn =
+				    ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, ctx->irCtx, irName->range);
 			}
 			if (candTy->is_copy_constructible()) {
 				bool shouldLoadValue = false;

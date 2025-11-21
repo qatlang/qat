@@ -18,7 +18,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 	SHOW("Emitted type for default")
 	if (useTy) {
 		if (isLocalDecl()) {
-			createIn = ctx->get_fn()->get_block()->new_local(irName->value, useTy, isVar, irName->range);
+			createIn = ctx->get_fn()->get_block()->new_local(irName->value, useTy, isVar, ctx->irCtx, irName->range);
 		} else if (canCreateIn()) {
 			if (not type_check_create_in(useTy)) {
 				ctx->Error(
@@ -111,7 +111,7 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 			}
 			if (not canCreateIn()) {
 				createIn = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), useTy, true,
-				                                                 fileRange);
+				                                                 ctx->irCtx, fileRange);
 			}
 			(void)defFn->call(ctx->irCtx, {createIn->get_llvm()}, None, ctx->mod);
 			return get_creation_result(ctx->irCtx, useTy, fileRange);

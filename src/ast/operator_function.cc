@@ -190,7 +190,7 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("About to allocate necessary arguments")
 	auto  argIRTypes  = fnEmit->get_ir_type()->as_function()->get_argument_types();
 	auto* structRefTy = argIRTypes.at(0)->get_type()->as_ref();
-	auto* self        = block->new_local("''", structRefTy, prototype->isVariationFn,
+	auto* self        = block->new_local("''", structRefTy, prototype->isVariationFn, irCtx,
 	                                     structRefTy->get_subtype()->as_struct()->get_name().range);
 	irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(0u), self->get_llvm());
 	self->load_ghost_ref(irCtx->builder);
@@ -199,12 +199,12 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 		                                ir::RefType::get(prototype->opr == OperatorKind::MOVE_ASSIGNMENT,
 		                                                 structRefTy->get_subtype(),
 		                                                 state.parent->get_self_address_space(), irCtx),
-		                                false, prototype->argName->range);
+		                                false, irCtx, prototype->argName->range);
 		irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(1u), argVal->get_llvm());
 	} else {
 		for (usize i = 1; i < argIRTypes.size(); i++) {
 			SHOW("Argument type is " << argIRTypes.at(i)->get_type()->to_string())
-			auto* argVal = block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(), true,
+			auto* argVal = block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(), true, irCtx,
 			                                prototype->arguments.at(i - 1)->get_name().range);
 			SHOW("Created local value for the argument")
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);

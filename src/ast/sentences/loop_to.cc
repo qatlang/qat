@@ -52,7 +52,7 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 			llCount = ctx->irCtx->builder.CreateLoad(countTy->get_llvm_type(), llCount);
 		}
 		auto  uniq      = hasTag() ? tag.value().value : utils::uid_string();
-		auto* loopIndex = ctx->get_fn()->get_block()->new_local(uniq, originalLimitTy, false,
+		auto* loopIndex = ctx->get_fn()->get_block()->new_local(uniq, originalLimitTy, false, ctx->irCtx,
 		                                                        tag.has_value() ? tag->range : fileRange);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u), loopIndex->get_alloca());
 		auto* loopBlock = ir::Block::create(ctx->get_fn(), ctx->get_fn()->get_block());

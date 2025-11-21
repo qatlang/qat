@@ -70,7 +70,7 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 			}
 		} else if (isLocalDecl() || (not areAllValsConstant)) {
 			createIn = ctx->get_fn()->get_block()->new_local(
-			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), arrTy, isVar,
+			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), arrTy, isVar, ctx->irCtx,
 			    irName.has_value() ? irName->range : fileRange);
 		} else {
 			return ir::PrerunValue::get(constVal, arrTy)->with_range(fileRange);

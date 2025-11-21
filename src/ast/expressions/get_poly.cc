@@ -94,8 +94,8 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				           fileRange);
 			}
 		}
-		auto loc =
-		    ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false, fileRange);
+		auto loc = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false,
+		                                                 ctx->irCtx, fileRange);
 		if (origTy->has_owner() && not origTy->get_owner().is_none() &&
 		    llvm::cast<llvm::StructType>(origTy->get_llvm_type())->getElementType(0)->isStructTy() &&
 		    (not resTy->has_owner() || resTy->get_owner().is_none())) {
@@ -236,8 +236,8 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				storeInstanceAsIs = false;
 			}
 		}
-		auto loc =
-		    ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false, fileRange);
+		auto loc = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false,
+		                                                 ctx->irCtx, fileRange);
 		if (storeInstanceAsIs) {
 			ctx->irCtx->builder.CreateStore(
 			    val->get_llvm(), ctx->irCtx->builder.CreateStructGEP(resTy->get_llvm_type(), loc->get_llvm(), 0u));

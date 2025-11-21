@@ -40,7 +40,7 @@ ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("About to allocate necessary arguments")
 	auto  argIRTypes  = memberFn->get_ir_type()->as_function()->get_argument_types();
 	auto* parentRefTy = argIRTypes.at(0)->get_type()->as_ref();
-	auto* self        = block->new_local("''", parentRefTy, true, state.parent->get_type_range());
+	auto* self        = block->new_local("''", parentRefTy, true, irCtx, state.parent->get_type_range());
 	SHOW("Storing self")
 	irCtx->builder.CreateStore(memberFn->get_llvm_function()->getArg(0u), self->get_llvm());
 	SHOW("Loading self")

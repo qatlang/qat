@@ -41,7 +41,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 			if (not canCreateIn()) {
 				createIn = ctx->get_fn()->get_block()->new_local(
 				    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), maybeTy, true,
-				    irName.has_value() ? irName->range : fileRange);
+				    ctx->irCtx, irName.has_value() ? irName->range : fileRange);
 			}
 			dummyValue->replaceAllUsesWith(
 			    ctx->irCtx->builder.CreateStructGEP(maybeTy->get_llvm_type(), createIn->get_llvm(), 1u));
@@ -71,7 +71,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 					     << (irName.has_value() ? "true" : "false") << " name is: " << (irName ? irName->value : ""));
 					createIn = ctx->get_fn()->get_block()->new_local(
 					    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), maybeTy,
-					    irName.has_value() ? isVar : true, irName.has_value() ? irName->range : fileRange);
+					    irName.has_value() ? isVar : true, ctx->irCtx, irName.has_value() ? irName->range : fileRange);
 				}
 				auto* finalVal = ir::Logic::handle_pass_semantics(ctx, subType, subIR, subExpr->fileRange);
 				ctx->irCtx->builder.CreateStore(
@@ -85,7 +85,7 @@ ir::Value* IsExpression::emit(EmitCtx* ctx) {
 	} else {
 		auto maybeTy = ir::MaybeType::get(ir::VoidType::get(ctx->irCtx->llctx), false, ctx->irCtx);
 		if (isLocalDecl()) {
-			createIn = ctx->get_fn()->get_block()->new_local(irName->value, maybeTy, isVar, irName->range);
+			createIn = ctx->get_fn()->get_block()->new_local(irName->value, maybeTy, isVar, ctx->irCtx, irName->range);
 		}
 		if (canCreateIn()) {
 			if (not type_check_create_in(maybeTy)) {

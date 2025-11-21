@@ -133,15 +133,9 @@ class Block : public Uniq {
 	useit bool        has_value(const String& name) const;
 	useit LocalValue* get_value(const String& name) const;
 
-	useit LocalValue* new_local(const String& name, ir::Type* type, bool isVar, FileRangePtr fileRange) {
-		values.push_back(LocalValue::get(name, type, isVar, fn, fileRange));
-		return values.back();
-	}
+	useit LocalValue* new_local(const String& name, ir::Type* type, bool isVar, Ctx* ctx, FileRangePtr fileRange);
 
-	useit UseValue* create_use_value(String name, llvm::Value* value, ir::Type* type, FileRangePtr fileRange) {
-		usedValues.push_back(UseValue::create(std::move(name), value, type, std::move(fileRange)));
-		return usedValues.back();
-	}
+	useit UseValue* create_use_value(String name, llvm::Value* value, ir::Type* type, Ctx* ctx, FileRangePtr fileRange);
 
 	useit bool has_used_value(String const& name) const {
 		for (auto* it : usedValues) {
@@ -274,7 +268,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 	useit bool is_inline() const { return isInline; }
 
-	useit LocalValue* get_str_comparison_index();
+	useit LocalValue* get_str_comparison_index(ir::Ctx* irCtx);
 
 	useit bool is_generic() const { return !generics.empty(); }
 

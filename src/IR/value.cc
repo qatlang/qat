@@ -29,7 +29,7 @@ Vec<Value*> Value::allValues = {};
 Value* Value::make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRangePtr fileRange) {
 	if (not is_ghost_ref()) {
 		auto result = ctx->get_fn()->get_block()->new_local(name.value_or(ctx->get_fn()->get_random_alloca_name()),
-		                                                    type, true, fileRange);
+		                                                    type, true, ctx->irCtx, fileRange);
 		ctx->irCtx->builder.CreateStore(get_llvm(), result->get_llvm());
 		return result;
 	} else {

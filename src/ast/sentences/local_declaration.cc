@@ -1,5 +1,6 @@
 #include "./local_declaration.hpp"
 #include "../../IR/types/maybe.hpp"
+#include "../../IR/types/pointer.hpp"
 #include "../../show.hpp"
 
 #include <llvm/IR/Instructions.h>
@@ -21,15 +22,23 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	SHOW("Type for local declaration is " << (type ? type->to_string() : "not provided"));
 
 	auto typeCheck = [&]() {
-		if (declType && declType->is_maybe() && not variability) {
-			ctx->irCtx->Warning("The type of the declaration is " +
-			                        ctx->irCtx->highlightWarning(declType->to_string()) +
-			                        ", but the local declaration is not a variable. And hence, it might not be usable",
-			                    fileRange);
-		}
-		if (declType && not declType->is_type_sized()) {
-			ctx->Error("The type " + ctx->color(declType->to_string()) + " is not sized and hence cannot be allocated",
-			           fileRange);
+		if (declType) {
+			if (declType->is_maybe() && not variability) {
+				ctx->irCtx->Warning(
+				    "The type of the declaration is " + ctx->irCtx->highlightWarning(declType->to_string()) +
+				        ", but the local declaration is not a variable. And hence, it might not be usable",
+				    fileRange);
+			}
+			if (not declType->is_type_sized()) {
+				ctx->Error("The type " + ctx->color(declType->to_string()) +
+				               " is not sized and hence cannot be allocated",
+				           fileRange);
+			}
+			if (declType->is_ptr() && declType->as_ptr()->get_owner().is_prerun()) {
+				ctx->Error("Prerun " + String(declType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
+				               " cannot be used in normal declarations",
+				           fileRange);
+			}
 		}
 	};
 
@@ -46,7 +55,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		if (value.value()->isInPlaceCreatable() && declType) {
 			SHOW("LocalDecl value is in-place creatable")
 			value.value()->asInPlaceCreatable()->setCreateIn(
-			    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range));
+			    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, ctx->irCtx, name.range));
 			return value.value()->emit(ctx);
 		} else if (value.value()->isLocalDeclCompatible()) {
 			SHOW("LocalDecl value is compatible")
@@ -70,7 +79,8 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		if (type) {
 			declType = type->emit(ctx);
 			if (declType->has_simple_move()) {
-				auto result = ctx->get_fn()->get_block()->new_local(name.value, declType, variability, name.range);
+				auto result =
+				    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, ctx->irCtx, name.range);
 				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(declType->get_llvm_type()),
 				                                result->get_llvm());
 				return result->to_new_ir_value();
@@ -131,7 +141,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 		}
 	}
 	SHOW("Creating new value")
-	auto* new_value = block->new_local(name.value, declType, variability, name.range);
+	auto* new_value = block->new_local(name.value, declType, variability, ctx->irCtx, name.range);
 	if (expVal) {
 		if (expVal->get_ir_type()->is_ref() || expVal->is_ghost_ref()) {
 			if (expVal->get_ir_type()->is_ref()) {

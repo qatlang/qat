@@ -102,11 +102,16 @@ bool ChoiceType::has_field(const String& name) const {
 llvm::ConstantInt* ChoiceType::get_value_for(const String& name) const {
 	usize index = 0;
 	for (usize i = 0; i < fields.size(); i++) {
+		bool found = false;
 		for (usize j = 0; j < fields[i].size(); j++) {
 			if (fields[i][j].value == name) {
 				index = i;
+				found = true;
 				break;
 			}
+		}
+		if (found) {
+			break;
 		}
 	}
 	if (values.has_value()) {

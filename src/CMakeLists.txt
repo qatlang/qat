@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.16.3)
 PROJECT(qat
 	VERSION "0.8.0"
 	DESCRIPTION "Qat Programming Language"
-	HOMEPAGE_URL "https://qat.dev")
+	HOMEPAGE_URL "https://qatlang.org")
 
 if(NOT CMAKE_INSTALL_PREFIX STREQUAL "")
 	message(STATUS "CMake installation prefix is: ${CMAKE_INSTALL_PREFIX}")

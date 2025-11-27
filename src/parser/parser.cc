@@ -4924,8 +4924,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					              i + 1);
 					i++;
 				} else if (is_next(TokenType::move, i)) {
-					setCachedExpr(ast::Move::create(ast::SelfInstance::create(RangeAt(i)), true, RangeSpan(i, i + 1)),
-					              i + 1);
+					add_error(
+					    "Moving of parent instance is not allowed. If you must substitute the value of the parent instance, use " +
+					        color_error("''swap") + " instead",
+					    RangeSpan(i, i + 1));
 				} else if (is_next(TokenType::swap, i)) {
 					if (not is_next(TokenType::parenthesisOpen, i + 1)) {
 						add_error("Expected ( after this", RangeAt(i + 1));
@@ -5718,7 +5720,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						setCachedExpr(ast::Copy::create(exp, false, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
 						i++;
 					} else if (is_next(TokenType::move, i)) {
-						setCachedExpr(ast::Move::create(exp, false, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
+						setCachedExpr(ast::Move::create(exp, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
+						i++;
 					} else if (is_next(TokenType::swap, i)) {
 						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
 							add_error("Expected ( after this", RangeAt(i));

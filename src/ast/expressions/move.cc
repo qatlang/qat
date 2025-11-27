@@ -1,27 +1,15 @@
 #include "./move.hpp"
 #include "../../IR/logic.hpp"
-#include "../../IR/types/maybe.hpp"
 
 namespace qat::ast {
 
 ir::Value* Move::emit(EmitCtx* ctx) {
 	FnAtEnd fnObj{[&] { createIn = nullptr; }};
-	if (isExpSelf) {
-		if (not ctx->get_fn()->is_method()) {
-			ctx->Error("Cannot perform move on the parent instance as this is not a member function", fileRange);
-		} else {
-			auto memFn = (ir::Method*)ctx->get_fn();
-			if (memFn->is_static_method()) {
-				ctx->Error("Cannot perform move on the parent instance as this is a static function", fileRange);
-			}
-			if (memFn->isConstructor()) {
-				ctx->Error("Cannot perform move on the parent instance as this is a constructor", fileRange);
-			}
-		}
-	} else {
-		if (exp->nodeType() == NodeType::SELF) {
-			ctx->Error("Do not use this syntax for moving from the parent instance. Use " + ctx->color("''move") +
-			               " instead",
+	if (exp->nodeType() == NodeType::SELF) {
+		if (ctx->get_fn()->is_method()) {
+			ctx->Error("Cannot perform move on the parent instance as this is a " +
+			               ir::method_type_to_name(ctx->get_fn()->as_method()->get_method_type()) + ". Use " +
+			               ctx->color("'swap") + " instead if you must substitute the data of the parent instance",
 			           fileRange);
 		}
 	}

@@ -11,16 +11,14 @@ class Move final : public Expression, public LocalDeclCompatible, public InPlace
 
   private:
 	Expression* exp;
-	bool        isExpSelf = false;
 
 	bool isAssignment = false;
 
   public:
-	Move(Expression* _exp, bool _isExpSelf, FileRangePtr _fileRange)
-	    : Expression(std::move(_fileRange)), exp(_exp), isExpSelf(_isExpSelf) {}
+	Move(Expression* _exp, FileRangePtr _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
 
-	useit static Move* create(Expression* _exp, bool _isExpSelf, FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(Move), _exp, _isExpSelf, _fileRange);
+	useit static Move* create(Expression* _exp, FileRangePtr _fileRange) {
+		return std::construct_at(OwnNormal(Move), _exp, _fileRange);
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS

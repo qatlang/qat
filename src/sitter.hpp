@@ -5,9 +5,9 @@
 #include "./IR/qat_module.hpp"
 #include "./lexer/lexer.hpp"
 #include "./parser/parser.hpp"
-#include "utils/helpers.hpp"
+#include "./utils/helpers.hpp"
+
 #include <filesystem>
-#include <thread>
 
 namespace qat {
 
@@ -21,7 +21,6 @@ class QatSitter {
 	ir::Ctx*        ctx    = nullptr;
 	lexer::Lexer*   Lexer  = nullptr;
 	parser::Parser* Parser = nullptr;
-	std::thread::id mainThread;
 
   public:
 	QatSitter();

@@ -10,7 +10,6 @@
 #include "./lexer/token_type.hpp"
 #include "./parser/parser.hpp"
 #include "./show.hpp"
-#include "./utils/find_executable.hpp"
 #include "./utils/identifier.hpp"
 #include "./utils/run_command.hpp"
 #include "./utils/visibility.hpp"
@@ -22,7 +21,6 @@
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Host.h>
-#include <thread>
 
 #if OS_IS_WINDOWS
 #if RUNTIME_IS_MINGW
@@ -40,9 +38,7 @@ namespace qat {
 
 QatSitter* QatSitter::instance = nullptr;
 
-QatSitter::QatSitter()
-    : ctx(ir::Ctx::New()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx)),
-      mainThread(std::this_thread::get_id()) {
+QatSitter::QatSitter() : ctx(ir::Ctx::New()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx)) {
 	ctx->sitter = this;
 }
 

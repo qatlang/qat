@@ -53,6 +53,7 @@
 #include "../ast/expressions/plain_initialiser.hpp"
 #include "../ast/expressions/self_instance.hpp"
 #include "../ast/expressions/sub_entity.hpp"
+#include "../ast/expressions/swap.hpp"
 #include "../ast/expressions/to_conversion.hpp"
 #include "../ast/expressions/tuple_value.hpp"
 #include "../ast/expressions/variant_initialiser.hpp"
@@ -4925,7 +4926,20 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				} else if (is_next(TokenType::move, i)) {
 					setCachedExpr(ast::Move::create(ast::SelfInstance::create(RangeAt(i)), true, RangeSpan(i, i + 1)),
 					              i + 1);
+				} else if (is_next(TokenType::swap, i)) {
+					if (not is_next(TokenType::parenthesisOpen, i + 1)) {
+						add_error("Expected ( after this", RangeAt(i + 1));
+					}
+					i += 2;
+					auto subExpr = do_expression(preCtx, None, i, None);
+					i            = subExpr.second;
+					if (not is_next(TokenType::parenthesisClose, i)) {
+						add_error("Expected ) after this to end the swap expression", RangeAt(i));
+					}
 					i++;
+					setCachedExpr(ast::Swap::create(ast::SelfInstance::create(RangeAt(i)), subExpr.first, true,
+					                                RangeSpan(i, i + 1)),
+					              i);
 				} else if (((is_next(TokenType::var, i) || is_next(TokenType::constant, i)) &&
 				            is_next(TokenType::colon, i + 1) && is_next(TokenType::identifier, i + 2)) ||
 				           is_next(TokenType::identifier, i)) {
@@ -5705,7 +5719,19 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						i++;
 					} else if (is_next(TokenType::move, i)) {
 						setCachedExpr(ast::Move::create(exp, false, exp->fileRange->spanTo(RangeAt(i + 1))), i + 1);
+					} else if (is_next(TokenType::swap, i)) {
+						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
+							add_error("Expected ( after this", RangeAt(i));
+						}
 						i++;
+						auto sourceExp = do_expression(preCtx, None, i, None);
+						i              = sourceExp.second;
+						if (not is_next(TokenType::parenthesisClose, i)) {
+							add_error("Expected ) after this to end the 'span expression", RangeSpan(start, i));
+						}
+						i++;
+						setCachedExpr(
+						    ast::Swap::create(exp, sourceExp.first, false, exp->fileRange->spanTo(RangeAt(i))), i + 1);
 					} else if (is_next(TokenType::atomic, i)) {
 						if (is_next(TokenType::copy, i + 1)) {
 							i += 2;

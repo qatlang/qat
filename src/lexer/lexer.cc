@@ -1225,6 +1225,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("match", match);
 	else Check_Normal_Keyword("copy", copy);
 	else Check_Normal_Keyword("move", move);
+	else Check_Normal_Keyword("swap", swap);
 	else Check_Normal_Keyword("text", textType);
 	else Check_Normal_Keyword("ptr", ptrType);
 	else Check_Normal_Keyword("multi", multiPtrType);

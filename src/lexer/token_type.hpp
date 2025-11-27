@@ -123,6 +123,7 @@ enum class TokenType : u8 {
 	andWord,
 	ignore,
 	atomic,
+	swap,
 };
 
 } // namespace qat::lexer

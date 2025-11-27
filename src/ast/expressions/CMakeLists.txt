@@ -37,6 +37,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	plain_initialiser.cc
 	self_instance.cc
 	sub_entity.cc
+	swap.cc
 	to_conversion.cc
 	tuple_value.cc
 	variant_initialiser.cc)

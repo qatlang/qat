@@ -128,6 +128,7 @@ enum class NodeType {
 	ATOMIC_COPY,
 	ATOMIC_MOVE,
 	ATOMIC_OPERATIONS,
+	SWAP,
 };
 
 } // namespace qat::ast

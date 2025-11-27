@@ -32,7 +32,20 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 			expEmit->load_ghost_ref(ctx->irCtx->builder);
 		}
 		auto* candTy = expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->get_subtype() : expEmit->get_ir_type();
-		if (not isAssignment) {
+		if (candTy->is_atomic()) {
+			if (isAssignment) {
+				ctx->Error(
+				    "Found an expression of type " + ctx->color(candTy->to_string()) +
+				        " here. Atomic types do not support copy assignment as it cannot be performed in one atomic operation. Try using " +
+				        ctx->color("target'swap(source'copy)") +
+				        " to swap the original with the copied value."
+				        " This will result in two atomic operations, one for the copy and the other for the swap",
+				    fileRange);
+			}
+			auto load = ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm());
+			load->setAtomic(llvm::AtomicOrdering::SequentiallyConsistent);
+			return ir::Value::get(load, candTy, true);
+		} else if (not isAssignment) {
 			if (isLocalDecl()) {
 				createIn =
 				    ctx->get_fn()->get_block()->new_local(irName->value, candTy, isVar, ctx->irCtx, irName->range);

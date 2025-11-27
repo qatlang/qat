@@ -32,7 +32,24 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 			expEmit->load_ghost_ref(ctx->irCtx->builder);
 		}
 		auto* candTy = expEmit->is_ref() ? expEmit->get_ir_type()->as_ref()->get_subtype() : expEmit->get_ir_type();
-		if (not isAssignment) {
+		if (candTy->is_atomic()) {
+			if (isAssignment) {
+				ctx->Error(
+				    "Found an expression of type " + ctx->color(candTy->to_string()) +
+				        " here. Atomic types do not support move assignment as it cannot be performed in one atomic operation. Use " +
+				        ctx->color("target'swap(source'move)") +
+				        " to swap the original value with the moved value."
+				        " This will result in two atomic operations, one for move and the other for the swap",
+				    fileRange);
+			}
+			auto oldValue = ctx->irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Xchg, expEmit->get_llvm(),
+			                                                    llvm::Constant::getNullValue(candTy->get_llvm_type()),
+			                                                    None, llvm::AtomicOrdering::SequentiallyConsistent);
+			if (expEmit->is_local_value()) {
+				ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
+			}
+			return ir::Value::get(oldValue, candTy, true);
+		} else if (not isAssignment) {
 			if (candTy->is_move_constructible()) {
 				bool shouldLoadValue = false;
 				if (isLocalDecl()) {

@@ -244,6 +244,8 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 	useit virtual bool is_method() const { return false; }
 
+	useit Method* as_method() { return reinterpret_cast<Method*>(this); }
+
 	useit bool has_variadic_args() const { return hasVariadicArguments; }
 
 	useit Identifier arg_name_at(u32 index) const { return arguments[index].get_name(); }

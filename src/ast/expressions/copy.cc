@@ -44,7 +44,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 			}
 			auto load = ctx->irCtx->builder.CreateLoad(candTy->get_llvm_type(), expEmit->get_llvm());
 			load->setAtomic(llvm::AtomicOrdering::SequentiallyConsistent);
-			return ir::Value::get(load, candTy, true);
+			return ir::Value::get(load, candTy->as_atomic()->get_subtype(), true);
 		} else if (not isAssignment) {
 			if (isLocalDecl()) {
 				createIn =

@@ -48,7 +48,7 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 			if (expEmit->is_local_value()) {
 				ctx->get_fn()->get_block()->add_moved_value(expEmit->get_local_id().value());
 			}
-			return ir::Value::get(oldValue, candTy, true);
+			return ir::Value::get(oldValue, candTy->as_atomic()->get_subtype(), true);
 		} else if (not isAssignment) {
 			if (candTy->is_move_constructible()) {
 				bool shouldLoadValue = false;

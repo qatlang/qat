@@ -151,7 +151,7 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		}
 		if (isExpSelf && instType->is_struct() && ctx->get_fn()->is_method()) {
 			auto thisFn = (ir::Method*)ctx->get_fn();
-			if (thisFn->isConstructor()) {
+			if (thisFn->is_constructor()) {
 				Vec<String> missingMembers;
 				for (usize i = 0; i < instType->as_struct()->get_field_count(); i++) {
 					if (not thisFn->is_member_initted(i)) {

@@ -265,7 +265,7 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			mem->add_mention(name.range);
 			if (isExpSelf) {
 				auto* mFn = (ir::Method*)ctx->get_fn();
-				if (mFn->isConstructor()) {
+				if (mFn->is_constructor()) {
 					if (not mFn->is_member_initted(eTy->as_struct()->get_field_index(name.value))) {
 						auto mem = eTy->as_struct()->get_field_with_name(name.value);
 						if (mem->defaultValue.has_value()) {

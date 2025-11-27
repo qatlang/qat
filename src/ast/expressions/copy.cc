@@ -14,7 +14,7 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 			if (memFn->is_static_method()) {
 				ctx->Error("Cannot perform copy on the parent instance as this is a static function", fileRange);
 			}
-			if (memFn->isConstructor()) {
+			if (memFn->is_constructor()) {
 				ctx->Error("Cannot perform copy on the parent instance as this is a constructor", fileRange);
 			}
 		}

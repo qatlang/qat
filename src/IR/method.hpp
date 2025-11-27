@@ -36,6 +36,8 @@ enum class MethodType {
 	defaultConstructor,
 };
 
+String method_type_to_name(MethodType type);
+
 String method_type_to_string(MethodType type);
 
 class ExpandedType;
@@ -159,7 +161,7 @@ class Method : public Function {
 
 	useit MethodType get_method_type() const { return fnType; }
 
-	useit bool isConstructor() const {
+	useit bool is_constructor() const {
 		switch (get_method_type()) {
 			case MethodType::fromConvertor:
 			case MethodType::constructor:

@@ -305,6 +305,39 @@ Method::Method(MethodType _fnType, bool _isVariation, MethodParent* _parent, con
 	}
 }
 
+String method_type_to_name(MethodType type) {
+	switch (type) {
+		case MethodType::valueMethod:
+			return "value method";
+		case MethodType::binaryOperator:
+			return "binary operator";
+		case MethodType::unaryOperator:
+			return "unary operator";
+		case MethodType::constructor:
+			return "constructor";
+		case MethodType::copyConstructor:
+			return "copy constructor";
+		case MethodType::moveConstructor:
+			return "move constructor";
+		case MethodType::defaultConstructor:
+			return "default constructor";
+		case MethodType::copyAssignment:
+			return "copy assignment";
+		case MethodType::moveAssignment:
+			return "move assignment";
+		case MethodType::destructor:
+			return "destructor";
+		case MethodType::fromConvertor:
+			return "from convertor";
+		case MethodType::toConvertor:
+			return "to convertor";
+		case MethodType::normal:
+			return "method";
+		case MethodType::staticFn:
+			return "static function";
+	}
+}
+
 String method_type_to_string(MethodType type) { return Method::methodTypes[type]; }
 
 Method::~Method() {}

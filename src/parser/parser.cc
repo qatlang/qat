@@ -7132,7 +7132,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				SHOW("give sentence found")
 				if (is_next(TokenType::stop, i)) {
 					i++;
-					addSentence(ast::GiveSentence::create(None, FileRange::merge(token.fileRange, RangeAt(i + 1))));
+					addSentence(ast::GiveSentence::create(nullptr, FileRange::merge(token.fileRange, RangeAt(i + 1))));
 				} else {
 					auto end = first_primary_position(TokenType::stop, i);
 					if (not end.has_value()) {

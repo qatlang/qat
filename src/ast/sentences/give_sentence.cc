@@ -6,19 +6,19 @@ namespace qat::ast {
 
 ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 	auto* fun = ctx->get_fn();
-	if (give_expr.has_value()) {
+	if (value) {
 		if (fun->get_ir_type()->as_function()->get_return_type()->is_return_self()) {
-			if (give_expr.value()->nodeType() != NodeType::SELF) {
+			if (value->nodeType() != NodeType::SELF) {
 				ctx->Error("This function is defined to return '' and cannot return anything else", fileRange);
 			}
-			auto expr = give_expr.value()->emit(ctx);
+			auto expr = value->emit(ctx);
 			return ir::Value::get(ctx->irCtx->builder.CreateRet(expr->get_llvm()), expr->get_ir_type(), false);
 		}
 		auto* retType = fun->get_ir_type()->as_function()->get_return_type()->get_type();
-		if (give_expr.value()->has_type_inferrance()) {
-			give_expr.value()->as_type_inferrable()->set_inference_type(retType);
+		if (value->has_type_inferrance()) {
+			value->as_type_inferrable()->set_inference_type(retType);
 		}
-		auto* retVal = give_expr.value()->emit(ctx);
+		auto* retVal = value->emit(ctx);
 		if (retType->is_void() && retVal->get_ir_type()->is_void()) {
 			ir::destructor_caller(ctx->irCtx, fun);
 			ir::method_handler(ctx->irCtx, fun);
@@ -30,7 +30,7 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 				               ctx->color(retVal->get_ir_type()->to_string()),
 				           fileRange);
 			}
-			auto retRes = ir::Logic::handle_pass_semantics(ctx, retType, retVal, give_expr.value()->fileRange, true);
+			auto retRes = ir::Logic::handle_pass_semantics(ctx, retType, retVal, value->fileRange, true);
 			ir::destructor_caller(ctx->irCtx, fun);
 			ir::method_handler(ctx->irCtx, fun);
 			return ir::Value::get(ctx->irCtx->builder.CreateRet(retRes->get_llvm()), retType, false);
@@ -51,8 +51,8 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 Json GiveSentence::to_json() const {
 	return Json()
 	    ._("nodeType", "giveSentence")
-	    ._("hasValue", give_expr.has_value())
-	    ._("value", give_expr.has_value() ? give_expr.value()->to_json() : Json())
+	    ._("hasValue", value != nullptr)
+	    ._("value", value ? value->to_json() : JsonValue())
 	    ._("fileRange", fileRange);
 }
 

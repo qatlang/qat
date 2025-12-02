@@ -3,25 +3,23 @@
 
 #include "../expression.hpp"
 #include "../sentence.hpp"
-#include <optional>
 
 namespace qat::ast {
 
 class GiveSentence final : public Sentence {
   private:
-	Maybe<Expression*> give_expr;
+	Expression* value;
 
   public:
-	GiveSentence(Maybe<Expression*> _given_expr, FileRangePtr _fileRange)
-	    : Sentence(std::move(_fileRange)), give_expr(_given_expr) {}
+	GiveSentence(Expression* _value, FileRangePtr _fileRange) : Sentence(_fileRange), value(_value) {}
 
-	useit static GiveSentence* create(Maybe<Expression*> _given_expr, FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(GiveSentence), _given_expr, _fileRange);
+	useit static GiveSentence* create(Expression* _value, FileRangePtr _fileRange) {
+		return std::construct_at(OwnNormal(GiveSentence), _value, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
-		if (give_expr.has_value()) {
-			UPDATE_DEPS(give_expr.value());
+		if (value) {
+			UPDATE_DEPS(value);
 		}
 	}
 

@@ -491,6 +491,7 @@ void Logic::exit_thread(ir::Function*, ast::EmitCtx* ctx, FileRangePtr rangeVal)
 		    {llvm::ConstantPointerNull::get(llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
 		                                                           ctx->irCtx->dataLayout.getProgramAddressSpace()))});
 	}
+	ctx->irCtx->builder.CreateUnreachable();
 }
 
 void Logic::exit_program(ir::Function*, ast::EmitCtx* ctx, FileRangePtr rangeVal) {
@@ -498,6 +499,7 @@ void Logic::exit_program(ir::Function*, ast::EmitCtx* ctx, FileRangePtr rangeVal
 	auto exitFun    = ctx->mod->get_llvm_module()->getFunction(exitFnName);
 	ctx->irCtx->builder.CreateCall(exitFun->getFunctionType(), exitFun,
 	                               {llvm::ConstantInt::get(NativeType::get_int(ctx->irCtx)->get_llvm_type(), 1u)});
+	ctx->irCtx->builder.CreateUnreachable();
 }
 
 void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<FileRangePtr> ranges,
@@ -535,6 +537,7 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
 				                                                               ctx->irCtx, fileRange);
 				auto handlerFn   = mod->get_llvm_module()->getFunction(handlerName);
 				ctx->irCtx->builder.CreateCall(handlerFn->getFunctionType(), handlerFn, printVals);
+				ctx->irCtx->builder.CreateUnreachable();
 				break;
 			}
 			default:
@@ -557,6 +560,7 @@ void Logic::panic_in_function(ir::Function* fun, Vec<ir::Value*> values, Vec<Fil
 				                                                               ctx->irCtx, fileRange);
 				auto handlerFn   = mod->get_llvm_module()->getFunction(handlerName);
 				ctx->irCtx->builder.CreateCall(handlerFn->getFunctionType(), handlerFn, printVals);
+				ctx->irCtx->builder.CreateUnreachable();
 				break;
 			}
 			default:

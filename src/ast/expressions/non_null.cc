@@ -64,32 +64,14 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 		}
 		auto         ptrTy     = candTy->as_ptr();
 		llvm::Value* condition = nullptr;
-		auto         ptrDiffTy = llvm::Type::getIntNTy(
-            ctx->irCtx->llctx,
-            ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getPtrDiffType(
-                clang::getLangASFromTargetAS(ptrTy->has_address_space()
-		                                                 ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-		                                                 : ctx->irCtx->dataLayout.getProgramAddressSpace()))));
-		if (ptrTy->is_multi()) {
-			condition = ctx->irCtx->builder.CreateICmpEQ(
-			    ctx->irCtx->builder.CreatePtrDiff(
-			        llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-			        ctx->irCtx->builder.CreateExtractValue(cand->get_llvm(), {0u}),
-			        llvm::ConstantPointerNull::get(llvm::PointerType::get(
-			            ctx->irCtx->llctx, ptrTy->has_address_space()
-			                                   ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-			                                   : ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-			    llvm::ConstantInt::get(ptrDiffTy, 0u, true));
-		} else {
-			condition = ctx->irCtx->builder.CreateICmpEQ(
-			    ctx->irCtx->builder.CreatePtrDiff(
-			        llvm::Type::getInt8Ty(ctx->irCtx->llctx), cand->get_llvm(),
-			        llvm::ConstantPointerNull::get(llvm::PointerType::get(
-			            ctx->irCtx->llctx, ptrTy->get_address_space().has_value()
-			                                   ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-			                                   : ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-			    llvm::ConstantInt::get(ptrDiffTy, 0u, true));
-		}
+		auto         intPtrTy  = llvm::Type::getIntNTy(
+            ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(
+                                   llvm::PointerType::get(ctx->irCtx->llctx, ptrTy->usable_address_space(ctx->irCtx))));
+		condition = ctx->irCtx->builder.CreateICmpEQ(
+		    ctx->irCtx->builder.CreatePtrToInt(
+		        ptrTy->is_multi() ? ctx->irCtx->builder.CreateExtractValue(cand->get_llvm(), {0u}) : cand->get_llvm(),
+		        intPtrTy),
+		    llvm::ConstantInt::get(intPtrTy, 0u, false));
 		auto currBlock = ctx->fn->get_block();
 		auto trueBlock = ir::Block::create(ctx->fn, currBlock);
 		auto restBlock = ir::Block::create(ctx->fn, currBlock->get_parent());

@@ -507,7 +507,8 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 		           loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
 			auto* ptrTy = loc->get_ir_type()->as_ptr();
 			if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
-				auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
+				auto  intPtrTy = llvm::PointerType::get(irCtx->llctx, ptrTy->usable_address_space(irCtx));
+				auto* dstrFn   = ptrTy->get_subtype()->as_struct()->get_destructor();
 				if (ptrTy->is_multi()) {
 					auto* currBlock = fun->get_block();
 					auto* condBlock = ir::Block::create(fun, currBlock);
@@ -521,16 +522,13 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					                           count->get_llvm());
 					irCtx->builder.CreateCondBr(
 					    irCtx->builder.CreateICmpNE(
-					        irCtx->builder.CreatePtrDiff(
-					            ptrTy->get_subtype()->get_llvm_type(),
+					        irCtx->builder.CreatePtrToInt(
 					            irCtx->builder.CreateLoad(
 					                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
 					                                       irCtx->dataLayout.getProgramAddressSpace()),
 					                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
-					            llvm::ConstantPointerNull::get(
-					                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-					                                       irCtx->dataLayout.getProgramAddressSpace()))),
-					        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+					            intPtrTy),
+					        llvm::ConstantInt::get(intPtrTy, 0u, false)),
 					    condBlock->get_bb(), restBlock->get_bb());
 					condBlock->set_active(irCtx->builder);
 					SHOW("Set condition block active")
@@ -563,12 +561,9 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					restBlock->link_previous_block(currBlock);
 					irCtx->builder.CreateCondBr(
 					    irCtx->builder.CreateICmpNE(
-					        irCtx->builder.CreatePtrDiff(
-					            ptrTy->get_llvm_type(),
-					            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
-					            llvm::ConstantPointerNull::get(
-					                llvm::dyn_cast<llvm::PointerType>(ptrTy->get_llvm_type()))),
-					        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+					        irCtx->builder.CreatePtrToInt(
+					            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()), intPtrTy),
+					        llvm::ConstantInt::get(intPtrTy, 0u, false)),
 					    trueBlock->get_bb(), restBlock->get_bb());
 					trueBlock->set_active(irCtx->builder);
 					irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(),
@@ -634,18 +629,18 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							irCtx->builder.CreateStore(
 							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
 							    count->get_llvm());
+							auto intPtrTy = llvm::Type::getIntNTy(
+							    irCtx->llctx, irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
+							                      irCtx->llctx, ptrTy->usable_address_space(irCtx))));
 							irCtx->builder.CreateCondBr(
 							    irCtx->builder.CreateICmpNE(
-							        irCtx->builder.CreatePtrDiff(
-							            ptrTy->get_subtype()->get_llvm_type(),
+							        irCtx->builder.CreatePtrToInt(
 							            irCtx->builder.CreateLoad(
-							                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
+							                llvm::PointerType::get(irCtx->llctx,
 							                                       irCtx->dataLayout.getProgramAddressSpace()),
 							                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
-							            llvm::ConstantPointerNull::get(
-							                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-							                                       irCtx->dataLayout.getProgramAddressSpace()))),
-							        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+							            intPtrTy),
+							        llvm::ConstantInt::get(intPtrTy, 0u, false)),
 							    condBlock->get_bb(), restBlock->get_bb());
 							condBlock->set_active(irCtx->builder);
 							SHOW("Set condition block active")
@@ -677,14 +672,14 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 							auto* trueBlock = ir::Block::create(fun, currBlock);
 							auto* restBlock = ir::Block::create(fun, nullptr);
 							restBlock->link_previous_block(currBlock);
+							auto intPtrTy = llvm::Type::getIntNTy(
+							    irCtx->llctx, irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
+							                      irCtx->llctx, ptrTy->usable_address_space(irCtx))));
 							irCtx->builder.CreateCondBr(
 							    irCtx->builder.CreateICmpNE(
-							        irCtx->builder.CreatePtrDiff(
-							            ptrTy->get_llvm_type(),
-							            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
-							            llvm::ConstantPointerNull::get(
-							                llvm::dyn_cast<llvm::PointerType>(ptrTy->get_llvm_type()))),
-							        llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u)),
+							        irCtx->builder.CreatePtrToInt(
+							            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr), intPtrTy),
+							        llvm::ConstantInt::get(intPtrTy, 0u, false)),
 							    trueBlock->get_bb(), restBlock->get_bb());
 							trueBlock->set_active(irCtx->builder);
 							irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(),

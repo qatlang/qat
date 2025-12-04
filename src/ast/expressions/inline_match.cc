@@ -340,13 +340,12 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 		}
 		auto* trueBlock  = ir::Block::create(ctx->fn, ctx->fn->get_block());
 		auto* falseBlock = ir::Block::create(ctx->fn, ctx->fn->get_block());
+		auto  intPtrTy   = llvm::Type::getIntNTy(
+            ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(
+                                   llvm::PointerType::get(ctx->irCtx->llctx, ptrTy->usable_address_space(ctx->irCtx))));
 		ctx->irCtx->builder.CreateCondBr(
-		    ctx->irCtx->builder.CreateICmpNE(
-		        ctx->irCtx->builder.CreatePtrDiff(
-		            llvm::IntegerType::get(ctx->irCtx->llctx, 8u), cand,
-		            llvm::ConstantPointerNull::get(
-		                llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-		        llvm::ConstantInt::get(ir::NativeType::get_usize(ctx->irCtx)->get_llvm_type(), 0u)),
+		    ctx->irCtx->builder.CreateICmpNE(ctx->irCtx->builder.CreatePtrToInt(cand, intPtrTy),
+		                                     llvm::ConstantInt::get(intPtrTy, 0u, false)),
 		    trueBlock->get_bb(), falseBlock->get_bb());
 		trueBlock->set_active(ctx->irCtx->builder);
 		auto trueVal = values[0]->emit(ctx);

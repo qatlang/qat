@@ -110,18 +110,12 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 						cand = ctx->irCtx->builder.CreateLoad(errTy->get_llvm_type(), cand);
 					}
 					if (llvm::isa<llvm::PointerType>(errTy->get_llvm_type())) {
-						cand = ctx->irCtx->builder.CreatePtrDiff(
-						    llvm::Type::getInt8Ty(ctx->irCtx->llctx), cand,
-						    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(errTy->get_llvm_type())));
-						cand = ctx->irCtx->builder.CreateICmp(
-						    kind == IsVariantKind::RESULT_OK ? llvm::CmpInst::ICMP_EQ : llvm::CmpInst::ICMP_NE, cand,
-						    llvm::ConstantInt::get(
-						        ir::NativeType::get_ptrdiff(
-						            ir::AddressSpace::from_value(
-						                llvm::cast<llvm::PointerType>(errTy->get_llvm_type())->getAddressSpace()),
-						            ctx->irCtx)
-						            ->get_llvm_type(),
-						        0u));
+						auto intPtrTy = llvm::Type::getIntNTy(
+						    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(errTy->get_llvm_type()));
+						cand = ctx->irCtx->builder.CreateICmp(kind == IsVariantKind::RESULT_OK ? llvm::CmpInst::ICMP_EQ
+						                                                                       : llvm::CmpInst::ICMP_NE,
+						                                      ctx->irCtx->builder.CreatePtrToInt(cand, intPtrTy),
+						                                      llvm::ConstantInt::get(intPtrTy, 0u, false));
 					} else {
 						auto intTy = llvm::Type::getIntNTy(
 						    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getTypeSizeInBits(errTy->get_llvm_type()));
@@ -150,13 +144,10 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 				if (isRef) {
 					val->load_ghost_ref(ctx->irCtx->builder);
 				}
-				llvm::Value* cand      = nullptr;
-				const auto   boolTy    = ir::UnsignedType::create_bool(ctx->irCtx);
-				auto         ptrTy     = valTy->as_ptr();
-				auto         llvmPtrTy = llvm::PointerType::get(ctx->irCtx->llctx,
-                                                        ptrTy->has_address_space()
-				                                                    ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-				                                                    : ctx->irCtx->dataLayout.getProgramAddressSpace());
+				llvm::Value* cand   = nullptr;
+				const auto   boolTy = ir::UnsignedType::create_bool(ctx->irCtx);
+				auto         ptrTy  = valTy->as_ptr();
+				auto llvmPtrTy = llvm::PointerType::get(ctx->irCtx->llctx, ptrTy->usable_address_space(ctx->irCtx));
 				if (ptrTy->is_multi()) {
 					if (isRef || val->is_ghost_ref()) {
 						cand = ctx->irCtx->builder.CreateLoad(
@@ -171,12 +162,11 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 						cand = ctx->irCtx->builder.CreateLoad(llvmPtrTy, cand);
 					}
 				}
+				auto intPtrTy = llvm::Type::getIntNTy(ctx->irCtx->llctx,
+				                                      ctx->irCtx->dataLayout.getPointerTypeSizeInBits(llvmPtrTy));
 				return ir::Value::get(
-				    ctx->irCtx->builder.CreateICmpEQ(
-				        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), cand,
-				                                          llvm::ConstantPointerNull::get(llvmPtrTy)),
-				        llvm::ConstantInt::get(
-				            ir::NativeType::get_ptrdiff(ptrTy->get_address_space(), ctx->irCtx)->get_llvm_type(), 0u)),
+				    ctx->irCtx->builder.CreateICmpEQ(ctx->irCtx->builder.CreatePtrToInt(cand, intPtrTy),
+				                                     llvm::ConstantInt::get(intPtrTy, 0u, false)),
 				    boolTy, true);
 			}
 			case IsVariantKind::NONE: {
@@ -243,7 +233,7 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 					    ctx->irCtx->builder.CreateICmpEQ(cand, llvm::ConstantInt::get(valTy->get_llvm_type(), 0u)),
 					    boolTy, true);
 				} else if (valTy->is_error()) {
-					auto errTy = valTy->as_error();
+					const auto errTy = valTy->as_error();
 					if (not errTy->has_none_variant()) {
 						ctx->Error("Found an expression of the error type " + ctx->color(errTy->to_string()) +
 						               " here, but it does not have the " + ctx->color("error::none") +
@@ -259,26 +249,18 @@ ir::Value* IsVariant::emit(EmitCtx* ctx) {
 						cand = ctx->irCtx->builder.CreateLoad(errTy->get_llvm_type(), cand);
 					}
 					if (llvm::isa<llvm::PointerType>(errTy->get_llvm_type())) {
-						cand = ctx->irCtx->builder.CreatePtrDiff(
-						    llvm::Type::getInt8Ty(ctx->irCtx->llctx), cand,
-						    llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(errTy->get_llvm_type())));
+						const auto intPtrTy = llvm::Type::getIntNTy(
+						    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(errTy->get_llvm_type()));
 						return ir::Value::get(
-						    ctx->irCtx->builder.CreateICmpEQ(
-						        cand,
-						        llvm::ConstantInt::get(
-						            ir::NativeType::get_ptrdiff_unsigned(
-						                ir::AddressSpace::from_value(
-						                    llvm::cast<llvm::PointerType>(errTy->get_llvm_type())->getAddressSpace()),
-						                ctx->irCtx)
-						                ->get_llvm_type(),
-						            0u)),
+						    ctx->irCtx->builder.CreateICmpEQ(ctx->irCtx->builder.CreatePtrToInt(cand, intPtrTy),
+						                                     llvm::ConstantInt::get(intPtrTy, 0u, false)),
 						    boolTy, true);
 					} else if (llvm::isa<llvm::IntegerType>(errTy->get_llvm_type())) {
 						return ir::Value::get(
 						    ctx->irCtx->builder.CreateICmpEQ(cand, llvm::ConstantInt::get(cand->getType(), 0u)), boolTy,
 						    true);
 					} else {
-						auto intTy = llvm::Type::getIntNTy(
+						const auto intTy = llvm::Type::getIntNTy(
 						    ctx->irCtx->llctx, (uint)ctx->irCtx->dataLayout.getTypeSizeInBits(errTy->get_llvm_type()));
 						cand = ctx->irCtx->builder.CreateBitCast(cand, intTy);
 						return ir::Value::get(ctx->irCtx->builder.CreateICmpEQ(cand, llvm::ConstantInt::get(intTy, 0u)),

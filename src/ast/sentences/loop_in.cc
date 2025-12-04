@@ -161,25 +161,25 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		auto itemVar = mainBlock->new_local(itemName.value, elemUseTy, false, ctx->irCtx, itemName.range);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),
 		                                indexVar->get_llvm());
-		ctx->irCtx->builder.CreateCondBr(
-		    isTyByteString
-		        ? ctx->irCtx->builder.CreateAnd(
-		              ctx->irCtx->builder.CreateICmpNE(
-		                  ctx->irCtx->builder.CreatePtrDiff(
-		                      llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx), candExp->get_llvm(),
-		                      llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(candType->get_llvm_type()))),
-		                  llvm::ConstantInt::get(
-		                      ir::NativeType::get_ptrdiff_unsigned(
-		                          candType->as_native_type()->get_subtype()->as_ptr()->get_address_space(), ctx->irCtx)
-		                          ->get_llvm_type(),
-		                      0, false)),
-		              ctx->irCtx->builder.CreateICmpNE(
-		                  ctx->irCtx->builder.CreateLoad(llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx),
-		                                                 candExp->get_llvm()),
-		                  zeroU8))
-		        : ctx->irCtx->builder.CreateICmpULT(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),
-		                                            lenVal),
-		    loopBlock->get_bb(), restBlock->get_bb());
+		if (isTyByteString) {
+			const auto ptrTy    = candType->as_native_type()->get_subtype()->as_ptr();
+			const auto intPtrTy = llvm::Type::getIntNTy(
+			    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
+			                           ctx->irCtx->llctx, ptrTy->usable_address_space(ctx->irCtx))));
+			ctx->irCtx->builder.CreateCondBr(
+			    ctx->irCtx->builder.CreateAnd(
+			        ctx->irCtx->builder.CreateICmpNE(ctx->irCtx->builder.CreatePtrToInt(candExp->get_llvm(), intPtrTy),
+			                                         llvm::ConstantInt::get(intPtrTy, 0, false)),
+			        ctx->irCtx->builder.CreateICmpNE(
+			            ctx->irCtx->builder.CreateLoad(llvm::IntegerType::getInt8Ty(ctx->irCtx->llctx),
+			                                           candExp->get_llvm()),
+			            zeroU8)),
+			    loopBlock->get_bb(), restBlock->get_bb());
+		} else {
+			ctx->irCtx->builder.CreateCondBr(
+			    ctx->irCtx->builder.CreateICmpULT(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false), lenVal),
+			    loopBlock->get_bb(), restBlock->get_bb());
+		}
 		// Loop block begins
 		loopBlock->set_active(ctx->irCtx->builder);
 		llvm::Value* llItemVal = nullptr;

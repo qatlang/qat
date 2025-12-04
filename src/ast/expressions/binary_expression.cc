@@ -623,12 +623,16 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				rhsType = rhsValueType;
 				rhsVal  = rhsEmit->get_llvm();
 			}
+			auto intPtrTy = llvm::Type::getIntNTy(
+			    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
+			                           ctx->irCtx->llctx, rhsValueType->as_ptr()->usable_address_space(ctx->irCtx))));
 			// auto ptrTy = lhsValueType->as_ptr();
 			if (op == OperatorKind::EQUAL_TO) {
 				SHOW("Pointer is normal")
 				auto finalComparison = ctx->irCtx->builder.CreateICmpEQ(
-				    ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
-				    llvm::ConstantInt::get(usizeTy, 0u));
+				    ctx->irCtx->builder.CreateSub(ctx->irCtx->builder.CreatePtrToInt(lhsVal, intPtrTy),
+				                                  ctx->irCtx->builder.CreatePtrToInt(rhsVal, intPtrTy)),
+				    llvm::ConstantInt::get(intPtrTy, 0u, true));
 				if (lhsCount && rhsCount) {
 					finalComparison = ctx->irCtx->builder.CreateAnd(
 					    finalComparison, ctx->irCtx->builder.CreateICmpEQ(lhsCount, rhsCount));
@@ -637,8 +641,9 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				    ->with_range(fileRange);
 			} else if (op == OperatorKind::NOT_EQUAL_TO) {
 				auto finalComparison = ctx->irCtx->builder.CreateICmpNE(
-				    ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), lhsVal, rhsVal),
-				    llvm::ConstantInt::get(usizeTy, 0u));
+				    ctx->irCtx->builder.CreateSub(ctx->irCtx->builder.CreatePtrToInt(lhsVal, intPtrTy),
+				                                  ctx->irCtx->builder.CreatePtrToInt(rhsVal, intPtrTy)),
+				    llvm::ConstantInt::get(usizeTy, 0u, true));
 				if (lhsCount && rhsCount) {
 					finalComparison = ctx->irCtx->builder.CreateOr(
 					    finalComparison, ctx->irCtx->builder.CreateICmpNE(lhsCount, rhsCount));

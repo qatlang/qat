@@ -42,41 +42,33 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			valType = valType->as_native_type()->get_subtype();
 		}
 		if (valType->is_ptr()) {
+			auto valPtrTy = valType->as_ptr();
 			if (destTy->is_ptr()) {
 				loadRef();
 				auto targetTy =
 				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_ptr() : destTy->as_ptr();
-				if (not valType->as_ptr()->get_owner().is_same(targetTy->get_owner()) &&
-				    not targetTy->get_owner().is_none()) {
+				if (not valPtrTy->get_owner().is_same(targetTy->get_owner()) && not targetTy->get_owner().is_none()) {
 					ctx->Error(
-					    "This change of ownership of the pointer type is not allowed. Pointers with valid ownership can only be converted to anonymous ownership",
+					    "This change of ownership of the pointer type is not allowed. Pointers with known ownership can only be converted to anonymous ownership",
 					    fileRange);
 				}
-				if (valType->as_ptr()->is_nullable() != targetTy->as_ptr()->is_nullable()) {
-					if (valType->as_ptr()->is_nullable()) {
+				if (valPtrTy->is_nullable() != targetTy->as_ptr()->is_nullable()) {
+					if (valPtrTy->is_nullable()) {
 						auto  fun           = ctx->get_fn();
 						auto* currBlock     = fun->get_block();
 						auto* nullTrueBlock = ir::Block::create(fun, currBlock);
 						auto* restBlock     = ir::Block::create(fun, currBlock->get_parent());
 						restBlock->link_previous_block(currBlock);
+						auto intPtrTy = llvm::Type::getIntNTy(
+						    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
+						                           ctx->irCtx->llctx, valPtrTy->usable_address_space(ctx->irCtx))));
 						ctx->irCtx->builder.CreateCondBr(
 						    ctx->irCtx->builder.CreateICmpEQ(
-						        ctx->irCtx->builder.CreatePtrDiff(
-						            valType->as_ptr()->get_subtype()->is_type_sized()
-						                ? valType->as_ptr()->get_subtype()->get_llvm_type()
-						                : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-						            valType->as_ptr()->is_multi()
-						                ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
-						                : val->get_llvm(),
-						            llvm::ConstantPointerNull::get(
-						                llvm::PointerType::get(valType->as_ptr()->get_subtype()->is_type_sized()
-						                                           ? valType->as_ptr()->get_subtype()->get_llvm_type()
-						                                           : llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-						                                       ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-						        llvm::ConstantInt::get(
-						            ir::NativeType::get_ptrdiff(valType->as_ptr()->get_address_space(), ctx->irCtx)
-						                ->get_llvm_type(),
-						            0u, true)),
+						        ctx->irCtx->builder.CreatePtrToInt(
+						            valPtrTy->is_multi() ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
+						                                 : val->get_llvm(),
+						            intPtrTy),
+						        llvm::ConstantInt::get(intPtrTy, 0u, false)),
 						    nullTrueBlock->get_bb(), restBlock->get_bb());
 						nullTrueBlock->set_active(ctx->irCtx->builder);
 						ir::Logic::panic_in_function(
@@ -90,15 +82,15 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						restBlock->set_active(ctx->irCtx->builder);
 					}
 				}
-				if (not valType->as_ptr()->get_subtype()->is_same(targetTy->get_subtype())) {
+				if (not valPtrTy->get_subtype()->is_same(targetTy->get_subtype())) {
 					ctx->Error(
 					    "The value to be converted is of type " + ctx->color(typ->to_string()) +
 					        " but the destination type is " + ctx->color(destTy->to_string()) +
 					        ". The subtype of the pointer types do not match and conversion between them is not allowed. Use casting instead",
 					    fileRange);
 				}
-				if (valType->as_ptr()->is_multi() != targetTy->as_ptr()->is_multi()) {
-					if (valType->as_ptr()->is_multi()) {
+				if (valPtrTy->is_multi() != targetTy->as_ptr()->is_multi()) {
+					if (valPtrTy->is_multi()) {
 						return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy,
 						                      false);
 					} else {
@@ -113,7 +105,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 						return newVal->to_new_ir_value();
 					}
 				}
-				if (valType->as_ptr()->is_multi()) {
+				if (valPtrTy->is_multi()) {
 					val->get_llvm()->mutateType(destTy->get_llvm_type());
 					return ir::Value::get(val->get_llvm(), destTy, false);
 				} else {
@@ -124,7 +116,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			                                        destTy->as_native_type()->is_native_uintptr())) {
 				loadRef();
 				return ir::Value::get(ctx->irCtx->builder.CreateBitCast(
-				                          valType->as_ptr()->is_multi()
+				                          valPtrTy->is_multi()
 				                              ? ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u})
 				                              : val->get_llvm(),
 				                          destTy->get_llvm_type()),

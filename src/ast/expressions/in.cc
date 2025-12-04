@@ -105,13 +105,11 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 		}
 		dummyValue->get_llvm()->replaceAllUsesWith(result->get_llvm());
 		auto ptrTy = llvm::cast<llvm::PointerType>(dummyRefTy->get_llvm_type());
+		auto intPtrTy =
+		    llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(ptrTy));
 		ctx->irCtx->builder.CreateCondBr(
-		    ctx->irCtx->builder.CreateICmpNE(
-		        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), result->get_llvm(),
-		                                          llvm::ConstantPointerNull::get(ptrTy)),
-		        llvm::ConstantInt::get(
-		            llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(ptrTy)),
-		            0u)),
+		    ctx->irCtx->builder.CreateICmpNE(ctx->irCtx->builder.CreatePtrToInt(result->get_llvm(), intPtrTy),
+		                                     llvm::ConstantInt::get(intPtrTy, 0u, false)),
 		    nonNullBlock->get_bb(), restBlock->get_bb());
 		currBlock->set_active(ctx->irCtx->builder);
 	} else {
@@ -151,13 +149,11 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			ctx->Error("Unsupported type of allocator for in-expression", fileRange);
 		}
 		auto ptrTy = llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getProgramAddressSpace());
+		auto intPtrTy =
+		    llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(ptrTy));
 		ctx->irCtx->builder.CreateCondBr(
-		    ctx->irCtx->builder.CreateICmpNE(
-		        ctx->irCtx->builder.CreatePtrDiff(llvm::Type::getInt8Ty(ctx->irCtx->llctx), result->get_llvm(),
-		                                          llvm::ConstantPointerNull::get(ptrTy)),
-		        llvm::ConstantInt::get(
-		            llvm::Type::getIntNTy(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(ptrTy)),
-		            0u)),
+		    ctx->irCtx->builder.CreateICmpNE(ctx->irCtx->builder.CreatePtrToInt(result->get_llvm(), intPtrTy),
+		                                     llvm::ConstantInt::get(intPtrTy, 0u, false)),
 		    nonNullBlock->get_bb(), restBlock->get_bb());
 		currBlock->set_active(ctx->irCtx->builder);
 		ctx->irCtx->builder.CreateStore(finalVal->get_llvm(), result->get_llvm());

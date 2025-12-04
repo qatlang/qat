@@ -82,31 +82,17 @@ ir::Value* OrUseValue::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 		llvm::Value* condition = nullptr;
-		auto         ptrDiffTy = llvm::Type::getIntNTy(
-            ctx->irCtx->llctx,
-            ctx->irCtx->clangTargetInfo->getTypeWidth(ctx->irCtx->clangTargetInfo->getPtrDiffType(
-                clang::getLangASFromTargetAS(ptrTy->has_address_space()
-		                                                 ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-		                                                 : ctx->irCtx->dataLayout.getProgramAddressSpace()))));
+		auto         intPtrTy  = llvm::Type::getIntNTy(
+            ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(
+                                   llvm::PointerType::get(ctx->irCtx->llctx, ptrTy->usable_address_space(ctx->irCtx))));
 		if (ptrTy->is_multi()) {
 			condition = ctx->irCtx->builder.CreateICmpNE(
-			    ctx->irCtx->builder.CreatePtrDiff(
-			        llvm::Type::getInt8Ty(ctx->irCtx->llctx),
-			        ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {1u}),
-			        llvm::ConstantPointerNull::get(llvm::PointerType::get(
-			            ctx->irCtx->llctx, ptrTy->get_address_space().has_value()
-			                                   ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-			                                   : ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-			    llvm::ConstantInt::get(ptrDiffTy, 0u, true));
+			    ctx->irCtx->builder.CreatePtrToInt(ctx->irCtx->builder.CreateExtractValue(exp->get_llvm(), {0u}),
+			                                       intPtrTy),
+			    llvm::ConstantInt::get(intPtrTy, 0u, true));
 		} else {
-			condition = ctx->irCtx->builder.CreateICmpNE(
-			    ctx->irCtx->builder.CreatePtrDiff(
-			        llvm::Type::getInt8Ty(ctx->irCtx->llctx), exp->get_llvm(),
-			        llvm::ConstantPointerNull::get(llvm::PointerType::get(
-			            ctx->irCtx->llctx, ptrTy->get_address_space().has_value()
-			                                   ? ptrTy->get_address_space().value().get_number(ctx->irCtx)
-			                                   : ctx->irCtx->dataLayout.getProgramAddressSpace()))),
-			    llvm::ConstantInt::get(ptrDiffTy, 0u, true));
+			condition = ctx->irCtx->builder.CreateICmpNE(ctx->irCtx->builder.CreatePtrToInt(exp->get_llvm(), intPtrTy),
+			                                             llvm::ConstantInt::get(intPtrTy, 0u, true));
 		}
 		auto currBlock  = ctx->fn->get_block();
 		auto trueBlock  = ir::Block::create(ctx->fn, currBlock);

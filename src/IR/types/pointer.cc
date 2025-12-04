@@ -150,6 +150,14 @@ Maybe<AddressSpace> const& PtrType::get_address_space() const { return addressSp
 
 PtrOwner PtrType::get_owner() const { return owner; }
 
+u32 PtrType::usable_address_space(ir::Ctx* irCtx) const {
+	if (addressSpace.has_value()) {
+		return addressSpace->get_number(irCtx);
+	} else {
+		return irCtx->dataLayout.getProgramAddressSpace();
+	}
+}
+
 TypeKind PtrType::type_kind() const { return TypeKind::POINTER; }
 
 String PtrType::to_string() const {

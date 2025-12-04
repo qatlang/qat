@@ -86,6 +86,8 @@ class PtrType : public Type {
 
 	useit bool has_address_space() const { return addressSpace.has_value(); }
 
+	useit u32 usable_address_space(ir::Ctx* irCtx) const;
+
 	useit Maybe<AddressSpace> const& get_address_space() const;
 
 	useit bool is_subtype_variable() const;

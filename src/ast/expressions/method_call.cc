@@ -61,23 +61,6 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 		           instance->fileRange);
 	}
 	if (instType->is_expanded()) {
-		if (memberName.value == "end") {
-			if (isExpSelf) {
-				ctx->Error("Cannot call the destructor on the parent instance. This is not allowed", fileRange);
-			}
-			if (not instType->as_expanded()->has_destructor()) {
-				ctx->Error("Type " + ctx->color(instType->as_expanded()->get_full_name()) +
-				               " does not have a destructor",
-				           fileRange);
-			}
-			auto* desFn = instType->as_expanded()->get_destructor();
-			if (not inst->is_ghost_ref() && not inst->is_ref()) {
-				inst = inst->make_local(ctx, None, instance->fileRange);
-			} else if (inst->is_ref()) {
-				inst->load_ghost_ref(ctx->irCtx->builder);
-			}
-			return desFn->call(ctx->irCtx, {inst->get_llvm()}, None, ctx->mod);
-		}
 		auto* eTy = instType->as_expanded();
 		if (callNature.has_value()) {
 			if (callNature.value().first) {

@@ -10,8 +10,7 @@ namespace qat::ir {
 // NOLINTBEGIN(readability-identifier-length)
 bool has_terminator_instruction(llvm::BasicBlock* bb) {
 	for (auto& inst : *bb) {
-		if (llvm::isa<llvm::BranchInst>(&inst) || llvm::isa<llvm::ReturnInst>(&inst) ||
-		    llvm::isa<llvm::InvokeInst>(&inst) || llvm::isa<llvm::SwitchInst>(&inst)) {
+		if (is_terminator_instruction(&inst)) {
 			return true;
 		}
 	}
@@ -20,7 +19,11 @@ bool has_terminator_instruction(llvm::BasicBlock* bb) {
 
 bool is_terminator_instruction(llvm::Value* value) {
 	return llvm::isa<llvm::BranchInst>(value) || llvm::isa<llvm::ReturnInst>(value) ||
-	       llvm::isa<llvm::InvokeInst>(value) || llvm::isa<llvm::SwitchInst>(value);
+	       llvm::isa<llvm::InvokeInst>(value) || llvm::isa<llvm::SwitchInst>(value) ||
+	       llvm::isa<llvm::UnreachableInst>(value) || llvm::isa<llvm::IndirectBrInst>(value) ||
+	       llvm::isa<llvm::CallBrInst>(value) || llvm::isa<llvm::ResumeInst>(value) ||
+	       llvm::isa<llvm::CatchSwitchInst>(value) || llvm::isa<llvm::CleanupReturnInst>(value) ||
+	       llvm::isa<llvm::CatchReturnInst>(value);
 }
 
 llvm::Instruction* add_branch(llvm::IRBuilder<>& builder, llvm::BasicBlock* dest) {

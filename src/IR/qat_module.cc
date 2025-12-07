@@ -23,14 +23,12 @@
 #include "./types/toggle.hpp"
 #include "./types/void.hpp"
 #include "./value.hpp"
-#include "llvm/Analysis/CGSCCPassManager.h"
-#include "llvm/IR/PassManager.h"
-#include "llvm/Transforms/Scalar/LowerMatrixIntrinsics.h"
 
 #include <filesystem>
 #include <fstream>
 #include <lld/Common/Driver.h>
 #include <llvm/ADT/ArrayRef.h>
+#include <llvm/Analysis/CGSCCPassManager.h>
 #include <llvm/Config/llvm-config.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/IR/DerivedTypes.h>
@@ -38,6 +36,7 @@
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
+#include <llvm/IR/PassManager.h>
 #include <llvm/IR/Type.h>
 #include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/CodeGen.h>
@@ -46,6 +45,7 @@
 #include <llvm/Target/TargetMachine.h>
 #include <llvm/TargetParser/Triple.h>
 #include <llvm/Transforms/Scalar.h>
+#include <llvm/Transforms/Scalar/LowerMatrixIntrinsics.h>
 #include <memory>
 #include <system_error>
 

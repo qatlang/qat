@@ -106,9 +106,15 @@ class Block : public Uniq {
   public:
 	Maybe<FileRangePtr> fileRange;
 
-	Block(Function* _fn, Block* _parent);
+	Block(Function* fn, Block* parent);
+
+	Block(FileRangePtr fileRange, String astName, Function* fn, Block* parent);
 
 	useit static Block* create(Function* fn, Block* parent) { return std::construct_at(OwnNormal(Block), fn, parent); }
+
+	useit static Block* create(FileRangePtr fileRange, String astName, Function* fn, Block* parent) {
+		return std::construct_at(OwnNormal(Block), fileRange, std::move(astName), fn, parent);
+	}
 
 	~Block() = default;
 
@@ -222,7 +228,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 	bool                  hasVariadicArguments;
 	bool                  isInline;
 	Vec<Block*>           blocks;
-	ir::LocalValue*       strComparisonIndex = nullptr;
+	ir::LocalValue*       commonIndex = nullptr;
 	Maybe<MetaInfo>       metaInfo;
 	Ctx*                  ctx;
 

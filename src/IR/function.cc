@@ -11,6 +11,7 @@
 #include "./method.hpp"
 #include "./qat_module.hpp"
 #include "./types/function.hpp"
+#include "./types/native_type.hpp"
 #include "./types/pointer.hpp"
 #include "./types/qat_type.hpp"
 #include "./types/region.hpp"
@@ -70,6 +71,25 @@ Block::Block(Function* _fn, Block* _parent) : parent(_parent), fn(_fn), index(0)
 	}
 	name = (has_parent() ? (parent->get_name() + "_") : "") + std::to_string(index) + "b";
 	bb   = llvm::BasicBlock::Create(fn->get_llvm_function()->getContext(), name, fn->get_llvm_function());
+	SHOW("Created llvm::BasicBlock " << name)
+}
+
+Block::Block(FileRangePtr _fileRange, String astName, Function* _fn, Block* _parent)
+    : parent(_parent), fn(_fn), index(0) {
+	if (parent) {
+		index = parent->children.size();
+		parent->children.push_back(this);
+	} else {
+		index = fn->blocks.size();
+		fn->blocks.push_back(this);
+	}
+	bb = llvm::BasicBlock::Create(
+	    fn->get_llvm_function()->getContext(),
+	    _fileRange->file.filename().string() + "{" + std::to_string(_fileRange->start.line) + ":" +
+	        std::to_string(_fileRange->start.byteOffset) + " -> " + std::to_string(_fileRange->end.line) + ":" +
+	        std::to_string(_fileRange->end.byteOffset) + (astName.empty() ? "}" : "}:") + astName,
+	    fn->get_llvm_function());
+	name = bb->getName();
 	SHOW("Created llvm::BasicBlock " << name)
 }
 
@@ -382,12 +402,11 @@ void Function::update_overview() {
 String Function::get_full_name() const { return mod->get_fullname_with_child(name.value); }
 
 ir::LocalValue* Function::get_str_comparison_index(ir::Ctx* irCtx) {
-	if (not strComparisonIndex) {
-		strComparisonIndex = get_first_block()->new_local("qat'strCmpInd",
-		                                                  // NOLINTNEXTLINE(readability-magic-numbers)
-		                                                  ir::UnsignedType::create(64u, ctx), true, irCtx, name.range);
+	if (not commonIndex) {
+		commonIndex =
+		    get_first_block()->new_local("qat'index", ir::NativeType::get_usize(ctx), true, irCtx, name.range);
 	}
-	return strComparisonIndex;
+	return commonIndex;
 }
 
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,

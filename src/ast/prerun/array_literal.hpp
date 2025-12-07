@@ -7,20 +7,17 @@ namespace qat::ast {
 
 class PrerunArrayLiteral final : public PrerunExpression, public TypeInferrable {
 	Vec<PrerunExpression*> valuesExp;
+	Type*                  elemTyHint;
 
   public:
-	PrerunArrayLiteral(Vec<PrerunExpression*> _elements, FileRangePtr _fileRange)
-	    : PrerunExpression(_fileRange), valuesExp(_elements) {}
+	PrerunArrayLiteral(Vec<PrerunExpression*> _elements, Type* _elemTyHint, FileRangePtr _fileRange)
+	    : PrerunExpression(_fileRange), valuesExp(_elements), elemTyHint(_elemTyHint) {}
 
-	useit static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(PrerunArrayLiteral), elements, fileRange);
+	useit static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, Type* elemTyHint, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(PrerunArrayLiteral), elements, elemTyHint, fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
-		for (auto val : valuesExp) {
-			UPDATE_DEPS(val);
-		}
-	}
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final;
 
 	TYPE_INFERRABLE_FUNCTIONS
 

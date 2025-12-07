@@ -1,9 +1,20 @@
 #include "./array_literal.hpp"
 #include "../../IR/types/array.hpp"
+#include "../types/qat_type.hpp"
 
 #include <llvm/IR/Constants.h>
 
 namespace qat::ast {
+
+void PrerunArrayLiteral::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
+                                             EmitCtx* ctx) {
+	if (elemTyHint) {
+		UPDATE_DEPS(elemTyHint);
+	}
+	for (auto val : valuesExp) {
+		UPDATE_DEPS(val);
+	}
+}
 
 ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 	if (is_type_inferred()) {
@@ -19,11 +30,26 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 			           fileRange);
 		}
 	}
-	ir::Type*            elementType = nullptr;
+	ir::Type* elementType = nullptr;
+	if (elemTyHint) {
+		elementType = elemTyHint->emit(ctx);
+		if (is_type_inferred()) {
+			if (elementType->is_same(inferredType->as_array()->get_element_type())) {
+				ctx->Error(
+				    "The hint provided about the type of the element of this array literal is " +
+				        ctx->color(elementType->to_string()) +
+				        ", which does not match with the element type of the array type inferred from scope, which is " +
+				        ctx->color(inferredType->to_string()),
+				    fileRange);
+			}
+		}
+	} else if (is_type_inferred()) {
+		elementType = inferredType->as_array()->get_element_type();
+	}
 	Vec<llvm::Constant*> constVals;
 	for (usize i = 0; i < valuesExp.size(); i++) {
-		if (is_type_inferred() && valuesExp[i]->has_type_inferrance()) {
-			valuesExp[i]->as_type_inferrable()->set_inference_type(inferredType->as_array()->get_element_type());
+		if (elementType && valuesExp[i]->has_type_inferrance()) {
+			valuesExp[i]->as_type_inferrable()->set_inference_type(elementType);
 		}
 		auto itVal = valuesExp.at(i)->emit(ctx);
 		if (is_type_inferred()) {
@@ -46,6 +72,12 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 			}
 		}
 		constVals.push_back(itVal->get_llvm_constant());
+	}
+	if (not elementType) {
+		ctx->Error("This is an empty array literal. Either the type of this expression should be inferred from scope,"
+		           " or a hint about the element of the array should be provided. You can use the syntax " +
+		               ctx->color("[]:[ElementType]") + " to provide hint about the element type of the array",
+		           fileRange);
 	}
 	return ir::PrerunValue::get(
 	    llvm::ConstantArray::get(is_type_inferred()

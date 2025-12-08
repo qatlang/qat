@@ -17,34 +17,36 @@ void PrerunArrayLiteral::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depe
 }
 
 ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
+	ir::Type* elementType = nullptr;
+	if (elemTyHint) {
+		elementType = elemTyHint->emit(ctx);
+	}
+	ir::ArrayType* arrTy = nullptr;
 	if (is_type_inferred()) {
 		if (not inferredType->is_array()) {
 			ctx->Error("This expression expects an array type, but the type inferred from scope is " +
 			               ctx->color(inferredType->to_string()),
 			           fileRange);
 		}
+		arrTy = inferredType->as_array();
 		if (inferredType->as_array()->get_length() != valuesExp.size()) {
 			ctx->Error("The inferred type is " + ctx->color(inferredType->to_string()) + " expecting " +
 			               ctx->color(std::to_string(inferredType->as_array()->get_length())) + " elements, but " +
 			               ctx->color(std::to_string(valuesExp.size())) + " values were provided instead",
 			           fileRange);
 		}
-	}
-	ir::Type* elementType = nullptr;
-	if (elemTyHint) {
-		elementType = elemTyHint->emit(ctx);
-		if (is_type_inferred()) {
-			if (elementType->is_same(inferredType->as_array()->get_element_type())) {
+		if (elementType) {
+			if (not elementType->is_same(inferredType->as_array()->get_element_type())) {
 				ctx->Error(
 				    "The hint provided about the type of the element of this array literal is " +
 				        ctx->color(elementType->to_string()) +
-				        ", which does not match with the element type of the array type inferred from scope, which is " +
+				        ", which does not match with the element type of the array type as inferred from scope, which is " +
 				        ctx->color(inferredType->to_string()),
 				    fileRange);
 			}
+		} else {
+			elementType = arrTy->get_element_type();
 		}
-	} else if (is_type_inferred()) {
-		elementType = inferredType->as_array()->get_element_type();
 	}
 	Vec<llvm::Constant*> constVals;
 	for (usize i = 0; i < valuesExp.size(); i++) {
@@ -52,24 +54,16 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 			valuesExp[i]->as_type_inferrable()->set_inference_type(elementType);
 		}
 		auto itVal = valuesExp.at(i)->emit(ctx);
-		if (is_type_inferred()) {
-			if (not inferredType->as_array()->get_element_type()->is_same(itVal->get_ir_type())) {
-				ctx->Error("This expression is of type " + ctx->color(itVal->get_ir_type()->to_string()) +
-				               " which does not match with the expected element type of the inferred type, which is " +
-				               ctx->color(inferredType->as_array()->get_element_type()->to_string()),
-				           valuesExp[i]->fileRange);
+		if (elementType) {
+			if (not elementType->is_same(itVal->get_ir_type())) {
+				ctx->Error(
+				    "Type of this expression is " + ctx->color(itVal->get_ir_type()->to_string()) +
+				        " which does not match the type of the element of the array as inferred from scope, which is " +
+				        ctx->color(elementType->to_string()),
+				    valuesExp[i]->fileRange);
 			}
 		} else {
-			if (elementType) {
-				if (not elementType->is_same(itVal->get_ir_type())) {
-					ctx->Error("Type of this expression is " + ctx->color(itVal->get_ir_type()->to_string()) +
-					               " which does not match the type of the previous elements, which is " +
-					               ctx->color(elementType->to_string()),
-					           valuesExp[i]->fileRange);
-				}
-			} else {
-				elementType = itVal->get_ir_type();
-			}
+			elementType = itVal->get_ir_type();
 		}
 		constVals.push_back(itVal->get_llvm_constant());
 	}
@@ -79,12 +73,11 @@ ir::PrerunValue* PrerunArrayLiteral::emit(EmitCtx* ctx) {
 		               ctx->color("[]:[ElementType]") + " to provide hint about the element type of the array",
 		           fileRange);
 	}
+	if (not arrTy) {
+		arrTy = ir::ArrayType::get(elementType, valuesExp.size(), ctx->irCtx->llctx);
+	}
 	return ir::PrerunValue::get(
-	    llvm::ConstantArray::get(is_type_inferred()
-	                                 ? llvm::cast<llvm::ArrayType>(inferredType->get_llvm_type())
-	                                 : llvm::ArrayType::get(elementType->get_llvm_type(), constVals.size()),
-	                             constVals),
-	    is_type_inferred() ? inferredType : ir::ArrayType::get(elementType, constVals.size(), ctx->irCtx->llctx));
+	    llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(arrTy->get_llvm_type()), constVals), arrTy);
 }
 
 String PrerunArrayLiteral::to_string() const {

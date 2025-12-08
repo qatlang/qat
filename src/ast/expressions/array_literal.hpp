@@ -14,6 +14,7 @@ class ArrayLiteral final : public Expression,
 
   private:
 	Vec<Expression*> values;
+	Type*            elemTyHint;
 
   public:
 	ArrayLiteral(Vec<Expression*> _values, FileRangePtr _fileRange)

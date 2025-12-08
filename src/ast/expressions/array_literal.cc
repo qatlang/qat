@@ -1,29 +1,48 @@
 #include "./array_literal.hpp"
 #include "../../IR/logic.hpp"
 #include "../../IR/types/array.hpp"
+#include "../types/qat_type.hpp"
 
 #include <llvm/IR/Constants.h>
 
 namespace qat::ast {
 
 ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
-	FnAtEnd        fnObj{[&] { createIn = nullptr; }};
+	FnAtEnd   fnObj{[&] { createIn = nullptr; }};
+	ir::Type* elemTy = nullptr;
+	if (elemTyHint) {
+		elemTy = elemTyHint->emit(ctx);
+	}
 	ir::ArrayType* arrTy = nullptr;
-	if (is_type_inferred() && inferredType->is_array() && inferredType->as_array()->get_length() != values.size()) {
-		auto infLen = inferredType->as_array()->get_length();
-		ctx->Error("The length of the array type inferred is " + ctx->color(std::to_string(infLen)) + ", but " +
-		               ((values.size() < infLen) ? "only " : "") + ctx->color(std::to_string(values.size())) +
-		               " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
-		           fileRange);
-	} else if (is_type_inferred() && not inferredType->is_array()) {
-		ctx->Error("Type inferred from scope for this expression is " + ctx->color(inferredType->to_string()) +
-		               ". This expression expects to be of array type",
-		           fileRange);
+	if (is_type_inferred()) {
+		if (not inferredType->is_array()) {
+			ctx->Error("Type inferred from scope for this expression is " + ctx->color(inferredType->to_string()) +
+			               ". This expression is an array literal.",
+			           fileRange);
+		}
+		if (inferredType->as_array()->get_length() != values.size()) {
+			auto infLen = inferredType->as_array()->get_length();
+			ctx->Error("The length of the array type inferred is " + ctx->color(std::to_string(infLen)) + ", but " +
+			               ((values.size() < infLen) ? "only " : "") + ctx->color(std::to_string(values.size())) +
+			               " value" + ((values.size() > 1u) ? "s were" : "was") + " provided.",
+			           fileRange);
+		}
+		arrTy = inferredType->as_array();
+		if (elemTy) {
+			if (not arrTy->get_element_type()->is_same(elemTy)) {
+				ctx->Error(
+				    "The hint provided about the type of the element of this array literal is " +
+				        ctx->color(elemTy->to_string()) +
+				        ", which does not match with the element type of the array type as inferred from scope, which is " +
+				        ctx->color(inferredType->to_string()),
+				    fileRange);
+			}
+		} else {
+			elemTy = arrTy->get_element_type();
+		}
 	}
 	Vec<ir::Value*> valsIR;
-	auto*           elemTy =
-        arrTy ? arrTy->get_element_type() : (inferredType ? inferredType->as_array()->get_element_type() : nullptr);
-	bool areAllValsConstant = true;
+	bool            areAllValsConstant = true;
 	for (usize i = 0; i < values.size(); i++) {
 		if (values[i]->has_type_inferrance() && elemTy) {
 			values[i]->as_type_inferrable()->set_inference_type(elemTy);
@@ -36,15 +55,21 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 			areAllValsConstant = false;
 			valsIR[i] =
 			    ir::Logic::handle_pass_semantics(ctx, valsIR[i]->get_pass_type(), valsIR[i], values[i]->fileRange);
-			if (not valsIR[i]->get_pass_type()->is_same(elemTy)) {
-				ctx->Error("The expected type of this expression is " + ctx->color(elemTy->to_string()) +
-				               " but the provided expression is of type " +
-				               ctx->color(valsIR[i]->get_ir_type()->to_string()) + ". These do not match",
-				           values.at(i)->fileRange);
-			}
+		}
+		if (not valsIR[i]->get_ir_type()->is_same(elemTy)) {
+			ctx->Error("The expected type of this expression is " + ctx->color(elemTy->to_string()) +
+			               " but the provided expression is of type " +
+			               ctx->color(valsIR[i]->get_ir_type()->to_string()) + ". These do not match",
+			           values.at(i)->fileRange);
 		}
 	}
-	if (elemTy && not arrTy) {
+	if (not elemTy) {
+		ctx->Error("This is an empty array literal. Either the type of this expression should be inferred from scope,"
+		           " or a hint about the element of the array should be provided. You can use the syntax " +
+		               ctx->color("[]:[ElementType]") + " to provide hint about the element type of the array",
+		           fileRange);
+	}
+	if (not arrTy) {
 		arrTy = ir::ArrayType::get(elemTy, values.size(), ctx->irCtx->llctx);
 	}
 	if (not values.empty()) {
@@ -88,8 +113,10 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 		}
 		return get_creation_result(ctx->irCtx, arrTy, fileRange);
 	} else {
-		if (not arrTy) {
-			ctx->Error("Could not infer element type for the empty array", fileRange);
+		if (isLocalDecl()) {
+			createIn = ctx->get_fn()->get_block()->new_local(
+			    irName.has_value() ? irName->value : ctx->get_fn()->get_random_alloca_name(), arrTy, isVar, ctx->irCtx,
+			    irName.has_value() ? irName->range : fileRange);
 		}
 		if (canCreateIn()) {
 			ctx->irCtx->builder.CreateStore(
@@ -98,9 +125,7 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 			return get_creation_result(ctx->irCtx, arrTy, fileRange);
 		} else {
 			return ir::PrerunValue::get(
-			           llvm::ConstantArray::get(
-			               llvm::ArrayType::get(inferredType->as_array()->get_element_type()->get_llvm_type(), 0u), {}),
-			           ir::ArrayType::get(inferredType->as_array()->get_element_type(), 0u, ctx->irCtx->llctx))
+			           llvm::ConstantArray::get(llvm::cast<llvm::ArrayType>(arrTy->get_llvm_type()), {}), arrTy)
 			    ->with_range(fileRange);
 		}
 	}

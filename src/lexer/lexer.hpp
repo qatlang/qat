@@ -23,6 +23,8 @@ class Lexer {
 	Deque<Token>  buffer;
 	bool          repeatingToken = false;
 
+	bool isMultiStringAllowed = false;
+
 	Vec<TokenType> bracketOccurences;
 
 	ir::Ctx* irCtx;

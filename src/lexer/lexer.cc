@@ -694,16 +694,21 @@ Token Lexer::tokeniser() {
 						switch (byteLen.value()) {
 							case 1: {
 								if (is_invisible_ascii_char(current)) {
-									if (ascii_char_has_standard_escape(current)) {
-										throw_error(
-										    "Found an invisible character here that can be encoded as a standard escape sequence. "
-										    "Please change this to " +
-										    get_ascii_standard_escape(current));
-									} else {
-										throw_error(
-										    "Found an invisible character here. If this was intentional, please change this to \\u{" +
-										    utils::to_hex(current, 4) +
-										    "}. Such characters should be encoded as Unicode scalar values");
+									if (not(isMultiStringAllowed && (current == '\n' || current == '\t'))) {
+										if (ascii_char_has_standard_escape(current)) {
+											throw_error(
+											    "Found an invisible character here that can be encoded as a standard escape sequence. "
+											    "Please change this to " +
+											    get_ascii_standard_escape(current) +
+											    ((current == '\n')
+											         ? ". If you want to use multiline strings, use the syntax multi\"String content\""
+											         : ""));
+										} else {
+											throw_error(
+											    "Found an invisible character here. If this was intentional, please change this to \\u{" +
+											    utils::to_hex(current, 4) +
+											    "}. Such characters should be encoded as Unicode scalar values");
+										}
 									}
 								}
 								str_val += current;
@@ -810,6 +815,7 @@ Token Lexer::tokeniser() {
 				throw_error("Could not find \" at the end of the string literal");
 			}
 			read();
+			isMultiStringAllowed = false;
 			return Token::valued(TokenType::StringLiteral, str_val, this->get_position(str_val.length() + 2));
 		}
 		case '0':
@@ -1178,6 +1184,9 @@ Token Lexer::tokeniser() {
 			auto tokRes = word_to_token(idVal, this);
 			if (not tokRes.has_value()) {
 				throw_error("Could not convert " + idVal + " to a keyword or identifier in the language");
+			}
+			if ((tokRes.value().type == TokenType::multiPtrType) && (current == '"')) {
+				isMultiStringAllowed = true;
 			}
 			return tokRes.value();
 		}

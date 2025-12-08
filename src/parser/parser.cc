@@ -178,7 +178,6 @@
 	case TokenType::result:                                                                                            \
 	case TokenType::referenceType:                                                                                     \
 	case TokenType::ptrType:                                                                                           \
-	case TokenType::multiPtrType:                                                                                      \
 	case TokenType::sliceType:
 
 #define META_INTRINSICS_NAME "Intrinsics"
@@ -545,6 +544,17 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 					setCachedPreExp(ast::TypeWrap::create(typeRes.first, false, typeRes.first->fileRange), i);
 					break;
 				}
+			case TokenType::multiPtrType: { // Special case for multiline strings
+				if (is_next(TokenType::StringLiteral, i)) {
+					setCachedPreExp(ast::StringLiteral::create(ValueAt(i + 1), RangeSpan(i, i + 1)), i + 1);
+					i += 1;
+				} else {
+					auto typeRes = do_type(preCtx, i - 1, None, true);
+					i            = typeRes.second;
+					setCachedPreExp(ast::TypeWrap::create(typeRes.first, false, typeRes.first->fileRange), i);
+				}
+				break;
+			}
 			case TokenType::super:
 			case TokenType::identifier: {
 				const auto start  = i;
@@ -5405,6 +5415,17 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					i = typeRes.second;
 					break;
 				}
+			case TokenType::multiPtrType: { // Special case for multiline strings
+				if (is_next(TokenType::StringLiteral, i)) {
+					setCachedExpr(ast::StringLiteral::create(ValueAt(i + 1), RangeSpan(i, i + 1)), i + 1);
+					i += 1;
+				} else {
+					auto typeRes = do_type(preCtx, i - 1, None, true);
+					i            = typeRes.second;
+					setCachedType(typeRes.first);
+				}
+				break;
+			}
 			case TokenType::typeSeparator: {
 				auto          start = i;
 				ast::TypeLike typeLike;

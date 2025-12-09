@@ -29,6 +29,7 @@
 #include "../ast/expressions/copy.hpp"
 #include "../ast/expressions/default.hpp"
 #include "../ast/expressions/dereference.hpp"
+#include "../ast/expressions/end_pointer.hpp"
 #include "../ast/expressions/entity.hpp"
 #include "../ast/expressions/error.hpp"
 #include "../ast/expressions/function_call.hpp"
@@ -6050,26 +6051,38 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							break;
 						}
 					} else if (is_next(TokenType::end, i)) {
-						if (is_next(TokenType::parenthesisOpen, i + 1)) {
-							auto pCloseRes =
-							    get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
-							if (pCloseRes) {
-								setCachedExpr(
-								    ast::MethodCall::create(exp, false, Identifier{"end", RangeAt(i)}, {}, None,
-								                            exp->fileRange->spanTo(RangeSpan(i, pCloseRes.value()))),
-								    pCloseRes.value());
-								i = pCloseRes.value();
-								break;
-							} else {
-								add_error("Expected end for (", RangeAt(i + 2));
-							}
-						} else {
-							add_error("Expected ( to start the destructor call", RangeAt(i));
+						i++;
+						if (not is_next(TokenType::colon, i)) {
+							add_error("Expected : after this", RangeAt(i));
 						}
+						i++;
+						ast::EndPointerKind kind = ast::EndPointerKind::PTR;
+						if (is_next(TokenType::ptrType, i)) {
+							kind = ast::EndPointerKind::PTR;
+						} else if (is_next(TokenType::to, i)) {
+							kind = ast::EndPointerKind::TO;
+						} else if (is_next(TokenType::from, i)) {
+							kind = ast::EndPointerKind::FROM;
+						} else if (is_next(TokenType::multiPtrType, i)) {
+							kind = ast::EndPointerKind::MULTI;
+						} else if (is_next(TokenType::in, i)) {
+							kind = ast::EndPointerKind::RANGE;
+						}
+						i++;
+						if (not is_next(TokenType::parenthesisOpen, i)) {
+							add_error("Expected ( after this", RangeAt(i));
+						}
+						i++;
+						auto pEnd = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
+						if (not pEnd.has_value()) {
+							add_error("Expected ) after this to end the destructor call for pointers", RangeAt(i + 1));
+						}
+						auto args = do_separated_expressions(preCtx, i, pEnd.value());
+						i         = pEnd.value();
+						setCachedExpr(ast::EndPointer::create(exp, kind, std::move(args), RangeSpan(start, i)), i)
 					} else if (is_next(TokenType::ptrType, i)) {
-						setCachedExpr(ast::AddressOf::create(exp, FileRange::merge(exp->fileRange, RangeAt(i + 1))),
-						              i + 1);
 						i += 1;
+						setCachedExpr(ast::AddressOf::create(exp, FileRange::merge(exp->fileRange, RangeAt(i))), i);
 					} else {
 						add_error("Expected an identifier for member access", RangeAt(i));
 					}

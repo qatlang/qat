@@ -17,11 +17,11 @@ class ArrayLiteral final : public Expression,
 	Type*            elemTyHint;
 
   public:
-	ArrayLiteral(Vec<Expression*> _values, FileRangePtr _fileRange)
-	    : Expression(std::move(_fileRange)), values(std::move(_values)) {}
+	ArrayLiteral(Vec<Expression*> _values, Type* _elemTyHint, FileRangePtr _fileRange)
+	    : Expression(std::move(_fileRange)), values(std::move(_values)), elemTyHint(_elemTyHint) {}
 
-	useit static ArrayLiteral* create(Vec<Expression*> values, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(ArrayLiteral), values, fileRange);
+	useit static ArrayLiteral* create(Vec<Expression*> values, Type* elemTyHint, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(ArrayLiteral), values, elemTyHint, fileRange);
 	}
 
 	LOCAL_DECL_COMPATIBLE_FUNCTIONS

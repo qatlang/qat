@@ -1146,15 +1146,31 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				break;
 			}
 			case TokenType::bracketOpen: {
-				auto cEndRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
+				const auto start   = i;
+				const auto cEndRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
 				if (not cEndRes.has_value()) {
 					add_error("Expected end for [", RangeAt(i));
 				}
-				auto cEnd = cEndRes.value();
-				setCachedPreExp(ast::PrerunArrayLiteral::create(do_separated_prerun_expressions(preCtx, i, cEnd),
-				                                                RangeSpan(i, cEnd)),
-				                cEnd);
-				i = cEnd;
+				const auto                  cEnd = cEndRes.value();
+				Vec<ast::PrerunExpression*> expressions;
+				if (cEnd != i + 1) {
+					expressions = do_separated_prerun_expressions(preCtx, i, cEnd);
+				}
+				i                     = cEnd;
+				ast::Type* elemTyHint = nullptr;
+				if (is_next(TokenType::genericTypeStart, i)) {
+					const auto genStart = i;
+					auto       hintRes  = do_type(preCtx, i + 1, None);
+					elemTyHint          = hintRes.first;
+					i                   = hintRes.second;
+					if (not is_next(TokenType::genericTypeEnd, i)) {
+						add_error("Expected ] after this to end the element type hint of this array expression",
+						          RangeSpan(genStart, i));
+					}
+					i++;
+				}
+				setCachedPreExp(
+				    ast::PrerunArrayLiteral::create(std::move(expressions), elemTyHint, RangeSpan(start, i)), i);
 				break;
 			}
 			case TokenType::child: {
@@ -5080,7 +5096,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				break;
 			}
 			case TokenType::bracketOpen: {
-				auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
+				auto const start     = i;
+				auto       bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
 				if (not bCloseRes.has_value()) {
 					add_error("Expected ] to end the expression that started here", RangeAt(i));
 				}
@@ -5111,16 +5128,23 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					              bCloseRes.value());
 					i = bCloseRes.value();
 				} else {
-					auto bClose = bCloseRes.value();
-					if (bClose == i + 1) {
-						// Empty array literal
-						setCachedExpr(ast::ArrayLiteral::create({}, RangeSpan(i, bClose)), bClose);
-						i = bClose;
-					} else {
-						auto vals = do_separated_expressions(preCtx, i, bClose);
-						setCachedExpr(ast::ArrayLiteral::create(vals, RangeSpan(i, bClose)), bClose);
-						i = bClose;
+					auto bClose           = bCloseRes.value();
+					auto vals             = do_separated_expressions(preCtx, i, bClose);
+					i                     = bClose;
+					ast::Type* elemTyHint = nullptr;
+					if (is_next(TokenType::genericTypeStart, i)) {
+						const auto genStart = i + 1;
+						auto       typRes   = do_type(preCtx, i + 1, None);
+						i                   = typRes.second;
+						elemTyHint          = typRes.first;
+						if (not is_next(TokenType::genericTypeEnd, i)) {
+							add_error(
+							    "Expected ] after this to end the hint about the element type of this array literal",
+							    RangeSpan(genStart, i));
+						}
+						i++;
 					}
+					setCachedExpr(ast::ArrayLiteral::create(vals, elemTyHint, RangeSpan(start, i)), i);
 				}
 				break;
 			}

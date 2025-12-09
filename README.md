@@ -1,18 +1,18 @@
 <div>
-<a href="https://opencollective.com/qatlang"><img src="https://img.shields.io/badge/Open%20Collective-3385FF?style=for-the-badge&logo=open-collective&logoColor=white" alt="Open Collective badge"/></a>
-<a href="https://buymeacoffee.com/aldrinmathew"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="BuyMeACoffee badge"/></a>
-<a href="https://ko-fi.com/aldrinmathew"><img src="https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-Fi badge"/></a>
-<a href="https://paypal.me/aldrinsartfactory"><img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Paypal badge"/></a>
-</div>
-
-![Qat cover image](./media/curved_cover_wide.png)
-
-<div>
 <a href="https://qatlang.org"><img src="https://img.shields.io/badge/qatlang.org-444444?style=for-the-badge&logoColor=white" alt="Qat website badge"/></a>
 <a href="https://youtube.com/@aldrinmathew"><img src="https://img.shields.io/badge/YouTube-FF0000?style=for-the-badge&logo=youtube&logoColor=white" alt="Youtube badge"/></a>
 <a href="https://discord.gg/CNW3Uvptvd"><img src="https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white" alt="Discord badge"/></a>
 <a href="https://reddit.com/r/qatlang"><img src="https://img.shields.io/badge/Reddit-FF4500?style=for-the-badge&logo=reddit&logoColor=white" alt="Reddit badge"/></a>
 <a href="https://github.com/AldrinMathew"><img src="https://img.shields.io/badge/Profile-000000?style=for-the-badge&logo=github&logoColor=white" alt="Github badge"/></a>
+</div>
+
+![Qat cover image](./media/curved_cover_wide.png)
+
+<div>
+<a href="https://opencollective.com/qatlang"><img src="https://img.shields.io/badge/Open%20Collective-3385FF?style=for-the-badge&logo=open-collective&logoColor=white" alt="Open Collective badge"/></a>
+<a href="https://buymeacoffee.com/aldrinmathew"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="BuyMeACoffee badge"/></a>
+<a href="https://ko-fi.com/aldrinmathew"><img src="https://img.shields.io/badge/Ko--fi-F16061?style=for-the-badge&logo=ko-fi&logoColor=white" alt="Ko-Fi badge"/></a>
+<a href="https://paypal.me/aldrinsartfactory"><img src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&logo=paypal&logoColor=white" alt="Paypal badge"/></a>
 <hr>
 </div>
 

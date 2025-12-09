@@ -12,6 +12,7 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	copy.cc
 	default.cc
 	dereference.cc
+	end_pointer.cc
 	entity.cc
 	error.cc
 	function_call.cc

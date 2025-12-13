@@ -904,6 +904,10 @@ class Mod final : public Uniq, public EntityOverview {
 	useit Pair<bool, String> has_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
 	useit Skill*             get_skill(String const& name, AccessInfo const& reqInfo) const;
 
+	useit Vec<Skill*> const& get_skills_in_module() const { return skills; }
+
+	useit Vec<Brought<Skill>> const& get_all_brought_skills() const { return broughtSkills; }
+
 	// GENERIC SKILLS
 
 	useit bool has_generic_skill(String const& name, AccessInfo reqInfo) const;

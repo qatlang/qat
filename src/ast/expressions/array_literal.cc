@@ -7,6 +7,15 @@
 
 namespace qat::ast {
 
+void ArrayLiteral::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
+	if (elemTyHint) {
+		UPDATE_DEPS(elemTyHint);
+	}
+	for (auto it : values) {
+		UPDATE_DEPS(it);
+	}
+}
+
 ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 	FnAtEnd   fnObj{[&] { createIn = nullptr; }};
 	ir::Type* elemTy = nullptr;

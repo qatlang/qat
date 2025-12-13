@@ -28,11 +28,7 @@ class ArrayLiteral final : public Expression,
 	IN_PLACE_CREATABLE_FUNCTIONS
 	TYPE_INFERRABLE_FUNCTIONS
 
-	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
-		for (auto it : values) {
-			UPDATE_DEPS(it);
-		}
-	}
+	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final;
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 

@@ -63,7 +63,7 @@ class Lexer {
 
 	useit static bool ascii_char_has_standard_escape(char byte) {
 		return byte == '\n' || byte == '\t' || byte == '\f' || byte == '\a' || byte == '\b' || byte == '\v' ||
-		       byte == '\0' || byte == 'r';
+		       byte == '\0' || byte == '\r';
 	}
 
 	useit static String get_ascii_standard_escape(char byte) {

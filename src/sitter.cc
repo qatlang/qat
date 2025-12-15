@@ -32,7 +32,9 @@
 #endif
 #endif
 
-#define OUTPUT_OBJECT_NAME "output"
+#define ONE_SECOND_IN_NANO 1000000000
+#define ONE_MILLI_IN_NANO  1000000
+#define ONE_MICRO_IN_NANO  1000
 
 namespace qat {
 
@@ -52,40 +54,40 @@ QatSitter* QatSitter::get() {
 
 void QatSitter::display_stats() {
 	auto& log = Logger::get();
-	log->diagnostic(
-	    "Lexer speed   -> " +
-	    std::to_string(
-	        (u64)((((double)lexer::Lexer::lineCount) / ((double)lexer::Lexer::timeInMicroSeconds)) * 1000000.0)) +
-	    " lines/s");
-	log->diagnostic(
-	    "Parser speed  -> " +
-	    std::to_string(
-	        (u64)((((double)lexer::Lexer::lineCount) / ((double)parser::Parser::timeInMicroSeconds)) * 1000000.0)) +
-	    " lines/s & " +
-	    std::to_string(
-	        (u64)((((double)parser::Parser::tokenCount) / ((double)parser::Parser::timeInMicroSeconds)) * 1000000.0)) +
-	    " tokens/s");
-	if (ctx->clangAndLinkTimeInMs.has_value()) {
+	log->diagnostic("Lexer speed   -> " +
+	                std::to_string(static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
+	                                                lexer::Lexer::timeInNanoseconds)) +
+	                " lines/s");
+	log->diagnostic("Parser speed  -> " +
+	                std::to_string(static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
+	                                                parser::Parser::timeInNanoseconds)) +
+	                " lines/s & " +
+	                std::to_string(static_cast<u64>(static_cast<double>(parser::Parser::tokenCount) *
+	                                                ONE_SECOND_IN_NANO / parser::Parser::timeInNanoseconds)) +
+	                " tokens/s");
+	if (ctx->clangAndLinkTimeInNanoseconds.has_value()) {
 		log->diagnostic(
 		    "Compile speed -> " +
-		    std::to_string(
-		        (u64)((((double)lexer::Lexer::lineCount) / ((double)ctx->qatCompileTimeInMs.value())) * 1000000.0)) +
+		    std::to_string(static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
+		                                    ctx->qatCompileTimeInNanoseconds.value())) +
 		    " lines/s");
 	}
-	auto timeToString = [](u64 timeInMs) {
-		if (timeInMs > 1000000) {
-			return std::to_string(((double)timeInMs) / 1000000) + " s";
-		} else if (timeInMs > 1000) {
-			return std::to_string((double)timeInMs / 1000) + " ms";
+	auto timeToString = [](u64 timeInNanos) {
+		if (timeInNanos > ONE_SECOND_IN_NANO) {
+			return std::to_string(static_cast<double>(timeInNanos) / ONE_SECOND_IN_NANO) + " seconds";
+		} else if (timeInNanos > ONE_MILLI_IN_NANO) {
+			return std::to_string(static_cast<double>(timeInNanos) / ONE_MILLI_IN_NANO) + " milliseconds";
+		} else if (timeInNanos > ONE_MICRO_IN_NANO) {
+			return std::to_string(static_cast<double>(timeInNanos) / ONE_MICRO_IN_NANO) + " microseconds";
 		} else {
-			return std::to_string(timeInMs) + " μs";
+			return std::to_string(timeInNanos) + " nanoseconds";
 		}
 	};
-	log->diagnostic("Lexer time    -> " + timeToString(lexer::Lexer::timeInMicroSeconds));
-	log->diagnostic("Parser time   -> " + timeToString(parser::Parser::timeInMicroSeconds));
-	if (ctx->qatCompileTimeInMs.has_value() && ctx->clangAndLinkTimeInMs.has_value()) {
-		log->diagnostic("Compile time  -> " + timeToString(ctx->qatCompileTimeInMs.value()));
-		log->diagnostic("clang & lld   -> " + timeToString(ctx->clangAndLinkTimeInMs.value()));
+	log->diagnostic("Lexer time    -> " + timeToString(lexer::Lexer::timeInNanoseconds));
+	log->diagnostic("Parser time   -> " + timeToString(parser::Parser::timeInNanoseconds));
+	if (ctx->qatCompileTimeInNanoseconds.has_value() && ctx->clangAndLinkTimeInNanoseconds.has_value()) {
+		log->diagnostic("Compile time  -> " + timeToString(ctx->qatCompileTimeInNanoseconds.value()));
+		log->diagnostic("clang & lld   -> " + timeToString(ctx->clangAndLinkTimeInNanoseconds.value()));
 	}
 }
 
@@ -253,10 +255,10 @@ void QatSitter::initialise() {
 		for (auto* entity : fileEntities) {
 			entity->setup_llvm_file(ctx);
 		}
-		auto qatCompileTime = std::chrono::duration_cast<std::chrono::microseconds>(
+		auto qatCompileTime = std::chrono::duration_cast<std::chrono::nanoseconds>(
 		                          std::chrono::high_resolution_clock::now() - qatStartTime)
 		                          .count();
-		ctx->qatCompileTimeInMs = qatCompileTime;
+		ctx->qatCompileTimeInNanoseconds = qatCompileTime;
 		// if (cfg->export_code_metadata()) {
 		// 	log->say("Exporting code metadata");
 		// 	Vec<JsonValue> modulesJSON, functionsJSON, prerunFunctionsJSON, genericFunctionsJSON,
@@ -349,9 +351,9 @@ void QatSitter::initialise() {
 			for (auto* entity : fileEntities) {
 				entity->bundle_modules(ctx);
 			}
-			ctx->clangAndLinkTimeInMs = std::chrono::duration_cast<std::chrono::microseconds>(
-			                                std::chrono::high_resolution_clock::now() - clangStartTime)
-			                                .count();
+			ctx->clangAndLinkTimeInNanoseconds = std::chrono::duration_cast<std::chrono::nanoseconds>(
+			                                         std::chrono::high_resolution_clock::now() - clangStartTime)
+			                                         .count();
 			display_stats();
 			SHOW("Displayed stats")
 			ctx->write_json_result(true);

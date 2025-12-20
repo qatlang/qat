@@ -121,7 +121,7 @@ class Ctx {
   public:
 	Ctx();
 
-	static Ctx* New() {
+	static Ctx* create() {
 		if (instance) {
 			return instance;
 		}
@@ -150,8 +150,8 @@ class Ctx {
 	mutable Vec<usize>               lastMainActiveGeneric;
 	mutable Vec<CodeProblem>         codeProblems;
 	mutable Vec<usize>               binarySizes;
-	mutable Maybe<u64>               qatCompileTimeInMs;
-	mutable Maybe<u64>               clangAndLinkTimeInMs;
+	mutable Maybe<u64>               qatCompileTimeInNanoseconds;
+	mutable Maybe<u64>               clangAndLinkTimeInNanoseconds;
 
 	useit bool has_active_generic() const { return not allActiveGenerics.empty(); }
 

@@ -122,10 +122,12 @@ void Ctx::write_json_result(bool status) const {
 	result._("status", status)
 	    ._("problems", problems)
 	    ._("lineCount", lexer::Lexer::lineCount > 0 ? lexer::Lexer::lineCount - 1 : 0)
-	    ._("lexerTime", lexer::Lexer::timeInMicroSeconds)
-	    ._("parserTime", parser::Parser::timeInMicroSeconds)
-	    ._("compilationTime", qatCompileTimeInMs.has_value() ? qatCompileTimeInMs.value() : JsonValue())
-	    ._("linkingTime", clangAndLinkTimeInMs.has_value() ? clangAndLinkTimeInMs.value() : JsonValue())
+	    ._("lexerTime", lexer::Lexer::timeInNanoseconds)
+	    ._("parserTime", parser::Parser::timeInNanoseconds)
+	    ._("compilationTime",
+	       qatCompileTimeInNanoseconds.has_value() ? qatCompileTimeInNanoseconds.value() : JsonValue())
+	    ._("linkingTime",
+	       clangAndLinkTimeInNanoseconds.has_value() ? clangAndLinkTimeInNanoseconds.value() : JsonValue())
 	    ._("binarySizes", binarySizesJson)
 	    ._("hasMain", hasMain);
 	SHOW("Creating compilation result file")

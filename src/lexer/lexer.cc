@@ -6,6 +6,7 @@
 #include "./token_type.hpp"
 
 #include <chrono>
+#include <fstream>
 #include <sstream>
 #include <string>
 
@@ -25,31 +26,20 @@ namespace qat::lexer {
 
 Lexer* Lexer::get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
 
-Lexer::~Lexer() {
-	delete tokens;
-	tokens = nullptr;
-	if (file.is_open()) {
-		file.close();
-	}
-	buffer.clear();
-}
+Lexer::~Lexer() { buffer.clear(); }
 
-u64 Lexer::timeInMicroSeconds = 0;
-u64 Lexer::lineCount          = 0;
-
-Vec<Token>* Lexer::get_tokens() {
-	auto* res = tokens;
-	tokens    = nullptr;
-	return res;
-}
+u64 Lexer::timeInNanoseconds = 0;
+u64 Lexer::lineCount         = 0;
 
 void Lexer::read() {
 	//   try {
-	if (file.eof()) {
+	if (has_file_ended()) {
 		return;
 	}
-	prev = current;
-	file.get(current);
+	advance_cursor();
+	if (has_file_ended()) {
+		return;
+	}
 	byteNumber++;
 	if (byteSpanUTF8 == 0) {
 		auto len = utils::get_utf8_byte_length(current);
@@ -65,7 +55,7 @@ void Lexer::read() {
 			charNumber++;
 		}
 	}
-	if (file.eof()) {
+	if (has_file_ended()) {
 		prev    = current;
 		current = 0;
 		return;
@@ -75,18 +65,18 @@ void Lexer::read() {
 		lineNumber++;
 		byteNumber = 0;
 	} else if (current == '\r') {
-		prev = current;
-		file.get(current);
-		if (current != -1) {
-			if (current == '\n') {
-				previousLineEnd = byteNumber - 2;
-				lineNumber++;
-				byteNumber = 0;
-			} else {
-				byteNumber++;
-			}
+		advance_cursor();
+		if (has_file_ended()) {
+			return;
 		}
-		byteNumber = (current == '\n') ? 0 : 1;
+		if (current == '\n') {
+			previousLineEnd = byteNumber - 2;
+			lineNumber++;
+			byteNumber = 0;
+		} else {
+			lineNumber++;
+			byteNumber = 1; // CR - legacy macOS line ending
+		}
 	}
 	//   } catch (std::exception& err) {
 	//     throwError(String("Lexer failed while reading the file. Error: ") + err.what());
@@ -114,28 +104,32 @@ FileRange* Lexer::get_position_var(u64 length) {
 }
 
 void Lexer::analyse() {
-	file.open(filePath, std::ios::in);
+	auto fileSize = std::filesystem::file_size(filePath);
+	content.resize(fileSize);
+	std::ifstream inStream(filePath);
+	inStream.read(&content[0], fileSize);
+
 	auto startTime = std::chrono::high_resolution_clock::now();
-	tokens->push_back(Token::valued(TokenType::startOfFile, filePath.string(), this->get_position(0)));
+	tokens.push_back(Token::valued(TokenType::startOfFile, filePath.string(), this->get_position(0)));
 	read();
-	while (not file.eof()) {
-		tokens->push_back(tokeniser());
+	while (not has_file_ended()) {
+		tokens.push_back(tokeniser());
 	}
-	file.close();
-	if (tokens->back().type != TokenType::endOfFile) {
-		tokens->push_back(Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0)));
+	if (tokens.back().type != TokenType::endOfFile) {
+		tokens.push_back(Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0)));
 	}
-	timeInMicroSeconds +=
-	    std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::high_resolution_clock::now() - startTime)
+	timeInNanoseconds +=
+	    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - startTime)
 	        .count();
 	lineCount += lineNumber;
 }
 
 void Lexer::change_file(fs::path newFilePath) {
-	tokens     = new Vec<Token>();
+	tokens.clear();
 	filePath   = std::move(newFilePath);
 	prev       = -1;
 	current    = -1;
+	cursor     = -1;
 	lineNumber = 1;
 	byteNumber = 0;
 }
@@ -163,7 +157,7 @@ Token Lexer::tokeniser() {
 		buffer.pop_back();
 		return token;
 	}
-	if (file.eof()) {
+	if (has_file_ended() && current == -1) {
 		return Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0));
 	}
 	if (prev == '\r') {
@@ -259,7 +253,7 @@ Token Lexer::tokeniser() {
 				String commentValue;
 				read();
 				auto commentPos = this->get_position_var(0);
-				while ((not star || (current != '/')) && not file.eof()) {
+				while ((not star || (current != '/')) && not has_file_ended()) {
 					if (star) {
 						star = false;
 					}
@@ -283,7 +277,7 @@ Token Lexer::tokeniser() {
 			} else if (current == '/') {
 				String commentValue;
 				auto   commRange = this->get_position(2);
-				while ((current != '\n' && prev != '\r') && not file.eof()) {
+				while ((current != '\n' && prev != '\r') && not has_file_ended()) {
 					commentValue += current;
 					read();
 					commRange = this->get_position(commentValue.length());
@@ -424,7 +418,7 @@ Token Lexer::tokeniser() {
 					}
 					read();
 					String hex;
-					while ((not file.eof()) &&
+					while ((not has_file_ended()) &&
 					       ((current >= '0' && current <= '9') || (current >= 'a' && current <= 'f') ||
 					        (current >= 'A' && current <= 'F'))) {
 						hex += current;
@@ -592,7 +586,7 @@ Token Lexer::tokeniser() {
 			bool escape = false;
 			read();
 			String str_val;
-			while (escape ? not file.eof() : (current != '"' && not file.eof())) {
+			while (escape ? not has_file_ended() : (current != '"' && not has_file_ended())) {
 				if (escape) {
 					escape = false;
 					if (current == '"') {
@@ -869,7 +863,7 @@ Token Lexer::tokeniser() {
 			        (not is_float && (current == '.')) ||
 			        (not foundRadix && not exponentialFloat && (current == 'e')) ||
 			        (not foundSpec && (current == '_'))) &&
-			       not file.eof()) {
+			       not has_file_ended()) {
 				if (not foundRadix && not exponentialFloat && current == 'e') {
 					is_float         = true;
 					exponentialFloat = true;
@@ -937,7 +931,7 @@ Token Lexer::tokeniser() {
 			                     this->get_position(numVal.length()));
 		}
 		default: {
-			if (file.eof()) {
+			if (has_file_ended()) {
 				return Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0));
 			}
 			auto   start = byteNumber;
@@ -946,7 +940,7 @@ Token Lexer::tokeniser() {
 			if (current == 'b') {
 				idVal += current;
 				read();
-				if (not file.eof() && (current == '`')) {
+				if (not has_file_ended() && (current == '`')) {
 					// BYTE LITERAL
 					String byteValue;
 					read();
@@ -992,7 +986,7 @@ Token Lexer::tokeniser() {
 							}
 							String hex;
 							read();
-							while ((not file.eof()) &&
+							while ((not has_file_ended()) &&
 							       ((current >= '0' && current <= '9') || (current >= 'a' && current <= 'z') ||
 							        (current >= 'A' && current <= 'Z'))) {
 								hex += current;
@@ -1024,13 +1018,13 @@ Token Lexer::tokeniser() {
 					}
 					read();
 					return Token::valued(TokenType::byteLiteral, byteValue, this->get_position(byteNumber - start + 1));
-				} else if (file.eof()) {
+				} else if (has_file_ended()) {
 					return Token::valued(TokenType::identifier, "b", this->get_position(1));
 				}
 			}
 			bool skipPreRead = false;
 			bool breakLoop   = false;
-			while (not(file.eof())) {
+			while (not has_file_ended()) {
 				if (idVal.length() != 0) {
 					idRange = this->get_position(idVal.length());
 				}
@@ -1047,8 +1041,8 @@ Token Lexer::tokeniser() {
 						if (not(idVal.empty() ? (CURRENT_IS_ALPHABET || (current == '_'))
 						                      : (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_')))) {
 							if (repeatingToken || idVal.empty()) {
-								std::cout << "Repeating token: " << repeatingToken
-								          << " Empty identifier: " << idVal.empty() << "\n";
+								// std::cout << "Repeating token: " << repeatingToken
+								//           << " Empty identifier: " << idVal.empty() << "\n";
 								throw_error(
 								    String("The character ") + current +
 								    " cannot be part of an identifier and is also not a recognised symbol in the language. "
@@ -1068,7 +1062,7 @@ Token Lexer::tokeniser() {
 					case 2: {
 						bytes[0] = current;
 						read();
-						if (file.eof()) {
+						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the second byte of the 2-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
@@ -1083,7 +1077,7 @@ Token Lexer::tokeniser() {
 					}
 					case 3: {
 						bytes[0] = current;
-						if (file.eof()) {
+						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the second byte of the 3-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
@@ -1094,7 +1088,7 @@ Token Lexer::tokeniser() {
 							    " as the second byte of the 3-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
 						bytes[1] = current;
-						if (file.eof()) {
+						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the third byte of the 3-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2));
@@ -1109,7 +1103,7 @@ Token Lexer::tokeniser() {
 					}
 					case 4: {
 						bytes[0] = current;
-						if (file.eof()) {
+						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the second byte of the 4-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
@@ -1120,7 +1114,7 @@ Token Lexer::tokeniser() {
 							    " as the second byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
 						bytes[1] = current;
-						if (file.eof()) {
+						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the third byte of the 4-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2));
@@ -1131,7 +1125,7 @@ Token Lexer::tokeniser() {
 							    " as the third byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
 						bytes[2] = current;
-						if (file.eof()) {
+						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the fourth byte of the 4-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +

@@ -4,24 +4,28 @@
 #include "../utils/file_range.hpp"
 #include "./token.hpp"
 #include <filesystem>
-#include <fstream>
 #include <utility>
 
 namespace qat::ir {
 class Ctx;
 }
 
+namespace qat {
+class QatSitter;
+}
+
 namespace qat::lexer {
 
 class Lexer {
   private:
-	fs::path      filePath;
-	std::ifstream file;
-	char          prev;
-	char          current;
-	Vec<Token>*   tokens = nullptr;
-	Deque<Token>  buffer;
-	bool          repeatingToken = false;
+	fs::path     filePath;
+	String       content;
+	usize        cursor = 0;
+	char         prev;
+	char         current = 0;
+	Vec<Token>   tokens;
+	Deque<Token> buffer;
+	bool         repeatingToken = false;
 
 	bool isMultiStringAllowed = false;
 
@@ -31,6 +35,7 @@ class Lexer {
 
   public:
 	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
+
 	useit static Lexer* get(ir::Ctx* irCtx);
 
 	~Lexer();
@@ -40,18 +45,32 @@ class Lexer {
 	u64        charNumber = 0;
 	Maybe<u64> previousLineEnd;
 	u8         byteSpanUTF8 = 0;
-	static u64 timeInMicroSeconds;
+	static u64 timeInNanoseconds;
 	static u64 lineCount;
 
-	void clear_tokens();
 	void throw_error(const String& message, Maybe<usize> offset = None);
 	void analyse();
+
+	Vec<Token>& get_tokens() { return tokens; }
+
+	void advance_cursor() {
+		prev = current;
+		if (cursor + 1 < content.length()) {
+			cursor++;
+			current = content[cursor];
+		} else {
+			cursor  = content.length();
+			current = -1;
+		}
+	}
+
 	void read();
 	void change_file(fs::path newFile);
 
 	useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
-	useit Vec<Token>* get_tokens();
-	useit Token       tokeniser();
+	useit Token               tokeniser();
+
+	useit inline bool has_file_ended() { return cursor == content.size(); }
 
 	useit static bool is_char_hex(char byte) {
 		return (byte >= '0' && byte <= '9') || (byte >= 'a' && byte <= 'z') || (byte >= 'A' && byte <= 'Z');

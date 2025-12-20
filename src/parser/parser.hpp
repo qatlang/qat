@@ -41,7 +41,7 @@ struct EntityMetadata {
 
 class Parser {
   private:
-	Vec<lexer::Token>*            tokens = nullptr;
+	Vec<lexer::Token>&            tokens;
 	Vec<fs::path>                 broughtPaths;
 	Vec<fs::path>                 memberPaths;
 	std::map<usize, lexer::Token> comments;
@@ -55,19 +55,14 @@ class Parser {
 	void filter_comments();
 
   public:
-	explicit Parser(ir::Ctx* irCtx);
-	useit static Parser* get(ir::Ctx* irCtx);
+	explicit Parser(ir::Ctx* irCtx, Vec<lexer::Token>& tokens);
+	useit static Parser* get(ir::Ctx* irCtx, Vec<lexer::Token>& tokens);
 	~Parser();
 
-	static u64 timeInMicroSeconds;
+	static u64 timeInNanoseconds;
 	static u64 tokenCount;
-	u64        parseRecurseCount = 0;
-
-	std::chrono::high_resolution_clock::time_point latestStartTime = std::chrono::high_resolution_clock::now();
 
 	void clear_brought_paths();
-
-	void set_tokens(Vec<lexer::Token>* tokens);
 
 	void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* memberParent);
 
@@ -93,8 +88,8 @@ class Parser {
 	useit bool is_previous(lexer::TokenType type, usize current);
 
 	useit bool is_next(lexer::TokenType type, usize current) {
-		if ((current + 1) < tokens->size()) {
-			return tokens->at(current + 1).type == type;
+		if ((current + 1) < tokens.size()) {
+			return tokens.at(current + 1).type == type;
 		} else {
 			return false;
 		}
@@ -129,6 +124,8 @@ class Parser {
 	                                      bool isPartOfExpression = false);
 
 	Pair<ast::DefineSkill*, usize> do_skill(Maybe<ast::VisibilitySpec> visibSpec, usize from);
+
+	useit Vec<ast::Node*> begin_parsing();
 
 	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = 0);
 

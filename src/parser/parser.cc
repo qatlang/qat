@@ -156,10 +156,10 @@
 #include <string>
 #include <utility>
 
-#define IdentifierAt(ind)     Identifier(tokens->at(ind).value, tokens->at(ind).fileRange)
-#define ValueAt(ind)          tokens->at(ind).value
-#define RangeAt(ind)          tokens->at(ind).fileRange
-#define RangeSpan(ind1, ind2) FileRange::merge(tokens->at(ind1).fileRange, tokens->at(ind2).fileRange)
+#define IdentifierAt(ind)     Identifier(tokens.at(ind).value, tokens.at(ind).fileRange)
+#define ValueAt(ind)          tokens.at(ind).value
+#define RangeAt(ind)          tokens.at(ind).fileRange
+#define RangeSpan(ind1, ind2) FileRange::merge(tokens.at(ind1).fileRange, tokens.at(ind2).fileRange)
 
 #define ColoredOr(val, rep) (cfg->is_no_color_mode() ? rep : cli::get_color(val))
 
@@ -185,26 +185,18 @@
 
 namespace qat::parser {
 
-Parser::Parser(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
+Parser::Parser(ir::Ctx* _irCtx, Vec<lexer::Token>& _tokens) : irCtx(_irCtx), tokens(_tokens) {};
 
-Parser* Parser::get(ir::Ctx* irCtx) { return new Parser(irCtx); }
+Parser* Parser::get(ir::Ctx* irCtx, Vec<lexer::Token>& tokens) { return new Parser(irCtx, tokens); }
 
 Parser::~Parser() {
-	delete tokens;
 	broughtPaths.clear();
 	memberPaths.clear();
 	comments.clear();
 }
 
-u64 Parser::timeInMicroSeconds = 0;
-u64 Parser::tokenCount         = 0;
-
-void Parser::set_tokens(Vec<lexer::Token>* allTokens) {
-	g_ctx = ParserContext();
-	delete tokens;
-	tokens = allTokens;
-	filter_comments();
-}
+u64 Parser::timeInNanoseconds = 0;
+u64 Parser::tokenCount        = 0;
 
 void Parser::filter_comments() { comments.clear(); }
 
@@ -216,7 +208,7 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 	std::function<void(Maybe<ast::BroughtGroup*>, usize, usize)> handler = [&](Maybe<ast::BroughtGroup*> parent,
 	                                                                           usize from, usize upto) {
 		for (usize i = from + 1; i < upto; i++) {
-			auto token = tokens->at(i);
+			auto const& token = tokens.at(i);
 			switch (token.type) {
 				case TokenType::super: {
 					if (parent.has_value()) {
@@ -405,7 +397,7 @@ ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRangePtr fileRang
 	Maybe<FileRangePtr> inlineRange;
 	using lexer::TokenType;
 	for (usize i = from + 1; i < upto; i++) {
-		auto& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::Inline: {
 				if (isInline) {
@@ -458,8 +450,8 @@ ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto
 	using lexer::TokenType;
 	Vec<ast::StringLiteral*>        paths;
 	Vec<Maybe<ast::StringLiteral*>> names;
-	for (usize i = from + 1; (i < upto) && (i < tokens->size()); i++) {
-		const auto& token = tokens->at(i);
+	for (usize i = from + 1; (i < upto) && (i < tokens.size()); i++) {
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::StringLiteral: {
 				if (is_next(TokenType::StringLiteral, i)) {
@@ -525,7 +517,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 	if (_cacheExp_.has_value()) {                                                                                      \
 		add_error("Internal error: An expression is already parsed and found another one", RangeAt(i));                \
 	} else {                                                                                                           \
-		if ((retInd + 1 <= tokens->size()) && (tokens->at(retInd + 1).type == TokenType::binaryOperator) &&            \
+		if ((retInd + 1 <= tokens.size()) && (tokens.at(retInd + 1).type == TokenType::binaryOperator) &&              \
 		    returnOnFirstExp) {                                                                                        \
 			return Pair<ast::PrerunExpression*, usize>{retVal, retInd};                                                \
 		}                                                                                                              \
@@ -533,8 +525,8 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 	}
 
 	usize i = 0;
-	for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size()); i++) {
-		auto& token = tokens->at(i);
+	for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens.size()); i++) {
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::comment: {
 				break;
@@ -669,7 +661,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						}
 						variants.push_back(IdentifierAt(i + 1));
 						i++;
-						while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "+")) {
+						while (is_next(TokenType::binaryOperator, i) && (tokens.at(i + 1).value == "+")) {
 							if (not is_next(TokenType::identifier, i + 1)) {
 								add_error(
 								    "Expected an identifier after this for the name of the additional variant to be initialised for this flag type value",
@@ -1002,7 +994,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 			}
 			case TokenType::from:
 			case TokenType::colon: {
-				const auto isIsolatedFrom = tokens->at(i).type == TokenType::from;
+				const auto isIsolatedFrom = tokens.at(i).type == TokenType::from;
 				if (isIsolatedFrom || is_next(TokenType::from, i)) {
 					auto start = i;
 					if (not isIsolatedFrom) {
@@ -1250,7 +1242,7 @@ Vec<ast::FillGeneric*> Parser::do_generic_fill(ParserContext& preCtx, usize from
 	using lexer::TokenType;
 	Vec<ast::FillGeneric*> result;
 	for (usize i = from + 1; i < upto; i++) {
-		auto& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			TYPE_TRIGGER_TOKENS {
 				auto subRes = do_type(preCtx, i - 1, upto, true);
@@ -1338,8 +1330,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 	usize             i   = 0; // NOLINT(readability-identifier-length)
 	Maybe<ast::Type*> cacheTy;
 
-	for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens->size()); i++) {
-		Token& token = tokens->at(i);
+	for (i = from + 1; i < (upto.has_value() ? upto.value() : tokens.size()); i++) {
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::selfInstance:
 			case TokenType::selfWord: {
@@ -1720,7 +1712,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 								    RangeAt(i + 1));
 							}
 						} else if (is_next(TokenType::separator, i)) {
-							if (tokens->at(i).type == TokenType::separator) {
+							if (tokens.at(i).type == TokenType::separator) {
 								add_error("Repeating separator " + color_error(",") + " found here", RangeAt(i));
 							} else {
 								add_error("Found separator " + color_error(",") + " here which is not allowed",
@@ -2145,7 +2137,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				return {cacheTy.value(), i - 1};
 			}
 		}
-		if (((i + 1 < tokens->size()) && (tokens->at(i + 1).type != TokenType::colon)) || isPartOfExpression) {
+		if (((i + 1 < tokens.size()) && (tokens.at(i + 1).type != TokenType::colon)) || isPartOfExpression) {
 			if (not cacheTy.has_value()) {
 				add_error("No type could be parsed at this point", RangeAt(from));
 			}
@@ -2163,7 +2155,7 @@ Vec<ast::GenericAbstractType*> Parser::do_generic_abstracts(ParserContext& preCt
 
 	Vec<ast::GenericAbstractType*> result;
 	for (usize i = from + 1; i < upto; i++) {
-		auto token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		if (token.type == TokenType::identifier) {
 			if (is_next(TokenType::assignment, i)) {
 				auto typRes = do_type(preCtx, i + 1, None);
@@ -2272,8 +2264,8 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 	Vec<ast::SkillTypeDefinition> typeDefs;
 	Vec<ast::SkillMethod>         methods;
 	bool                          shouldExit = false;
-	for (; i < tokens->size(); i++) {
-		switch (tokens->at(i).type) {
+	for (; i < tokens.size(); i++) {
+		switch (tokens.at(i).type) {
 			case TokenType::polymorph: {
 				const auto start = i;
 				if (polyQualifier) {
@@ -2336,10 +2328,10 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 			case TokenType::var:
 			case TokenType::identifier: {
 				auto const start      = i;
-				auto       methodKind = tokens->at(i).type == TokenType::var
+				auto       methodKind = tokens.at(i).type == TokenType::var
 				                            ? ast::SkillMethodKind::VARIATION
-				                            : (tokens->at(i).type == TokenType::Static ? ast::SkillMethodKind::STATIC
-				                                                                       : ast::SkillMethodKind::NORMAL);
+				                            : (tokens.at(i).type == TokenType::Static ? ast::SkillMethodKind::STATIC
+				                                                                      : ast::SkillMethodKind::NORMAL);
 
 				if (methodKind == ast::SkillMethodKind::VARIATION) {
 					if (not is_next(TokenType::colon, i)) {
@@ -2414,7 +2406,7 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 			break;
 		}
 	}
-	if (i == tokens->size()) {
+	if (i == tokens.size()) {
 		add_error("Could not find } to end the body of the skill after this", RangeSpan(from, i - 1));
 	}
 	if (not polyQualifier) {
@@ -2433,15 +2425,18 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 	                      i);
 }
 
+Vec<ast::Node*> Parser::begin_parsing() {
+	const auto startTime = std::chrono::high_resolution_clock::now();
+	const auto res       = parse();
+	timeInNanoseconds +=
+	    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - startTime)
+	        .count();
+	tokenCount += tokens.size();
+	return res;
+}
+
 Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
                               usize from, usize upto) {
-	if (parseRecurseCount == 0) {
-		latestStartTime = std::chrono::high_resolution_clock::now();
-		SHOW("Parse start time: " << latestStartTime.time_since_epoch().count())
-	}
-	parseRecurseCount++;
-	SHOW("Parse main function recurse count: " << parseRecurseCount)
-
 	Maybe<std::tuple<usize, String, FileRangePtr>> totalComment;
 	auto                                           addComment = [&](std::tuple<usize, String, FileRangePtr> commValue) {
         if (totalComment.has_value() && (std::get<0>(totalComment.value()) + 1 == std::get<0>(commValue))) {
@@ -2469,7 +2464,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 	using lexer::TokenType;
 
 	if (upto == 0) {
-		upto = tokens->size();
+		upto = tokens.size();
 	}
 
 	ParserContext thisCtx(preCtx);
@@ -2497,7 +2492,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 	SHOW("parse loop begins")
 
 	for (usize i = (from + 1); i < upto; i++) {
-		Token& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		SHOW("Token type is " << (u64)token.type)
 		switch (token.type) {
 			case TokenType::startOfFile:
@@ -2898,7 +2893,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					i++;
 					if (is_next(TokenType::identifier, i)) {
 						auto preCtx = ParserContext();
-						if (tokens->at(i + 1).value != "blockSize") {
+						if (tokens.at(i + 1).value != "blockSize") {
 							add_error("Only supported attribute for region is " + color_error("blockSize"),
 							          RangeAt(i + 1));
 						}
@@ -3040,7 +3035,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				}
 				i++;
 				Vec<Pair<Vec<Identifier>, ast::Type*>> variants;
-				while ((i + 1 < tokens->size()) && is_next(TokenType::identifier, i)) {
+				while ((i + 1 < tokens.size()) && is_next(TokenType::identifier, i)) {
 					Vec<Identifier> names;
 					while (is_next(TokenType::identifier, i)) {
 						names.push_back(IdentifierAt(i + 1));
@@ -3226,7 +3221,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					}
 					if (is_next(TokenType::bracketOpen, i)) {
 						auto bCloseResult = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, pClose + 1);
-						if (not bCloseResult.has_value() || (bCloseResult.value() >= tokens->size())) {
+						if (not bCloseResult.has_value() || (bCloseResult.value() >= tokens.size())) {
 							add_error("Expected ] to end the function definition", RangeAt(pClose + 1));
 						}
 						auto bClose    = bCloseResult.value();
@@ -3257,14 +3252,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				add_error("Unexpected token", token.fileRange);
 			}
 		}
-	}
-	parseRecurseCount--;
-	if (parseRecurseCount == 0) {
-		auto parseEndTime = std::chrono::high_resolution_clock::now();
-		SHOW("Parse end time: " << parseEndTime.time_since_epoch().count())
-		timeInMicroSeconds +=
-		    std::chrono::duration_cast<std::chrono::microseconds>(parseEndTime - latestStartTime).count();
-		tokenCount += tokens->size();
 	}
 	return resultNodes;
 }
@@ -3356,7 +3343,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 	};
 
 	for (usize i = from + 1; i < upto; i++) {
-		Token& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::pub: {
 				if (visibility.has_value()) {
@@ -3974,7 +3961,7 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 	using lexer::TokenType;
 
 	for (auto i = from + 1; i < upto; i++) {
-		auto& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::Default: {
 				if (not defaultVal.has_value()) {
@@ -3997,7 +3984,7 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 					          RangeAt(i));
 				}
 				noneVariant = is_previous(TokenType::Default, i)
-				                  ? FileRange::merge(tokens->at(i - 1).fileRange, RangeAt(i))
+				                  ? FileRange::merge(tokens.at(i - 1).fileRange, RangeAt(i))
 				                  : RangeAt(i);
 				if (is_next(TokenType::separator, i) || (is_next(TokenType::curlybraceClose, i) && (i + 1 == upto))) {
 					i++;
@@ -4014,7 +4001,7 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 					uRef.push_back(Pair<Identifier, Maybe<ast::Type*>>(IdentifierAt(start), None));
 					fileRanges.push_back(
 					    is_previous(TokenType::Default, start)
-					        ? FileRange::merge(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+					        ? FileRange::merge(tokens.at(start - 1).fileRange, tokens.at(start).fileRange)
 					        : RangeAt(start));
 					i++;
 				} else if (is_next(TokenType::typeSeparator, i)) {
@@ -4030,7 +4017,7 @@ void Parser::parse_mix_type(ParserContext& preCtx, usize from, usize upto,
 					uRef.push_back(Pair<Identifier, Maybe<ast::Type*>>(IdentifierAt(start), typ));
 					fileRanges.push_back(
 					    is_previous(TokenType::Default, start)
-					        ? FileRange::merge(tokens->at(start - 1).fileRange, tokens->at(start).fileRange)
+					        ? FileRange::merge(tokens.at(start - 1).fileRange, tokens.at(start).fileRange)
 					        : RangeAt(start));
 				} else {
 					add_error("Invalid token found after identifier in mix type definition", RangeAt(i));
@@ -4057,8 +4044,8 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
         return res;
 	};
 	auto preCtx = ParserContext();
-	for (; i < tokens->size(); i++) {
-		switch (tokens->at(i).type) {
+	for (; i < tokens.size(); i++) {
+		switch (tokens.at(i).type) {
 			case TokenType::Default: {
 				if (not is_next(TokenType::identifier, i)) {
 					add_error("Expected an identifier after this for the name of this variant of the flag type",
@@ -4071,7 +4058,7 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 				auto            idStart = i;
 				Vec<Identifier> names;
 				names.push_back(IdentifierAt(i));
-				while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "&")) {
+				while (is_next(TokenType::binaryOperator, i) && (tokens.at(i + 1).value == "&")) {
 					if (not is_next(TokenType::identifier, i + 1)) {
 						add_error(
 						    "Expected an identifier after this to provide an additional name for this variant of the flag type",
@@ -4116,7 +4103,7 @@ Pair<ast::DefineFlagType*, usize> Parser::do_flag_type(usize from, Identifier na
 			break;
 		}
 	}
-	if (i == tokens->size()) {
+	if (i == tokens.size()) {
 		add_error("Expected } to end the body of the flag type", RangeSpan(from, i - 1));
 	}
 	return {ast::DefineFlagType::create(std::move(name), std::move(variants), providedType, visibSpec,
@@ -4129,7 +4116,7 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Ma
 	using lexer::TokenType;
 
 	for (usize i = from + 1; i < upto; i++) {
-		auto& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::Default: {
 				if (not defaultVal.has_value()) {
@@ -4174,7 +4161,7 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Ma
 			case TokenType::identifier: {
 				auto            start      = i;
 				Vec<Identifier> fieldNames = {IdentifierAt(i)};
-				while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "&")) {
+				while (is_next(TokenType::binaryOperator, i) && (tokens.at(i + 1).value == "&")) {
 					if (not is_next(TokenType::identifier, i + 1)) {
 						add_error("Expected an identifier after this for the additional name of this choice variant",
 						          RangeAt(i + 1));
@@ -4225,7 +4212,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 	using lexer::TokenType;
 
 	for (usize i = from + 1; i < upto; i++) {
-		auto& token = tokens->at(i);
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::typeSeparator: {
 				auto                  start            = i;
@@ -4570,15 +4557,15 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 		    "Internal error : A cached expression is already present, but there was an attempt to set another expression", \
 		    RangeAt(i));                                                                                                   \
 	} else {                                                                                                               \
-		if ((returnIndexValue + 1 <= tokens->size()) &&                                                                    \
-		    (tokens->at(returnIndexValue + 1).type == TokenType::binaryOperator) && returnAtFirstExp) {                    \
+		if ((returnIndexValue + 1 <= tokens.size()) &&                                                                     \
+		    (tokens.at(returnIndexValue + 1).type == TokenType::binaryOperator) && returnAtFirstExp) {                     \
 			return Pair<ast::Expression*, usize>{other, returnIndexValue};                                                 \
 		}                                                                                                                  \
 		_cachedExpressions_ = other;                                                                                       \
 	}
 
-	for (; upto.has_value() ? (i < upto.value()) : (i < tokens->size()); i++) {
-		Token& token = tokens->at(i);
+	for (; upto.has_value() ? (i < upto.value()) : (i < tokens.size()); i++) {
+		auto const& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::comment: {
 				break;
@@ -4847,7 +4834,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 			}
 			case TokenType::from:
 			case TokenType::colon: {
-				const auto    isIsolatedFrom = (tokens->at(i).type == TokenType::from);
+				const auto    isIsolatedFrom = (tokens.at(i).type == TokenType::from);
 				ast::TypeLike typeLike;
 				if (hasCachedSymbol()) {
 					auto symbol = consumeCachedSymbol();
@@ -5509,7 +5496,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						}
 						variants.push_back(IdentifierAt(i + 1));
 						i++;
-						while (is_next(TokenType::binaryOperator, i) && (tokens->at(i + 1).value == "+")) {
+						while (is_next(TokenType::binaryOperator, i) && (tokens.at(i + 1).value == "+")) {
 							if (not is_next(TokenType::identifier, i + 1)) {
 								add_error(
 								    "Expected an identifier after this for the name of the additional variant to be initialised for this flag type value",
@@ -5694,7 +5681,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						}
 						i += 2;
 						Vec<ast::Expression*> values;
-						while ((i + 1 < tokens->size()) && not is_next(TokenType::parenthesisClose, i)) {
+						while ((i + 1 < tokens.size()) && not is_next(TokenType::parenthesisClose, i)) {
 							auto itExp = do_expression(preCtx, None, i, None, None);
 							values.push_back(itExp.first);
 							i = itExp.second;
@@ -6025,7 +6012,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						auto                            start = i;
 						Maybe<Pair<bool, FileRangePtr>> callNature;
 						if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
-							callNature = std::make_pair(tokens->at(i + 1).type == TokenType::var, RangeAt(i + 1));
+							callNature = std::make_pair(tokens.at(i + 1).type == TokenType::var, RangeAt(i + 1));
 							i += 2;
 						}
 						// FIXME - Support generic member function calls
@@ -6287,15 +6274,15 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext&, const usize start) {
 	Vec<Identifier> name;
 	u32             relative = 0;
 	usize           i        = start;
-	while ((tokens->at(i).type == TokenType::super) && is_next(TokenType::colon, i)) {
+	while ((tokens.at(i).type == TokenType::super) && is_next(TokenType::colon, i)) {
 		relative++;
 		i += 2;
 	}
-	if (tokens->at(i).type == TokenType::super) {
+	if (tokens.at(i).type == TokenType::super) {
 		relative++;
 		return {CacheSymbol(relative, {}, start, RangeSpan(start, i)), i};
 	}
-	if (tokens->at(i).type != TokenType::identifier) {
+	if (tokens.at(i).type != TokenType::identifier) {
 		add_error("This is an invalid symbol name. No identifier could be found", RangeSpan(start, i));
 	}
 	if (relative == 0 && IdentifierAt(i).value == "std") {
@@ -6303,7 +6290,7 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext&, const usize start) {
 	}
 	name.push_back(IdentifierAt(i));
 	i++;
-	while ((tokens->at(i).type == TokenType::colon) && is_next(TokenType::identifier, i)) {
+	while ((tokens.at(i).type == TokenType::colon) && is_next(TokenType::identifier, i)) {
 		name.push_back(IdentifierAt(i + 1));
 		i += 2;
 	}
@@ -6316,8 +6303,8 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 	usize i = from + 1;
 
 	Vec<ast::PrerunSentence*> sentences;
-	for (; i < tokens->size(); i++) {
-		switch (tokens->at(i).type) {
+	for (; i < tokens.size(); i++) {
+		switch (tokens.at(i).type) {
 			case TokenType::bracketClose: {
 				return {sentences, i};
 			}
@@ -6409,7 +6396,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				// TODO - Support say variants
 				auto                        start = i;
 				Vec<ast::PrerunExpression*> values;
-				while (not is_next(TokenType::stop, i) && (i < tokens->size())) {
+				while (not is_next(TokenType::stop, i) && (i < tokens.size())) {
 					auto expRes = do_prerun_expression(preCtx, i, None);
 					i           = expRes.second;
 					values.push_back(expRes.first);
@@ -6597,7 +6584,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 	};
 
 	for (; i < upto; i++) {
-		Token& token = tokens->at(i);
+		Token& token = tokens.at(i);
 		switch (token.type) {
 			case TokenType::comment: {
 				addComment({i, token.value, token.fileRange});
@@ -6632,7 +6619,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 				} else {
 					auto expRes = do_expression(preCtx, None, i - 1, None);
-					if (tokens->at(expRes.second + 1).type == TokenType::stop) {
+					if (tokens.at(expRes.second + 1).type == TokenType::stop) {
 						addSentence(ast::ExpressionSentence::create(expRes.first, RangeSpan(i, expRes.second + 1)));
 						i = expRes.second + 1;
 					} else {
@@ -7290,8 +7277,8 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
 	SHOW("Starting parsing function parameters")
 	Vec<ast::Argument*> args;
 
-	for (usize i = from + 1; ((i < upto) && (i < tokens->size())); i++) {
-		auto& token = tokens->at(i);
+	for (usize i = from + 1; ((i < upto) && (i < tokens.size())); i++) {
+		auto const& token = tokens.at(i);
 		switch (token.type) { // NOLINT(clang-diagnostic-switch)
 			case TokenType::var: {
 				if (is_next(TokenType::identifier, i)) {
@@ -7360,11 +7347,11 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
 Maybe<usize> Parser::get_pair_end(const lexer::TokenType startType, const lexer::TokenType endType,
                                   const usize current) {
 	usize collisions = 0;
-	for (usize i = current + 1; i < tokens->size(); i++) {
-		// SHOW("GetPairEnd :: Index = " << i << ", Token Type = " << (int)tokens->at(i).type)
-		if (tokens->at(i).type == startType) {
+	for (usize i = current + 1; i < tokens.size(); i++) {
+		// SHOW("GetPairEnd :: Index = " << i << ", Token Type = " << (int)tokens.at(i).type)
+		if (tokens.at(i).type == startType) {
 			collisions++;
-		} else if (tokens->at(i).type == endType) {
+		} else if (tokens.at(i).type == endType) {
 			if (collisions == 0) {
 				return i;
 			} else {
@@ -7377,7 +7364,7 @@ Maybe<usize> Parser::get_pair_end(const lexer::TokenType startType, const lexer:
 
 bool Parser::is_previous(const lexer::TokenType type, const usize from) {
 	if ((from - 1) >= 0) {
-		return tokens->at(from - 1).type == type;
+		return tokens.at(from - 1).type == type;
 	} else {
 		return false;
 	}
@@ -7386,7 +7373,7 @@ bool Parser::is_previous(const lexer::TokenType type, const usize from) {
 bool Parser::are_only_present_within(const Vec<lexer::TokenType>& kinds, usize from, usize upto) {
 	for (usize i = from + 1; i < upto; i++) {
 		for (auto const& kind : kinds) {
-			if (kind != tokens->at(i).type) {
+			if (kind != tokens.at(i).type) {
 				return false;
 			}
 		}
@@ -7407,27 +7394,27 @@ bool Parser::is_primary_within(lexer::TokenType candidate, usize from, usize upt
 
 Maybe<usize> Parser::first_primary_position(const lexer::TokenType candidate, const usize from) {
 	using lexer::TokenType;
-	for (usize i = from + 1; i < tokens->size(); i++) {
-		auto tok = tokens->at(i);
+	for (usize i = from + 1; i < tokens.size(); i++) {
+		auto tok = tokens.at(i);
 		if (tok.type == candidate) {
 			return i;
 		} else if (tok.type == TokenType::parenthesisOpen) {
 			auto endRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
-			if (endRes.has_value() && (endRes.value() < tokens->size())) {
+			if (endRes.has_value() && (endRes.value() < tokens.size())) {
 				i = endRes.value();
 			} else {
 				return None;
 			}
 		} else if (tok.type == TokenType::bracketOpen) {
 			auto endRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i);
-			if (endRes.has_value() && (endRes.value() < tokens->size())) {
+			if (endRes.has_value() && (endRes.value() < tokens.size())) {
 				i = endRes.value();
 			} else {
 				return None;
 			}
 		} else if (tok.type == TokenType::curlybraceOpen) {
 			auto endRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i);
-			if (endRes.has_value() && (endRes.value() < tokens->size())) {
+			if (endRes.has_value() && (endRes.value() < tokens.size())) {
 				i = endRes.value();
 			} else {
 				return None;
@@ -7435,7 +7422,7 @@ Maybe<usize> Parser::first_primary_position(const lexer::TokenType candidate, co
 		} else if (tok.type == TokenType::genericTypeStart) {
 			//   SHOW("FirstPrimaryPosition :: Generic type start: " << tok.fileRange << ", Index: " << i)
 			auto endRes = get_pair_end(TokenType::genericTypeStart, TokenType::genericTypeEnd, i);
-			if (endRes.has_value() && (endRes.value() < tokens->size())) {
+			if (endRes.has_value() && (endRes.value() < tokens.size())) {
 				// SHOW("FirstPrimaryPosition :: Generic type end: " << RangeAt(endRes.value()))
 				i = endRes.value();
 			} else {
@@ -7449,8 +7436,8 @@ Maybe<usize> Parser::first_primary_position(const lexer::TokenType candidate, co
 Vec<usize> Parser::primary_positions_within(lexer::TokenType candidate, usize from, usize upto) {
 	Vec<usize> result;
 	using lexer::TokenType;
-	for (usize i = from + 1; (i < upto && i < tokens->size()); i++) {
-		auto tok = tokens->at(i);
+	for (usize i = from + 1; (i < upto && i < tokens.size()); i++) {
+		auto tok = tokens.at(i);
 		if (tok.type == TokenType::parenthesisOpen) {
 			auto endRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i);
 			if (endRes.has_value() && (endRes.value() < upto)) {

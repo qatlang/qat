@@ -11,6 +11,7 @@
 #include "./parser/parser.hpp"
 #include "./show.hpp"
 #include "./utils/identifier.hpp"
+#include "./utils/profiler.hpp"
 #include "./utils/run_command.hpp"
 #include "./utils/visibility.hpp"
 
@@ -386,7 +387,10 @@ void QatSitter::initialise() {
 			ctx->write_json_result(true);
 		}
 	}
-	SHOW("Initialise complete")
+	SHOW("Writing profiler data")
+	Profiler::write_to_file((cfg->get_output_path() / "profiler.txt").string());
+	SHOW("Profiler data written")
+	SHOW("Sitter reached completion")
 }
 
 void QatSitter::remove_entity_with_path(const fs::path& path) {

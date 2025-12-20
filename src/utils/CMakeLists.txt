@@ -4,6 +4,7 @@ add_library(QAT_UTILS
 	json_parser.cpp
 	json.cpp
 	parse_boxes_identifier.cpp
+	profiler.cc
 	qat_region.cpp
 	run_command.cc
 	string_to_callingconv.cpp

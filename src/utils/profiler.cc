@@ -24,6 +24,7 @@ std::unordered_map<String, Pair<usize, usize>> Profiler::timings          = {};
 std::array<String, 3>                          Profiler::prefixExclusions = {"qat::lexer::", "qat::parser::", "qat::"};
 
 void Profiler::write_to_file(String filePath) {
+#if ENABLE_PROFILER
 	std::ofstream out;
 	out.open(filePath.c_str(), std::ofstream::ios_base::out | std::ofstream::ios_base::trunc);
 	for (auto& it : timings) {
@@ -53,6 +54,7 @@ void Profiler::write_to_file(String filePath) {
 		    << '\n';
 	}
 	out.close();
+#endif
 }
 
 } // namespace qat

@@ -40,7 +40,8 @@ namespace qat {
 
 QatSitter* QatSitter::instance = nullptr;
 
-QatSitter::QatSitter() : ctx(ir::Ctx::New()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx)) {
+QatSitter::QatSitter()
+    : ctx(ir::Ctx::create()), Lexer(lexer::Lexer::get(ctx)), Parser(parser::Parser::get(ctx, Lexer->get_tokens())) {
 	ctx->sitter = this;
 }
 
@@ -110,9 +111,9 @@ void QatSitter::initialise() {
 			ir::StdLib::stdLib = ir::Mod::get_file_module(config->get_std_lib_path());
 		}
 	}
+	auto cfg = cli::Config::get();
 	SHOW("Module count: " << ir::Mod::allModules.size())
 	if (config->is_workflow_build() || config->is_workflow_analyse()) {
-		auto cfg = cli::Config::get();
 		llvm::InitializeAllTargetInfos();
 		llvm::InitializeAllTargets();
 		llvm::InitializeAllTargetMCs();
@@ -131,16 +132,16 @@ void QatSitter::initialise() {
 		if (not cfg->has_target_triple() && not cfg->has_cpu_name()) {
 			cpuName = llvm::sys::getHostCPUName().str();
 			SHOW("CPU name is " << cpuName);
-			// auto features = llvm::sys::getHostCPUFeatures();
-			// for (auto& item : features) {
-			// 	if (item.getValue()) {
-			// 		SHOW("Enabling CPU feature " << item.getKey().str());
-			// 		if (not cpuFeatures.empty()) {
-			// 			cpuFeatures += ",";
-			// 		}
-			// 		cpuFeatures += item.getKey();
-			// 	}
-			// }
+			auto features = llvm::sys::getHostCPUFeatures();
+			for (auto& item : features) {
+				if (item.getValue()) {
+					SHOW("Enabling CPU feature " << item.getKey().str());
+					if (not cpuFeatures.empty()) {
+						cpuFeatures += ",";
+					}
+					cpuFeatures += ("+" + item.getKey()).str();
+				}
+			}
 		}
 		if (cfg->has_cpu_name()) {
 			cpuName = cfg->get_cpu_name();
@@ -442,8 +443,7 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 					}
 					Lexer->change_file(fs::absolute(libCheckRes->second));
 					Lexer->analyse();
-					Parser->set_tokens(Lexer->get_tokens());
-					auto parseRes(Parser->parse());
+					auto parseRes(Parser->begin_parsing());
 					for (const auto& bPath : Parser->get_brought_paths()) {
 						broughtPaths.push_back(bPath);
 					}
@@ -489,8 +489,7 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 				}
 				Lexer->change_file(item.path().string());
 				Lexer->analyse();
-				Parser->set_tokens(Lexer->get_tokens());
-				auto parseRes(Parser->parse());
+				auto parseRes(Parser->begin_parsing());
 				for (const auto& bPath : Parser->get_brought_paths()) {
 					broughtPaths.push_back(bPath);
 				}
@@ -525,8 +524,7 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 			}
 			Lexer->change_file(libCheckRes->second);
 			Lexer->analyse();
-			Parser->set_tokens(Lexer->get_tokens());
-			auto parseRes(Parser->parse());
+			auto parseRes(Parser->begin_parsing());
 			for (const auto& bPath : Parser->get_brought_paths()) {
 				broughtPaths.push_back(bPath);
 			}
@@ -556,8 +554,7 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 		}
 		Lexer->change_file(mainPath);
 		Lexer->analyse();
-		Parser->set_tokens(Lexer->get_tokens());
-		auto parseRes(Parser->parse());
+		auto parseRes(Parser->begin_parsing());
 		for (const auto& bPath : Parser->get_brought_paths()) {
 			broughtPaths.push_back(bPath);
 		}

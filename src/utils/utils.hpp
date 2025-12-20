@@ -19,7 +19,6 @@ useit inline bool is_integer(String value) {
 }
 
 useit inline String number_to_position(u64 number) {
-	// NOLINTBEGIN(readability-magic-numbers)
 	if (((number % 100) >= 11) && ((number % 100) <= 20)) {
 		return std::to_string(number) + "th";
 	}
@@ -33,7 +32,6 @@ useit inline String number_to_position(u64 number) {
 		default:
 			return std::to_string(number).append("th");
 	}
-	// NOLINTEND(readability-magic-numbers)
 }
 
 useit inline Vec<String> split_string(const String& value, const String& slice) {

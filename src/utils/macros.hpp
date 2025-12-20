@@ -10,6 +10,9 @@
 #elif defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
 #define RUNTIME_IS_MSVC  1
 #define RUNTIME_IS_MINGW 0
+#else
+#define RUNTIME_IS_MSVC  0
+#define RUNTIME_IS_MINGW 0
 #endif
 
 #endif

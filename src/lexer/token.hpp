@@ -10,10 +10,10 @@ namespace qat::lexer {
 
 class Token {
   private:
-	Token(TokenType _type, FileRangePtr _fileRange) : type(_type), value(), hasValue(false), fileRange(_fileRange) {}
+	Token(TokenType _type, FileRangePtr _fileRange) : type(_type), value(), fileRange(_fileRange) {}
 
 	Token(TokenType _type, String _value, FileRangePtr _fileRange)
-	    : type(_type), value(std::move(_value)), hasValue(true), fileRange(_fileRange) {}
+	    : type(_type), value(std::move(_value)), fileRange(_fileRange) {}
 
   public:
 	static Token valued(TokenType _type, String _value, FileRangePtr fileRange);
@@ -21,7 +21,6 @@ class Token {
 
 	TokenType    type;
 	String       value;
-	bool         hasValue = false;
 	FileRangePtr fileRange;
 
 	operator Identifier() const;

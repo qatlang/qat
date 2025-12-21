@@ -46,7 +46,7 @@ class Lexer {
 	static u64 timeInNanoseconds;
 	static u64 lineCount;
 
-	void throw_error(const String& message, Maybe<usize> offset = None);
+	void error(const String& message, Maybe<usize> offset = None);
 
 	void analyse();
 

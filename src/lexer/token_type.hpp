@@ -6,10 +6,10 @@
 namespace qat::lexer {
 
 enum class TokenType : u8 {
+	endOfFile,
 	null,
 	FALSE,
 	TRUE,
-	startOfFile,
 	give,
 	pub,
 	stop,
@@ -55,7 +55,6 @@ enum class TokenType : u8 {
 	as,
 	selfInstance,
 	lib,
-	endOfFile,
 	packed,
 	var,
 	givenTypeSeparator,

@@ -29,7 +29,6 @@ u64 Lexer::timeInNanoseconds = 0;
 u64 Lexer::lineCount         = 0;
 
 void Lexer::read() {
-	//   try {
 	if (has_file_ended()) {
 		return;
 	}
@@ -41,7 +40,7 @@ void Lexer::read() {
 	if (byteSpanUTF8 == 0) {
 		auto len = utils::get_utf8_byte_length(get());
 		if (not len.has_value()) {
-			throw_error(
+			error(
 			    "Invalid UTF-8 encoding. Could not determine the number of encoded bytes for this character, that starts with the byte " +
 			    utils::to_hex_with_prefix(get(), 2));
 		}
@@ -73,9 +72,6 @@ void Lexer::read() {
 			byteNumber = 1; // CR - legacy macOS line ending
 		}
 	}
-	//   } catch (std::exception& err) {
-	//     throwError(String("Lexer failed while reading the file. Error: ") + err.what());
-	//   }
 }
 
 FileRangePtr Lexer::get_position(u64 length) {
@@ -101,13 +97,9 @@ void Lexer::analyse() {
 	inStream.read(&content[0], fileSize);
 
 	auto startTime = std::chrono::high_resolution_clock::now();
-	tokens.push_back(Token::valued(TokenType::startOfFile, filePath.string(), this->get_position(0)));
 	read();
 	while (not has_file_ended()) {
 		tokens.push_back(tokeniser());
-	}
-	if (tokens.back().type != TokenType::endOfFile) {
-		tokens.push_back(Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0)));
 	}
 	timeInNanoseconds +=
 	    std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now() - startTime)
@@ -121,6 +113,7 @@ void Lexer::change_file(fs::path newFilePath) {
 	cursor     = -1;
 	lineNumber = 1;
 	byteNumber = 0;
+	charNumber = 0;
 }
 
 #define LOWER_LETTER_FIRST 'a'
@@ -169,7 +162,7 @@ Token Lexer::tokeniser() {
 					read();
 					return Token::normal(TokenType::ellipsis, this->get_position(3));
 				} else {
-					throw_error("Expected either . or ... here, but found an invalid token instead", 2);
+					error("Expected either . or ... here, but found an invalid token instead", 2);
 				}
 			} else {
 				return Token::normal(TokenType::stop, this->get_position(1));
@@ -413,7 +406,7 @@ Token Lexer::tokeniser() {
 				} else if (get() == 'u') {
 					read();
 					if (get() != '{') {
-						throw_error("Expected { and } to enclose the unicode scalar value after this");
+						error("Expected { and } to enclose the unicode scalar value after this");
 					}
 					read();
 					String hex;
@@ -424,37 +417,35 @@ Token Lexer::tokeniser() {
 						read();
 					}
 					if (hex.empty()) {
-						throw_error("Expected hex digits after \\u{");
+						error("Expected hex digits after \\u{");
 					}
 					if (hex.length() > 6) {
-						throw_error("Maximum hex digits allowed in Unicode scalar value is 6. Found " + hex +
-						            " instead");
+						error("Maximum hex digits allowed in Unicode scalar value is 6. Found " + hex + " instead");
 					}
 					if (get() != '}') {
-						throw_error("Expected } after the unicode scalar value");
+						error("Expected } after the unicode scalar value");
 					}
 					auto scalar  = static_cast<u32>(std::stoul(hex, nullptr, 16));
 					auto utf8Res = utils::unicode_scalar_to_utf8(scalar);
 					if (utf8Res.has_value()) {
 						bytes = utf8Res->first;
 					} else {
-						throw_error(
+						error(
 						    "The value obtained from the unicode escape sequence is " +
 						    utils::to_hex_with_prefix(scalar, None) +
 						    " which is not a valid unicode scalar value. Unicode scalar values are in the range 0x0000 to 0x10FFFF");
 					}
 				} else {
-					throw_error("Invalid escape sequence found. The escape sequences allowed are: \n" +
-					            String("\\0, \\\\\\\\, \\`, \\n, \\b, \\t, \\r, \\a, \\f, \\v and \\u{XXXX}") +
-					            "\nThe byte representation of the character following \\ is " +
-					            utils::to_hex_with_prefix(get(), 2));
+					error("Invalid escape sequence found. The escape sequences allowed are: \n" +
+					      String("\\0, \\\\\\\\, \\`, \\n, \\b, \\t, \\r, \\a, \\f, \\v and \\u{XXXX}") +
+					      "\nThe byte representation of the character following \\ is " +
+					      utils::to_hex_with_prefix(get(), 2));
 				}
 			} else {
 				auto byteLen = utils::get_utf8_byte_length(get());
 				if (not byteLen.has_value()) {
-					throw_error(
-					    "Invalid UTF-8 encoded character. The first byte read for the Uniform scalar value is " +
-					    utils::to_hex_with_prefix(get(), 2));
+					error("Invalid UTF-8 encoded character. The first byte read for the Uniform scalar value is " +
+					      utils::to_hex_with_prefix(get(), 2));
 				}
 				switch (byteLen.value()) {
 					case 1: {
@@ -463,11 +454,11 @@ Token Lexer::tokeniser() {
 							                                         << std::uppercase << get())
 							                        .str();
 							if (ascii_char_has_standard_escape(get())) {
-								throw_error(
+								error(
 								    "Found invisible ASCII character here that can be encoded as a standard escape sequence. Please change this to `" +
 								    get_ascii_standard_escape(get()) + "`");
 							} else {
-								throw_error(
+								error(
 								    "Found invisible character U+" + hexStr +
 								    " in the unicode scalar value. Such characters should be provided as escape sequences. Please change this to `\\u{" +
 								    hexStr + "}`");
@@ -480,7 +471,7 @@ Token Lexer::tokeniser() {
 						bytes[0] = get();
 						read();
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte in a 2-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
@@ -493,7 +484,7 @@ Token Lexer::tokeniser() {
 						bytes[0] = get();
 						read();
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
@@ -502,7 +493,7 @@ Token Lexer::tokeniser() {
 						bytes[1] = get();
 						read();
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
@@ -516,7 +507,7 @@ Token Lexer::tokeniser() {
 						bytes[0] = get();
 						read();
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
@@ -525,7 +516,7 @@ Token Lexer::tokeniser() {
 						bytes[1] = get();
 						read();
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
@@ -535,7 +526,7 @@ Token Lexer::tokeniser() {
 						bytes[2] = get();
 						read();
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the fourth byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
@@ -549,7 +540,7 @@ Token Lexer::tokeniser() {
 				if (byteLen.value() > 1) {
 					auto scalar = utils::utf8_to_unicode_scalar(bytes);
 					if (not scalar.has_value()) {
-						throw_error(
+						error(
 						    "The provided UTF-8 encoding could not be converted to a valid Unicode scalar value. Unicode scalar values"
 						    " should be in the inclusive range from 0x0000 to 0x10FFFF. The byte representation of the bytes read is " +
 						    utils::to_hex(bytes[0], 2) + ' ' +
@@ -557,16 +548,15 @@ Token Lexer::tokeniser() {
 						    (byteLen.value() >= 3 ? (utils::to_hex(bytes[2], 2) + ' ') : "") +
 						    (byteLen.value() == 4 ? (utils::to_hex(bytes[3], 2) + ' ') : ""));
 					} else if (utils::is_invisible_unicode(scalar.value())) {
-						throw_error(
-						    "Found an invisible character here. If this was intentional, please change this to \\u{" +
-						    utils::to_hex(scalar.value(), None) +
-						    "} instead. Such characters should be encoded as unicode scalar values");
+						error("Found an invisible character here. If this was intentional, please change this to \\u{" +
+						      utils::to_hex(scalar.value(), None) +
+						      "} instead. Such characters should be encoded as unicode scalar values");
 					}
 				}
 			}
 			read();
 			if (get() != '`') {
-				throw_error("Expected ` to end the unicode scalar value");
+				error("Expected ` to end the unicode scalar value");
 			}
 			String tokRes(4, 0);
 			tokRes[0] = bytes[0];
@@ -609,7 +599,7 @@ Token Lexer::tokeniser() {
 					} else if (get() == 'x') {
 						read();
 						if (get() != '{') {
-							throw_error("Expected { and } to enclose the ASCII byte, which is to be provided");
+							error("Expected { and } to enclose the ASCII byte, which is to be provided");
 						}
 						read();
 						String hex;
@@ -618,18 +608,18 @@ Token Lexer::tokeniser() {
 							read();
 						}
 						if (hex.empty()) {
-							throw_error("Could not find any hex digits after \\x{");
+							error("Could not find any hex digits after \\x{");
 						} else if (hex.length() > 2) {
-							throw_error(
+							error(
 							    "Escape sequence to provide the ASCII byte can only contain atmost 2 hex digits. Found " +
 							    hex + " instead");
 						}
 						if (get() != '}') {
-							throw_error("Expected } to end the ASCII byte");
+							error("Expected } to end the ASCII byte");
 						}
 						auto charVal = (unsigned char)std::stoul(hex);
 						if (charVal >= 0x80) {
-							throw_error(
+							error(
 							    "The byte " + hex +
 							    " is not in the ASCII range. ASCII characters should be in the inclusive range from 0x00 to 0x7F");
 						}
@@ -637,8 +627,7 @@ Token Lexer::tokeniser() {
 					} else if (get() == 'u') {
 						read();
 						if (get() != '{') {
-							throw_error(
-							    "Expected { and } to enclose the Unicode scalar value, which is to be provided");
+							error("Expected { and } to enclose the Unicode scalar value, which is to be provided");
 						}
 						read();
 						String hex;
@@ -647,13 +636,13 @@ Token Lexer::tokeniser() {
 							read();
 						}
 						if (hex.empty()) {
-							throw_error("Expected hex digits to be provided after \\u{");
+							error("Expected hex digits to be provided after \\u{");
 						}
 						if (hex.length() > 6) {
-							throw_error("The maximum number of hex digits allowed in Unicode scalar value is 6");
+							error("The maximum number of hex digits allowed in Unicode scalar value is 6");
 						}
 						if (get() != '}') {
-							throw_error("Expected } to end the Unicode scalar value");
+							error("Expected } to end the Unicode scalar value");
 						}
 						auto scalar  = static_cast<u32>(std::stoul(hex, nullptr, 16));
 						auto utf8Res = utils::unicode_scalar_to_utf8(scalar);
@@ -662,16 +651,16 @@ Token Lexer::tokeniser() {
 								str_val += utf8Res->first[i];
 							}
 						} else {
-							throw_error("The value obtained from the unicode escape sequence is " +
-							            utils::to_hex_with_prefix(scalar, None) +
-							            " which is not a valid unicode scalar value. Unicode scalar values "
-							            "should be in the inclusive range from 0x0000 to 0x10FFFF");
+							error("The value obtained from the unicode escape sequence is " +
+							      utils::to_hex_with_prefix(scalar, None) +
+							      " which is not a valid unicode scalar value. Unicode scalar values "
+							      "should be in the inclusive range from 0x0000 to 0x10FFFF");
 						}
 					} else {
-						throw_error("Invalid escape sequence found. The escape sequences allowed are: \n" +
-						            String("\\0, \\\\\\\\, \\\", \\n, \\b, \\t, \\r, \\a, \\f, \\v and \\u{XXXX}") +
-						            "\nThe byte representation of the character following \\ is " +
-						            utils::to_hex_with_prefix(get(), 2));
+						error("Invalid escape sequence found. The escape sequences allowed are: \n" +
+						      String("\\0, \\\\\\\\, \\\", \\n, \\b, \\t, \\r, \\a, \\f, \\v and \\u{XXXX}") +
+						      "\nThe byte representation of the character following \\ is " +
+						      utils::to_hex_with_prefix(get(), 2));
 					}
 				} else {
 					if (get() == '\\' && (has_previous() ? (previous() != '\\') : true)) {
@@ -679,9 +668,9 @@ Token Lexer::tokeniser() {
 					} else {
 						auto byteLen = utils::get_utf8_byte_length(get());
 						if (not byteLen.has_value()) {
-							throw_error("Invalid UTF-8 encoding found here. The byte which was supposed to be "
-							            "first in the sequence for a character is " +
-							            utils::to_hex_with_prefix(get(), 2));
+							error("Invalid UTF-8 encoding found here. The byte which was supposed to be "
+							      "first in the sequence for a character is " +
+							      utils::to_hex_with_prefix(get(), 2));
 						}
 						std::array<u8, 4> bytes{0, 0, 0, 0};
 						switch (byteLen.value()) {
@@ -689,7 +678,7 @@ Token Lexer::tokeniser() {
 								if (is_invisible_ascii_char(get())) {
 									if (not(isMultiStringAllowed && (get() == '\n' || get() == '\t'))) {
 										if (ascii_char_has_standard_escape(get())) {
-											throw_error(
+											error(
 											    "Found an invisible character here that can be encoded as a standard escape sequence. "
 											    "Please change this to " +
 											    get_ascii_standard_escape(get()) +
@@ -697,7 +686,7 @@ Token Lexer::tokeniser() {
 											         ? ". If you want to use multiline strings, use the syntax multi\"String content\""
 											         : ""));
 										} else {
-											throw_error(
+											error(
 											    "Found an invisible character here. If this was intentional, please change this to \\u{" +
 											    utils::to_hex(get(), 4) +
 											    "}. Such characters should be encoded as Unicode scalar values");
@@ -713,7 +702,7 @@ Token Lexer::tokeniser() {
 								read();
 								bytes[1] = get();
 								if (not utils::is_follow_byte_utf8(get())) {
-									throw_error(
+									error(
 									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the second byte in a 2-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read as a single unicode character is " +
@@ -728,7 +717,7 @@ Token Lexer::tokeniser() {
 								read();
 								bytes[1] = get();
 								if (not utils::is_follow_byte_utf8(get())) {
-									throw_error(
+									error(
 									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the second byte in a 3-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
@@ -738,7 +727,7 @@ Token Lexer::tokeniser() {
 								read();
 								bytes[2] = get();
 								if (not utils::is_follow_byte_utf8(get())) {
-									throw_error(
+									error(
 									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the third byte in a 3-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
@@ -756,7 +745,7 @@ Token Lexer::tokeniser() {
 								read();
 								bytes[1] = get();
 								if (not utils::is_follow_byte_utf8(get())) {
-									throw_error(
+									error(
 									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the second byte in a 4-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
@@ -766,7 +755,7 @@ Token Lexer::tokeniser() {
 								read();
 								bytes[2] = get();
 								if (not utils::is_follow_byte_utf8(get())) {
-									throw_error(
+									error(
 									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the third byte in a 4-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
@@ -778,7 +767,7 @@ Token Lexer::tokeniser() {
 								read();
 								bytes[3] = get();
 								if (not utils::is_follow_byte_utf8(get())) {
-									throw_error(
+									error(
 									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the fourth byte in a 4-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
@@ -794,7 +783,7 @@ Token Lexer::tokeniser() {
 						if (byteLen.value() > 1) {
 							auto scalar = utils::utf8_to_unicode_scalar(bytes);
 							if (scalar.has_value() && utils::is_invisible_unicode(scalar.value())) {
-								throw_error(
+								error(
 								    "Found an invisible character here. If this was intentional, please change this to \\u{" +
 								    utils::to_hex(scalar.value(), None) +
 								    "} instead. Such characters should be encoded as unicode scalar values");
@@ -805,7 +794,7 @@ Token Lexer::tokeniser() {
 				read();
 			}
 			if (get() != '"') {
-				throw_error("Could not find \" at the end of the string literal");
+				error("Could not find \" at the end of the string literal");
 			}
 			read();
 			isMultiStringAllowed = false;
@@ -850,7 +839,7 @@ Token Lexer::tokeniser() {
 						numVal += '_';
 						read();
 					} else {
-						throw_error("Invalid custom radix integer literal. Expected _ after " + numVal);
+						error("Invalid custom radix integer literal. Expected _ after " + numVal);
 					}
 					foundRadix = true;
 				} else {
@@ -881,8 +870,8 @@ Token Lexer::tokeniser() {
 					read();
 					if (CURRENT_IS_DIGIT) {
 						if (foundRadix) {
-							throw_error("This literal is in custom radix format and hence cannot contain decimal point",
-							            numVal.length() + 1);
+							error("This literal is in custom radix format and hence cannot contain decimal point",
+							      numVal.length() + 1);
 						}
 						is_float = true;
 						numVal += '.';
@@ -919,7 +908,7 @@ Token Lexer::tokeniser() {
 						return Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
 						                     this->get_position(numVal.length()));
 					} else {
-						throw_error("Invalid literal. Found _ without anything following");
+						error("Invalid literal. Found _ without anything following");
 					}
 				}
 				numVal += get();
@@ -943,16 +932,16 @@ Token Lexer::tokeniser() {
 					String byteValue;
 					read();
 					if (get() == '`') {
-						throw_error("Byte literals cannot be empty, please provide an Extended ASCII character in it. "
-						            "Please use \\` if you literally meant to include the character `");
+						error("Byte literals cannot be empty, please provide an Extended ASCII character in it. "
+						      "Please use \\` if you literally meant to include the character `");
 					}
 					if (is_invisible_ascii_char(get())) {
 						if (ascii_char_has_standard_escape(get())) {
-							throw_error(
+							error(
 							    "Found an invisible character in the byte literal which could be encoded as an escape sequence. Please change this to b`" +
 							    String(get_ascii_standard_escape(get())) + "`");
 						} else {
-							throw_error(
+							error(
 							    "Found an invisible character in the byte literal. Such characters should be encoded as escape sequences. Please change this to b`\\x{" +
 							    (std::stringstream()
 							     << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << get())
@@ -980,7 +969,7 @@ Token Lexer::tokeniser() {
 						} else if (get() == 'x') {
 							read();
 							if (get() != '{') {
-								throw_error("Expected { and } to enclose the Extended ASCII byte after this");
+								error("Expected { and } to enclose the Extended ASCII byte after this");
 							}
 							String hex;
 							read();
@@ -991,18 +980,18 @@ Token Lexer::tokeniser() {
 								read();
 							}
 							if (hex.empty()) {
-								throw_error("Could not find any hex digits after \\x{");
+								error("Could not find any hex digits after \\x{");
 							} else if (hex.length() > 2) {
-								throw_error(
+								error(
 								    "Escape sequence to provide the Extented ASCII byte can only contain atmost 2 hex digits. Found " +
 								    hex + " instead");
 							}
 							if (get() != '}') {
-								throw_error("Expected } to end the Extented ASCII byte after this");
+								error("Expected } to end the Extented ASCII byte after this");
 							}
 							byteValue += (char)std::stoul(hex, nullptr, 16);
 						} else {
-							throw_error(
+							error(
 							    "Invalid escape sequence. The byte representation of the character following the \\ is " +
 							    utils::to_hex_with_prefix(get(), 2));
 						}
@@ -1011,7 +1000,7 @@ Token Lexer::tokeniser() {
 					}
 					read();
 					if (get() != '`') {
-						throw_error(
+						error(
 						    "Expected ` after the byte value, which could not be found. Byte literals can only contain one Extended ASCII character.");
 					}
 					read();
@@ -1028,7 +1017,7 @@ Token Lexer::tokeniser() {
 				}
 				auto byteLen = utils::get_utf8_byte_length(get());
 				if (not byteLen.has_value()) {
-					throw_error(
+					error(
 					    "Invalid UTF-8 encoding. Could not calculate the number of bytes required for the current character from its first byte. The first byte is " +
 					    utils::to_hex_with_prefix(get(), 2));
 				}
@@ -1039,9 +1028,7 @@ Token Lexer::tokeniser() {
 						if (not(idVal.empty() ? (CURRENT_IS_ALPHABET || (get() == '_'))
 						                      : (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (get() == '_')))) {
 							if (repeatingToken || idVal.empty()) {
-								// std::cout << "Repeating token: " << repeatingToken
-								//           << " Empty identifier: " << idVal.empty() << "\n";
-								throw_error(
+								error(
 								    String("The character ") + get() +
 								    " cannot be part of an identifier and is also not a recognised symbol in the language. "
 								    "Identifiers should start with _ or letters from any unicode supported language, and can "
@@ -1061,12 +1048,12 @@ Token Lexer::tokeniser() {
 						bytes[0] = get();
 						read();
 						if (has_file_ended()) {
-							throw_error(
+							error(
 							    "File ended before reading the second byte of the 2-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
 						}
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte of the 2-byte encoded UTF-8 character. This byte does not follow the UTF-8 encoding constraints");
 						}
@@ -1076,23 +1063,23 @@ Token Lexer::tokeniser() {
 					case 3: {
 						bytes[0] = get();
 						if (has_file_ended()) {
-							throw_error(
+							error(
 							    "File ended before reading the second byte of the 3-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
 						}
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte of the 3-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
 						bytes[1] = get();
 						if (has_file_ended()) {
-							throw_error(
+							error(
 							    "File ended before reading the third byte of the 3-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2));
 						}
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte of the 3-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
@@ -1102,35 +1089,35 @@ Token Lexer::tokeniser() {
 					case 4: {
 						bytes[0] = get();
 						if (has_file_ended()) {
-							throw_error(
+							error(
 							    "File ended before reading the second byte of the 4-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
 						}
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
 						bytes[1] = get();
 						if (has_file_ended()) {
-							throw_error(
+							error(
 							    "File ended before reading the third byte of the 4-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2));
 						}
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
 						bytes[2] = get();
 						if (has_file_ended()) {
-							throw_error(
+							error(
 							    "File ended before reading the fourth byte of the 4-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +
 							    utils::to_hex(bytes[2], 2));
 						}
 						if (not utils::is_follow_byte_utf8(get())) {
-							throw_error(
+							error(
 							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the fourth byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
@@ -1143,7 +1130,7 @@ Token Lexer::tokeniser() {
 				}
 				auto scalar = utils::utf8_to_unicode_scalar(bytes);
 				if (not scalar.has_value()) {
-					throw_error(
+					error(
 					    "The UTF-8 character read could not be converted to a Unicode scalar value. The bytes read are " +
 					    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +
 					    utils::to_hex(bytes[2], 2) + ' ' + utils::to_hex(bytes[3], 2));
@@ -1162,11 +1149,10 @@ Token Lexer::tokeniser() {
 					for (u8 k = 0; k < byteLen.value(); k++) {
 						charStr += bytes[k];
 					}
-					throw_error(
-					    "The character " + charStr +
-					    " cannot be part of an identifier and is also not a recognised symbol in the language. "
-					    "Identifiers should start with _ or letters from any unicode supported language, and can "
-					    "contain digits from any unicode supported language as well in the middle");
+					error("The character " + charStr +
+					      " cannot be part of an identifier and is also not a recognised symbol in the language. "
+					      "Identifiers should start with _ or letters from any unicode supported language, and can "
+					      "contain digits from any unicode supported language as well in the middle");
 				}
 				read();
 			}
@@ -1175,7 +1161,7 @@ Token Lexer::tokeniser() {
 			}
 			auto tokRes = word_to_token(idVal, this);
 			if (not tokRes.has_value()) {
-				throw_error("Could not convert " + idVal + " to a keyword or identifier in the language");
+				error("Could not convert " + idVal + " to a keyword or identifier in the language");
 			}
 			if ((tokRes.value().type == TokenType::multiPtrType) && (get() == '"')) {
 				isMultiStringAllowed = true;
@@ -1207,7 +1193,6 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("skill", skill);
 	else Check_Normal_Keyword("pre", pre);
 	else Check_Normal_Keyword("up", super);
-	//   else Check_Normal_Keyword("const", constant);
 	else Check_Normal_Keyword("from", from);
 	else Check_Normal_Keyword("to", to);
 	else Check_Normal_Keyword("true", TRUE);
@@ -1393,7 +1378,7 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	}
 }
 
-void Lexer::throw_error(const String& message, Maybe<usize> offset) {
+void Lexer::error(const String& message, Maybe<usize> offset) {
 	irCtx->Error(message,
 	             offset.has_value()
 	                 ? get_position(offset.value())

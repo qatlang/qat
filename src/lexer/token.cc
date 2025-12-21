@@ -8,7 +8,7 @@ Token Token::valued(TokenType _type, String _value,
 	return Token(_type, std::move(_value), std::move(_fileRange));
 }
 
-Token Token::normal(TokenType _type, FileRangePtr _fileRange) { return Token(_type, _fileRange); }
+Token Token::normal(TokenType type, FileRangePtr fileRange) { return Token(type, fileRange); }
 
 Token::operator Identifier() const { return Identifier(value, fileRange); }
 

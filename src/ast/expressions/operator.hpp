@@ -33,6 +33,21 @@ enum class OperatorKind {
 	COPY_ASSIGNMENT,
 	MOVE_ASSIGNMENT,
 	DEREFERENCE,
+	// Assigned binary operators
+	ASSIGNED_ADDITION,
+	ASSIGNED_SUBTRACT,
+	ASSIGNED_MULTIPLY,
+	ASSIGNED_DIVIDE,
+	ASSIGNED_REMAINDER,
+	ASSIGNED_BITWISE_OR,
+	ASSIGNED_BITWISE_AND,
+	ASSIGNED_BITWISE_XOR,
+	ASSIGNED_BITWISE_NOT,
+	ASSIGNED_LOGICAL_LEFT_SHIFT,
+	ASSIGNED_LOGICAL_RIGHT_SHIFT,
+	ASSIGNED_ARITHMETIC_RIGHT_SHIFT,
+	ASSIGNED_AND,
+	ASSIGNED_OR,
 };
 
 useit usize get_precedence_of(OperatorKind Operator);
@@ -65,6 +80,21 @@ useit inline bool expect_same_operand_types(OperatorKind opr) {
 		case OperatorKind::LESS_THAN_OR_EQUAL_TO:
 		case OperatorKind::GREATER_THAN:
 		case OperatorKind::GREATER_THAN_OR_EQUAL_TO:
+		// Assigned operators
+		case OperatorKind::ASSIGNED_ADDITION:
+		case OperatorKind::ASSIGNED_SUBTRACT:
+		case OperatorKind::ASSIGNED_MULTIPLY:
+		case OperatorKind::ASSIGNED_DIVIDE:
+		case OperatorKind::ASSIGNED_REMAINDER:
+		case OperatorKind::ASSIGNED_BITWISE_OR:
+		case OperatorKind::ASSIGNED_BITWISE_AND:
+		case OperatorKind::ASSIGNED_BITWISE_XOR:
+		case OperatorKind::ASSIGNED_BITWISE_NOT:
+		case OperatorKind::ASSIGNED_LOGICAL_LEFT_SHIFT:
+		case OperatorKind::ASSIGNED_LOGICAL_RIGHT_SHIFT:
+		case OperatorKind::ASSIGNED_ARITHMETIC_RIGHT_SHIFT:
+		case OperatorKind::ASSIGNED_AND:
+		case OperatorKind::ASSIGNED_OR:
 			return true;
 		case OperatorKind::AND:
 		case OperatorKind::OR:

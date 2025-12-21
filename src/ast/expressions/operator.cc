@@ -1,10 +1,11 @@
 #include "./operator.hpp"
+
 #include <utility>
 
 namespace qat::ast {
 
-usize get_precedence_of(OperatorKind Operator) {
-	switch (Operator) {
+usize get_precedence_of(OperatorKind ops) {
+	switch (ops) {
 		case OperatorKind::MULTIPLY:
 		case OperatorKind::DIVIDE:
 		case OperatorKind::REMAINDER: {
@@ -43,7 +44,7 @@ usize get_precedence_of(OperatorKind Operator) {
 	}
 }
 
-OperatorKind operator_from_string(const String& str) {
+OperatorKind operator_from_string(String const& str) {
 	if (str == "+") {
 		return OperatorKind::ADDITION;
 	} else if (str == "-") {
@@ -90,6 +91,34 @@ OperatorKind operator_from_string(const String& str) {
 		return OperatorKind::DEREFERENCE;
 	} else if (str == "~") {
 		return OperatorKind::BITWISE_NOT;
+	} else if (str == "+=") {
+		return OperatorKind::ASSIGNED_ADDITION;
+	} else if (str == "-=") {
+		return OperatorKind::ASSIGNED_SUBTRACT;
+	} else if (str == "*=") {
+		return OperatorKind::ASSIGNED_MULTIPLY;
+	} else if (str == "/=") {
+		return OperatorKind::ASSIGNED_DIVIDE;
+	} else if (str == "%=") {
+		return OperatorKind::ASSIGNED_REMAINDER;
+	} else if (str == "|=") {
+		return OperatorKind::ASSIGNED_BITWISE_OR;
+	} else if (str == "&=") {
+		return OperatorKind::ASSIGNED_BITWISE_AND;
+	} else if (str == "^=") {
+		return OperatorKind::ASSIGNED_BITWISE_XOR;
+	} else if (str == "~=") {
+		return OperatorKind::ASSIGNED_BITWISE_NOT;
+	} else if (str == "<<=") {
+		return OperatorKind::ASSIGNED_LOGICAL_LEFT_SHIFT;
+	} else if (str == ">>=") {
+		return OperatorKind::ASSIGNED_LOGICAL_RIGHT_SHIFT;
+	} else if (str == ">>>=") {
+		return OperatorKind::ASSIGNED_ARITHMETIC_RIGHT_SHIFT;
+	} else if (str == "&&=") {
+		return OperatorKind::ASSIGNED_AND;
+	} else if (str == "||=") {
+		return OperatorKind::ASSIGNED_OR;
 	}
 	std::unreachable();
 }
@@ -147,6 +176,34 @@ String operator_to_string(OperatorKind opr) {
 			return "ref";
 		case OperatorKind::BITWISE_NOT:
 			return "~";
+		case OperatorKind::ASSIGNED_ADDITION:
+			return "+=";
+		case OperatorKind::ASSIGNED_SUBTRACT:
+			return "-=";
+		case OperatorKind::ASSIGNED_MULTIPLY:
+			return "*=";
+		case OperatorKind::ASSIGNED_DIVIDE:
+			return "/=";
+		case OperatorKind::ASSIGNED_REMAINDER:
+			return "%=";
+		case OperatorKind::ASSIGNED_BITWISE_OR:
+			return "|=";
+		case OperatorKind::ASSIGNED_BITWISE_AND:
+			return "&=";
+		case OperatorKind::ASSIGNED_BITWISE_XOR:
+			return "^=";
+		case OperatorKind::ASSIGNED_BITWISE_NOT:
+			return "~=";
+		case OperatorKind::ASSIGNED_LOGICAL_LEFT_SHIFT:
+			return "<<=";
+		case OperatorKind::ASSIGNED_LOGICAL_RIGHT_SHIFT:
+			return ">>=";
+		case OperatorKind::ASSIGNED_ARITHMETIC_RIGHT_SHIFT:
+			return ">>>=";
+		case OperatorKind::ASSIGNED_AND:
+			return "&&=";
+		case OperatorKind::ASSIGNED_OR:
+			return "||=";
 	}
 }
 

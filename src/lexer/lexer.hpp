@@ -21,8 +21,6 @@ class Lexer {
 	fs::path     filePath;
 	String       content;
 	usize        cursor = 0;
-	char         prev;
-	char         current = 0;
 	Vec<Token>   tokens;
 	Deque<Token> buffer;
 	bool         repeatingToken = false;
@@ -36,39 +34,39 @@ class Lexer {
   public:
 	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
 
-	useit static Lexer* get(ir::Ctx* irCtx);
+	useit static Lexer* get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
 
-	~Lexer();
+	~Lexer() { buffer.clear(); }
 
 	u64        lineNumber = 1;
 	u64        byteNumber = 0;
 	u64        charNumber = 0;
-	Maybe<u64> previousLineEnd;
+	u64        previousLineEnd;
 	u8         byteSpanUTF8 = 0;
 	static u64 timeInNanoseconds;
 	static u64 lineCount;
 
 	void throw_error(const String& message, Maybe<usize> offset = None);
+
 	void analyse();
 
 	Vec<Token>& get_tokens() { return tokens; }
 
-	void advance_cursor() {
-		prev = current;
-		if (cursor + 1 < content.length()) {
-			cursor++;
-			current = content[cursor];
-		} else {
-			cursor  = content.length();
-			current = -1;
-		}
-	}
-
 	void read();
+
 	void change_file(fs::path newFile);
 
 	useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
-	useit Token               tokeniser();
+
+	useit Token tokeniser();
+
+	inline void advance_cursor() { cursor++; }
+
+	useit inline bool has_previous() const { return cursor > 0; }
+
+	useit inline char previous() const { return content[cursor - 1]; }
+
+	useit inline char get() const { return content[cursor]; }
 
 	useit inline bool has_file_ended() { return cursor == content.size(); }
 

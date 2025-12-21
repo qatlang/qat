@@ -2,6 +2,7 @@
 #include "../IR/context.hpp"
 #include "../show.hpp"
 #include "../utils/end_fn.hpp"
+#include "../utils/profiler.hpp"
 #include "../utils/utils.hpp"
 #include "./token_type.hpp"
 
@@ -24,10 +25,6 @@
 
 namespace qat::lexer {
 
-Lexer* Lexer::get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
-
-Lexer::~Lexer() { buffer.clear(); }
-
 u64 Lexer::timeInNanoseconds = 0;
 u64 Lexer::lineCount         = 0;
 
@@ -42,11 +39,11 @@ void Lexer::read() {
 	}
 	byteNumber++;
 	if (byteSpanUTF8 == 0) {
-		auto len = utils::get_utf8_byte_length(current);
+		auto len = utils::get_utf8_byte_length(get());
 		if (not len.has_value()) {
 			throw_error(
 			    "Invalid UTF-8 encoding. Could not determine the number of encoded bytes for this character, that starts with the byte " +
-			    utils::to_hex_with_prefix(current, 2));
+			    utils::to_hex_with_prefix(get(), 2));
 		}
 		byteSpanUTF8 += len.value() - 1;
 	} else {
@@ -56,20 +53,18 @@ void Lexer::read() {
 		}
 	}
 	if (has_file_ended()) {
-		prev    = current;
-		current = 0;
 		return;
 	}
-	if (current == '\n') {
+	if (get() == '\n') {
 		previousLineEnd = byteNumber - 1;
 		lineNumber++;
 		byteNumber = 0;
-	} else if (current == '\r') {
+	} else if (get() == '\r') {
 		advance_cursor();
 		if (has_file_ended()) {
 			return;
 		}
-		if (current == '\n') {
+		if (get() == '\n') {
 			previousLineEnd = byteNumber - 2;
 			lineNumber++;
 			byteNumber = 0;
@@ -86,9 +81,7 @@ void Lexer::read() {
 FileRangePtr Lexer::get_position(u64 length) {
 	FilePos end = {lineNumber, byteNumber > 0 ? (byteNumber - 1) : byteNumber};
 	if (byteNumber == 0) {
-		if (previousLineEnd.has_value()) {
-			end = {lineNumber - 1, previousLineEnd.value()};
-		}
+		end = {lineNumber - 1, previousLineEnd};
 	}
 	return FileRange::from(fs::path(filePath), {end.line, end.byteOffset - length}, end);
 }
@@ -96,9 +89,7 @@ FileRangePtr Lexer::get_position(u64 length) {
 FileRange* Lexer::get_position_var(u64 length) {
 	FilePos end = {lineNumber, byteNumber > 0 ? (byteNumber - 1) : byteNumber};
 	if (byteNumber == 0) {
-		if (previousLineEnd.has_value()) {
-			end = {lineNumber - 1, previousLineEnd.value()};
-		}
+		end = {lineNumber - 1, previousLineEnd};
 	}
 	return FileRange::var_from(fs::path(filePath), {end.line, end.byteOffset - length}, end);
 }
@@ -127,8 +118,6 @@ void Lexer::analyse() {
 void Lexer::change_file(fs::path newFilePath) {
 	tokens.clear();
 	filePath   = std::move(newFilePath);
-	prev       = -1;
-	current    = -1;
 	cursor     = -1;
 	lineNumber = 1;
 	byteNumber = 0;
@@ -141,10 +130,10 @@ void Lexer::change_file(fs::path newFilePath) {
 #define DIGIT_FIRST        '0'
 #define DIGIT_LAST         '9'
 #define CURRENT_IS_ALPHABET                                                                                            \
-	((current >= LOWER_LETTER_FIRST && current <= LOWER_LETTER_LAST) ||                                                \
-	 (current >= UPPER_LETTER_FIRST && current <= UPPER_LETTER_LAST))
+	((get() >= LOWER_LETTER_FIRST && get() <= LOWER_LETTER_LAST) ||                                                    \
+	 (get() >= UPPER_LETTER_FIRST && get() <= UPPER_LETTER_LAST))
 
-#define CURRENT_IS_DIGIT (current >= DIGIT_FIRST && current <= DIGIT_LAST)
+#define CURRENT_IS_DIGIT (get() >= DIGIT_FIRST && get() <= DIGIT_LAST)
 
 Token Lexer::tokeniser() {
 	auto endFn = EndFunction([&]() {
@@ -157,14 +146,14 @@ Token Lexer::tokeniser() {
 		buffer.pop_back();
 		return token;
 	}
-	if (has_file_ended() && current == -1) {
+	if (has_file_ended()) {
 		return Token::valued(TokenType::endOfFile, filePath.string(), this->get_position(0));
 	}
-	if (prev == '\r') {
+	if (has_previous() && (previous() == '\r')) {
 		read();
 		return tokeniser();
 	}
-	switch (current) {
+	switch (get()) {
 		case ' ':
 		case '\n':
 		case '\r':
@@ -174,9 +163,9 @@ Token Lexer::tokeniser() {
 		}
 		case '.': {
 			read();
-			if (current == '.') {
+			if (get() == '.') {
 				read();
-				if (current == '.') {
+				if (get() == '.') {
 					read();
 					return Token::normal(TokenType::ellipsis, this->get_position(3));
 				} else {
@@ -223,7 +212,7 @@ Token Lexer::tokeniser() {
 		}
 		case '^': {
 			read();
-			if (current == '=') {
+			if (get() == '=') {
 				read();
 				return Token::valued(TokenType::assignedBinaryOperator, "^=", this->get_position(2));
 			}
@@ -231,14 +220,14 @@ Token Lexer::tokeniser() {
 		}
 		case ':': {
 			read();
-			if (current == '[') {
+			if (get() == '[') {
 				read();
 				bracketOccurences.push_back(TokenType::genericTypeStart);
 				return Token::normal(TokenType::genericTypeStart, this->get_position(2));
-			} else if (current == '=') {
+			} else if (get() == '=') {
 				read();
 				return Token::normal(TokenType::associatedAssignment, this->get_position(2));
-			} else if (current == ':') {
+			} else if (get() == ':') {
 				read();
 				return Token::normal(TokenType::typeSeparator, this->get_position(2));
 			} else {
@@ -248,22 +237,22 @@ Token Lexer::tokeniser() {
 		case '/': {
 			String value = "/";
 			read();
-			if (current == '*') {
+			if (get() == '*') {
 				bool   star = false;
 				String commentValue;
 				read();
 				auto commentPos = this->get_position_var(0);
-				while ((not star || (current != '/')) && not has_file_ended()) {
+				while ((not star || (get() != '/')) && not has_file_ended()) {
 					if (star) {
 						star = false;
 					}
-					if (current == '*') {
+					if (get() == '*') {
 						star = true;
 					}
 					read();
-					if (not star || (current != '/')) {
-						commentValue += current;
-						if (current == '\n') {
+					if (not star || (get() != '/')) {
+						commentValue += get();
+						if (get() == '\n') {
 							commentPos->end.line++;
 							commentPos->end.byteOffset = 0;
 						} else {
@@ -274,11 +263,11 @@ Token Lexer::tokeniser() {
 				commentPos->end.byteOffset--;
 				read();
 				return Token::valued(TokenType::comment, commentValue, commentPos);
-			} else if (current == '/') {
+			} else if (get() == '/') {
 				String commentValue;
 				auto   commRange = this->get_position(2);
-				while ((current != '\n' && prev != '\r') && not has_file_ended()) {
-					commentValue += current;
+				while ((get() != '\n' && (has_previous() ? (previous() != '\r') : true)) && not has_file_ended()) {
+					commentValue += get();
 					read();
 					commRange = this->get_position(commentValue.length());
 				}
@@ -289,7 +278,7 @@ Token Lexer::tokeniser() {
 		}
 		case '!': {
 			read();
-			if (current == '=') {
+			if (get() == '=') {
 				read();
 				return Token::valued(TokenType::binaryOperator, "!=", this->get_position(2));
 			} else {
@@ -298,7 +287,7 @@ Token Lexer::tokeniser() {
 		}
 		case '~': {
 			read();
-			if (current == '=') {
+			if (get() == '=') {
 				read();
 				return Token::valued(TokenType::assignedBinaryOperator, "~=", this->get_position(2));
 			} else {
@@ -307,24 +296,34 @@ Token Lexer::tokeniser() {
 		}
 		case '&': {
 			read();
-			if (current == '=') {
+			if (get() == '=') {
 				read();
 				return Token::valued(TokenType::assignedBinaryOperator, "&=", this->get_position(2));
-			} else if (current == '&') {
+			} else if (get() == '&') {
 				read();
-				return Token::valued(TokenType::binaryOperator, "&&", this->get_position(2));
+				if (get() == '=') {
+					read();
+					return Token::valued(TokenType::assignedBinaryOperator, "&&=", this->get_position(3));
+				} else {
+					return Token::valued(TokenType::binaryOperator, "&&", this->get_position(2));
+				}
 			} else {
 				return Token::valued(TokenType::binaryOperator, "&", this->get_position(1));
 			}
 		}
 		case '|': {
 			read();
-			if (current == '=') {
+			if (get() == '=') {
 				read();
 				return Token::valued(TokenType::assignedBinaryOperator, "|=", this->get_position(2));
-			} else if (current == '|') {
+			} else if (get() == '|') {
 				read();
-				return Token::valued(TokenType::binaryOperator, "||", this->get_position(2));
+				if (get() == '=') {
+					read();
+					return Token::valued(TokenType::assignedBinaryOperator, "||=", this->get_position(3));
+				} else {
+					return Token::valued(TokenType::binaryOperator, "||", this->get_position(2));
+				}
 			} else {
 				return Token::valued(TokenType::binaryOperator, "|", this->get_position(1));
 			}
@@ -340,21 +339,21 @@ Token Lexer::tokeniser() {
 		case '<':
 		case '>': {
 			String operatorValue;
-			operatorValue += current;
+			operatorValue += get();
 			read();
-			if (current == '=' && operatorValue != "<" && operatorValue != ">") {
-				operatorValue += current;
+			if (get() == '=' && operatorValue != "<" && operatorValue != ">") {
+				operatorValue += get();
 				read();
 				return Token::valued(TokenType::assignedBinaryOperator, operatorValue, this->get_position(2));
-			} else if (current == '=' && (operatorValue == "<" || operatorValue == ">")) {
-				operatorValue += current;
+			} else if (get() == '=' && (operatorValue == "<" || operatorValue == ">")) {
+				operatorValue += get();
 				read();
 				return Token::valued(TokenType::binaryOperator, operatorValue, this->get_position(2));
-			} else if ((current == '<' && operatorValue == "<") || (current == '>' && operatorValue == ">")) {
-				operatorValue += current;
+			} else if ((get() == '<' && operatorValue == "<") || (get() == '>' && operatorValue == ">")) {
+				operatorValue += get();
 				read();
 				return Token::valued(TokenType::binaryOperator, operatorValue, this->get_position(2));
-			} else if (current == '>' && operatorValue == "-") {
+			} else if (get() == '>' && operatorValue == "-") {
 				read();
 				return Token::normal(TokenType::givenTypeSeparator, this->get_position(2));
 			} else if (operatorValue == "<") {
@@ -366,10 +365,10 @@ Token Lexer::tokeniser() {
 		}
 		case '=': {
 			read();
-			if (current == '=') {
+			if (get() == '=') {
 				read();
 				return Token::valued(TokenType::binaryOperator, "==", this->get_position(2));
-			} else if (current == '>') {
+			} else if (get() == '>') {
 				read();
 				return Token::normal(TokenType::fatArrow, this->get_position(2));
 			} else {
@@ -378,7 +377,7 @@ Token Lexer::tokeniser() {
 		}
 		case '\'': {
 			read();
-			if (current == '\'') {
+			if (get() == '\'') {
 				read();
 				return Token::normal(TokenType::selfInstance, this->get_position(2));
 			} else {
@@ -389,39 +388,39 @@ Token Lexer::tokeniser() {
 			auto              start = byteNumber;
 			std::array<u8, 4> bytes = {0, 0, 0, 0};
 			read();
-			if (current == '\\') {
+			if (get() == '\\') {
 				read();
-				if (current == '0') {
+				if (get() == '0') {
 					bytes[0] = '\0';
-				} else if (current == '\\') {
+				} else if (get() == '\\') {
 					bytes[0] = '\\';
-				} else if (current == 'n') {
+				} else if (get() == 'n') {
 					bytes[0] = '\n';
-				} else if (current == 'b') {
+				} else if (get() == 'b') {
 					bytes[0] = '\b';
-				} else if (current == 't') {
+				} else if (get() == 't') {
 					bytes[0] = '\t';
-				} else if (current == 'a') {
+				} else if (get() == 'a') {
 					bytes[0] = '\a';
-				} else if (current == 'r') {
+				} else if (get() == 'r') {
 					bytes[0] = '\r';
-				} else if (current == '`') {
+				} else if (get() == '`') {
 					bytes[0] = '`';
-				} else if (current == 'f') {
+				} else if (get() == 'f') {
 					bytes[0] = '\f';
-				} else if (current == 'v') {
+				} else if (get() == 'v') {
 					bytes[0] = '\v';
-				} else if (current == 'u') {
+				} else if (get() == 'u') {
 					read();
-					if (current != '{') {
+					if (get() != '{') {
 						throw_error("Expected { and } to enclose the unicode scalar value after this");
 					}
 					read();
 					String hex;
 					while ((not has_file_ended()) &&
-					       ((current >= '0' && current <= '9') || (current >= 'a' && current <= 'f') ||
-					        (current >= 'A' && current <= 'F'))) {
-						hex += current;
+					       ((get() >= '0' && get() <= '9') || (get() >= 'a' && get() <= 'f') ||
+					        (get() >= 'A' && get() <= 'F'))) {
+						hex += get();
 						read();
 					}
 					if (hex.empty()) {
@@ -431,7 +430,7 @@ Token Lexer::tokeniser() {
 						throw_error("Maximum hex digits allowed in Unicode scalar value is 6. Found " + hex +
 						            " instead");
 					}
-					if (current != '}') {
+					if (get() != '}') {
 						throw_error("Expected } after the unicode scalar value");
 					}
 					auto scalar  = static_cast<u32>(std::stoul(hex, nullptr, 16));
@@ -448,25 +447,25 @@ Token Lexer::tokeniser() {
 					throw_error("Invalid escape sequence found. The escape sequences allowed are: \n" +
 					            String("\\0, \\\\\\\\, \\`, \\n, \\b, \\t, \\r, \\a, \\f, \\v and \\u{XXXX}") +
 					            "\nThe byte representation of the character following \\ is " +
-					            utils::to_hex_with_prefix(current, 2));
+					            utils::to_hex_with_prefix(get(), 2));
 				}
 			} else {
-				auto byteLen = utils::get_utf8_byte_length(current);
+				auto byteLen = utils::get_utf8_byte_length(get());
 				if (not byteLen.has_value()) {
 					throw_error(
 					    "Invalid UTF-8 encoded character. The first byte read for the Uniform scalar value is " +
-					    utils::to_hex_with_prefix(current, 2));
+					    utils::to_hex_with_prefix(get(), 2));
 				}
 				switch (byteLen.value()) {
 					case 1: {
-						if (is_invisible_ascii_char(current)) {
+						if (is_invisible_ascii_char(get())) {
 							const auto hexStr = (std::stringstream() << std::hex << std::setw(4) << std::setfill('0')
-							                                         << std::uppercase << current)
+							                                         << std::uppercase << get())
 							                        .str();
-							if (ascii_char_has_standard_escape(current)) {
+							if (ascii_char_has_standard_escape(get())) {
 								throw_error(
 								    "Found invisible ASCII character here that can be encoded as a standard escape sequence. Please change this to `" +
-								    get_ascii_standard_escape(current) + "`");
+								    get_ascii_standard_escape(get()) + "`");
 							} else {
 								throw_error(
 								    "Found invisible character U+" + hexStr +
@@ -474,76 +473,76 @@ Token Lexer::tokeniser() {
 								    hexStr + "}`");
 							}
 						}
-						bytes[0] = current;
+						bytes[0] = get();
 						break;
 					}
 					case 2: {
-						bytes[0] = current;
+						bytes[0] = get();
 						read();
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte in a 2-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
-							    utils::to_hex(prev, 2) + ' ' + utils::to_hex(current, 2));
+							    utils::to_hex(previous(), 2) + ' ' + utils::to_hex(get(), 2));
 						}
-						bytes[1] = current;
+						bytes[1] = get();
 						break;
 					}
 					case 3: {
-						bytes[0] = current;
+						bytes[0] = get();
 						read();
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
-							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(current, 2));
+							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(get(), 2));
 						}
-						bytes[1] = current;
+						bytes[1] = get();
 						read();
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
 							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +
-							    utils::to_hex(current, 2));
+							    utils::to_hex(get(), 2));
 						}
-						bytes[2] = current;
+						bytes[2] = get();
 						break;
 					}
 					case 4: {
-						bytes[0] = current;
+						bytes[0] = get();
 						read();
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
-							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(current, 2));
+							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(get(), 2));
 						}
-						bytes[1] = current;
+						bytes[1] = get();
 						read();
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
 							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +
-							    utils::to_hex(current, 2));
+							    utils::to_hex(get(), 2));
 						}
-						bytes[2] = current;
+						bytes[2] = get();
 						read();
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the fourth byte in a 3-byte encoded character. This byte does not follow the UTF-8 encoding"
 							    " constraints. The byte sequence that have been read as part of a single unicode scalar value is " +
 							    utils::to_hex(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +
-							    utils::to_hex(bytes[2], 2) + ' ' + utils::to_hex(current, 2));
+							    utils::to_hex(bytes[2], 2) + ' ' + utils::to_hex(get(), 2));
 						}
-						bytes[3] = current;
+						bytes[3] = get();
 						break;
 					}
 				}
@@ -566,7 +565,7 @@ Token Lexer::tokeniser() {
 				}
 			}
 			read();
-			if (current != '`') {
+			if (get() != '`') {
 				throw_error("Expected ` to end the unicode scalar value");
 			}
 			String tokRes(4, 0);
@@ -586,36 +585,36 @@ Token Lexer::tokeniser() {
 			bool escape = false;
 			read();
 			String str_val;
-			while (escape ? not has_file_ended() : (current != '"' && not has_file_ended())) {
+			while (escape ? not has_file_ended() : (get() != '"' && not has_file_ended())) {
 				if (escape) {
 					escape = false;
-					if (current == '"') {
+					if (get() == '"') {
 						str_val += '"';
-					} else if (current == '\\') {
+					} else if (get() == '\\') {
 						str_val += '\\';
-					} else if (current == 'n') {
+					} else if (get() == 'n') {
 						str_val += '\n';
-					} else if (current == 'b') {
+					} else if (get() == 'b') {
 						str_val += '\b';
-					} else if (current == 'a') {
+					} else if (get() == 'a') {
 						str_val += '\a';
-					} else if (current == 'f') {
+					} else if (get() == 'f') {
 						str_val += '\f';
-					} else if (current == 'r') {
+					} else if (get() == 'r') {
 						str_val += '\r';
-					} else if (current == 't') {
+					} else if (get() == 't') {
 						str_val += '\t';
-					} else if (current == 'v') {
+					} else if (get() == 'v') {
 						str_val += '\v';
-					} else if (current == 'x') {
+					} else if (get() == 'x') {
 						read();
-						if (current != '{') {
+						if (get() != '{') {
 							throw_error("Expected { and } to enclose the ASCII byte, which is to be provided");
 						}
 						read();
 						String hex;
-						while (is_char_hex(current)) {
-							hex += current;
+						while (is_char_hex(get())) {
+							hex += get();
 							read();
 						}
 						if (hex.empty()) {
@@ -625,7 +624,7 @@ Token Lexer::tokeniser() {
 							    "Escape sequence to provide the ASCII byte can only contain atmost 2 hex digits. Found " +
 							    hex + " instead");
 						}
-						if (current != '}') {
+						if (get() != '}') {
 							throw_error("Expected } to end the ASCII byte");
 						}
 						auto charVal = (unsigned char)std::stoul(hex);
@@ -635,16 +634,16 @@ Token Lexer::tokeniser() {
 							    " is not in the ASCII range. ASCII characters should be in the inclusive range from 0x00 to 0x7F");
 						}
 						str_val += charVal;
-					} else if (current == 'u') {
+					} else if (get() == 'u') {
 						read();
-						if (current != '{') {
+						if (get() != '{') {
 							throw_error(
 							    "Expected { and } to enclose the Unicode scalar value, which is to be provided");
 						}
 						read();
 						String hex;
-						while (is_char_hex(current)) {
-							hex += current;
+						while (is_char_hex(get())) {
+							hex += get();
 							read();
 						}
 						if (hex.empty()) {
@@ -653,7 +652,7 @@ Token Lexer::tokeniser() {
 						if (hex.length() > 6) {
 							throw_error("The maximum number of hex digits allowed in Unicode scalar value is 6");
 						}
-						if (current != '}') {
+						if (get() != '}') {
 							throw_error("Expected } to end the Unicode scalar value");
 						}
 						auto scalar  = static_cast<u32>(std::stoul(hex, nullptr, 16));
@@ -672,123 +671,123 @@ Token Lexer::tokeniser() {
 						throw_error("Invalid escape sequence found. The escape sequences allowed are: \n" +
 						            String("\\0, \\\\\\\\, \\\", \\n, \\b, \\t, \\r, \\a, \\f, \\v and \\u{XXXX}") +
 						            "\nThe byte representation of the character following \\ is " +
-						            utils::to_hex_with_prefix(current, 2));
+						            utils::to_hex_with_prefix(get(), 2));
 					}
 				} else {
-					if (current == '\\' && prev != '\\') {
+					if (get() == '\\' && (has_previous() ? (previous() != '\\') : true)) {
 						escape = true;
 					} else {
-						auto byteLen = utils::get_utf8_byte_length(current);
+						auto byteLen = utils::get_utf8_byte_length(get());
 						if (not byteLen.has_value()) {
 							throw_error("Invalid UTF-8 encoding found here. The byte which was supposed to be "
 							            "first in the sequence for a character is " +
-							            utils::to_hex_with_prefix(current, 2));
+							            utils::to_hex_with_prefix(get(), 2));
 						}
 						std::array<u8, 4> bytes{0, 0, 0, 0};
 						switch (byteLen.value()) {
 							case 1: {
-								if (is_invisible_ascii_char(current)) {
-									if (not(isMultiStringAllowed && (current == '\n' || current == '\t'))) {
-										if (ascii_char_has_standard_escape(current)) {
+								if (is_invisible_ascii_char(get())) {
+									if (not(isMultiStringAllowed && (get() == '\n' || get() == '\t'))) {
+										if (ascii_char_has_standard_escape(get())) {
 											throw_error(
 											    "Found an invisible character here that can be encoded as a standard escape sequence. "
 											    "Please change this to " +
-											    get_ascii_standard_escape(current) +
-											    ((current == '\n')
+											    get_ascii_standard_escape(get()) +
+											    ((get() == '\n')
 											         ? ". If you want to use multiline strings, use the syntax multi\"String content\""
 											         : ""));
 										} else {
 											throw_error(
 											    "Found an invisible character here. If this was intentional, please change this to \\u{" +
-											    utils::to_hex(current, 4) +
+											    utils::to_hex(get(), 4) +
 											    "}. Such characters should be encoded as Unicode scalar values");
 										}
 									}
 								}
-								str_val += current;
+								str_val += get();
 								break;
 							}
 							case 2: {
-								bytes[0] = current;
-								str_val += current;
+								bytes[0] = get();
+								str_val += get();
 								read();
-								bytes[1] = current;
-								if (not utils::is_follow_byte_utf8(current)) {
+								bytes[1] = get();
+								if (not utils::is_follow_byte_utf8(get())) {
 									throw_error(
-									    "Found " + utils::to_hex_with_prefix(current, 2) +
+									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the second byte in a 2-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read as a single unicode character is " +
-									    utils::to_hex(prev, 2) + ' ' + utils::to_hex(current, 2));
+									    utils::to_hex(previous(), 2) + ' ' + utils::to_hex(get(), 2));
 								}
-								str_val += current;
+								str_val += get();
 								break;
 							}
 							case 3: {
-								bytes[0] = current;
-								str_val += current;
+								bytes[0] = get();
+								str_val += get();
 								read();
-								bytes[1] = current;
-								if (not utils::is_follow_byte_utf8(current)) {
+								bytes[1] = get();
+								if (not utils::is_follow_byte_utf8(get())) {
 									throw_error(
-									    "Found " + utils::to_hex_with_prefix(current, 2) +
+									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the second byte in a 3-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
-									    utils::to_hex(prev, 2) + ' ' + utils::to_hex(current, 2));
+									    utils::to_hex(previous(), 2) + ' ' + utils::to_hex(get(), 2));
 								}
-								str_val += current;
+								str_val += get();
 								read();
-								bytes[2] = current;
-								if (not utils::is_follow_byte_utf8(current)) {
+								bytes[2] = get();
+								if (not utils::is_follow_byte_utf8(get())) {
 									throw_error(
-									    "Found " + utils::to_hex_with_prefix(current, 2) +
+									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the third byte in a 3-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
 									    utils::to_hex(str_val[str_val.length() - 2], 2) + ' ' +
 									    utils::to_hex(str_val[str_val.length() - 1], 2) + ' ' +
-									    utils::to_hex(current, 2));
+									    utils::to_hex(get(), 2));
 								}
-								str_val += current;
+								str_val += get();
 
 								break;
 							}
 							case 4: {
-								bytes[0] = current;
-								str_val += current;
+								bytes[0] = get();
+								str_val += get();
 								read();
-								bytes[1] = current;
-								if (not utils::is_follow_byte_utf8(current)) {
+								bytes[1] = get();
+								if (not utils::is_follow_byte_utf8(get())) {
 									throw_error(
-									    "Found " + utils::to_hex_with_prefix(current, 2) +
+									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the second byte in a 4-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
-									    utils::to_hex(prev, 2) + ' ' + utils::to_hex(current, 2));
+									    utils::to_hex(previous(), 2) + ' ' + utils::to_hex(get(), 2));
 								}
-								str_val += current;
+								str_val += get();
 								read();
-								bytes[2] = current;
-								if (not utils::is_follow_byte_utf8(current)) {
+								bytes[2] = get();
+								if (not utils::is_follow_byte_utf8(get())) {
 									throw_error(
-									    "Found " + utils::to_hex_with_prefix(current, 2) +
+									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the third byte in a 4-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
 									    utils::to_hex(str_val[str_val.length() - 2], 2) + ' ' +
 									    utils::to_hex(str_val[str_val.length() - 1], 2) + ' ' +
-									    utils::to_hex(current, 2));
+									    utils::to_hex(get(), 2));
 								}
-								str_val += current;
+								str_val += get();
 								read();
-								bytes[3] = current;
-								if (not utils::is_follow_byte_utf8(current)) {
+								bytes[3] = get();
+								if (not utils::is_follow_byte_utf8(get())) {
 									throw_error(
-									    "Found " + utils::to_hex_with_prefix(current, 2) +
+									    "Found " + utils::to_hex_with_prefix(get(), 2) +
 									    " as the fourth byte in a 4-byte encoded character in this UTF-8 text. This byte does not follow the"
 									    " UTF-8 encoding constraints. The byte sequence that have been read so far for this character is " +
 									    utils::to_hex(str_val[str_val.length() - 3], 2) + ' ' +
 									    utils::to_hex(str_val[str_val.length() - 2], 2) + ' ' +
 									    utils::to_hex(str_val[str_val.length() - 1], 2) + ' ' +
-									    utils::to_hex(current, 2));
+									    utils::to_hex(get(), 2));
 								}
-								str_val += current;
+								str_val += get();
 								break;
 							}
 						}
@@ -805,7 +804,7 @@ Token Lexer::tokeniser() {
 				}
 				read();
 			}
-			if (current != '"') {
+			if (get() != '"') {
 				throw_error("Could not find \" at the end of the string literal");
 			}
 			read();
@@ -826,28 +825,28 @@ Token Lexer::tokeniser() {
 			bool   is_float         = false;
 			bool   exponentialFloat = false;
 			bool   foundRadix       = false;
-			if (current == '0') {
+			if (get() == '0') {
 				read();
-				if (current == 'b') {
+				if (get() == 'b') {
 					read();
 					numVal     = "0b";
 					foundRadix = true;
-				} else if (current == 'c') {
+				} else if (get() == 'c') {
 					read();
 					numVal     = "0c";
 					foundRadix = true;
-				} else if (current == 'x') {
+				} else if (get() == 'x') {
 					read();
 					numVal     = "0x";
 					foundRadix = true;
-				} else if (current == 'r') {
+				} else if (get() == 'r') {
 					numVal += "0r";
 					read();
 					while (CURRENT_IS_DIGIT) {
-						numVal += current;
+						numVal += get();
 						read();
 					}
-					if (current == '_') {
+					if (get() == '_') {
 						numVal += '_';
 						read();
 					} else {
@@ -860,26 +859,25 @@ Token Lexer::tokeniser() {
 			}
 			bool foundSpec = false;
 			while ((CURRENT_IS_DIGIT || (foundRadix && not foundSpec && CURRENT_IS_ALPHABET) ||
-			        (not is_float && (current == '.')) ||
-			        (not foundRadix && not exponentialFloat && (current == 'e')) ||
-			        (not foundSpec && (current == '_'))) &&
+			        (not is_float && (get() == '.')) || (not foundRadix && not exponentialFloat && (get() == 'e')) ||
+			        (not foundSpec && (get() == '_'))) &&
 			       not has_file_ended()) {
-				if (not foundRadix && not exponentialFloat && current == 'e') {
+				if (not foundRadix && not exponentialFloat && get() == 'e') {
 					is_float         = true;
 					exponentialFloat = true;
 					String expStr("e");
 					read();
-					if (current == '-') {
-						expStr += current;
+					if (get() == '-') {
+						expStr += get();
 						read();
 					}
 					while (CURRENT_IS_DIGIT) {
-						expStr += current;
+						expStr += get();
 						read();
 					}
 					numVal += expStr;
 					continue;
-				} else if (current == '.') {
+				} else if (get() == '.') {
 					read();
 					if (CURRENT_IS_DIGIT) {
 						if (foundRadix) {
@@ -900,7 +898,7 @@ Token Lexer::tokeniser() {
 						                               numVal, fileRange));
 						return tokeniser();
 					}
-				} else if (current == '_') {
+				} else if (get() == '_') {
 					String specString;
 					read();
 					if (CURRENT_IS_DIGIT) {
@@ -909,7 +907,7 @@ Token Lexer::tokeniser() {
 						foundSpec  = true;
 						specString = "_";
 						while (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT) {
-							specString += current;
+							specString += get();
 							read();
 						}
 						numVal += specString;
@@ -924,7 +922,7 @@ Token Lexer::tokeniser() {
 						throw_error("Invalid literal. Found _ without anything following");
 					}
 				}
-				numVal += current;
+				numVal += get();
 				read();
 			}
 			return Token::valued(is_float ? TokenType::floatLiteral : TokenType::integerLiteral, numVal,
@@ -937,59 +935,59 @@ Token Lexer::tokeniser() {
 			auto   start = byteNumber;
 			String idVal;
 			auto   idRange = FileRange::null;
-			if (current == 'b') {
-				idVal += current;
+			if (get() == 'b') {
+				idVal += get();
 				read();
-				if (not has_file_ended() && (current == '`')) {
+				if (not has_file_ended() && (get() == '`')) {
 					// BYTE LITERAL
 					String byteValue;
 					read();
-					if (current == '`') {
+					if (get() == '`') {
 						throw_error("Byte literals cannot be empty, please provide an Extended ASCII character in it. "
 						            "Please use \\` if you literally meant to include the character `");
 					}
-					if (is_invisible_ascii_char(current)) {
-						if (ascii_char_has_standard_escape(current)) {
+					if (is_invisible_ascii_char(get())) {
+						if (ascii_char_has_standard_escape(get())) {
 							throw_error(
 							    "Found an invisible character in the byte literal which could be encoded as an escape sequence. Please change this to b`" +
-							    String(get_ascii_standard_escape(current)) + "`");
+							    String(get_ascii_standard_escape(get())) + "`");
 						} else {
 							throw_error(
 							    "Found an invisible character in the byte literal. Such characters should be encoded as escape sequences. Please change this to b`\\x{" +
 							    (std::stringstream()
-							     << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << current)
+							     << std::hex << std::setw(2) << std::setfill('0') << std::uppercase << get())
 							        .str() +
 							    "}`");
 						}
-					} else if (current == '\\') {
+					} else if (get() == '\\') {
 						read();
-						if (current == '0') {
+						if (get() == '0') {
 							byteValue += '\0';
-						} else if (current == 'n') {
+						} else if (get() == 'n') {
 							byteValue += '\n';
-						} else if (current == 'b') {
+						} else if (get() == 'b') {
 							byteValue += '\b';
-						} else if (current == 't') {
+						} else if (get() == 't') {
 							byteValue += '\t';
-						} else if (current == 'f') {
+						} else if (get() == 'f') {
 							byteValue += '\f';
-						} else if (current == 'r') {
+						} else if (get() == 'r') {
 							byteValue += '\r';
-						} else if (current == 'v') {
+						} else if (get() == 'v') {
 							byteValue += '\v';
-						} else if (current == 'a') {
+						} else if (get() == 'a') {
 							byteValue += '\a';
-						} else if (current == 'x') {
+						} else if (get() == 'x') {
 							read();
-							if (current != '{') {
+							if (get() != '{') {
 								throw_error("Expected { and } to enclose the Extended ASCII byte after this");
 							}
 							String hex;
 							read();
 							while ((not has_file_ended()) &&
-							       ((current >= '0' && current <= '9') || (current >= 'a' && current <= 'z') ||
-							        (current >= 'A' && current <= 'Z'))) {
-								hex += current;
+							       ((get() >= '0' && get() <= '9') || (get() >= 'a' && get() <= 'z') ||
+							        (get() >= 'A' && get() <= 'Z'))) {
+								hex += get();
 								read();
 							}
 							if (hex.empty()) {
@@ -999,20 +997,20 @@ Token Lexer::tokeniser() {
 								    "Escape sequence to provide the Extented ASCII byte can only contain atmost 2 hex digits. Found " +
 								    hex + " instead");
 							}
-							if (current != '}') {
+							if (get() != '}') {
 								throw_error("Expected } to end the Extented ASCII byte after this");
 							}
 							byteValue += (char)std::stoul(hex, nullptr, 16);
 						} else {
 							throw_error(
 							    "Invalid escape sequence. The byte representation of the character following the \\ is " +
-							    utils::to_hex_with_prefix(current, 2));
+							    utils::to_hex_with_prefix(get(), 2));
 						}
 					} else {
-						byteValue += current;
+						byteValue += get();
 					}
 					read();
-					if (current != '`') {
+					if (get() != '`') {
 						throw_error(
 						    "Expected ` after the byte value, which could not be found. Byte literals can only contain one Extended ASCII character.");
 					}
@@ -1028,23 +1026,23 @@ Token Lexer::tokeniser() {
 				if (idVal.length() != 0) {
 					idRange = this->get_position(idVal.length());
 				}
-				auto byteLen = utils::get_utf8_byte_length(current);
+				auto byteLen = utils::get_utf8_byte_length(get());
 				if (not byteLen.has_value()) {
 					throw_error(
 					    "Invalid UTF-8 encoding. Could not calculate the number of bytes required for the current character from its first byte. The first byte is " +
-					    utils::to_hex_with_prefix(current, 2));
+					    utils::to_hex_with_prefix(get(), 2));
 				}
 				std::array<u8, 4> bytes{0, 0, 0, 0};
 				switch (byteLen.value()) {
 					case 1: {
 						auto tempRange = idVal.empty() ? idRange : this->get_position(idVal.length());
-						if (not(idVal.empty() ? (CURRENT_IS_ALPHABET || (current == '_'))
-						                      : (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (current == '_')))) {
+						if (not(idVal.empty() ? (CURRENT_IS_ALPHABET || (get() == '_'))
+						                      : (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (get() == '_')))) {
 							if (repeatingToken || idVal.empty()) {
 								// std::cout << "Repeating token: " << repeatingToken
 								//           << " Empty identifier: " << idVal.empty() << "\n";
 								throw_error(
-								    String("The character ") + current +
+								    String("The character ") + get() +
 								    " cannot be part of an identifier and is also not a recognised symbol in the language. "
 								    "Identifiers should start with _ or letters from any unicode supported language, and can "
 								    "contain digits from any unicode supported language as well in the middle");
@@ -1056,87 +1054,87 @@ Token Lexer::tokeniser() {
 								break;
 							}
 						}
-						bytes[0] = current;
+						bytes[0] = get();
 						break;
 					}
 					case 2: {
-						bytes[0] = current;
+						bytes[0] = get();
 						read();
 						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the second byte of the 2-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
 						}
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte of the 2-byte encoded UTF-8 character. This byte does not follow the UTF-8 encoding constraints");
 						}
-						bytes[1] = current;
+						bytes[1] = get();
 						break;
 					}
 					case 3: {
-						bytes[0] = current;
+						bytes[0] = get();
 						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the second byte of the 3-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
 						}
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte of the 3-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
-						bytes[1] = current;
+						bytes[1] = get();
 						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the third byte of the 3-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2));
 						}
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte of the 3-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
-						bytes[2] = current;
+						bytes[2] = get();
 						break;
 					}
 					case 4: {
-						bytes[0] = current;
+						bytes[0] = get();
 						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the second byte of the 4-byte encoded UTF-8 character. The first byte read was " +
 							    utils::to_hex_with_prefix(bytes[0], 2));
 						}
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the second byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
-						bytes[1] = current;
+						bytes[1] = get();
 						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the third byte of the 4-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2));
 						}
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the third byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
-						bytes[2] = current;
+						bytes[2] = get();
 						if (has_file_ended()) {
 							throw_error(
 							    "File ended before reading the fourth byte of the 4-byte encoded UTF-8 character. The bytes read so far is " +
 							    utils::to_hex_with_prefix(bytes[0], 2) + ' ' + utils::to_hex(bytes[1], 2) + ' ' +
 							    utils::to_hex(bytes[2], 2));
 						}
-						if (not utils::is_follow_byte_utf8(current)) {
+						if (not utils::is_follow_byte_utf8(get())) {
 							throw_error(
-							    "Found " + utils::to_hex_with_prefix(current, 2) +
+							    "Found " + utils::to_hex_with_prefix(get(), 2) +
 							    " as the fourth byte of the 4-byte encoded UTF-8 character. This byte does not follow UTF-8 encoding constraints");
 						}
-						bytes[3] = current;
+						bytes[3] = get();
 						break;
 					}
 				}
@@ -1179,7 +1177,7 @@ Token Lexer::tokeniser() {
 			if (not tokRes.has_value()) {
 				throw_error("Could not convert " + idVal + " to a keyword or identifier in the language");
 			}
-			if ((tokRes.value().type == TokenType::multiPtrType) && (current == '"')) {
+			if ((tokRes.value().type == TokenType::multiPtrType) && (get() == '"')) {
 				isMultiStringAllowed = true;
 			}
 			return tokRes.value();

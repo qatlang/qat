@@ -28,6 +28,7 @@ struct MetaInfo {
 			if (keys.contains(kv.first.value)) {
 				ctx->Error("The key " + ctx->color(kv.first.value) + " is repeating here", kv.first.range);
 			}
+			keys.insert(kv.first.value);
 			auto irVal = kv.second->emit(ctx);
 			if (kv.first.value == ir::MetaInfo::foreignKey || kv.first.value == ir::MetaInfo::linkAsKey ||
 			    kv.first.value == ir::MetaInfo::providesKey) {

@@ -147,6 +147,7 @@
 #include "../ast/types/void.hpp"
 #include "../cli/config.hpp"
 #include "../show.hpp"
+#include "../utils/constants.hpp"
 #include "../utils/utils.hpp"
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
@@ -6280,7 +6281,7 @@ Pair<CacheSymbol, usize> Parser::do_symbol(ParserContext&, const usize start) {
 	if (tokens.at(i).type != TokenType::identifier) {
 		add_error("This is an invalid symbol name. No identifier could be found", RangeSpan(start, i));
 	}
-	if (relative == 0 && IdentifierAt(i).value == "std") {
+	if (relative == 0 && IdentifierAt(i).value == CORELIB) {
 		irCtx->stdLibPossiblyRequired = true;
 	}
 	name.push_back(IdentifierAt(i));

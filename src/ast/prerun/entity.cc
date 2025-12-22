@@ -4,6 +4,7 @@
 #include "../../IR/types/region.hpp"
 #include "../../IR/types/struct_type.hpp"
 #include "../../IR/types/typed.hpp"
+#include "../../utils/constants.hpp"
 #include "../types/generic_abstract.hpp"
 #include "../types/prerun_generic.hpp"
 #include "../types/typed_generic.hpp"
@@ -23,7 +24,7 @@ void PrerunEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType
 	}
 	for (usize i = 0; i < (identifiers.size() - 1); i++) {
 		auto section = identifiers.at(i);
-		if (relative == 0 && i == 0 && section.value == "std" && ir::StdLib::is_std_lib_found()) {
+		if (relative == 0 && i == 0 && section.value == CORELIB && ir::StdLib::is_std_lib_found()) {
 			mod = ir::StdLib::stdLib;
 			continue;
 		}
@@ -166,7 +167,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		}
 		for (usize i = 0; i < (identifiers.size() - 1); i++) {
 			auto section = identifiers.at(i);
-			if (relative == 0 && i == 0 && section.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (relative == 0 && i == 0 && section.value == CORELIB && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}

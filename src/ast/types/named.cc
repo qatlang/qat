@@ -6,6 +6,7 @@
 #include "../../IR/types/region.hpp"
 #include "../../IR/types/struct_type.hpp"
 #include "../../IR/types/toggle.hpp"
+#include "../../utils/constants.hpp"
 #include "../type_definition.hpp"
 
 namespace qat::ast {
@@ -25,7 +26,7 @@ void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 	if (names.size() > 1) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
-			if (i == 0 && split.value == "std" && ir::StdLib::is_std_lib_found()) {
+			if (i == 0 && split.value == CORELIB && ir::StdLib::is_std_lib_found()) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			} else if (i == 0 && split.value == "meta") {
@@ -39,14 +40,14 @@ void NamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> e
 			}
 			auto fullName = Identifier::fullName(names);
 			SHOW("UpdateDeps :: " << fullName.value)
-			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
+			if (mod->has_lib(split.value, reqInfo) || mod->has_imported_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
 				SHOW("Has lib")
 				mod = mod->get_lib(split.value, reqInfo);
-			} else if (mod->has_brought_mod(split.value, reqInfo) ||
+			} else if (mod->has_imported_mod(split.value, reqInfo) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
 				SHOW("Has brought module")
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 			} else {
 				SHOW("Update deps")
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
@@ -139,7 +140,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		for (usize i = 0; i < (names.size() - 1); i++) {
 			auto split = names.at(i);
 			if (i == 0) {
-				if (split.value == "std" && ir::StdLib::is_std_lib_found()) {
+				if (split.value == CORELIB && ir::StdLib::is_std_lib_found()) {
 					mod = ir::StdLib::stdLib;
 					continue;
 				} else if (split.value == "meta") {
@@ -148,15 +149,15 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 					continue;
 				}
 			}
-			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
+			if (mod->has_lib(split.value, reqInfo) || mod->has_imported_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
 				SHOW("Has lib")
 				mod = mod->get_lib(split.value, reqInfo);
 				mod->add_mention(split.range);
-			} else if (mod->has_brought_mod(split.value, ctx->get_access_info()) ||
+			} else if (mod->has_imported_mod(split.value, ctx->get_access_info()) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
 				SHOW("Has brought module")
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 				mod->add_mention(split.range);
 			} else {
 				SHOW("Emit fn")
@@ -175,7 +176,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 	if (isMetaLib && (names.size() == 2u) && entityName.value == "Intrinsics") {
 		return ir::MetaLib::get_intrinsic_id(ctx->irCtx);
 	}
-	if (mod->has_opaque_type(entityName.value, reqInfo) || mod->has_brought_opaque_type(entityName.value, reqInfo) ||
+	if (mod->has_opaque_type(entityName.value, reqInfo) || mod->has_imported_opaque_type(entityName.value, reqInfo) ||
 	    mod->has_opaque_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has opaque")
 		auto* oTy = mod->get_opaque_type(entityName.value, reqInfo);
@@ -197,7 +198,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Returning opaque type")
 		return oTy;
 	} else if (mod->has_struct_type(entityName.value, reqInfo) ||
-	           mod->has_brought_struct_type(entityName.value, reqInfo) ||
+	           mod->has_imported_struct_type(entityName.value, reqInfo) ||
 	           mod->has_struct_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has struct")
 		auto* cTy = mod->get_struct_type(entityName.value, reqInfo);
@@ -210,7 +211,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Added mention, returning struct " << entityName.value)
 		return cTy;
 	} else if (mod->has_type_definition(entityName.value, reqInfo) ||
-	           mod->has_brought_type_definition(entityName.value, reqInfo) ||
+	           mod->has_imported_type_definition(entityName.value, reqInfo) ||
 	           mod->has_type_definition_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has type def")
 		auto* dTy = mod->get_type_def(entityName.value, reqInfo);
@@ -224,7 +225,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		dTy->add_mention(entityName.range);
 		SHOW("Returning type def " << entityName.value)
 		return dTy;
-	} else if (mod->has_mix_type(entityName.value, reqInfo) || mod->has_brought_mix_type(entityName.value, reqInfo) ||
+	} else if (mod->has_mix_type(entityName.value, reqInfo) || mod->has_imported_mix_type(entityName.value, reqInfo) ||
 	           mod->has_mix_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has mix type")
 		auto* mTy = mod->get_mix_type(entityName.value, reqInfo);
@@ -236,7 +237,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		mTy->add_mention(entityName.range);
 		return mTy;
 	} else if (mod->has_toggle_type(entityName.value, reqInfo) ||
-	           mod->has_brought_toggle_type(entityName.value, reqInfo) ||
+	           mod->has_imported_toggle_type(entityName.value, reqInfo) ||
 	           mod->has_toggle_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has toggle type")
 		auto* tgTy = mod->get_toggle_type(entityName.value, reqInfo);
@@ -248,7 +249,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		tgTy->add_mention(entityName.range);
 		return tgTy;
 	} else if (mod->has_choice_type(entityName.value, reqInfo) ||
-	           mod->has_brought_choice_type(entityName.value, reqInfo) ||
+	           mod->has_imported_choice_type(entityName.value, reqInfo) ||
 	           mod->has_choice_type_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has choice type")
 		auto* chTy = mod->get_choice_type(entityName.value, reqInfo);
@@ -274,7 +275,7 @@ ir::Type* NamedType::emit(EmitCtx* ctx) {
 		SHOW("Returning flag type")
 		return fTy;
 	} else if (mod->has_region(entityName.value, reqInfo) ||
-	           mod->has_brought_region(entityName.value, ctx->get_access_info()) ||
+	           mod->has_imported_region(entityName.value, ctx->get_access_info()) ||
 	           mod->has_region_in_imports(entityName.value, reqInfo).first) {
 		SHOW("Has region")
 		auto* reg = mod->get_region(entityName.value, reqInfo);

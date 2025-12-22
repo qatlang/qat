@@ -22,7 +22,7 @@ class Config {
 	String   buildCommit;
 	String   invokePath;
 
-	Maybe<fs::path> stdLibPath;
+	Maybe<fs::path> coreLibPath;
 	Maybe<fs::path> toolchainPath;
 
 	Maybe<fs::path> outputPath;
@@ -49,7 +49,7 @@ class Config {
 	bool clearLLVMFiles  = false;
 	bool exportCodeInfo  = false;
 	bool isFreestanding  = false;
-	bool isNoStd         = false;
+	bool isNoCoreLib     = false;
 	bool diagnostic      = false;
 
 	ColorMode colorMode = ColorMode::color256;
@@ -63,14 +63,15 @@ class Config {
   public:
 	Config(u64 count, const char** args);
 
-	static Config*       init(u64 count, const char** args);
-	static Config const* get();
+	useit static Config* initialise(u64 count, const char** args);
 
-	static bool hasInstance();
+	useit inline static Config const* get() { return Config::instance; }
 
-	static String filter_quotes(String value);
+	useit inline static bool has_instance() { return Config::instance != nullptr; }
 
-	void find_stdlib_and_toolchain();
+	useit static String filter_quotes(String value);
+
+	void find_corelib_and_toolchain();
 
 	void setup_path_in_env(bool isSetupCmd);
 
@@ -102,13 +103,13 @@ class Config {
 
 	useit bool has_cpu_features() const { return cpuFeatures.has_value(); }
 
-	useit bool has_std_lib_path() const { return stdLibPath.has_value(); }
+	useit bool has_std_lib_path() const { return coreLibPath.has_value(); }
 
 	useit bool has_toolchain_path() const { return toolchainPath.has_value(); }
 
 	useit bool is_freestanding() const { return isFreestanding; }
 
-	useit bool is_no_std_enabled() const { return isNoStd || isFreestanding; }
+	useit bool is_no_corelib_enabled() const { return isNoCoreLib || isFreestanding; }
 
 	useit bool export_code_metadata() const { return exportCodeInfo; }
 
@@ -154,7 +155,7 @@ class Config {
 
 	useit String get_linker_path() const { return linkerPath.value(); }
 
-	useit fs::path get_std_lib_path() const { return stdLibPath.value(); }
+	useit fs::path get_std_lib_path() const { return coreLibPath.value(); }
 
 	useit fs::path get_toolchain_path() const { return toolchainPath.value(); }
 

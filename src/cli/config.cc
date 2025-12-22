@@ -1,6 +1,7 @@
 #include "./config.hpp"
 #include "../cli/logger.hpp"
 #include "../show.hpp"
+#include "../utils/constants.hpp"
 #include "../utils/find_executable.hpp"
 #include "./create.hpp"
 #include "./display.hpp"
@@ -32,7 +33,7 @@ namespace qat::cli {
 
 Config* Config::instance = nullptr;
 
-Config* Config::init(u64 count, const char** args) {
+Config* Config::initialise(u64 count, const char** args) {
 	if (not Config::instance) {
 		return new Config(count, args);
 	} else {
@@ -40,11 +41,7 @@ Config* Config::init(u64 count, const char** args) {
 	}
 }
 
-bool Config::hasInstance() { return Config::instance != nullptr; }
-
-Config const* Config::get() { return Config::instance; }
-
-void Config::find_stdlib_and_toolchain() {
+void Config::find_corelib_and_toolchain() {
 	auto& log = Logger::get();
 
 	const auto qatPathEnv = find_executable("qat");
@@ -53,28 +50,29 @@ void Config::find_stdlib_and_toolchain() {
 		return;
 	}
 	qatDirPath       = fs::path(qatPathEnv.value()).parent_path();
-	auto stdPathCand = fs::absolute(qatDirPath / "../std");
-	if (not isNoStd && not isFreestanding) {
+	auto stdPathCand = fs::absolute(qatDirPath / ("../" CORELIB));
+	if (not isNoCoreLib && not isFreestanding) {
 		if (not fs::exists(stdPathCand)) {
-			log->fatalError(
-			    "Could not find the standard library. Path to the qat executable was found to be " +
-			        qatDirPath.string() + " but the standard library could not be found in " + stdPathCand.string() +
-			        ". If you wish to compile a project without the standard library, use the " +
-			        log->color("--no-std") +
-			        " flag. And if you wish to compile for a freestanding environment, use the " +
-			        log->color("--freestanding") + " flag, which automatically implies " + log->color("--no-std") + ".",
-			    None);
-		}
-		stdLibPath = stdPathCand / "std.lib.qat";
-		if (not fs::exists(stdLibPath.value()) || not fs::is_regular_file(stdLibPath.value())) {
-			log->fatalError("Found the standard library folder at path " + stdPathCand.string() +
-			                    " but could not find the library file in the folder. The file " +
-			                    log->color(stdLibPath.value().string()) + " is expected to be present",
+			log->fatalError("Could not find the core library. Path to the qat executable was found to be " +
+			                    qatDirPath.string() + " but the core library could not be found in " +
+			                    stdPathCand.string() +
+			                    ". If you wish to compile a project without the core library, use the " +
+			                    log->color("--no-" CORELIB) +
+			                    " flag. And if you wish to compile for a freestanding environment, use the " +
+			                    log->color("--freestanding") + " flag, which automatically implies " +
+			                    log->color("--no-" CORELIB) + ".",
 			                None);
 		}
-		stdLibPath = fs::absolute(stdLibPath.value());
+		coreLibPath = stdPathCand / (CORELIB ".lib.qat");
+		if (not fs::exists(coreLibPath.value()) || not fs::is_regular_file(coreLibPath.value())) {
+			log->fatalError("Found the core library folder at path " + stdPathCand.string() +
+			                    " but could not find the library file in the folder. The file " +
+			                    log->color(coreLibPath.value().string()) + " is expected to be present",
+			                None);
+		}
+		coreLibPath = fs::absolute(coreLibPath.value());
 	} else {
-		stdLibPath = None;
+		coreLibPath = None;
 	}
 	auto toolchainCand = qatDirPath / "../toolchain";
 	if (not fs::exists(toolchainCand)) {
@@ -91,7 +89,7 @@ void Config::find_stdlib_and_toolchain() {
 	}
 	toolchainPath = fs::absolute(toolchainCand);
 	log->say("qat is present in   := " + qatPathEnv.value());
-	log->say("Standard Library    := " + (stdLibPath.has_value() ? stdLibPath.value().string() : "(Not Found)"));
+	log->say("Core Library    := " + (coreLibPath.has_value() ? coreLibPath.value().string() : "(Not Found)"));
 	log->say("Toolchain Directory := " + (toolchainPath.has_value() ? toolchainPath.value().string() : "(Not Found)"));
 }
 
@@ -291,7 +289,7 @@ void Config::setup_path_in_env(bool) {
 		qatDirPath = fs::path(qatPathEnv.value()).parent_path();
 	}
 	qatDirPath = fs::absolute(qatDirPath);
-	find_stdlib_and_toolchain();
+	find_corelib_and_toolchain();
 }
 
 String Config::filter_quotes(String value) {
@@ -313,7 +311,7 @@ Config::Config(u64 count, const char** args)
 	    std::atoi(verNum.substr(verNum.find_first_of('.') + 1, verNum.find_last_of('.') - verNum.find_first_of('.') - 1)
 	                  .c_str()),
 	    std::atoi(verNum.substr(verNum.find_last_of('.') + 1, verNum.length() - verNum.find_last_of('.') - 1).c_str()));
-	if (not hasInstance()) {
+	if (not has_instance()) {
 #if defined _WIN32 || defined WIN32 || defined WIN64 || defined _WIN64
 		HANDLE handle      = GetStdHandle(STD_OUTPUT_HANDLE);
 		DWORD  consoleMode = 0;
@@ -635,11 +633,11 @@ Config::Config(u64 count, const char** args)
 				colorMode = ColorMode::none;
 			} else if (arg == "--report") {
 				showReport = true;
-			} else if (arg == "--no-std") {
-				stdLibPath = None;
-				isNoStd    = true;
+			} else if (arg == "--no-core") {
+				coreLibPath = None;
+				isNoCoreLib = true;
 			} else if (arg == "--freestanding") {
-				stdLibPath     = None;
+				coreLibPath    = None;
 				isFreestanding = true;
 			} else if (arg == "--save-docs") {
 				saveDocs = true;

@@ -75,7 +75,7 @@ class Node {
 
 	virtual void create_module(ir::Mod*, ir::Ctx*) const {}
 
-	virtual void handle_fs_brings(ir::Mod*, ir::Ctx*) const {}
+	virtual void handle_filesystem_imports(ir::Mod*, ir::Ctx*) const {}
 
 	useit virtual bool is_entity() const { return false; }
 

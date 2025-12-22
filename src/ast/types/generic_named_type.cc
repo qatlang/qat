@@ -29,13 +29,13 @@ void GenericNamedType::update_dependencies(ir::EmitPhase phase, Maybe<ir::Depend
 				                                        expect.value_or(ir::DependType::complete), phase});
 				break;
 			}
-			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
+			if (mod->has_lib(split.value, reqInfo) || mod->has_imported_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
 				mod = mod->get_lib(split.value, reqInfo);
 				mod->add_mention(split.range);
-			} else if (mod->has_brought_mod(split.value, reqInfo) ||
+			} else if (mod->has_imported_mod(split.value, reqInfo) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 				mod->add_mention(split.range);
 			} else {
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
@@ -53,7 +53,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
                                            Vec<FillGeneric*> genericTypes, AccessInfo reqInfo, FileRangePtr fileRange,
                                            EmitCtx* ctx) {
 	if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
-	    mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
+	    mod->has_imported_generic_struct_type(entityName.value, reqInfo) ||
 	    mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {
 		auto* genericStructTy = mod->get_generic_struct_type(entityName.value, reqInfo);
 		if (not genericStructTy->get_visibility().is_accessible(reqInfo)) {
@@ -163,7 +163,7 @@ Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identi
 		}
 		return tyRes;
 	} else if (mod->has_generic_toggle_type(entityName.value, reqInfo) ||
-	           mod->has_brought_generic_toggle_type(entityName.value, reqInfo) ||
+	           mod->has_imported_generic_toggle_type(entityName.value, reqInfo) ||
 	           mod->has_generic_toggle_type_in_imports(entityName.value, reqInfo).first) {
 		auto* genericToggle = mod->get_generic_toggle_type(entityName.value, reqInfo);
 		if (not genericToggle->get_visibility().is_accessible(reqInfo)) {
@@ -233,13 +233,13 @@ ir::Type* GenericNamedType::emit(EmitCtx* ctx) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}
-			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
+			if (mod->has_lib(split.value, reqInfo) || mod->has_imported_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
 				mod = mod->get_lib(split.value, reqInfo);
 				mod->add_mention(split.range);
-			} else if (mod->has_brought_mod(split.value, reqInfo) ||
+			} else if (mod->has_imported_mod(split.value, reqInfo) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 				mod->add_mention(split.range);
 			} else {
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
@@ -255,7 +255,7 @@ ir::Type* GenericNamedType::emit(EmitCtx* ctx) {
 	if (handleRes.has_value()) {
 		return handleRes.value();
 	} else if (mod->has_generic_function(entityName.value, reqInfo) ||
-	           mod->has_brought_generic_function(entityName.value, reqInfo) ||
+	           mod->has_imported_generic_function(entityName.value, reqInfo) ||
 	           mod->has_generic_function_in_imports(entityName.value, reqInfo).first) {
 		ctx->Error(ctx->color(entityName.value) + " is a generic function and hence cannot be used as a type",
 		           fileRange);

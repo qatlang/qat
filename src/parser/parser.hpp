@@ -42,7 +42,7 @@ struct EntityMetadata {
 class Parser {
   private:
 	Vec<lexer::Token>&            tokens;
-	Vec<fs::path>                 broughtPaths;
+	Vec<fs::path>                 importedPaths;
 	Vec<fs::path>                 memberPaths;
 	std::map<usize, lexer::Token> comments;
 	ParserContext                 g_ctx;
@@ -62,7 +62,7 @@ class Parser {
 	static u64 timeInNanoseconds;
 	static u64 tokenCount;
 
-	void clear_brought_paths();
+	void clear_imported_paths();
 
 	void do_type_contents(ParserContext& prev_ctx, usize from, usize upto, ast::MemberParentLike* memberParent);
 
@@ -99,13 +99,13 @@ class Parser {
 
 	useit bool is_primary_within(lexer::TokenType candidate, usize from, usize upto);
 
-	useit ast::BringEntities* parse_bring_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibKind, usize from,
-	                                               usize upto);
+	useit ast::ImportEntities* parse_import_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibKind,
+	                                                 usize from, usize upto);
 
-	useit ast::BringPaths* parse_bring_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
-	                                         FileRangePtr start);
+	useit ast::ImportPaths* parse_import_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
+	                                           FileRangePtr start);
 
-	useit Vec<fs::path>& get_brought_paths();
+	useit Vec<fs::path>& get_imported_paths();
 
 	useit Vec<fs::path>& get_member_paths();
 

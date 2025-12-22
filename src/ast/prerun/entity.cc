@@ -27,13 +27,13 @@ void PrerunEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType
 			mod = ir::StdLib::stdLib;
 			continue;
 		}
-		if (mod->has_lib(section.value, reqInfo) || mod->has_brought_lib(section.value, reqInfo) ||
+		if (mod->has_lib(section.value, reqInfo) || mod->has_imported_lib(section.value, reqInfo) ||
 		    mod->has_lib_in_imports(section.value, reqInfo).first) {
 			mod = mod->get_lib(section.value, reqInfo);
 			mod->add_mention(section.range);
-		} else if (mod->has_brought_mod(section.value, reqInfo) ||
+		} else if (mod->has_imported_mod(section.value, reqInfo) ||
 		           mod->has_brought_mod_in_imports(section.value, reqInfo).first) {
-			mod = mod->get_brought_mod(section.value, reqInfo);
+			mod = mod->get_imported_mod(section.value, reqInfo);
 			mod->add_mention(section.range);
 		} else {
 			ctx->Error("No module named " + ctx->color(section.value) + " found inside the current module", fileRange);
@@ -170,13 +170,13 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}
-			if (mod->has_lib(section.value, reqInfo) || mod->has_brought_lib(section.value, reqInfo) ||
+			if (mod->has_lib(section.value, reqInfo) || mod->has_imported_lib(section.value, reqInfo) ||
 			    mod->has_lib_in_imports(section.value, reqInfo).first) {
 				mod = mod->get_lib(section.value, reqInfo);
 				mod->add_mention(section.range);
-			} else if (mod->has_brought_mod(section.value, reqInfo) ||
+			} else if (mod->has_imported_mod(section.value, reqInfo) ||
 			           mod->has_brought_mod_in_imports(section.value, reqInfo).first) {
-				mod = mod->get_brought_mod(section.value, reqInfo);
+				mod = mod->get_imported_mod(section.value, reqInfo);
 				mod->add_mention(section.range);
 			} else {
 				ctx->Error("No module named " + ctx->color(section.value) + " found inside the current module",
@@ -185,25 +185,25 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		}
 	}
 	auto reqInfo = ctx->get_access_info();
-	if (mod->has_type_definition(name.value, reqInfo) || mod->has_brought_type_definition(name.value, reqInfo) ||
+	if (mod->has_type_definition(name.value, reqInfo) || mod->has_imported_type_definition(name.value, reqInfo) ||
 	    mod->has_type_definition_in_imports(name.value, reqInfo).first) {
 		auto resTypeDef = mod->get_type_def(name.value, reqInfo);
 		resTypeDef->add_mention(name.range);
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resTypeDef, mod)->id,
 		                            ir::TypedType::get(ctx->irCtx));
-	} else if (mod->has_struct_type(name.value, reqInfo) || mod->has_brought_struct_type(name.value, reqInfo) ||
+	} else if (mod->has_struct_type(name.value, reqInfo) || mod->has_imported_struct_type(name.value, reqInfo) ||
 	           mod->has_struct_type_in_imports(name.value, reqInfo).first) {
 		auto resStructType = mod->get_struct_type(name.value, reqInfo);
 		resStructType->add_mention(name.range);
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resStructType, mod)->id,
 		                            ir::TypedType::get(ctx->irCtx));
-	} else if (mod->has_mix_type(name.value, reqInfo) || mod->has_brought_mix_type(name.value, reqInfo) ||
+	} else if (mod->has_mix_type(name.value, reqInfo) || mod->has_imported_mix_type(name.value, reqInfo) ||
 	           mod->has_mix_type_in_imports(name.value, reqInfo).first) {
 		auto resMixType = mod->get_mix_type(name.value, reqInfo);
 		resMixType->add_mention(name.range);
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resMixType, mod)->id,
 		                            ir::TypedType::get(ctx->irCtx));
-	} else if (mod->has_choice_type(name.value, reqInfo) || mod->has_brought_choice_type(name.value, reqInfo) ||
+	} else if (mod->has_choice_type(name.value, reqInfo) || mod->has_imported_choice_type(name.value, reqInfo) ||
 	           mod->has_choice_type_in_imports(name.value, reqInfo).first) {
 		auto resChoiceType = mod->get_choice_type(name.value, reqInfo);
 		resChoiceType->add_mention(name.range);
@@ -214,18 +214,18 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		auto flagTy = mod->get_flag_type(name.value, reqInfo);
 		flagTy->add_mention(name.range);
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, flagTy, mod)->id, ir::TypedType::get(ctx->irCtx));
-	} else if (mod->has_region(name.value, reqInfo) || mod->has_brought_region(name.value, reqInfo) ||
+	} else if (mod->has_region(name.value, reqInfo) || mod->has_imported_region(name.value, reqInfo) ||
 	           mod->has_region_in_imports(name.value, reqInfo).first) {
 		auto resRegion = mod->get_region(name.value, reqInfo);
 		resRegion->add_mention(name.range);
 		return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resRegion, mod)->id,
 		                            ir::TypedType::get(ctx->irCtx));
-	} else if (mod->has_prerun_global(name.value, reqInfo) || mod->has_brought_prerun_global(name.value, reqInfo) ||
+	} else if (mod->has_prerun_global(name.value, reqInfo) || mod->has_imported_prerun_global(name.value, reqInfo) ||
 	           mod->has_prerun_global_in_imports(name.value, reqInfo).first) {
 		auto resPre = mod->get_prerun_global(name.value, reqInfo);
 		resPre->add_mention(name.range);
 		return resPre;
-	} else if (mod->has_global(name.value, reqInfo) || mod->has_brought_global(name.value, reqInfo) ||
+	} else if (mod->has_global(name.value, reqInfo) || mod->has_imported_global(name.value, reqInfo) ||
 	           mod->has_global_in_imports(name.value, reqInfo).first) {
 		auto* gEnt = mod->get_global(name.value, reqInfo);
 		gEnt->add_mention(name.range);
@@ -244,7 +244,7 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		}
 		ctx->Error(ctx->color(name.value) + " is a global entity.", name.range);
 	} else if (mod->has_generic_struct_type(name.value, reqInfo) ||
-	           mod->has_brought_generic_struct_type(name.value, reqInfo) ||
+	           mod->has_imported_generic_struct_type(name.value, reqInfo) ||
 	           mod->has_generic_struct_type_in_imports(name.value, reqInfo).first) {
 		ctx->Error(ctx->color(name.value) +
 		               " is a generic struct type and cannot be used as a value or type in prerun expressions",
@@ -256,12 +256,13 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 		               " is a generic type definition and cannot be used as a value or type in prerun expressions",
 		           name.range);
 	} else if (mod->has_generic_function(name.value, reqInfo) ||
-	           mod->has_brought_generic_function(name.value, reqInfo) ||
+	           mod->has_imported_generic_function(name.value, reqInfo) ||
 	           mod->has_generic_function_in_imports(name.value, reqInfo).first) {
 		ctx->Error(ctx->color(name.value) +
 		               " is a generic function and cannot be used as a value or type in prerun expressions",
 		           fileRange);
-	} else if (mod->has_prerun_function(name.value, reqInfo) || mod->has_brought_prerun_function(name.value, reqInfo) ||
+	} else if (mod->has_prerun_function(name.value, reqInfo) ||
+	           mod->has_imported_prerun_function(name.value, reqInfo) ||
 	           mod->has_prerun_function_in_imports(name.value, reqInfo).first) {
 		auto preFn = mod->get_prerun_function(name.value, reqInfo);
 		preFn->add_mention(name.range);

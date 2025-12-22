@@ -41,10 +41,10 @@ class Node;
 class IsEntity;
 class Lib;
 class ModInfo;
-class BringPaths;
+class ImportPaths;
 class BinaryExpression;
-class BringBitwidths;
-class BringEntities;
+class ImportBitwidths;
+class ImportEntities;
 class MethodCall;
 class MemberAccess;
 class Entity;
@@ -243,7 +243,7 @@ enum class EntityType {
 	global,
 	prerunGlobal,
 	opaque,
-	bringEntity,
+	importEntity,
 	defaultDoneSkill,
 	doneSkill,
 	skill,
@@ -288,7 +288,7 @@ inline String entity_type_to_string(EntityType ty) {
 			return "prerun global";
 		case EntityType::opaque:
 			return "opaque type";
-		case EntityType::bringEntity:
+		case EntityType::importEntity:
 			return "brought entity";
 		case EntityType::defaultDoneSkill:
 			return "type extension";
@@ -453,7 +453,7 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class PrerunFunction;
 	friend class ast::Lib;
 	friend class ast::ModInfo;
-	friend class ast::BringPaths;
+	friend class ast::ImportPaths;
 	friend class GenericFunction;
 	friend class GenericStructType;
 	friend class GenericDefinitionType;
@@ -462,8 +462,8 @@ class Mod final : public Uniq, public EntityOverview {
 	friend class GenericSkill;
 	friend class Function;
 	friend class ast::BinaryExpression;
-	friend class ast::BringBitwidths;
-	friend class ast::BringEntities;
+	friend class ast::ImportBitwidths;
+	friend class ast::ImportEntities;
 	friend class qat::QatSitter;
 	friend class ast::MethodCall;
 	friend class ast::MemberAccess;
@@ -505,7 +505,7 @@ class Mod final : public Uniq, public EntityOverview {
 	Mod*              active = nullptr;
 	std::set<Mod*>    dependencies;
 	Vec<Mod*>         submodules;
-	Vec<Brought<Mod>> broughtModules;
+	Vec<Brought<Mod>> importedModules;
 
 	ModTypeInfo* typeInfoDetail = nullptr;
 
@@ -647,7 +647,7 @@ class Mod final : public Uniq, public EntityOverview {
 				}
 			}
 		}
-		for (auto bMod : broughtModules) {
+		for (auto bMod : importedModules) {
 			if (not bMod.is_named() && not bMod.get()->should_be_named()) {
 				if (bMod.get()->has_entity_with_name(name)) {
 					return true;
@@ -675,7 +675,7 @@ class Mod final : public Uniq, public EntityOverview {
 				}
 			}
 		}
-		for (auto bMod : broughtModules) {
+		for (auto bMod : importedModules) {
 			if (not bMod.is_named() && not bMod.get()->should_be_named()) {
 				if (bMod.get()->has_entity_with_name(name)) {
 					return bMod.get()->get_entity(name);
@@ -762,7 +762,7 @@ class Mod final : public Uniq, public EntityOverview {
 
 	useit std::set<String> get_all_linkable_libs() const;
 
-	void add_fs_bring_mention(ir::Mod* otherMod, FileRangePtr fileRange);
+	void add_filesystem_import_mention(ir::Mod* otherMod, FileRangePtr fileRange);
 
 	useit Vec<Pair<Mod*, FileRangePtr>> const& get_fs_bring_mentions() const;
 
@@ -777,7 +777,7 @@ class Mod final : public Uniq, public EntityOverview {
 	// LIB
 
 	useit bool has_lib(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_lib(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_lib(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_lib_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit Mod*               get_lib(const String& name, const AccessInfo& reqInfo);
 
@@ -788,63 +788,63 @@ class Mod final : public Uniq, public EntityOverview {
 	// FUNCTION
 
 	useit bool      has_function(const String& name, AccessInfo reqInfo) const;
-	useit bool      has_brought_function(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool      has_imported_function(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Function* get_function(const String& name, const AccessInfo& reqInfo);
 	useit Pair<bool, String> has_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// PRERUN FUNCTION
 
 	useit bool            has_prerun_function(String const& name, AccessInfo reqInfo) const;
-	useit bool            has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool            has_imported_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
 	useit PrerunFunction* get_prerun_function(String const& name, const AccessInfo& reqInfo);
 	useit Pair<bool, String> has_prerun_function_in_imports(String const& name, AccessInfo const& reqInfo) const;
 
 	// GENERIC FUNCTIONS
 
 	useit bool             has_generic_function(const String& name, AccessInfo reqInfo) const;
-	useit bool             has_brought_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool             has_imported_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit GenericFunction* get_generic_function(const String& name, const AccessInfo& reqInfo);
 	useit Pair<bool, String> has_generic_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// REGION
 
 	useit bool has_region(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_region(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_region(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_region_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit Region*            get_region(const String& name, const AccessInfo& reqInfo) const;
 
 	// OPAQUE TYPES
 
 	useit bool has_opaque_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_opaque_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit OpaqueType*        get_opaque_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// STRUCT TYPE
 
 	useit bool has_struct_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit StructType*        get_struct_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// MIX TYPE
 
 	useit bool has_mix_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_mix_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit MixType*           get_mix_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// TOGGLE TYPE
 
 	useit bool has_toggle_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit ToggleType*        get_toggle_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// CHOICE TYPE
 
 	useit bool has_choice_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit ChoiceType*        get_choice_type(const String& name, const AccessInfo& reqInfo) const;
 
@@ -858,14 +858,14 @@ class Mod final : public Uniq, public EntityOverview {
 	// GENERIC STRUCT TYPE
 
 	useit bool has_generic_struct_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_generic_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit GenericStructType* get_generic_struct_type(const String& name, const AccessInfo& reqInfo);
 
 	// GENERIC TOGGLE TYPE
 
 	useit bool has_generic_toggle_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_generic_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit GenericToggleType* get_generic_toggle_type(const String& name, const AccessInfo& reqInfo);
 
@@ -879,21 +879,21 @@ class Mod final : public Uniq, public EntityOverview {
 	// TYPEDEFS
 
 	useit bool has_type_definition(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_type_definition_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit DefinitionType*    get_type_def(const String& name, const AccessInfo& reqInfo) const;
 
 	// GLOBAL
 
 	useit bool has_global(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_global(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_global(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit GlobalEntity*      get_global(const String& name, const AccessInfo& reqInfo) const;
 
 	// PRERUN GLOBAL
 
 	useit bool has_prerun_global(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit bool has_imported_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const;
 	useit Pair<bool, String> has_prerun_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
 	useit PrerunGlobal*      get_prerun_global(const String& name, const AccessInfo& reqInfo) const;
 
@@ -924,29 +924,29 @@ class Mod final : public Uniq, public EntityOverview {
 
 	// IMPORT
 
-	useit bool has_brought_mod(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Mod* get_brought_mod(const String& name, const AccessInfo& reqInfo) const;
+	useit bool has_imported_mod(const String& name, Maybe<AccessInfo> reqInfo) const;
+	useit Mod* get_imported_mod(const String& name, const AccessInfo& reqInfo) const;
 	useit Pair<bool, String> has_brought_mod_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// BRING ENTITIES
 
-	void bring_module(Mod* other, const VisibilityInfo& _visib, Maybe<Identifier> bName = None);
-	void bring_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_type_definition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_function(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_prerun_function(PrerunFunction* preFn, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
-	void bring_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_prerun_global(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
-	void bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib,
-	                               Maybe<Identifier> bName = None);
-	void bring_generic_toggle_type(GenericToggleType* gCTy, const VisibilityInfo& visib,
-	                               Maybe<Identifier> bName = None);
-	void bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_module(Mod* other, const VisibilityInfo& _visib, Maybe<Identifier> bName = None);
+	void import_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_type_definition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_function(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_prerun_function(PrerunFunction* preFn, VisibilityInfo const& visib, Maybe<Identifier> bName = None);
+	void import_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_prerun_global(PrerunGlobal* preGlobal, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
+	void import_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib,
+	                                Maybe<Identifier> bName = None);
+	void import_generic_toggle_type(GenericToggleType* gCTy, const VisibilityInfo& visib,
+	                                Maybe<Identifier> bName = None);
+	void import_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName = None);
 	void bring_generic_type_definition(GenericDefinitionType* gTDef, VisibilityInfo const& visib,
 	                                   Maybe<Identifier> bName = None);
 	void bring_skill(Skill* skill, VisibilityInfo const& visib, Maybe<Identifier> bName = None);

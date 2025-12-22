@@ -1,8 +1,5 @@
 #include "./parser.hpp"
 #include "../ast/assembly_block.hpp"
-#include "../ast/bring_bitwidths.hpp"
-#include "../ast/bring_entities.hpp"
-#include "../ast/bring_paths.hpp"
 #include "../ast/constructor.hpp"
 #include "../ast/convertor.hpp"
 #include "../ast/define_choice_type.hpp"
@@ -60,6 +57,9 @@
 #include "../ast/expressions/variant_initialiser.hpp"
 #include "../ast/function.hpp"
 #include "../ast/global_declaration.hpp"
+#include "../ast/import_bitwidths.hpp"
+#include "../ast/import_entities.hpp"
+#include "../ast/import_paths.hpp"
 #include "../ast/lib.hpp"
 #include "../ast/meta/intrinsic.hpp"
 #include "../ast/meta/math.hpp"
@@ -185,12 +185,12 @@
 
 namespace qat::parser {
 
-Parser::Parser(ir::Ctx* _irCtx, Vec<lexer::Token>& _tokens) : irCtx(_irCtx), tokens(_tokens) {};
+Parser::Parser(ir::Ctx* _irCtx, Vec<lexer::Token>& _tokens) : tokens(_tokens), irCtx(_irCtx) {};
 
 Parser* Parser::get(ir::Ctx* irCtx, Vec<lexer::Token>& tokens) { return new Parser(irCtx, tokens); }
 
 Parser::~Parser() {
-	broughtPaths.clear();
+	importedPaths.clear();
 	memberPaths.clear();
 	comments.clear();
 }
@@ -200,45 +200,45 @@ u64 Parser::tokenCount        = 0;
 
 void Parser::filter_comments() { comments.clear(); }
 
-ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibSpec,
-                                                 usize fromMain, usize uptoMain) {
+ast::ImportEntities* Parser::parse_import_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibSpec,
+                                                   usize fromMain, usize uptoMain) {
 	using lexer::TokenType;
-	Vec<ast::BroughtGroup*> rootGroups;
+	Vec<ast::ImportGroup*> rootGroups;
 
-	std::function<void(Maybe<ast::BroughtGroup*>, usize, usize)> handler = [&](Maybe<ast::BroughtGroup*> parent,
-	                                                                           usize from, usize upto) {
+	std::function<void(Maybe<ast::ImportGroup*>, usize, usize)> handler = [&](Maybe<ast::ImportGroup*> parent,
+	                                                                          usize from, usize upto) {
 		for (usize i = from + 1; i < upto; i++) {
 			auto const& token = tokens.at(i);
 			switch (token.type) {
 				case TokenType::super: {
 					if (parent.has_value()) {
-						add_error(color_error("up") + " is not allowed for children of brought entities", RangeAt(i));
+						add_error(color_error("up") + " is not allowed for children of imported entities", RangeAt(i));
 					}
 				}
 				case TokenType::identifier: {
-					auto start                   = i;
-					auto sym_res                 = do_symbol(ctx, i);
-					i                            = sym_res.second;
-					ast::BroughtGroup* newGroup  = nullptr;
-					bool               isAliased = false;
+					auto start                  = i;
+					auto sym_res                = do_symbol(ctx, i);
+					i                           = sym_res.second;
+					ast::ImportGroup* newGroup  = nullptr;
+					bool              isAliased = false;
 					if (is_next(TokenType::as, i)) {
 						isAliased = true;
 						i++;
 						if (not is_next(TokenType::identifier, i)) {
-							add_error("Expected an identifier after this for the name of the brought entity",
+							add_error("Expected an identifier after this for the name of the imported entity",
 							          RangeSpan(start, i));
 						}
-						newGroup = ast::BroughtGroup::create(sym_res.first.relative, sym_res.first.name,
-						                                     IdentifierAt(i + 1), sym_res.first.fileRange);
+						newGroup = ast::ImportGroup::create(sym_res.first.relative, sym_res.first.name,
+						                                    IdentifierAt(i + 1), sym_res.first.fileRange);
 						i++;
 					} else {
-						newGroup = ast::BroughtGroup::create(sym_res.first.relative, sym_res.first.name, None,
-						                                     sym_res.first.fileRange);
+						newGroup = ast::ImportGroup::create(sym_res.first.relative, sym_res.first.name, None,
+						                                    sym_res.first.fileRange);
 					}
 					if (is_next(TokenType::curlybraceOpen, i)) {
 						if (isAliased) {
 							add_error(
-							    "The entity mentioned just before this has an alias, so bringing members from it is not allowed",
+							    "The entity mentioned just before this has an alias, so importing members from it is not allowed",
 							    RangeSpan(start, i + 1));
 						}
 						auto bCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
@@ -254,16 +254,16 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 								handler(newGroup, sepPos.back(), bClose);
 							} else {
 								add_warning(
-								    "Expected multiple entities to be brought. Consider removing the curly braces "
-								    "since only one child entity is brought",
+								    "Expected multiple entities to be imported. Consider removing the curly braces "
+								    "since only one child entity is imported",
 								    RangeSpan(i + 1, bClose));
 								if (is_next(TokenType::identifier, i + 1)) {
 									handler(newGroup, i + 1, bCloseRes.value());
 								} else if (is_next(TokenType::super, i + 1)) {
-									add_error(color_error("up") + " is not allowed for children of brought entities",
+									add_error(color_error("up") + " is not allowed for children of imported entities",
 									          RangeAt(i + 2));
 								} else {
-									add_error("Expected the name of an entity in the bring sentence", RangeAt(i + 2));
+									add_error("Expected the name of an entity in the import statement", RangeAt(i + 2));
 								}
 							}
 						} else {
@@ -297,12 +297,12 @@ ast::BringEntities* Parser::parse_bring_entities(ParserContext& ctx, Maybe<ast::
 		}
 	};
 	handler(None, fromMain, uptoMain);
-	return ast::BringEntities::create(rootGroups, visibSpec, RangeSpan(fromMain, uptoMain));
+	return ast::ImportEntities::create(rootGroups, visibSpec, RangeSpan(fromMain, uptoMain));
 }
 
-Vec<fs::path>& Parser::get_brought_paths() { return broughtPaths; }
+Vec<fs::path>& Parser::get_imported_paths() { return importedPaths; }
 
-void Parser::clear_brought_paths() { broughtPaths.clear(); }
+void Parser::clear_imported_paths() { importedPaths.clear(); }
 
 Vec<fs::path>& Parser::get_member_paths() { return memberPaths; }
 
@@ -445,8 +445,8 @@ ast::MetaInfo Parser::do_meta_info(usize from, usize upto, FileRangePtr fileRang
 	return ast::MetaInfo(fields, FileRange::merge(fileRange, RangeAt(upto)));
 }
 
-ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
-                                           FileRangePtr startRange) {
+ast::ImportPaths* Parser::parse_import_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
+                                             FileRangePtr startRange) {
 	using lexer::TokenType;
 	Vec<ast::StringLiteral*>        paths;
 	Vec<Maybe<ast::StringLiteral*>> names;
@@ -456,9 +456,9 @@ ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto
 			case TokenType::StringLiteral: {
 				if (is_next(TokenType::StringLiteral, i)) {
 					add_error("Implicit concatenation of adjacent string literals are not "
-					          "supported in bring sentences, to avoid ambiguity and confusion. "
-					          "If this is supposed to be another file or folder to bring, then "
-					          "add a separator between these. Or else fix the sentence.",
+					          "supported in import statements, to avoid ambiguity and confusion. "
+					          "If this is supposed to be another file or folder to import, then "
+					          "add a separator between these. Or else fix the statement.",
 					          RangeAt(i + 1));
 				} else if (is_next(TokenType::as, i)) {
 					if (is_next(TokenType::identifier, i + 1)) {
@@ -471,8 +471,8 @@ ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto
 					names.push_back(None);
 					i++;
 				}
-				SHOW("Pushing brought path: " << token.fileRange->file.parent_path() / token.value)
-				broughtPaths.push_back(token.fileRange->file.parent_path() / token.value);
+				SHOW("Pushing imported path: " << token.fileRange->file.parent_path() / token.value)
+				importedPaths.push_back(token.fileRange->file.parent_path() / token.value);
 				if (isMember) {
 					memberPaths.push_back(token.fileRange->file.parent_path() / token.value);
 				}
@@ -487,18 +487,18 @@ ast::BringPaths* Parser::parse_bring_paths(bool isMember, usize from, usize upto
 						// NOTE - This might be too much, or not
 						add_error("Multiple adjacent separators found. Please remove this", RangeAt(i + 1));
 					} else {
-						add_error("Unexpected token in bring sentence", RangeAt(i));
+						add_error("Unexpected token in import statement", RangeAt(i));
 					}
 				}
 				break;
 			}
 			default: {
-				add_error("Unexpected token in bring sentence", RangeAt(i));
+				add_error("Unexpected token in import statement", RangeAt(i));
 			}
 		}
 	}
-	return ast::BringPaths::create(isMember, std::move(paths), std::move(names), spec,
-	                               FileRange::merge(startRange, RangeAt(upto)));
+	return ast::ImportPaths::create(isMember, std::move(paths), std::move(names), spec,
+	                                FileRange::merge(startRange, RangeAt(upto)));
 }
 
 Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& preCtx, usize from, Maybe<usize> upto,
@@ -827,12 +827,13 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 				usize lastUnderscorePos = token.value.find_last_of('_');
 				if (lastUnderscorePos != String::npos && (lastUnderscorePos + 1 < token.value.length()) &&
 				    not utils::is_integer(String(1, token.value.at(lastUnderscorePos + 1)))) {
-					String            bitStr = ((lastUnderscorePos + 1 < token.value.length()) &&
-                                     (token.value.at(lastUnderscorePos + 1) == 'i' ||
-                                      token.value.at(lastUnderscorePos + 1) == 'u') &&
-                                     (lastUnderscorePos + 2 < token.value.length()))
-					                               ? token.value.substr(lastUnderscorePos + 2)
-					                               : "";
+					auto bitStr = ((lastUnderscorePos + 1 < token.value.length()) &&
+					               (token.value.at(lastUnderscorePos + 1) == 'i' ||
+					                token.value.at(lastUnderscorePos + 1) == 'u') &&
+					               (lastUnderscorePos + 2 < token.value.length()))
+					                  ? token.value.substr(lastUnderscorePos + 2)
+					                  : "";
+
 					Maybe<Identifier> suffix;
 					if (not utils::is_integer(bitStr) && (lastUnderscorePos + 1 < token.value.length())) {
 						suffix = {token.value.substr(lastUnderscorePos + 1),
@@ -866,7 +867,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						SHOW("INTEGER_LITERAL: " << token.value << " isUnsigned: " << (isUnsigned ? "true" : "false")
 						                         << " bits: " << (bits.has_value() ? bits.value() : 0u))
 						setCachedPreExp(isUnsigned.has_value() && isUnsigned.value()
-						                    ? (ast::PrerunExpression*)(ast::UnsignedLiteral::create(
+						                    ? reinterpret_cast<ast::PrerunExpression*>(ast::UnsignedLiteral::create(
 						                          token.value.substr(0, lastUnderscorePos),
 						                          bits.has_value()
 						                              ? Maybe<Pair<u64, FileRangePtr>>(
@@ -878,7 +879,7 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 						                                                     token.fileRange->end)})
 						                              : None,
 						                          token.fileRange))
-						                    : (ast::PrerunExpression*)(ast::IntegerLiteral::create(
+						                    : reinterpret_cast<ast::PrerunExpression*>(ast::IntegerLiteral::create(
 						                          token.value.substr(0, lastUnderscorePos),
 						                          bits.has_value()
 						                              ? Maybe<Pair<u64, FileRangePtr>>(
@@ -2495,10 +2496,6 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 		auto const& token = tokens.at(i);
 		SHOW("Token type is " << (u64)token.type)
 		switch (token.type) {
-			case TokenType::startOfFile:
-			case TokenType::endOfFile: {
-				break;
-			}
 			case TokenType::comment: {
 				addComment({i, token.value, token.fileRange});
 				break;
@@ -2613,30 +2610,30 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				}
 				break;
 			}
-			case TokenType::bring: {
+			case TokenType::use: {
 				if (is_next(TokenType::StringLiteral, i) ||
 				    (is_next(TokenType::colon, i) && is_next(TokenType::identifier, i + 1) &&
 				     (ValueAt(i + 2) == "member"))) {
 					bool isMember = not is_next(TokenType::StringLiteral, i);
 					auto endRes   = first_primary_position(TokenType::stop, i);
 					if (endRes.has_value()) {
-						addNode(parse_bring_paths(isMember, isMember ? i + 2 : i, endRes.value(), get_visibility(),
-						                          RangeAt(i)));
+						addNode(parse_import_paths(isMember, isMember ? i + 2 : i, endRes.value(), get_visibility(),
+						                           RangeAt(i)));
 						i = endRes.value();
 					} else {
-						add_error("Expected end of bring sentence", token.fileRange);
+						add_error("Expected end of import statement", token.fileRange);
 					}
 				} else if (is_next(TokenType::identifier, i) || is_next(TokenType::super, i)) {
-					if (ValueAt(i + 1) == "std") {
+					if (ValueAt(i + 1) == CORELIB) {
 						SHOW("Stdlib request found in parser")
 						irCtx->stdLibPossiblyRequired = true;
 					}
 					auto endRes = first_primary_position(TokenType::stop, i);
 					if (endRes.has_value()) {
-						addNode(parse_bring_entities(thisCtx, get_visibility(), i, endRes.value()));
+						addNode(parse_import_entities(thisCtx, get_visibility(), i, endRes.value()));
 						i = endRes.value();
 					} else {
-						add_error("Expected . to end the bring sentence", token.fileRange);
+						add_error("Expected . to end the import statement", token.fileRange);
 					}
 				} else if (is_next(TokenType::integerType, i) || is_next(TokenType::unsignedIntegerType, i)) {
 					auto start  = i;
@@ -2648,7 +2645,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 								auto sepPos = first_primary_position(TokenType::separator, i).value();
 								auto typRes = do_type(preCtx, i, sepPos);
 								if (typRes.second + 1 != sepPos) {
-									add_error("Brought type did not span till the ,",
+									add_error("Imported type did not span till the ,",
 									          RangeSpan(typRes.second + 1, sepPos));
 								}
 								types.push_back(typRes.first);
@@ -2657,7 +2654,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 							if (i + 1 != endRes.value()) {
 								auto typRes = do_type(preCtx, i, endRes.value());
 								if (typRes.second + 1 != endRes.value()) {
-									add_error("Brought type did not span till the .",
+									add_error("Imported type did not span till the .",
 									          RangeSpan(typRes.second + 1, endRes.value()));
 								}
 								types.push_back(typRes.first);
@@ -2666,15 +2663,15 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						} else {
 							auto typRes = do_type(preCtx, i, endRes.value());
 							if (typRes.second + 1 != endRes.value()) {
-								add_error("Brought type did not span till the .",
+								add_error("Imported type did not span till the .",
 								          RangeSpan(typRes.second + 1, endRes.value()));
 							}
 							types.push_back(typRes.first);
 							i = endRes.value();
 						}
-						addNode(ast::BringBitwidths::create(types, RangeSpan(start, i)));
+						addNode(ast::ImportBitwidths::create(types, RangeSpan(start, i)));
 					} else {
-						add_error("Expected . to end the bring sentence", token.fileRange);
+						add_error("Expected . to end the import statement", token.fileRange);
 					}
 				}
 				break;
@@ -2704,7 +2701,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					auto entityMeta = do_entity_metadata(preCtx, i, "prerun function", 0u);
 					i               = entityMeta.lastIndex;
 					if (not is_next(TokenType::bracketOpen, i)) {
-						add_error("Expected [ after this to start the sentences of this prerun function",
+						add_error("Expected [ after this to start the statements of this prerun function",
 						          RangeSpan(start, i));
 					}
 					i++;
@@ -4173,8 +4170,6 @@ void Parser::do_choice_type(usize from, usize upto, Vec<Pair<Vec<Identifier>, Ma
 					fields.push_back({fieldNames, None});
 					i++;
 				} else if (is_next(TokenType::assignment, i)) {
-					auto fieldName = ValueAt(i);
-
 					Maybe<ast::PrerunExpression*> val;
 
 					auto preCtx = ParserContext();
@@ -7473,7 +7468,7 @@ Vec<usize> Parser::primary_positions_within(lexer::TokenType candidate, usize fr
 	return result;
 }
 
-void Parser::add_error(const String& message, FileRangePtr fileRange) { irCtx->Error(message, fileRange); }
+void Parser::add_error(String const& message, FileRangePtr fileRange) { irCtx->Error(message, fileRange); }
 
 String Parser::color_error(const String& message) {
 	auto* cfg = cli::Config::get();

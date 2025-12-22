@@ -448,13 +448,13 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 					Lexer->change_file(fs::absolute(libCheckRes->second));
 					Lexer->analyse();
 					auto parseRes(Parser->begin_parsing());
-					for (const auto& bPath : Parser->get_brought_paths()) {
+					for (const auto& bPath : Parser->get_imported_paths()) {
 						broughtPaths.push_back(bPath);
 					}
 					for (const auto& mPath : Parser->get_member_paths()) {
 						memberPaths.push_back(mPath);
 					}
-					Parser->clear_brought_paths();
+					Parser->clear_imported_paths();
 					Parser->clear_member_paths();
 					fileEntities.push_back(ir::Mod::create_root_lib(
 					    parentMod, fs::absolute(libCheckRes->second), path,
@@ -494,13 +494,13 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 				Lexer->change_file(item.path().string());
 				Lexer->analyse();
 				auto parseRes(Parser->begin_parsing());
-				for (const auto& bPath : Parser->get_brought_paths()) {
+				for (const auto& bPath : Parser->get_imported_paths()) {
 					broughtPaths.push_back(bPath);
 				}
 				for (const auto& mPath : Parser->get_member_paths()) {
 					memberPaths.push_back(mPath);
 				}
-				Parser->clear_brought_paths();
+				Parser->clear_imported_paths();
 				Parser->clear_member_paths();
 				if (libCheckRes.has_value()) {
 					fileEntities.push_back(ir::Mod::create_root_lib(
@@ -529,13 +529,13 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 			Lexer->change_file(libCheckRes->second);
 			Lexer->analyse();
 			auto parseRes(Parser->begin_parsing());
-			for (const auto& bPath : Parser->get_brought_paths()) {
+			for (const auto& bPath : Parser->get_imported_paths()) {
 				broughtPaths.push_back(bPath);
 			}
 			for (const auto& mPath : Parser->get_member_paths()) {
 				memberPaths.push_back(mPath);
 			}
-			Parser->clear_brought_paths();
+			Parser->clear_imported_paths();
 			Parser->clear_member_paths();
 			fileEntities.push_back(
 			    ir::Mod::create_file_mod(nullptr, libCheckRes->second, mainPath,
@@ -559,13 +559,13 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 		Lexer->change_file(mainPath);
 		Lexer->analyse();
 		auto parseRes(Parser->begin_parsing());
-		for (const auto& bPath : Parser->get_brought_paths()) {
+		for (const auto& bPath : Parser->get_imported_paths()) {
 			broughtPaths.push_back(bPath);
 		}
 		for (const auto& mPath : Parser->get_member_paths()) {
 			memberPaths.push_back(mPath);
 		}
-		Parser->clear_brought_paths();
+		Parser->clear_imported_paths();
 		Parser->clear_member_paths();
 		if (libCheckRes.has_value()) {
 			fileEntities.push_back(

@@ -82,7 +82,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A struct type named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_struct_type(name.value, None)) {
+	} else if (mod->has_imported_struct_type(name.value, None)) {
 		Error("A struct type named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
@@ -101,7 +101,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		          " exists in this module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_generic_struct_type(name.value, None)) {
+	} else if (mod->has_imported_generic_struct_type(name.value, None)) {
 		if (genericID.has_value() &&
 		    mod->get_generic_struct_type(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
@@ -120,7 +120,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A mix type named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_mix_type(name.value, None)) {
+	} else if (mod->has_imported_mix_type(name.value, None)) {
 		Error("A mix type named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
@@ -134,7 +134,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A choice type named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_choice_type(name.value, None)) {
+	} else if (mod->has_imported_choice_type(name.value, None)) {
 		Error("A choice type named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
@@ -148,7 +148,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A type definition named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_type_definition(name.value, None)) {
+	} else if (mod->has_imported_type_definition(name.value, None)) {
 		Error("A type definition named " + color(name.value) +
 		          " is brought into this module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
@@ -163,7 +163,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A function named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_function(name.value, None)) {
+	} else if (mod->has_imported_function(name.value, None)) {
 		Error("A function named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
@@ -177,7 +177,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A prerun function named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_prerun_function(name.value, None)) {
+	} else if (mod->has_imported_prerun_function(name.value, None)) {
 		Error("A prerun function named " + color(name.value) +
 		          " is brought into this module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
@@ -196,7 +196,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A generic function named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_generic_function(name.value, None)) {
+	} else if (mod->has_imported_generic_function(name.value, None)) {
 		if (genericID.has_value() &&
 		    mod->get_generic_function(name.value, get_access_info())->get_id() == genericID.value()) {
 			return;
@@ -219,7 +219,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A global named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_global(name.value, None)) {
+	} else if (mod->has_imported_global(name.value, None)) {
 		Error("A global named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
@@ -233,7 +233,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A prerun global named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_prerun_global(name.value, None)) {
+	} else if (mod->has_imported_prerun_global(name.value, None)) {
 		Error("A prerun global named " + color(name.value) +
 		          " is brought into this module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
@@ -248,7 +248,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A region named " + color(name.value) + " exists in this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_region(name.value, None)) {
+	} else if (mod->has_imported_region(name.value, None)) {
 		Error("A region named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);
@@ -262,7 +262,7 @@ void EmitCtx::name_check_in_module(const Identifier& name, const String& entityT
 		Error("A lib named " + color(name.value) + " exists in this module. Please change name of this " + entityType +
 		          " or check the codebase for inconsistencies",
 		      name.range);
-	} else if (mod->has_brought_lib(name.value, None)) {
+	} else if (mod->has_imported_lib(name.value, None)) {
 		Error("A lib named " + color(name.value) + " is brought into this module. Please change name of this " +
 		          entityType + " or check the codebase for inconsistencies",
 		      name.range);

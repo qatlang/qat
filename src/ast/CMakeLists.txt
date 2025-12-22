@@ -1,8 +1,5 @@
 add_library(QAT_AST STATIC
 	assembly_block.cc
-	bring_bitwidths.cc
-	bring_paths.cc
-	bring_entities.cc
 	convertor.cc
 	constructor.cc
 	define_choice_type.cc
@@ -20,6 +17,9 @@ add_library(QAT_AST STATIC
 	function.cc
 	generics.cc
 	global_declaration.cc
+	import_bitwidths.cc
+	import_paths.cc
+	import_entities.cc
 	lib.cc
 	method.cc
 	mod_info.cc

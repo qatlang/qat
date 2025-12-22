@@ -15,12 +15,12 @@ void SkillEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>
 	auto access = ctx->get_access_info();
 	for (usize i = 0; i < names.size() - 1; i++) {
 		auto& name = names[i];
-		if (mod->has_lib(name.value, access) || mod->has_brought_lib(name.value, access) ||
+		if (mod->has_lib(name.value, access) || mod->has_imported_lib(name.value, access) ||
 		    mod->has_lib_in_imports(name.value, access).first) {
 			mod = mod->get_lib(name.value, access);
-		} else if (mod->has_brought_mod(name.value, access) ||
+		} else if (mod->has_imported_mod(name.value, access) ||
 		           mod->has_brought_mod_in_imports(name.value, access).first) {
-			mod = mod->get_brought_mod(name.value, access);
+			mod = mod->get_imported_mod(name.value, access);
 		} else {
 			ctx->Error("No module named " + ctx->color(name.value) + " found inside " +
 			               ctx->color(mod->get_referrable_name()) + " or its submodules",
@@ -83,15 +83,15 @@ ir::Skill* SkillEntity::find_skill(EmitCtx* ctx) const {
 	auto access = ctx->get_access_info();
 	for (usize i = 0; i < names.size() - 1; i++) {
 		auto& idn = names.at(i);
-		if (mod->has_lib(idn.value, access) || mod->has_brought_lib(idn.value, access) ||
+		if (mod->has_lib(idn.value, access) || mod->has_imported_lib(idn.value, access) ||
 		    mod->has_lib_in_imports(idn.value, access).first) {
 			mod = mod->get_lib(idn.value, access);
 			mod->add_mention(idn.range);
 			if (not mod->get_visibility().is_accessible(access)) {
 				ctx->Error("This lib is not accessible in the current scope", idn.range);
 			}
-		} else if (mod->has_brought_mod(idn.value, access)) {
-			mod = mod->get_brought_mod(idn.value, access);
+		} else if (mod->has_imported_mod(idn.value, access)) {
+			mod = mod->get_imported_mod(idn.value, access);
 			mod->add_mention(idn.range);
 			if (not mod->get_visibility().is_accessible(access)) {
 				ctx->Error("This brought module is not accessible in the current scope", idn.range);
@@ -149,12 +149,12 @@ void DoneSkillEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependT
 	auto access = ctx->get_access_info();
 	for (usize i = 0; i < names.size() - 1; i++) {
 		auto& name = names[i];
-		if (mod->has_lib(name.value, access) || mod->has_brought_lib(name.value, access) ||
+		if (mod->has_lib(name.value, access) || mod->has_imported_lib(name.value, access) ||
 		    mod->has_lib_in_imports(name.value, access).first) {
 			mod = mod->get_lib(name.value, access);
-		} else if (mod->has_brought_mod(name.value, access) ||
+		} else if (mod->has_imported_mod(name.value, access) ||
 		           mod->has_brought_mod_in_imports(name.value, access).first) {
-			mod = mod->get_brought_mod(name.value, access);
+			mod = mod->get_imported_mod(name.value, access);
 		} else {
 			ctx->Error("No module named " + ctx->color(name.value) + " found inside " +
 			               ctx->color(mod->get_referrable_name()) + " or its submodules",
@@ -199,15 +199,15 @@ ir::DoneSkill* DoneSkillEntity::find_done_skill(EmitCtx* ctx) const {
 	auto access = ctx->get_access_info();
 	for (usize i = 0; i < names.size() - 1; i++) {
 		auto& idn = names.at(i);
-		if (mod->has_lib(idn.value, access) || mod->has_brought_lib(idn.value, access) ||
+		if (mod->has_lib(idn.value, access) || mod->has_imported_lib(idn.value, access) ||
 		    mod->has_lib_in_imports(idn.value, access).first) {
 			mod = mod->get_lib(idn.value, access);
 			mod->add_mention(idn.range);
 			if (not mod->get_visibility().is_accessible(access)) {
 				ctx->Error("This lib is not accessible in the current scope", idn.range);
 			}
-		} else if (mod->has_brought_mod(idn.value, access)) {
-			mod = mod->get_brought_mod(idn.value, access);
+		} else if (mod->has_imported_mod(idn.value, access)) {
+			mod = mod->get_imported_mod(idn.value, access);
 			mod->add_mention(idn.range);
 			if (not mod->get_visibility().is_accessible(access)) {
 				ctx->Error("This brought module is not accessible in the current scope", idn.range);

@@ -6,7 +6,7 @@
 namespace qat::ast {
 
 class IntegerType final : public Type {
-	friend class BringBitwidths;
+	friend class ImportBitwidths;
 	friend class FillGeneric;
 
   private:

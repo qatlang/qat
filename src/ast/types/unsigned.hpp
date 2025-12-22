@@ -7,7 +7,7 @@
 namespace qat::ast {
 
 class UnsignedType final : public Type {
-	friend class BringBitwidths;
+	friend class ImportBitwidths;
 	friend class FillGeneric;
 
   private:

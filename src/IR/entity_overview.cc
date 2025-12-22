@@ -8,7 +8,7 @@ EntityOverview::EntityOverview(String _ovKind, Json _ovInfo, FileRangePtr _ovRan
 
 void EntityOverview::add_mention(FileRangePtr _range) { ovMentions.push_back(_range); }
 
-void EntityOverview::add_bring_mention(ir::Mod* otherMod, FileRangePtr fileRange) {
+void EntityOverview::add_import_mention(ir::Mod* otherMod, FileRangePtr fileRange) {
 	ovBroughtMentions.push_back(Pair<ir::Mod*, FileRangePtr>(otherMod, fileRange));
 }
 

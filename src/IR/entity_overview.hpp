@@ -27,7 +27,7 @@ class EntityOverview {
 	virtual ~EntityOverview() = default;
 
 	void add_mention(FileRangePtr _range);
-	void add_bring_mention(Mod* module, FileRangePtr range);
+	void add_import_mention(Mod* module, FileRangePtr range);
 
 	Vec<Pair<Mod*, FileRangePtr>> const& get_brought_mentions() const;
 

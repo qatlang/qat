@@ -25,7 +25,6 @@ enum class TokenType : u8 {
 	floatType,
 	textType,
 	structType,
-	bring,
 	from,
 	to,
 	child,

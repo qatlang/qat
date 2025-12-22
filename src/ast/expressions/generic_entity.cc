@@ -32,12 +32,12 @@ void GenericEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependTyp
 				    ir::EntityDependency{mod->get_entity(split.value), dep.value_or(ir::DependType::complete), phase});
 				break;
 			}
-			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
+			if (mod->has_lib(split.value, reqInfo) || mod->has_imported_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
 				mod = mod->get_lib(split.value, reqInfo);
-			} else if (mod->has_brought_mod(split.value, reqInfo) ||
+			} else if (mod->has_imported_mod(split.value, reqInfo) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 			} else {
 				ctx->irCtx->Error("No lib named " + ctx->irCtx->color(split.value) + " found inside " +
 				                      ctx->irCtx->color(mod->get_referrable_name()),
@@ -71,13 +71,13 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 				mod = ir::StdLib::stdLib;
 				continue;
 			}
-			if (mod->has_lib(split.value, reqInfo) || mod->has_brought_lib(split.value, reqInfo) ||
+			if (mod->has_lib(split.value, reqInfo) || mod->has_imported_lib(split.value, reqInfo) ||
 			    mod->has_lib_in_imports(split.value, reqInfo).first) {
 				mod = mod->get_lib(split.value, reqInfo);
 				mod->add_mention(split.range);
-			} else if (mod->has_brought_mod(split.value, reqInfo) ||
+			} else if (mod->has_imported_mod(split.value, reqInfo) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 				mod->add_mention(split.range);
 			} else {
 				ctx->Error("No lib named " + ctx->color(split.value) + " found inside " +
@@ -89,7 +89,7 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 	// auto* oldFn = ctx->get_fn();
 	auto* curr = ctx->has_fn() ? ctx->get_fn()->get_block() : nullptr;
 	if (mod->has_generic_function(entityName.value, reqInfo) ||
-	    mod->has_brought_generic_function(entityName.value, ctx->get_access_info()) ||
+	    mod->has_imported_generic_function(entityName.value, ctx->get_access_info()) ||
 	    mod->has_generic_function_in_imports(entityName.value, reqInfo).first) {
 		auto* genericFn = mod->get_generic_function(entityName.value, reqInfo);
 		if (not genericFn->get_visibility().is_accessible(ctx->get_access_info())) {

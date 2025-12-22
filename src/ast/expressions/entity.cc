@@ -36,9 +36,9 @@ void Entity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep,
 			if (mod->has_lib(split.value, reqInfo)) {
 				mod = mod->get_lib(split.value, reqInfo);
 				mod->add_mention(split.range);
-			} else if (mod->has_brought_mod(split.value, ctx->get_access_info()) ||
+			} else if (mod->has_imported_mod(split.value, ctx->get_access_info()) ||
 			           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
-				mod = mod->get_brought_mod(split.value, reqInfo);
+				mod = mod->get_imported_mod(split.value, reqInfo);
 				mod->add_mention(split.range);
 			} else {
 				SHOW("Update deps")
@@ -151,11 +151,11 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 				}
 			}
 			// Checking functions
-			if (mod->has_function(singleName.value, reqInfo) || mod->has_brought_function(singleName.value, reqInfo) ||
+			if (mod->has_function(singleName.value, reqInfo) || mod->has_imported_function(singleName.value, reqInfo) ||
 			    mod->has_function_in_imports(singleName.value, reqInfo).first) {
 				return mod->get_function(singleName.value, reqInfo);
 			} else if (mod->has_global(singleName.value, reqInfo) ||
-			           mod->has_brought_global(singleName.value, reqInfo) ||
+			           mod->has_imported_global(singleName.value, reqInfo) ||
 			           mod->has_global_in_imports(singleName.value, reqInfo).first) {
 				auto* gEnt  = mod->get_global(singleName.value, reqInfo);
 				auto  gName = llvm::cast<llvm::GlobalVariable>(gEnt->get_llvm())->getName();
@@ -191,9 +191,9 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 				if (mod->has_lib(split.value, reqInfo)) {
 					mod = mod->get_lib(split.value, reqInfo);
 					mod->add_mention(split.range);
-				} else if (mod->has_brought_mod(split.value, reqInfo) ||
+				} else if (mod->has_imported_mod(split.value, reqInfo) ||
 				           mod->has_brought_mod_in_imports(split.value, reqInfo).first) {
-					mod = mod->get_brought_mod(split.value, reqInfo);
+					mod = mod->get_imported_mod(split.value, reqInfo);
 					mod->add_mention(split.range);
 				} else {
 					SHOW("Emit fn")
@@ -203,7 +203,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		}
 	}
 	auto entityName = names.back();
-	if (mod->has_function(entityName.value, reqInfo) || mod->has_brought_function(entityName.value, reqInfo) ||
+	if (mod->has_function(entityName.value, reqInfo) || mod->has_imported_function(entityName.value, reqInfo) ||
 	    mod->has_function_in_imports(entityName.value, reqInfo).first) {
 		auto* fun = mod->get_function(entityName.value, reqInfo);
 		if (not fun->is_accessible(reqInfo)) {
@@ -211,7 +211,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		}
 		fun->add_mention(entityName.range);
 		return fun;
-	} else if (mod->has_global(entityName.value, reqInfo) || mod->has_brought_global(entityName.value, reqInfo) ||
+	} else if (mod->has_global(entityName.value, reqInfo) || mod->has_imported_global(entityName.value, reqInfo) ||
 	           mod->has_global_in_imports(entityName.value, reqInfo).first) {
 		auto* gEnt  = mod->get_global(entityName.value, reqInfo);
 		auto  gName = llvm::cast<llvm::GlobalVariable>(gEnt->get_llvm())->getName();
@@ -227,27 +227,27 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 		gEnt->add_mention(entityName.range);
 		return ir::Value::get(gEnt->get_llvm(), gEnt->get_ir_type(), gEnt->has_variability());
 	} else {
-		if (mod->has_lib(entityName.value, reqInfo) || mod->has_brought_lib(entityName.value, reqInfo) ||
+		if (mod->has_lib(entityName.value, reqInfo) || mod->has_imported_lib(entityName.value, reqInfo) ||
 		    mod->has_lib_in_imports(entityName.value, reqInfo).first) {
 			ctx->Error(mod->get_lib(entityName.value, reqInfo)->get_full_name() +
 			               " is a lib and cannot be used as a value in an expression",
 			           entityName.range);
 		} else if (mod->has_struct_type(entityName.value, reqInfo) ||
-		           mod->has_brought_struct_type(entityName.value, reqInfo) ||
+		           mod->has_imported_struct_type(entityName.value, reqInfo) ||
 		           mod->has_struct_type_in_imports(entityName.value, reqInfo).first) {
 			auto resStructType = mod->get_struct_type(entityName.value, reqInfo);
 			resStructType->add_mention(entityName.range);
 			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resStructType, mod)->id,
 			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_mix_type(entityName.value, reqInfo) ||
-		           mod->has_brought_mix_type(entityName.value, reqInfo) ||
+		           mod->has_imported_mix_type(entityName.value, reqInfo) ||
 		           mod->has_mix_type_in_imports(entityName.value, reqInfo).first) {
 			auto resMixType = mod->get_mix_type(entityName.value, reqInfo);
 			resMixType->add_mention(entityName.range);
 			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resMixType, mod)->id,
 			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_choice_type(entityName.value, reqInfo) ||
-		           mod->has_brought_choice_type(entityName.value, reqInfo) ||
+		           mod->has_imported_choice_type(entityName.value, reqInfo) ||
 		           mod->has_choice_type_in_imports(entityName.value, reqInfo).first) {
 			auto* resChoiceTy = mod->get_choice_type(entityName.value, reqInfo);
 			resChoiceTy->add_mention(entityName.range);
@@ -260,33 +260,33 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 			flagTy->add_mention(entityName.range);
 			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, flagTy, mod)->id,
 			                            ir::TypedType::get(ctx->irCtx));
-		} else if (mod->has_region(entityName.value, reqInfo) || mod->has_brought_region(entityName.value, reqInfo) ||
+		} else if (mod->has_region(entityName.value, reqInfo) || mod->has_imported_region(entityName.value, reqInfo) ||
 		           mod->has_region_in_imports(entityName.value, reqInfo).first) {
 			auto* resRegion = mod->get_region(entityName.value, reqInfo);
 			resRegion->add_mention(entityName.range);
 			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resRegion, mod)->id,
 			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_prerun_global(entityName.value, reqInfo) ||
-		           mod->has_brought_prerun_global(entityName.value, reqInfo) ||
+		           mod->has_imported_prerun_global(entityName.value, reqInfo) ||
 		           mod->has_prerun_global_in_imports(entityName.value, reqInfo).first) {
 			auto* resPre = mod->get_prerun_global(entityName.value, reqInfo);
 			resPre->add_mention(entityName.range);
 			return resPre;
 		} else if (mod->has_type_definition(entityName.value, reqInfo) ||
-		           mod->has_brought_type_definition(entityName.value, reqInfo) ||
+		           mod->has_imported_type_definition(entityName.value, reqInfo) ||
 		           mod->has_type_definition_in_imports(entityName.value, reqInfo).first) {
 			auto* resTy = mod->get_type_def(entityName.value, reqInfo);
 			resTy->add_mention(entityName.range);
 			return ir::PrerunValue::get(ir::TypeInfo::create(ctx->irCtx, resTy, mod)->id,
 			                            ir::TypedType::get(ctx->irCtx));
 		} else if (mod->has_prerun_function(entityName.value, reqInfo) ||
-		           mod->has_brought_prerun_function(entityName.value, reqInfo) ||
+		           mod->has_imported_prerun_function(entityName.value, reqInfo) ||
 		           mod->has_prerun_function_in_imports(entityName.value, reqInfo).first) {
 			auto* preFn = mod->get_prerun_function(entityName.value, reqInfo);
 			preFn->add_mention(entityName.range);
 			return preFn;
 		} else if (mod->has_generic_struct_type(entityName.value, reqInfo) ||
-		           mod->has_brought_generic_struct_type(entityName.value, reqInfo) ||
+		           mod->has_imported_generic_struct_type(entityName.value, reqInfo) ||
 		           mod->has_generic_struct_type_in_imports(entityName.value, reqInfo).first) {
 			ctx->Error(ctx->color(entityName.value) + " is a generic struct type and cannot be used as a value or type",
 			           entityName.range);
@@ -297,7 +297,7 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 			               " is a generic type definition and cannot be used as a value or type",
 			           entityName.range);
 		} else if (mod->has_generic_function(entityName.value, reqInfo) ||
-		           mod->has_brought_generic_function(entityName.value, reqInfo) ||
+		           mod->has_imported_generic_function(entityName.value, reqInfo) ||
 		           mod->has_generic_function_in_imports(entityName.value, reqInfo).first) {
 			ctx->Error(ctx->color(entityName.value) + " is a generic function and cannot be used as a value or type",
 			           fileRange);

@@ -1182,7 +1182,6 @@ Maybe<Token> Lexer::word_to_token(const String& wordValue, Lexer* lexInst) {
 	};
 
 	Check_Normal_Keyword("null", null);
-	else Check_Normal_Keyword("bring", bring);
 	else Check_Normal_Keyword("pub", pub);
 	else Check_Normal_Keyword("let", let);
 	else Check_Normal_Keyword("self", selfWord);

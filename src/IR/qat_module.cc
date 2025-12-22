@@ -382,7 +382,7 @@ Mod* Mod::create_root_lib(Mod* parent, fs::path filepath, fs::path basePath, Ide
 	return sub;
 }
 
-void Mod::add_fs_bring_mention(Mod* otherMod, FileRangePtr fileRange) {
+void Mod::add_filesystem_import_mention(Mod* otherMod, FileRangePtr fileRange) {
 	fsBroughtMentions.push_back(Pair<Mod*, FileRangePtr>(otherMod, fileRange));
 }
 
@@ -600,7 +600,7 @@ bool Mod::has_lib(const String& name, AccessInfo reqInfo) const {
 		    (sub->get_visibility().is_accessible(reqInfo))) {
 			return true;
 		} else if (not sub->should_be_named()) {
-			if (sub->has_lib(name, reqInfo) || sub->has_brought_lib(name, reqInfo) ||
+			if (sub->has_lib(name, reqInfo) || sub->has_imported_lib(name, reqInfo) ||
 			    sub->has_lib_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -609,8 +609,8 @@ bool Mod::has_lib(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_lib(const String& name, Maybe<AccessInfo> reqInfo) const {
-	for (const auto& brought : broughtModules) {
+bool Mod::has_imported_lib(const String& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : importedModules) {
 		auto* bMod = brought.get();
 		if (bMod->moduleType == ModuleType::lib) {
 			auto result = false;
@@ -631,11 +631,11 @@ bool Mod::has_brought_lib(const String& name, Maybe<AccessInfo> reqInfo) const {
 
 Pair<bool, String> Mod::has_lib_in_imports( // NOLINT(misc-no-recursion)
     const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_lib(name, reqInfo) || bMod->has_brought_lib(name, reqInfo) ||
+				if (bMod->has_lib(name, reqInfo) || bMod->has_imported_lib(name, reqInfo) ||
 				    bMod->has_lib_in_imports(name, reqInfo).first) {
 					if (bMod->get_lib(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
@@ -654,14 +654,14 @@ Mod* Mod::get_lib(const String& name, const AccessInfo& reqInfo) {
 			return sub;
 		} else {
 			if (not sub->should_be_named()) {
-				if (sub->has_lib(name, reqInfo) || sub->has_brought_lib(name, reqInfo) ||
+				if (sub->has_lib(name, reqInfo) || sub->has_imported_lib(name, reqInfo) ||
 				    sub->has_lib_in_imports(name, reqInfo).first) {
 					return sub;
 				}
 			}
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		auto* bMod = brought.get();
 		if (bMod->moduleType == ModuleType::lib) {
 			auto result = false;
@@ -677,11 +677,11 @@ Mod* Mod::get_lib(const String& name, const AccessInfo& reqInfo) {
 			}
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_lib(name, reqInfo) || bMod->has_brought_lib(name, reqInfo) ||
+				if (bMod->has_lib(name, reqInfo) || bMod->has_imported_lib(name, reqInfo) ||
 				    bMod->has_lib_in_imports(name, reqInfo).first) {
 					if (bMod->get_lib(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_lib(name, reqInfo);
@@ -702,8 +702,8 @@ void Mod::open_lib_for_creation(const Identifier& name, const String& filename, 
 
 void Mod::close_lib_after_creation() { closeSubmodule(); }
 
-bool Mod::has_brought_mod(const String& name, Maybe<AccessInfo> reqInfo) const {
-	for (const auto& brought : broughtModules) {
+bool Mod::has_imported_mod(const String& name, Maybe<AccessInfo> reqInfo) const {
+	for (const auto& brought : importedModules) {
 		auto result = false;
 		if (brought.is_named()) {
 			result = (brought.name.value().value == name) && brought.visibility.is_accessible(reqInfo) &&
@@ -720,12 +720,12 @@ bool Mod::has_brought_mod(const String& name, Maybe<AccessInfo> reqInfo) const {
 }
 
 Pair<bool, String> Mod::has_brought_mod_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_brought_mod(name, reqInfo) || bMod->has_brought_mod_in_imports(name, reqInfo).first) {
-					if (bMod->get_brought_mod(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
+				if (bMod->has_imported_mod(name, reqInfo) || bMod->has_brought_mod_in_imports(name, reqInfo).first) {
+					if (bMod->get_imported_mod(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						SHOW("Found module in imports")
 						return {true, bMod->filePath.string()};
 					}
@@ -736,16 +736,16 @@ Pair<bool, String> Mod::has_brought_mod_in_imports(const String& name, const Acc
 	return {false, ""};
 }
 
-Mod* Mod::get_brought_mod(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+Mod* Mod::get_imported_mod(const String& name, const AccessInfo& reqInfo) const {
+	for (const auto& brought : importedModules) {
 		auto* bMod = brought.get();
 		if (not brought.is_named()) {
 			if (bMod->should_be_named() && (bMod->get_name() == name) &&
 			    brought.get_visibility().is_accessible(reqInfo)) {
 				return bMod;
 			} else if (not bMod->should_be_named()) {
-				if (bMod->has_brought_mod(name, reqInfo) || bMod->has_brought_mod_in_imports(name, reqInfo).first) {
-					auto resMod = bMod->get_brought_mod(name, reqInfo);
+				if (bMod->has_imported_mod(name, reqInfo) || bMod->has_brought_mod_in_imports(name, reqInfo).first) {
+					auto resMod = bMod->get_imported_mod(name, reqInfo);
 					if (resMod->get_visibility().is_accessible(reqInfo)) {
 						return resMod;
 					}
@@ -758,15 +758,15 @@ Mod* Mod::get_brought_mod(const String& name, const AccessInfo& reqInfo) const {
 	return nullptr;
 }
 
-void Mod::bring_module(Mod* other, const VisibilityInfo& _visibility, Maybe<Identifier> bName) {
+void Mod::import_module(Mod* other, const VisibilityInfo& _visibility, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
-		broughtModules.push_back(Brought<Mod>(bName.value(), other, _visibility));
+		importedModules.push_back(Brought<Mod>(bName.value(), other, _visibility));
 	} else {
-		broughtModules.push_back(Brought<Mod>(other, _visibility));
+		importedModules.push_back(Brought<Mod>(other, _visibility));
 	}
 }
 
-void Mod::bring_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtStructTypes.push_back(Brought<StructType>(bName.value(), cTy, visib));
 	} else {
@@ -774,7 +774,7 @@ void Mod::bring_struct_type(StructType* cTy, const VisibilityInfo& visib, Maybe<
 	}
 }
 
-void Mod::bring_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtOpaqueTypes.push_back(Brought<OpaqueType>(bName.value(), cTy, visib));
 	} else {
@@ -782,7 +782,7 @@ void Mod::bring_opaque_type(OpaqueType* cTy, const VisibilityInfo& visib, Maybe<
 	}
 }
 
-void Mod::bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_generic_struct_type(GenericStructType* gCTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtGenericStructTypes.push_back(Brought<GenericStructType>(bName.value(), gCTy, visib));
 	} else {
@@ -790,7 +790,7 @@ void Mod::bring_generic_struct_type(GenericStructType* gCTy, const VisibilityInf
 	}
 }
 
-void Mod::bring_generic_toggle_type(GenericToggleType* genTogg, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_generic_toggle_type(GenericToggleType* genTogg, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtGenericToggleTypes.push_back(Brought<GenericToggleType>(bName.value(), genTogg, visib));
 	} else {
@@ -823,7 +823,7 @@ void Mod::bring_generic_skill(GenericSkill* skill, VisibilityInfo const& visib, 
 	}
 }
 
-void Mod::bring_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtMixTypes.push_back(Brought<MixType>(bName.value(), mTy, visib));
 	} else {
@@ -831,7 +831,7 @@ void Mod::bring_mix_type(MixType* mTy, const VisibilityInfo& visib, Maybe<Identi
 	}
 }
 
-void Mod::bring_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtToggleTypes.push_back(Brought<ToggleType>(bName.value(), mTy, visib));
 	} else {
@@ -839,7 +839,7 @@ void Mod::bring_toggle_type(ToggleType* mTy, const VisibilityInfo& visib, Maybe<
 	}
 }
 
-void Mod::bring_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtChoiceTypes.push_back(Brought<ChoiceType>(bName.value(), chTy, visib));
 	} else {
@@ -847,7 +847,7 @@ void Mod::bring_choice_type(ChoiceType* chTy, const VisibilityInfo& visib, Maybe
 	}
 }
 
-void Mod::bring_type_definition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_type_definition(DefinitionType* dTy, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtTypeDefs.push_back(Brought<DefinitionType>(bName.value(), dTy, visib));
 	} else {
@@ -855,7 +855,7 @@ void Mod::bring_type_definition(DefinitionType* dTy, const VisibilityInfo& visib
 	}
 }
 
-void Mod::bring_function(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_function(Function* fn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtFunctions.push_back(Brought<Function>(bName.value(), fn, visib));
 	} else {
@@ -863,7 +863,7 @@ void Mod::bring_function(Function* fn, const VisibilityInfo& visib, Maybe<Identi
 	}
 }
 
-void Mod::bring_prerun_function(PrerunFunction* preFn, VisibilityInfo const& visib, Maybe<Identifier> bName) {
+void Mod::import_prerun_function(PrerunFunction* preFn, VisibilityInfo const& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtPrerunFunctions.push_back(Brought<PrerunFunction>(bName.value(), preFn, visib));
 	} else {
@@ -871,7 +871,7 @@ void Mod::bring_prerun_function(PrerunFunction* preFn, VisibilityInfo const& vis
 	}
 }
 
-void Mod::bring_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_generic_function(GenericFunction* gFn, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtGenericFunctions.push_back(Brought<GenericFunction>(bName.value(), gFn, visib));
 	} else {
@@ -879,7 +879,7 @@ void Mod::bring_generic_function(GenericFunction* gFn, const VisibilityInfo& vis
 	}
 }
 
-void Mod::bring_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtRegions.push_back(Brought<Region>(bName.value(), reg, visib));
 	} else {
@@ -887,7 +887,7 @@ void Mod::bring_region(Region* reg, const VisibilityInfo& visib, Maybe<Identifie
 	}
 }
 
-void Mod::bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtGlobalEntities.push_back(Brought<GlobalEntity>(bName.value(), gEnt, visib));
 	} else {
@@ -895,7 +895,7 @@ void Mod::bring_global(GlobalEntity* gEnt, const VisibilityInfo& visib, Maybe<Id
 	}
 }
 
-void Mod::bring_prerun_global(PrerunGlobal* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName) {
+void Mod::import_prerun_global(PrerunGlobal* gEnt, const VisibilityInfo& visib, Maybe<Identifier> bName) {
 	if (bName.has_value()) {
 		broughtPrerunGlobals.push_back(Brought<PrerunGlobal>(bName.value(), gEnt, visib));
 	} else {
@@ -917,7 +917,7 @@ bool Mod::has_function(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_function(name, reqInfo) || sub->has_brought_function(name, reqInfo) ||
+			if (sub->has_function(name, reqInfo) || sub->has_imported_function(name, reqInfo) ||
 			    sub->has_function_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -927,7 +927,7 @@ bool Mod::has_function(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_function(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_function(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtFunctions) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -937,13 +937,13 @@ bool Mod::has_brought_function(const String& name, Maybe<AccessInfo> reqInfo) co
 }
 
 Pair<bool, String> Mod::has_function_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				SHOW("Checking brought function " << name << " in brought module " << bMod->get_name() << " from file "
 				                                  << bMod->get_file_path())
-				if (bMod->has_function(name, reqInfo) || bMod->has_brought_function(name, reqInfo) ||
+				if (bMod->has_function(name, reqInfo) || bMod->has_imported_function(name, reqInfo) ||
 				    bMod->has_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
@@ -963,7 +963,7 @@ Function* Mod::get_function(const String& name, const AccessInfo& reqInfo) {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_function(name, reqInfo) || sub->has_brought_function(name, reqInfo) ||
+			if (sub->has_function(name, reqInfo) || sub->has_imported_function(name, reqInfo) ||
 			    sub->has_function_in_imports(name, reqInfo).first) {
 				return sub->get_function(name, reqInfo);
 			}
@@ -974,11 +974,11 @@ Function* Mod::get_function(const String& name, const AccessInfo& reqInfo) {
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_function(name, reqInfo) || bMod->has_brought_function(name, reqInfo) ||
+				if (bMod->has_function(name, reqInfo) || bMod->has_imported_function(name, reqInfo) ||
 				    bMod->has_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_function(name, reqInfo);
@@ -1000,7 +1000,7 @@ bool Mod::has_prerun_function(String const& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_prerun_function(name, reqInfo) || sub->has_brought_prerun_function(name, reqInfo) ||
+			if (sub->has_prerun_function(name, reqInfo) || sub->has_imported_prerun_function(name, reqInfo) ||
 			    sub->has_prerun_function_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1009,7 +1009,7 @@ bool Mod::has_prerun_function(String const& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtPrerunFunctions) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1019,11 +1019,11 @@ bool Mod::has_brought_prerun_function(String const& name, Maybe<AccessInfo> reqI
 }
 
 Pair<bool, String> Mod::has_prerun_function_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_prerun_function(name, reqInfo) || bMod->has_brought_prerun_function(name, reqInfo) ||
+				if (bMod->has_prerun_function(name, reqInfo) || bMod->has_imported_prerun_function(name, reqInfo) ||
 				    bMod->has_prerun_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_prerun_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
@@ -1043,7 +1043,7 @@ PrerunFunction* Mod::get_prerun_function(const String& name, const AccessInfo& r
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_prerun_function(name, reqInfo) || sub->has_brought_prerun_function(name, reqInfo) ||
+			if (sub->has_prerun_function(name, reqInfo) || sub->has_imported_prerun_function(name, reqInfo) ||
 			    sub->has_prerun_function_in_imports(name, reqInfo).first) {
 				return sub->get_prerun_function(name, reqInfo);
 			}
@@ -1054,11 +1054,11 @@ PrerunFunction* Mod::get_prerun_function(const String& name, const AccessInfo& r
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_prerun_function(name, reqInfo) || bMod->has_brought_prerun_function(name, reqInfo) ||
+				if (bMod->has_prerun_function(name, reqInfo) || bMod->has_imported_prerun_function(name, reqInfo) ||
 				    bMod->has_prerun_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_prerun_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_prerun_function(name, reqInfo);
@@ -1100,7 +1100,7 @@ bool Mod::has_brought_skill(String const& name, Maybe<AccessInfo> reqInfo) const
 }
 
 Pair<bool, String> Mod::has_skill_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1135,7 +1135,7 @@ Skill* Mod::get_skill(String const& name, AccessInfo const& reqInfo) const {
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1180,7 +1180,7 @@ bool Mod::has_brought_generic_skill(String const& name, Maybe<AccessInfo> reqInf
 }
 
 Pair<bool, String> Mod::has_generic_skill_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1215,7 +1215,7 @@ GenericSkill* Mod::get_generic_skill(String const& name, AccessInfo const& reqIn
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1260,7 +1260,7 @@ bool Mod::has_brought_named_implementation(String const& name, Maybe<AccessInfo>
 }
 
 Pair<bool, String> Mod::has_named_implementation_in_imports(String const& name, AccessInfo const& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1296,7 +1296,7 @@ DoneSkill* Mod::get_named_implementation(String const& name, AccessInfo const& r
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1324,7 +1324,7 @@ bool Mod::has_generic_function(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_generic_function(name, reqInfo) || sub->has_brought_generic_function(name, reqInfo) ||
+			if (sub->has_generic_function(name, reqInfo) || sub->has_imported_generic_function(name, reqInfo) ||
 			    sub->has_generic_function_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1334,7 +1334,7 @@ bool Mod::has_generic_function(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtGenericFunctions) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1344,11 +1344,11 @@ bool Mod::has_brought_generic_function(const String& name, Maybe<AccessInfo> req
 }
 
 Pair<bool, String> Mod::has_generic_function_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_generic_function(name, reqInfo) || bMod->has_brought_generic_function(name, reqInfo) ||
+				if (bMod->has_generic_function(name, reqInfo) || bMod->has_imported_generic_function(name, reqInfo) ||
 				    bMod->has_generic_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
@@ -1368,7 +1368,7 @@ GenericFunction* Mod::get_generic_function(const String& name, const AccessInfo&
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_generic_function(name, reqInfo) || sub->has_brought_generic_function(name, reqInfo) ||
+			if (sub->has_generic_function(name, reqInfo) || sub->has_imported_generic_function(name, reqInfo) ||
 			    sub->has_generic_function_in_imports(name, reqInfo).first) {
 				return sub->get_generic_function(name, reqInfo);
 			}
@@ -1379,11 +1379,11 @@ GenericFunction* Mod::get_generic_function(const String& name, const AccessInfo&
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_generic_function(name, reqInfo) || bMod->has_brought_generic_function(name, reqInfo) ||
+				if (bMod->has_generic_function(name, reqInfo) || bMod->has_imported_generic_function(name, reqInfo) ||
 				    bMod->has_generic_function_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_function(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_function(name, reqInfo);
@@ -1405,7 +1405,7 @@ bool Mod::has_region(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_region(name, reqInfo) || sub->has_brought_region(name, reqInfo) ||
+			if (sub->has_region(name, reqInfo) || sub->has_imported_region(name, reqInfo) ||
 			    sub->has_region_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1414,7 +1414,7 @@ bool Mod::has_region(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_region(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_region(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtRegions) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1424,11 +1424,11 @@ bool Mod::has_brought_region(const String& name, Maybe<AccessInfo> reqInfo) cons
 }
 
 Pair<bool, String> Mod::has_region_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_region(name, reqInfo) || bMod->has_brought_region(name, reqInfo) ||
+			    (bMod->has_region(name, reqInfo) || bMod->has_imported_region(name, reqInfo) ||
 			     bMod->has_region_in_imports(name, reqInfo).first)) {
 				if (bMod->get_region(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -1447,7 +1447,7 @@ Region* Mod::get_region(const String& name, const AccessInfo& reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_region(name, reqInfo) || sub->has_brought_region(name, reqInfo) ||
+			if (sub->has_region(name, reqInfo) || sub->has_imported_region(name, reqInfo) ||
 			    sub->has_region_in_imports(name, reqInfo).first) {
 				return sub->get_region(name, reqInfo);
 			}
@@ -1458,11 +1458,11 @@ Region* Mod::get_region(const String& name, const AccessInfo& reqInfo) const {
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_region(name, reqInfo) || bMod->has_brought_region(name, reqInfo) ||
+				if (bMod->has_region(name, reqInfo) || bMod->has_imported_region(name, reqInfo) ||
 				    bMod->has_region_in_imports(name, reqInfo).first) {
 					if (bMod->get_region(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_region(name, reqInfo);
@@ -1489,7 +1489,7 @@ bool Mod::has_opaque_type(const String& name, AccessInfo reqInfo) const {
 	SHOW("Checking submods")
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_opaque_type(name, reqInfo) || sub->has_brought_opaque_type(name, reqInfo) ||
+			if (sub->has_opaque_type(name, reqInfo) || sub->has_imported_opaque_type(name, reqInfo) ||
 			    sub->has_opaque_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1498,7 +1498,7 @@ bool Mod::has_opaque_type(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	SHOW("Brought opaque type count " << broughtOpaqueTypes.size())
 	for (const auto& brought : broughtOpaqueTypes) {
 		SHOW("Brought entity " << (brought.name.has_value() ? ("Has Name " + brought.name.value().value)
@@ -1511,11 +1511,11 @@ bool Mod::has_brought_opaque_type(const String& name, Maybe<AccessInfo> reqInfo)
 }
 
 Pair<bool, String> Mod::has_opaque_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_opaque_type(name, reqInfo) || bMod->has_brought_opaque_type(name, reqInfo) ||
+			    (bMod->has_opaque_type(name, reqInfo) || bMod->has_imported_opaque_type(name, reqInfo) ||
 			     bMod->has_opaque_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_opaque_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -1534,7 +1534,7 @@ OpaqueType* Mod::get_opaque_type(const String& name, const AccessInfo& reqInfo) 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_opaque_type(name, reqInfo) || sub->has_brought_opaque_type(name, reqInfo) ||
+			if (sub->has_opaque_type(name, reqInfo) || sub->has_imported_opaque_type(name, reqInfo) ||
 			    sub->has_opaque_type_in_imports(name, reqInfo).first) {
 				return sub->get_opaque_type(name, reqInfo);
 			}
@@ -1545,11 +1545,11 @@ OpaqueType* Mod::get_opaque_type(const String& name, const AccessInfo& reqInfo) 
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_opaque_type(name, reqInfo) || bMod->has_brought_opaque_type(name, reqInfo) ||
+				if (bMod->has_opaque_type(name, reqInfo) || bMod->has_imported_opaque_type(name, reqInfo) ||
 				    bMod->has_opaque_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_opaque_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_opaque_type(name, reqInfo);
@@ -1571,7 +1571,7 @@ bool Mod::has_struct_type(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_struct_type(name, reqInfo) || sub->has_brought_struct_type(name, reqInfo) ||
+			if (sub->has_struct_type(name, reqInfo) || sub->has_imported_struct_type(name, reqInfo) ||
 			    sub->has_struct_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1580,7 +1580,7 @@ bool Mod::has_struct_type(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	SHOW("")
 	for (const auto& brought : broughtStructTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
@@ -1591,12 +1591,12 @@ bool Mod::has_brought_struct_type(const String& name, Maybe<AccessInfo> reqInfo)
 }
 
 Pair<bool, String> Mod::has_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			SHOW("Brought module: " << bMod->get_id() << " name: " << bMod->get_full_name())
 			if (not bMod->should_be_named() &&
-			    (bMod->has_struct_type(name, reqInfo) || bMod->has_brought_struct_type(name, reqInfo) ||
+			    (bMod->has_struct_type(name, reqInfo) || bMod->has_imported_struct_type(name, reqInfo) ||
 			     bMod->has_struct_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -1615,7 +1615,7 @@ StructType* Mod::get_struct_type(const String& name, const AccessInfo& reqInfo) 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_struct_type(name, reqInfo) || sub->has_brought_struct_type(name, reqInfo) ||
+			if (sub->has_struct_type(name, reqInfo) || sub->has_imported_struct_type(name, reqInfo) ||
 			    sub->has_struct_type_in_imports(name, reqInfo).first) {
 				return sub->get_struct_type(name, reqInfo);
 			}
@@ -1626,11 +1626,11 @@ StructType* Mod::get_struct_type(const String& name, const AccessInfo& reqInfo) 
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_struct_type(name, reqInfo) || bMod->has_brought_struct_type(name, reqInfo) ||
+				if (bMod->has_struct_type(name, reqInfo) || bMod->has_imported_struct_type(name, reqInfo) ||
 				    bMod->has_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_struct_type(name, reqInfo);
@@ -1653,7 +1653,7 @@ bool Mod::has_mix_type(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_mix_type(name, reqInfo) || sub->has_brought_mix_type(name, reqInfo) ||
+			if (sub->has_mix_type(name, reqInfo) || sub->has_imported_mix_type(name, reqInfo) ||
 			    sub->has_mix_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1662,7 +1662,7 @@ bool Mod::has_mix_type(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtMixTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1672,11 +1672,11 @@ bool Mod::has_brought_mix_type(const String& name, Maybe<AccessInfo> reqInfo) co
 }
 
 Pair<bool, String> Mod::has_mix_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_mix_type(name, reqInfo) || bMod->has_brought_mix_type(name, reqInfo) ||
+			    (bMod->has_mix_type(name, reqInfo) || bMod->has_imported_mix_type(name, reqInfo) ||
 			     bMod->has_mix_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_mix_type(name, reqInfo)->is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -1695,7 +1695,7 @@ MixType* Mod::get_mix_type(const String& name, const AccessInfo& reqInfo) const 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_mix_type(name, reqInfo) || sub->has_brought_mix_type(name, reqInfo) ||
+			if (sub->has_mix_type(name, reqInfo) || sub->has_imported_mix_type(name, reqInfo) ||
 			    sub->has_mix_type_in_imports(name, reqInfo).first) {
 				return sub->get_mix_type(name, reqInfo);
 			}
@@ -1706,11 +1706,11 @@ MixType* Mod::get_mix_type(const String& name, const AccessInfo& reqInfo) const 
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_mix_type(name, reqInfo) || bMod->has_brought_mix_type(name, reqInfo) ||
+				if (bMod->has_mix_type(name, reqInfo) || bMod->has_imported_mix_type(name, reqInfo) ||
 				    bMod->has_mix_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_mix_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_mix_type(name, reqInfo);
@@ -1732,7 +1732,7 @@ bool Mod::has_toggle_type(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_toggle_type(name, reqInfo) || sub->has_brought_toggle_type(name, reqInfo) ||
+			if (sub->has_toggle_type(name, reqInfo) || sub->has_imported_toggle_type(name, reqInfo) ||
 			    sub->has_toggle_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1741,7 +1741,7 @@ bool Mod::has_toggle_type(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtToggleTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1751,11 +1751,11 @@ bool Mod::has_brought_toggle_type(const String& name, Maybe<AccessInfo> reqInfo)
 }
 
 Pair<bool, String> Mod::has_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_toggle_type(name, reqInfo) || bMod->has_brought_toggle_type(name, reqInfo) ||
+			    (bMod->has_toggle_type(name, reqInfo) || bMod->has_imported_toggle_type(name, reqInfo) ||
 			     bMod->has_toggle_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_toggle_type(name, reqInfo)->is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -1774,7 +1774,7 @@ ToggleType* Mod::get_toggle_type(const String& name, const AccessInfo& reqInfo) 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_toggle_type(name, reqInfo) || sub->has_brought_toggle_type(name, reqInfo) ||
+			if (sub->has_toggle_type(name, reqInfo) || sub->has_imported_toggle_type(name, reqInfo) ||
 			    sub->has_toggle_type_in_imports(name, reqInfo).first) {
 				return sub->get_toggle_type(name, reqInfo);
 			}
@@ -1785,11 +1785,11 @@ ToggleType* Mod::get_toggle_type(const String& name, const AccessInfo& reqInfo) 
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_toggle_type(name, reqInfo) || bMod->has_brought_toggle_type(name, reqInfo) ||
+				if (bMod->has_toggle_type(name, reqInfo) || bMod->has_imported_toggle_type(name, reqInfo) ||
 				    bMod->has_toggle_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_toggle_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_toggle_type(name, reqInfo);
@@ -1812,7 +1812,7 @@ bool Mod::has_choice_type(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_choice_type(name, reqInfo) || sub->has_brought_choice_type(name, reqInfo) ||
+			if (sub->has_choice_type(name, reqInfo) || sub->has_imported_choice_type(name, reqInfo) ||
 			    sub->has_choice_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1821,7 +1821,7 @@ bool Mod::has_choice_type(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtChoiceTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1831,11 +1831,11 @@ bool Mod::has_brought_choice_type(const String& name, Maybe<AccessInfo> reqInfo)
 }
 
 Pair<bool, String> Mod::has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
+			    (bMod->has_choice_type(name, reqInfo) || bMod->has_imported_choice_type(name, reqInfo) ||
 			     bMod->has_choice_type_in_imports(name, reqInfo).first)) {
 				if (bMod->get_choice_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -1854,7 +1854,7 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_choice_type(name, reqInfo) || sub->has_brought_choice_type(name, reqInfo) ||
+			if (sub->has_choice_type(name, reqInfo) || sub->has_imported_choice_type(name, reqInfo) ||
 			    sub->has_choice_type_in_imports(name, reqInfo).first) {
 				return sub->get_choice_type(name, reqInfo);
 			}
@@ -1865,11 +1865,11 @@ ChoiceType* Mod::get_choice_type(const String& name, const AccessInfo& reqInfo) 
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_choice_type(name, reqInfo) || bMod->has_brought_choice_type(name, reqInfo) ||
+				if (bMod->has_choice_type(name, reqInfo) || bMod->has_imported_choice_type(name, reqInfo) ||
 				    bMod->has_choice_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_choice_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_choice_type(name, reqInfo);
@@ -1910,7 +1910,7 @@ bool Mod::has_brought_flag_type(const String& name, Maybe<AccessInfo> reqInfo) c
 }
 
 Pair<bool, String> Mod::has_flag_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
@@ -1944,7 +1944,7 @@ FlagType* Mod::get_flag_type(const String& name, const AccessInfo& reqInfo) cons
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -1972,7 +1972,7 @@ bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_generic_struct_type(name, reqInfo) || sub->has_brought_generic_struct_type(name, reqInfo) ||
+			if (sub->has_generic_struct_type(name, reqInfo) || sub->has_imported_generic_struct_type(name, reqInfo) ||
 			    sub->has_generic_struct_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -1982,7 +1982,7 @@ bool Mod::has_generic_struct_type(const String& name, AccessInfo reqInfo) const 
 	return false;
 }
 
-bool Mod::has_brought_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtGenericStructTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -1992,12 +1992,12 @@ bool Mod::has_brought_generic_struct_type(const String& name, Maybe<AccessInfo> 
 }
 
 Pair<bool, String> Mod::has_generic_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				if (bMod->has_generic_struct_type(name, reqInfo) ||
-				    bMod->has_brought_generic_struct_type(name, reqInfo) ||
+				    bMod->has_imported_generic_struct_type(name, reqInfo) ||
 				    bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
@@ -2027,12 +2027,12 @@ GenericStructType* Mod::get_generic_struct_type(const String& name, const Access
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				if (bMod->has_generic_struct_type(name, reqInfo) ||
-				    bMod->has_brought_generic_struct_type(name, reqInfo) ||
+				    bMod->has_imported_generic_struct_type(name, reqInfo) ||
 				    bMod->has_generic_struct_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_struct_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_struct_type(name, reqInfo);
@@ -2054,7 +2054,7 @@ bool Mod::has_generic_toggle_type(const String& name, AccessInfo reqInfo) const 
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_generic_toggle_type(name, reqInfo) || sub->has_brought_generic_toggle_type(name, reqInfo) ||
+			if (sub->has_generic_toggle_type(name, reqInfo) || sub->has_imported_generic_toggle_type(name, reqInfo) ||
 			    sub->has_generic_toggle_type_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -2063,7 +2063,7 @@ bool Mod::has_generic_toggle_type(const String& name, AccessInfo reqInfo) const 
 	return false;
 }
 
-bool Mod::has_brought_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtGenericToggleTypes) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -2073,12 +2073,12 @@ bool Mod::has_brought_generic_toggle_type(const String& name, Maybe<AccessInfo> 
 }
 
 Pair<bool, String> Mod::has_generic_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				if (bMod->has_generic_toggle_type(name, reqInfo) ||
-				    bMod->has_brought_generic_toggle_type(name, reqInfo) ||
+				    bMod->has_imported_generic_toggle_type(name, reqInfo) ||
 				    bMod->has_generic_toggle_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_toggle_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return {true, bMod->filePath.string()};
@@ -2108,12 +2108,12 @@ GenericToggleType* Mod::get_generic_toggle_type(const String& name, const Access
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
 				if (bMod->has_generic_toggle_type(name, reqInfo) ||
-				    bMod->has_brought_generic_toggle_type(name, reqInfo) ||
+				    bMod->has_imported_generic_toggle_type(name, reqInfo) ||
 				    bMod->has_generic_toggle_type_in_imports(name, reqInfo).first) {
 					if (bMod->get_generic_toggle_type(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_generic_toggle_type(name, reqInfo);
@@ -2136,7 +2136,7 @@ bool Mod::has_type_definition(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_type_definition(name, reqInfo) || sub->has_brought_type_definition(name, reqInfo) ||
+			if (sub->has_type_definition(name, reqInfo) || sub->has_imported_type_definition(name, reqInfo) ||
 			    sub->has_type_definition_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -2145,7 +2145,7 @@ bool Mod::has_type_definition(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtTypeDefs) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -2155,11 +2155,11 @@ bool Mod::has_brought_type_definition(const String& name, Maybe<AccessInfo> reqI
 }
 
 Pair<bool, String> Mod::has_type_definition_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_type_definition(name, reqInfo) || bMod->has_brought_type_definition(name, reqInfo) ||
+			    (bMod->has_type_definition(name, reqInfo) || bMod->has_imported_type_definition(name, reqInfo) ||
 			     bMod->has_type_definition_in_imports(name, reqInfo).first)) {
 				if (bMod->get_type_def(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -2178,7 +2178,7 @@ DefinitionType* Mod::get_type_def(const String& name, const AccessInfo& reqInfo)
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_type_definition(name, reqInfo) || sub->has_brought_type_definition(name, reqInfo) ||
+			if (sub->has_type_definition(name, reqInfo) || sub->has_imported_type_definition(name, reqInfo) ||
 			    sub->has_type_definition_in_imports(name, reqInfo).first) {
 				return sub->get_type_def(name, reqInfo);
 			}
@@ -2189,11 +2189,11 @@ DefinitionType* Mod::get_type_def(const String& name, const AccessInfo& reqInfo)
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
-				if (bMod->has_type_definition(name, reqInfo) || bMod->has_brought_type_definition(name, reqInfo) ||
+				if (bMod->has_type_definition(name, reqInfo) || bMod->has_imported_type_definition(name, reqInfo) ||
 				    bMod->has_type_definition_in_imports(name, reqInfo).first) {
 					if (bMod->get_type_def(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 						return bMod->get_type_def(name, reqInfo);
@@ -2234,7 +2234,7 @@ bool Mod::has_brought_generic_type_def(const String& name, Maybe<AccessInfo> req
 }
 
 Pair<bool, String> Mod::has_generic_type_def_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -2269,7 +2269,7 @@ GenericDefinitionType* Mod::get_generic_type_def(const String& name, const Acces
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named()) {
@@ -2295,7 +2295,7 @@ bool Mod::has_prerun_global(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_prerun_global(name, reqInfo) || sub->has_brought_prerun_global(name, reqInfo) ||
+			if (sub->has_prerun_global(name, reqInfo) || sub->has_imported_prerun_global(name, reqInfo) ||
 			    sub->has_prerun_global_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -2304,7 +2304,7 @@ bool Mod::has_prerun_global(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtPrerunGlobals) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -2314,11 +2314,11 @@ bool Mod::has_brought_prerun_global(const String& name, Maybe<AccessInfo> reqInf
 }
 
 Pair<bool, String> Mod::has_prerun_global_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_prerun_global(name, reqInfo) || bMod->has_brought_prerun_global(name, reqInfo) ||
+			    (bMod->has_prerun_global(name, reqInfo) || bMod->has_imported_prerun_global(name, reqInfo) ||
 			     bMod->has_prerun_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_prerun_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -2338,7 +2338,7 @@ PrerunGlobal* Mod::get_prerun_global(const String&     name, // NOLINT(misc-no-r
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_prerun_global(name, reqInfo) || sub->has_brought_prerun_global(name, reqInfo) ||
+			if (sub->has_prerun_global(name, reqInfo) || sub->has_imported_prerun_global(name, reqInfo) ||
 			    sub->has_prerun_global_in_imports(name, reqInfo).first) {
 				return sub->get_prerun_global(name, reqInfo);
 			}
@@ -2349,11 +2349,11 @@ PrerunGlobal* Mod::get_prerun_global(const String&     name, // NOLINT(misc-no-r
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_prerun_global(name, reqInfo) || bMod->has_brought_prerun_global(name, reqInfo) ||
+			    (bMod->has_prerun_global(name, reqInfo) || bMod->has_imported_prerun_global(name, reqInfo) ||
 			     bMod->has_prerun_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_prerun_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return bMod->get_prerun_global(name, reqInfo);
@@ -2374,7 +2374,7 @@ bool Mod::has_global(const String& name, AccessInfo reqInfo) const {
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_global(name, reqInfo) || sub->has_brought_global(name, reqInfo) ||
+			if (sub->has_global(name, reqInfo) || sub->has_imported_global(name, reqInfo) ||
 			    sub->has_global_in_imports(name, reqInfo).first) {
 				return true;
 			}
@@ -2383,7 +2383,7 @@ bool Mod::has_global(const String& name, AccessInfo reqInfo) const {
 	return false;
 }
 
-bool Mod::has_brought_global(const String& name, Maybe<AccessInfo> reqInfo) const {
+bool Mod::has_imported_global(const String& name, Maybe<AccessInfo> reqInfo) const {
 	for (const auto& brought : broughtGlobalEntities) {
 		if (matchBroughtEntity(brought, name, reqInfo)) {
 			return true;
@@ -2393,11 +2393,11 @@ bool Mod::has_brought_global(const String& name, Maybe<AccessInfo> reqInfo) cons
 }
 
 Pair<bool, String> Mod::has_global_in_imports(const String& name, const AccessInfo& reqInfo) const {
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_global(name, reqInfo) || bMod->has_brought_global(name, reqInfo) ||
+			    (bMod->has_global(name, reqInfo) || bMod->has_imported_global(name, reqInfo) ||
 			     bMod->has_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return {true, bMod->filePath.string()};
@@ -2417,7 +2417,7 @@ GlobalEntity* Mod::get_global(const String&     name, // NOLINT(misc-no-recursio
 	}
 	for (auto sub : submodules) {
 		if (not sub->should_be_named()) {
-			if (sub->has_global(name, reqInfo) || sub->has_brought_global(name, reqInfo) ||
+			if (sub->has_global(name, reqInfo) || sub->has_imported_global(name, reqInfo) ||
 			    sub->has_global_in_imports(name, reqInfo).first) {
 				return sub->get_global(name, reqInfo);
 			}
@@ -2428,11 +2428,11 @@ GlobalEntity* Mod::get_global(const String&     name, // NOLINT(misc-no-recursio
 			return brought.get();
 		}
 	}
-	for (const auto& brought : broughtModules) {
+	for (const auto& brought : importedModules) {
 		if (not brought.is_named()) {
 			auto* bMod = brought.get();
 			if (not bMod->should_be_named() &&
-			    (bMod->has_global(name, reqInfo) || bMod->has_brought_global(name, reqInfo) ||
+			    (bMod->has_global(name, reqInfo) || bMod->has_imported_global(name, reqInfo) ||
 			     bMod->has_global_in_imports(name, reqInfo).first)) {
 				if (bMod->get_global(name, reqInfo)->get_visibility().is_accessible(reqInfo)) {
 					return bMod->get_global(name, reqInfo);
@@ -2505,7 +2505,7 @@ void Mod::node_handle_fs_brings(Ctx* ctx) {
 	if (not hasHandledFilesystemBrings) {
 		hasHandledFilesystemBrings = true;
 		for (auto* node : nodes) {
-			node->handle_fs_brings(this, ctx);
+			node->handle_filesystem_imports(this, ctx);
 		}
 		for (auto* sub : submodules) {
 			sub->node_handle_fs_brings(ctx);
@@ -2780,7 +2780,7 @@ std::set<String> Mod::get_all_object_files() const {
 	for (auto sub : submodules) {
 		moduleHandler(sub);
 	}
-	for (auto& bMod : broughtModules) {
+	for (auto& bMod : importedModules) {
 		moduleHandler(bMod.get());
 	}
 	for (auto& bTy : broughtStructTypes) {
@@ -2855,7 +2855,7 @@ std::set<String> Mod::get_all_linkable_libs() const {
 	for (auto sub : submodules) {
 		moduleHandler(sub);
 	}
-	for (auto& bMod : broughtModules) {
+	for (auto& bMod : importedModules) {
 		moduleHandler(bMod.get());
 	}
 	for (auto& bTy : broughtStructTypes) {

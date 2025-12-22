@@ -9,7 +9,7 @@
 
 namespace qat::utils {
 
-useit inline bool is_integer(String value) {
+useit inline bool is_integer(StringView value) {
 	for (auto ch : value) {
 		if ((ch < 48) || (ch > 57)) {
 			return false;

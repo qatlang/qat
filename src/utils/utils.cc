@@ -3,8 +3,6 @@
 #include "./run_command.hpp"
 #include "./unique_id.hpp"
 
-#include <cstdio>
-#include <random>
 #include <set>
 #include <sstream>
 #include <unicode/brkiter.h>

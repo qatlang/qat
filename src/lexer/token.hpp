@@ -10,20 +10,17 @@ namespace qat::lexer {
 
 class Token {
   private:
-	Token(TokenType _type, FileRangePtr _fileRange) : type(_type), value(), fileRange(_fileRange) {}
-
+  public:
 	Token(TokenType _type, String _value, FileRangePtr _fileRange)
 	    : type(_type), value(std::move(_value)), fileRange(_fileRange) {}
 
-  public:
-	static Token valued(TokenType _type, String _value, FileRangePtr fileRange);
-	static Token normal(TokenType _type, FileRangePtr fileRange);
+	Token(TokenType _type, FileRangePtr _fileRange) : type(_type), value(), fileRange(_fileRange) {}
 
 	TokenType    type;
 	String       value;
 	FileRangePtr fileRange;
 
-	operator Identifier() const;
+	operator Identifier() const { return Identifier(value, fileRange); }
 };
 
 } // namespace qat::lexer

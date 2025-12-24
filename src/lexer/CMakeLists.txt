@@ -1,4 +1,4 @@
-add_library(QAT_LEXER lexer.cc token.cc)
+add_library(QAT_LEXER lexer.cc)
 
 target_include_directories(QAT_LEXER PUBLIC "${LLVM_INCLUDE_DIRS}")
 

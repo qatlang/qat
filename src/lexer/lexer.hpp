@@ -18,12 +18,11 @@ namespace qat::lexer {
 
 class Lexer {
   private:
-	fs::path     filePath;
-	String       content;
-	usize        cursor = 0;
-	Vec<Token>   tokens;
-	Deque<Token> buffer;
-	bool         repeatingToken = false;
+	fs::path   filePath;
+	String     content;
+	usize      cursor = 0;
+	Vec<Token> tokens;
+	bool       repeatingToken = false;
 
 	bool isMultiStringAllowed = false;
 
@@ -36,7 +35,7 @@ class Lexer {
 
 	useit static Lexer* get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
 
-	~Lexer() { buffer.clear(); }
+	~Lexer() = default;
 
 	u64        lineNumber = 1;
 	u64        byteNumber = 0;
@@ -58,7 +57,7 @@ class Lexer {
 
 	useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
 
-	useit Token tokeniser();
+	useit void tokeniser();
 
 	inline void advance_cursor() { cursor++; }
 

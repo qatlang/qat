@@ -90,9 +90,9 @@ FileRange* Lexer::get_position_var(u64 length) {
 }
 
 void Lexer::analyse() {
-	auto fileSize = std::filesystem::file_size(filePath);
+	auto fileSize = std::filesystem::file_size(*filePath);
 	content.resize(fileSize);
-	std::ifstream inStream(filePath);
+	std::ifstream inStream(*filePath);
 	inStream.read(&content[0], fileSize);
 
 	auto startTime = std::chrono::high_resolution_clock::now();
@@ -106,7 +106,7 @@ void Lexer::analyse() {
 
 void Lexer::change_file(fs::path newFilePath) {
 	tokens.clear();
-	filePath   = std::move(newFilePath);
+	filePath   = std::construct_at(OwnNormal(String), std::move(newFilePath.string()));
 	cursor     = -1;
 	lineNumber = 1;
 	byteNumber = 0;

@@ -89,7 +89,7 @@ void Config::find_corelib_and_toolchain() {
 	}
 	toolchainPath = fs::absolute(toolchainCand);
 	log->say("qat is present in   := " + qatPathEnv.value());
-	log->say("Core Library    := " + (coreLibPath.has_value() ? coreLibPath.value().string() : "(Not Found)"));
+	log->say("Core Library        := " + (coreLibPath.has_value() ? coreLibPath.value().string() : "(Not Found)"));
 	log->say("Toolchain Directory := " + (toolchainPath.has_value() ? toolchainPath.value().string() : "(Not Found)"));
 }
 

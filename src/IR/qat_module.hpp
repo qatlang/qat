@@ -190,32 +190,31 @@ class LibToLink {
 					return name.value().value == other.name.value().value;
 				}
 				case LibToLinkType::libPath: {
-					return fs::absolute(fs::path(path->first).is_relative() ? (fileRange->file / path->first)
+					const auto filePath = fs::path(*fileRange->file);
+					return fs::absolute(fs::path(path->first).is_relative() ? (filePath / path->first)
 					                                                        : fs::path(path->first)) ==
-					       fs::absolute(fs::path(other.path->first).is_relative()
-					                        ? (fileRange->file / other.path->first)
-					                        : fs::path(other.path->first));
+					       fs::absolute(fs::path(other.path->first).is_relative() ? (filePath / other.path->first)
+					                                                              : fs::path(other.path->first));
 				}
 				case LibToLinkType::staticAndSharedPaths: {
-					return (fs::absolute(fs::path(path->first).is_relative() ? (fileRange->file / path->first)
+					const auto filePath = fs::path(*fileRange->file);
+					return (fs::absolute(fs::path(path->first).is_relative() ? (filePath / path->first)
 					                                                         : fs::path(path->first)) ==
-					        fs::absolute(fs::path(other.path->first).is_relative()
-					                         ? (fileRange->file / other.path->first)
-					                         : fs::path(other.path->first))) &&
-					       (fs::absolute(fs::path(sharedPath->first).is_relative()
-					                         ? (fileRange->file / sharedPath->first)
-					                         : fs::path(sharedPath->first)) ==
+					        fs::absolute(fs::path(other.path->first).is_relative() ? (filePath / other.path->first)
+					                                                               : fs::path(other.path->first))) &&
+					       (fs::absolute(fs::path(sharedPath->first).is_relative() ? (filePath / sharedPath->first)
+					                                                               : fs::path(sharedPath->first)) ==
 					        fs::absolute(fs::path(other.sharedPath->first).is_relative()
-					                         ? (fileRange->file / other.sharedPath->first)
+					                         ? (filePath / other.sharedPath->first)
 					                         : fs::path(other.sharedPath->first)));
 				}
 				case LibToLinkType::nameWithLookupPath: {
+					const auto filePath = fs::path(*fileRange->file);
 					return (name.value().value == other.name.value().value) &&
-					       (fs::absolute(fs::path(path->first).is_relative() ? (fileRange->file / path->first)
+					       (fs::absolute(fs::path(path->first).is_relative() ? (filePath / path->first)
 					                                                         : fs::path(path->first)) ==
-					        fs::absolute(fs::path(other.path->first).is_relative()
-					                         ? (fileRange->file / other.path->first)
-					                         : fs::path(other.path->first)));
+					        fs::absolute(fs::path(other.path->first).is_relative() ? (filePath / other.path->first)
+					                                                               : fs::path(other.path->first)));
 				}
 			}
 		} else {

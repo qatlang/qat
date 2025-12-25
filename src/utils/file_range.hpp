@@ -27,25 +27,22 @@ using FileRangePtr = FileRange const*;
 
 class FileRange {
   public:
-	fs::path file;
-	FilePos  start;
-	FilePos  end;
+	String* file;
+	FilePos start;
+	FilePos end;
 
-	FileRange(fs::path _path, FilePos _start, FilePos _end)
-	    : file(fs::exists(_path) ? fs::absolute(std::move(_path)) : std::move(_path)), start(_start), end(_end) {}
+	FileRange(String* _path, FilePos _start, FilePos _end) : file(_path), start(_start), end(_end) {}
 
 	FileRange(FileRange const&) = delete;
 	FileRange(FileRange&&)      = delete;
 
 	static FileRangePtr null;
 
-	useit static FileRangePtr from_path(fs::path _filePath);
+	useit static FileRangePtr from_path(String* _filePath);
 
-	useit static FileRangePtr from(fs::path _file, FilePos _start, FilePos _end);
+	useit static FileRangePtr from(String* _file, FilePos _start, FilePos _end);
 
-	useit static FileRange* var_from(fs::path _file, FilePos _start, FilePos _end);
-
-	useit static FileRangePtr from_json(Json json);
+	useit static FileRange* var_from(String* _file, FilePos _start, FilePos _end);
 
 	useit static FileRangePtr merge(FileRangePtr first, FileRangePtr second);
 

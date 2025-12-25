@@ -19,15 +19,15 @@ std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << po
 
 FileRangePtr FileRange::null = nullptr;
 
-FileRangePtr FileRange::from_path(fs::path _filePath) {
+FileRangePtr FileRange::from_path(String* _filePath) {
 	return std::construct_at(OwnNormal(FileRange), std::move(_filePath), FilePos{0u, 0u}, FilePos{0u, 0u});
 }
 
-FileRangePtr FileRange::from(fs::path _file, FilePos _start, FilePos _end) {
+FileRangePtr FileRange::from(String* _file, FilePos _start, FilePos _end) {
 	return std::construct_at(OwnNormal(FileRange), std::move(_file), _start, _end);
 }
 
-FileRange* FileRange::var_from(fs::path _file, FilePos _start, FilePos _end) {
+FileRange* FileRange::var_from(String* _file, FilePos _start, FilePos _end) {
 	return std::construct_at(OwnNormal(FileRange), std::move(_file), _start, _end);
 }
 
@@ -35,29 +35,23 @@ FileRangePtr FileRange::merge(FileRange const* first, FileRange const* second) {
 	return std::construct_at(OwnNormal(FileRange), first->file, first->start, second->end);
 }
 
-FileRangePtr FileRange::from_json(Json json) {
-	return std::construct_at(OwnNormal(FileRange), fs::path(json["file"].asString()), FilePos(json["start"].asJson()),
-	                         FilePos(json["end"].asJson()));
-}
-
 FileRangePtr FileRange::spanTo(FileRangePtr other) const { return FileRange::merge(this, other); }
 
 FileRangePtr FileRange::trimTo(FilePos othStart) const { return FileRange::from(file, start, othStart); }
 
 String FileRange::start_to_string() const {
-	return file.string() + ":" + std::to_string(start.line) + ":" + std::to_string(start.byteOffset);
+	return *file + ":" + std::to_string(start.line) + ":" + std::to_string(start.byteOffset);
 }
 
 bool FileRange::is_before(FileRangePtr another) const {
-	return fs::equivalent(file, another->file) &&
-	       ((end.line < another->start.line) ||
+	return ((end.line < another->start.line) ||
 	        ((end.line == another->start.line) && (end.byteOffset < another->start.byteOffset)));
 }
 
-Json FileRange::to_json() const { return Json()._("path", file.string())._("start", start)._("end", end); }
+Json FileRange::to_json() const { return Json()._("path", *file)._("start", start)._("end", end); }
 
 JsonValue FileRange::to_json_value() const { return to_json(); }
 
-String FileRange::to_string() const { return file.string() + ":" + (String)start + " - " + (String)end; }
+String FileRange::to_string() const { return *file + ":" + (String)start + " - " + (String)end; }
 
 } // namespace qat

@@ -18,7 +18,7 @@ namespace qat::lexer {
 
 class Lexer {
   private:
-	fs::path   filePath;
+	String*    filePath;
 	String     content;
 	usize      cursor = 0;
 	Vec<Token> tokens;

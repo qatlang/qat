@@ -573,8 +573,10 @@ bool Mod::should_be_named() const { return moduleType == ModuleType::lib; }
 Function* Mod::get_mod_initialiser(Ctx* ctx) {
 	if (not moduleInitialiser) {
 		moduleInitialiser = ir::Function::Create(
-		    this, Identifier("module'initialiser'" + get_referrable_name(), FileRange::from_path(filePath)), None,
-		    {/* Generics */}, false, ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {},
+		    this,
+		    Identifier("module'initialiser'" + get_referrable_name(),
+		               FileRange::from_path(std::construct_at(OwnNormal(String), filePath.string()))),
+		    None, {/* Generics */}, false, ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {},
 		    name.range ? Maybe<FileRangePtr>(name.range) : nullptr, VisibilityInfo::pub(), ctx);
 		auto* entry = ir::Block::create(moduleInitialiser, nullptr);
 		entry->set_active(ctx->builder);
@@ -4042,12 +4044,14 @@ void Mod::export_json_from_ast(Ctx* ctx) {
 				jsonStream << result;
 				jsonStream.close();
 			} else {
-				ctx->Error("Output file could not be opened for writing the JSON representation",
-				           FileRange::from_path(get_parent_file()->filePath));
+				ctx->Error(
+				    "Output file could not be opened for writing the JSON representation",
+				    FileRange::from_path(std::construct_at(OwnNormal(String), get_parent_file()->filePath.string())));
 			}
 		} else {
-			ctx->Error("Could not create parent directories for the JSON file for exporting AST",
-			           FileRange::from_path(get_parent_file()->filePath));
+			ctx->Error(
+			    "Could not create parent directories for the JSON file for exporting AST",
+			    FileRange::from_path(std::construct_at(OwnNormal(String), get_parent_file()->filePath.string())));
 		}
 	} else {
 		SHOW("Module type not suitable for exporting AST")

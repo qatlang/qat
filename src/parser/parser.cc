@@ -472,10 +472,11 @@ ast::ImportPaths* Parser::parse_import_paths(bool isMember, usize from, usize up
 					names.push_back(None);
 					i++;
 				}
-				SHOW("Pushing imported path: " << token.fileRange->file.parent_path() / token.value)
-				importedPaths.push_back(token.fileRange->file.parent_path() / token.value);
+				auto parentPath = fs::path(*token.fileRange->file).parent_path();
+				SHOW("Pushing imported path: " << parentPath / token.value)
+				importedPaths.push_back(parentPath / token.value);
 				if (isMember) {
-					memberPaths.push_back(token.fileRange->file.parent_path() / token.value);
+					memberPaths.push_back(parentPath / token.value);
 				}
 				paths.push_back(ast::StringLiteral::create(token.value, token.fileRange));
 				break;
@@ -2456,7 +2457,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
         if (node->isCommentable() && totalComment.has_value()) {
             SHOW("Found comment and node is commentable")
             node->asCommentable()->commentValue =
-                Pair<String, FileRangePtr>{std::get<1>(totalComment.value()), std::get<2>(totalComment.value())};
+                std::make_pair(std::get<1>(totalComment.value()), std::get<2>(totalComment.value()));
         }
         SHOW("Pushing to result nodes")
         resultNodes.push_back(node);
@@ -3166,13 +3167,13 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 					if (is_next(TokenType::bracketOpen, i)) {
 						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 						if (bCloseRes.has_value()) {
-							auto bClose    = bCloseRes.value();
-							auto sentences = do_sentences(fnCtx, i + 1, bClose);
+							auto bClose     = bCloseRes.value();
+							auto statements = do_sentences(fnCtx, i + 1, bClose);
 							addNode(ast::FunctionPrototype::create(
 							    IdentifierAt(start), argResult.first, retType, entityMeta.defineChecker,
 							    entityMeta.genericConstraint, entityMeta.metaInfo, get_visibility(),
 							    RangeSpan((is_previous(TokenType::identifier, start) ? start - 1 : start), protoEnd),
-							    genericList, Pair<Vec<ast::Sentence*>, FileRangePtr>(sentences, RangeSpan(i, bClose))));
+							    genericList, std::make_pair(statements, RangeSpan(i, bClose))));
 							i = bClose;
 							break;
 						} else {
@@ -3222,12 +3223,12 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						if (not bCloseResult.has_value() || (bCloseResult.value() >= tokens.size())) {
 							add_error("Expected ] to end the function definition", RangeAt(pClose + 1));
 						}
-						auto bClose    = bCloseResult.value();
-						auto sentences = do_sentences(thisCtx, pClose + 1, bClose);
+						auto bClose     = bCloseResult.value();
+						auto statements = do_sentences(thisCtx, pClose + 1, bClose);
 						addNode(ast::FunctionPrototype::create(
 						    cacheSym.name.front(), argResult.first, retType, meta.defineChecker, nullptr, meta.metaInfo,
 						    get_visibility(), FileRange::merge(RangeAt(cacheSym.tokenIndex), token.fileRange), {},
-						    Pair<Vec<ast::Sentence*>, FileRangePtr>(sentences, RangeSpan(i, bClose))));
+						    std::make_pair(statements, RangeSpan(i, bClose))));
 						i = bClose;
 						continue;
 					} else if (is_next(TokenType::stop, i)) {
@@ -3244,6 +3245,9 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 				} else {
 					add_error("Expected (", token.fileRange);
 				}
+				break;
+			}
+			case TokenType::endOfFile: {
 				break;
 			}
 			default: {
@@ -4283,21 +4287,20 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 					if (is_next(TokenType::fatArrow, i)) {
 						if (not is_next(TokenType::bracketOpen, i + 1)) {
 							add_error(
-							    "Expected [ after => to start the case block that contains the sentences to be executed for this case",
+							    "Expected [ after => to start the case block that contains the statements to be executed for this case",
 							    RangeAt(i + 1));
 						}
 						i++;
 						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 						if (bCloseRes) {
-							chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
-							    matchVals, do_sentences(preCtx, i + 1, bCloseRes.value())));
+							chain.push_back(std::make_pair(matchVals, do_sentences(preCtx, i + 1, bCloseRes.value())));
 							i = bCloseRes.value();
 						} else {
 							add_error("Expected end of [", RangeAt(i + 1));
 						}
 					} else {
 						add_error(
-						    "Expected => to before the block that contains sentences to be executed for this case",
+						    "Expected => to before the block that contains statements to be executed for this case",
 						    RangeSpan(i, i + 1));
 					}
 				} else {
@@ -4308,7 +4311,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 			case TokenType::Else: {
 				auto start = i;
 				if (elseCase.has_value()) {
-					add_error("Else case for match sentence is already provided. Please check "
+					add_error("Else case for match statement is already provided. Please check "
 					          "logic and make neceassary changes",
 					          RangeAt(i));
 				}
@@ -4316,12 +4319,11 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 					auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 					if (bCloseRes.has_value()) {
 						auto snts = do_sentences(preCtx, i + 1, bCloseRes.value());
-						elseCase  = Pair<Vec<ast::Sentence*>, FileRangePtr>{std::move(snts),
-						                                                    RangeSpan(start, bCloseRes.value())};
+						elseCase  = std::make_pair(std::move(snts), RangeSpan(start, bCloseRes.value()));
 						i         = bCloseRes.value();
 						if (i + 1 != upto) {
 							add_warning(
-							    "Expected match sentence to end after the else case. Make sure that the else case is the last branch in a match sentence",
+							    "Expected match statement to end after the else case. Make sure that the else case is the last branch in a match statement",
 							    RangeSpan(i + 1, bCloseRes.value()));
 						}
 					} else {
@@ -4330,7 +4332,7 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 				} else if (is_next(TokenType::fatArrow, i)) {
 					add_error("Else case for match block doesn't need => before the block", RangeAt(i));
 				} else {
-					add_error("Expected sentences for the else case in match sentence", RangeAt(i));
+					add_error("Expected statements for the else case in match statement", RangeAt(i));
 				}
 				break;
 			}
@@ -4394,15 +4396,14 @@ void Parser::parse_match_contents(ParserContext& preCtx, usize from, usize upto,
 					if (is_next(TokenType::bracketOpen, i)) {
 						auto bCloseRes = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 						if (bCloseRes.has_value()) {
-							chain.push_back(Pair<Vec<ast::MatchValue*>, Vec<ast::Sentence*>>(
-							    matchVals, do_sentences(preCtx, i + 1, bCloseRes.value())));
+							chain.push_back(std::make_pair(matchVals, do_sentences(preCtx, i + 1, bCloseRes.value())));
 							i = bCloseRes.value();
 						} else {
 							add_error("Expected end for [", RangeAt(i + 1));
 						}
 					} else {
 						add_error(
-						    "Expected [ to start the case block that contains sentences to be executed for this case block",
+						    "Expected [ to start the case block that contains statements to be executed for this case block",
 						    RangeSpan(start, i));
 					}
 					break;
@@ -4864,7 +4865,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							              pClose);
 							i = pClose;
 						} else {
-							add_error("Expected end for (", RangeAt(i + 1));
+							add_error("Expected end for ( in constructor call", RangeAt(i + 1));
 						}
 					} else if (is_next(TokenType::curlybraceOpen, i)) {
 						auto cCloseRes = get_pair_end(TokenType::curlybraceOpen, TokenType::curlybraceClose, i + 1);
@@ -5234,11 +5235,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					if (is_next(TokenType::packed, i + 1)) {
 						if (is_next(TokenType::associatedAssignment, i + 2)) {
 							auto packExpRes = do_prerun_expression(preCtx, i + 3, None);
-							isPacked        = Pair<FileRangePtr, ast::PrerunExpression*>{
-                                RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first};
-							i = packExpRes.second;
+							isPacked        = std::make_pair(RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first);
+							i               = packExpRes.second;
 						} else {
-							isPacked = Pair<FileRangePtr, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
+							isPacked = std::make_pair(RangeAt(i + 2), (ast::PrerunExpression*)nullptr);
 							i        = i + 2;
 						}
 						if (is_next(TokenType::separator, i)) {
@@ -5261,7 +5261,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error("Expected ] after this to end the type specification, but found something else",
 							          RangeSpan(start, errTyRes.second));
 						}
-						providedType = Pair<ast::Type*, ast::Type*>{validTyRes.first, errTyRes.first};
+						providedType = std::make_pair(validTyRes.first, errTyRes.first);
 					}
 					i = gClose.value();
 				}
@@ -5299,11 +5299,10 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					if (is_next(TokenType::packed, i + 1)) {
 						if (is_next(TokenType::associatedAssignment, i + 2)) {
 							auto packExpRes = do_prerun_expression(preCtx, i + 3, None);
-							isPacked        = Pair<FileRangePtr, ast::PrerunExpression*>{
-                                RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first};
-							i = packExpRes.second;
+							isPacked        = std::make_pair(RangeSpan(i + 2, packExpRes.second + 1), packExpRes.first);
+							i               = packExpRes.second;
 						} else {
-							isPacked = Pair<FileRangePtr, ast::PrerunExpression*>{RangeAt(i + 2), nullptr};
+							isPacked = std::make_pair(RangeAt(i + 2), (ast::PrerunExpression*)nullptr);
 							i        = i + 2;
 						}
 						if (is_next(TokenType::separator, i)) {
@@ -5326,7 +5325,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							add_error("Expected ] after this to end the type specification, but found something else",
 							          RangeSpan(start, errTyRes.second));
 						}
-						providedType = Pair<ast::Type*, ast::Type*>{validTyRes.first, errTyRes.first};
+						providedType = std::make_pair(validTyRes.first, errTyRes.first);
 					}
 					i = gClose.value();
 				}
@@ -6313,7 +6312,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				}
 				if (not is_next(TokenType::stop, i)) {
 					add_error("Expected " + color_error(".") + " after this to end the " + color_error("break") +
-					              " sentence",
+					              " statement",
 					          RangeSpan(start, i));
 				}
 				i++;
@@ -6329,7 +6328,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				}
 				if (not is_next(TokenType::stop, i)) {
 					add_error("Expected " + color_error(".") + " after this to end the " + color_error("continue") +
-					              " sentence",
+					              " statement",
 					          RangeSpan(start, i));
 				}
 				i++;
@@ -6346,7 +6345,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				}
 				if (not is_next(TokenType::stop, i)) {
 					add_error("Expected " + color_error(".") + " after this to end the " + color_error("give") +
-					              " sentence",
+					              " statement",
 					          RangeSpan(start, i));
 				}
 				i++;
@@ -6375,7 +6374,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 						i += 2;
 					}
 					if (not is_next(TokenType::bracketOpen, i)) {
-						add_error("Expected [ after this to start the sentences of the " + color_error("loop to"),
+						add_error("Expected [ after this to start the statements of the " + color_error("loop to"),
 						          RangeSpan(start, i));
 					}
 					i++;
@@ -6405,7 +6404,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 					}
 				}
 				if (not is_next(TokenType::stop, i)) {
-					add_error("Expected . after this to end the prerun say sentence", RangeSpan(start, i));
+					add_error("Expected . after this to end the prerun say statement", RangeSpan(start, i));
 				}
 				i++;
 				sentences.push_back(ast::PrerunSay::create(std::move(values), RangeSpan(start, i)));
@@ -6421,7 +6420,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				}
 				i++;
 				if (not is_next(TokenType::bracketOpen, i)) {
-					add_error("Expected [ after this to start the sentences for the " + color_error("if") + " block",
+					add_error("Expected [ after this to start the statements for the " + color_error("if") + " block",
 					          RangeSpan(start, i));
 				}
 				i++;
@@ -6440,7 +6439,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 					}
 					i++;
 					if (not is_next(TokenType::bracketOpen, i)) {
-						add_error("Expected [ after this to start the sentences for the " + color_error("else if") +
+						add_error("Expected [ after this to start the statements for the " + color_error("else if") +
 						              " block",
 						          RangeSpan(itStart, i));
 					}
@@ -6453,7 +6452,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 				if (is_next(TokenType::Else, i)) {
 					i++;
 					if (not is_next(TokenType::bracketOpen, i)) {
-						add_error("Expected [ after this to start the sentences for the " + color_error("else") +
+						add_error("Expected [ after this to start the statements for the " + color_error("else") +
 						              " block",
 						          RangeAt(i));
 					}
@@ -6482,7 +6481,7 @@ Pair<Vec<ast::PrerunSentence*>, usize> Parser::do_prerun_sentences(ParserContext
 			}
 		}
 	}
-	add_error("Could not find ] to end the current scope of sentences", RangeSpan(from, i));
+	add_error("Could not find ] to end the current scope of statements", RangeSpan(from, i));
 	std::unreachable();
 }
 
@@ -6594,7 +6593,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 								addSentence(ast::MetaTodo::create(None, RangeSpan(i, i + 5)));
 								i = i + 5;
 							} else {
-								add_error("Expected . after this to end the sentence", RangeSpan(i, i + 4));
+								add_error("Expected . after this to end the statement", RangeSpan(i, i + 4));
 							}
 						} else if (is_next(TokenType::StringLiteral, i + 3)) {
 							if (is_next(TokenType::parenthesisClose, i + 4)) {
@@ -6602,7 +6601,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 									addSentence(ast::MetaTodo::create(ValueAt(i + 4), RangeSpan(i, i + 6)));
 									i = i + 6;
 								} else {
-									add_error("Expected . after this to end the sentence", RangeSpan(i, i + 5));
+									add_error("Expected . after this to end the statement", RangeSpan(i, i + 5));
 								}
 							} else {
 								add_error("Expected ) to enclose the meta:todo message", RangeSpan(i, i + 4));
@@ -6711,7 +6710,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				if (hasCachedSymbol()) {
 					auto end_res = first_primary_position(TokenType::stop, i);
 					if (not end_res.has_value() || (end_res.value() >= upto)) {
-						add_error("Invalid end for the sentence", token.fileRange);
+						add_error("Invalid end for the statement", token.fileRange);
 					}
 					auto end    = end_res.value();
 					auto expRes = do_expression(ctx, None, i, end);
@@ -6738,7 +6737,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						    ast::Assignment::create(lhs, expRes.first, FileRange::merge(lhs->fileRange, RangeAt(end))));
 						i = end;
 					} else {
-						add_error("Invalid end of sentence",
+						add_error("Invalid end of statement",
 						          FileRange::merge(consumeCachedExpr()->fileRange, token.fileRange));
 					}
 				} else {
@@ -6764,7 +6763,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				}
 				auto end_res = first_primary_position(TokenType::stop, i);
 				if (not end_res.has_value() || (end_res.value() >= upto)) {
-					add_error("Say sentence has invalid end", token.fileRange);
+					add_error("Say statement has invalid end", token.fileRange);
 				}
 				auto end  = end_res.value();
 				auto exps = do_separated_expressions(ctx, i, end);
@@ -6773,7 +6772,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				break;
 			}
 			case TokenType::stop: {
-				SHOW("Parsed expression sentence")
+				SHOW("Parsed expression statement")
 				if (hasCachedExpr()) {
 					auto* expr = consumeCachedExpr();
 					addSentence(
@@ -7078,11 +7077,11 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						          RangeSpan(start, i));
 					}
 					if (not is_next(TokenType::bracketOpen, i)) {
-						add_error("Expected [ to start the block of sentences for this loop", RangeSpan(start, i));
+						add_error("Expected [ to start the block of statements for this loop", RangeSpan(start, i));
 					}
 					auto bClose = get_pair_end(TokenType::bracketOpen, TokenType::bracketClose, i + 1);
 					if (not bClose.has_value()) {
-						add_error("Expected ] to end the block of sentences for this loop", RangeAt(i + 1));
+						add_error("Expected ] to end the block of statements for this loop", RangeAt(i + 1));
 					}
 					auto sentences = do_sentences(preCtx, i + 1, bClose.value());
 					i              = bClose.value();
@@ -7170,14 +7169,14 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				break;
 			}
 			case TokenType::give: {
-				SHOW("give sentence found")
+				SHOW("give statement found")
 				if (is_next(TokenType::stop, i)) {
 					i++;
 					addSentence(ast::GiveSentence::create(nullptr, FileRange::merge(token.fileRange, RangeAt(i + 1))));
 				} else {
 					auto end = first_primary_position(TokenType::stop, i);
 					if (not end.has_value()) {
-						add_error("Expected give sentence to end. Please add `.` wherever "
+						add_error("Expected give statement to end. Please add `.` wherever "
 						          "appropriate to mark the end of the statement",
 						          token.fileRange);
 					}
@@ -7234,7 +7233,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					    bin_exp, FileRange::merge(bin_exp->fileRange, RangeAt(end_res))));
 				} else {
 					add_error("Detected " + token.value +
-					              " operator and expected . within this scope to end the sentence",
+					              " operator and expected . within this scope to end the statement",
 					          RangeAt(i));
 				}
 				break;
@@ -7250,7 +7249,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				break;
 			}
 			default: {
-				SHOW("parseSentences - default case")
+				SHOW("parseStatements - default case")
 				auto expRes = do_expression(preCtx, retrieveCachedSymbol(), i - 1, None, retrieveCachedExpr());
 				setCachedExprForSentences(expRes.first);
 				i = expRes.second;
@@ -7479,9 +7478,9 @@ String Parser::color_error(const String& message) {
 void Parser::add_warning(const String& message, FileRangePtr fileRange) {
 	std::cout << cli::get_bg_color(cli::Color::orange) << " PARSER WARNING " << cli::get_color(cli::Color::reset)
 	          << "▌ " << cli::get_color(cli::Color::yellow) << message << cli::get_color(cli::Color::reset) << " | "
-	          << cli::get_color(cli::Color::green) << fileRange->file.string() << ":" << fileRange->start.line << ":"
+	          << cli::get_color(cli::Color::green) << *fileRange->file << ":" << fileRange->start.line << ":"
 	          << fileRange->start.byteOffset << cli::get_color(cli::Color::reset) << " >> "
-	          << cli::get_color(cli::Color::green) << fileRange->file.string() << ":" << fileRange->end.line << ":"
+	          << cli::get_color(cli::Color::green) << *fileRange->file << ":" << fileRange->end.line << ":"
 	          << fileRange->end.byteOffset << cli::get_color(cli::Color::reset) << "\n";
 }
 

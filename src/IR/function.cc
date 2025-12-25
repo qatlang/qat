@@ -85,7 +85,7 @@ Block::Block(FileRangePtr _fileRange, String astName, Function* _fn, Block* _par
 	}
 	bb = llvm::BasicBlock::Create(
 	    fn->get_llvm_function()->getContext(),
-	    _fileRange->file.filename().string() + "{" + std::to_string(_fileRange->start.line) + ":" +
+	    fs::path(*_fileRange->file).filename().string() + "{" + std::to_string(_fileRange->start.line) + ":" +
 	        std::to_string(_fileRange->start.byteOffset) + " -> " + std::to_string(_fileRange->end.line) + ":" +
 	        std::to_string(_fileRange->end.byteOffset) + (astName.empty() ? "}" : "}:") + astName,
 	    fn->get_llvm_function());

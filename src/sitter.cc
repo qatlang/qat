@@ -55,24 +55,29 @@ QatSitter* QatSitter::get() {
 }
 
 void QatSitter::display_stats() {
-	auto& log = Logger::get();
-	log->diagnostic("Lexer speed   -> " +
-	                std::to_string(static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
-	                                                lexer::Lexer::timeInNanoseconds)) +
-	                " lines/s");
-	log->diagnostic("Parser speed  -> " +
-	                std::to_string(static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
-	                                                parser::Parser::timeInNanoseconds)) +
-	                " lines/s & " +
-	                std::to_string(static_cast<u64>(static_cast<double>(parser::Parser::tokenCount) *
-	                                                ONE_SECOND_IN_NANO / parser::Parser::timeInNanoseconds)) +
-	                " tokens/s");
+	auto&             log = Logger::get();
+	std::stringstream ss;
+	ss.imbue(std::locale(""));
+	ss << static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
+	                       lexer::Lexer::timeInNanoseconds);
+	log->diagnostic("Lexer speed   -> " + ss.str() + " lines/s");
+	ss.str("");
+	ss.clear();
+	ss << static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
+	                       parser::Parser::timeInNanoseconds);
+	auto parserMsg = "Parser speed  -> " + ss.str() + " lines/s & ";
+	ss.str("");
+	ss.clear();
+	ss << static_cast<u64>(static_cast<double>(parser::Parser::tokenCount) * ONE_SECOND_IN_NANO /
+	                       parser::Parser::timeInNanoseconds);
+	parserMsg += ss.str() + " tokens/s";
+	log->diagnostic(parserMsg);
 	if (ctx->clangAndLinkTimeInNanoseconds.has_value()) {
-		log->diagnostic(
-		    "Compile speed -> " +
-		    std::to_string(static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
-		                                    ctx->qatCompileTimeInNanoseconds.value())) +
-		    " lines/s");
+		ss.str("");
+		ss.clear();
+		ss << static_cast<u64>(static_cast<double>(lexer::Lexer::lineCount) * ONE_SECOND_IN_NANO /
+		                       ctx->qatCompileTimeInNanoseconds.value());
+		log->diagnostic("Compile speed -> " + ss.str() + " lines/s");
 	}
 	auto timeToString = [](u64 timeInNanos) {
 		if (timeInNanos > ONE_SECOND_IN_NANO) {
@@ -318,12 +323,11 @@ void QatSitter::initialise() {
 		// 	               ._("skills", skillsJSON)
 		// 	               ._("genericSkills", genericSkillsJSON)
 		// 	               ._("expressionUnits", expressionUnits);
-		// 	log->say("Wrote code info JSON");
+		// 	log->say("Exported code metadata");
 		// 	mStream.close();
 		// }
 		//
 		//
-		log->say("Checked AST export");
 		if (cfg->should_export_ast()) {
 			log->say("Exporting AST representation");
 			for (auto* entity : fileEntities) {
@@ -338,6 +342,7 @@ void QatSitter::initialise() {
 				if (cfg->has_output_path() && fs::exists(cfg->get_output_path() / "llvm")) {
 					fs::remove_all(cfg->get_output_path() / "llvm");
 				}
+				log->say("Cleared LLVM files");
 			}
 		};
 		if (cfg->is_workflow_build()) {
@@ -362,7 +367,6 @@ void QatSitter::initialise() {
 			SHOW("Wrote JSON result")
 			clear_llvm_files();
 			SHOW("Cleared llvm files")
-			log->say("Cleared LLVM files");
 			if (cfg->is_workflow_run() && not ctx->executablePaths.empty()) {
 				if (llvm::Triple(cfg->get_target_triple()) != llvm::Triple(LLVM_HOST_TRIPLE)) {
 					ctx->Error("The target provided for compilation is " + ctx->color(cfg->get_target_triple()) +

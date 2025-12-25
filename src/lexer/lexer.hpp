@@ -57,7 +57,7 @@ class Lexer {
 
 	useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
 
-	useit void tokeniser();
+	void tokeniser();
 
 	inline void advance_cursor() { cursor++; }
 

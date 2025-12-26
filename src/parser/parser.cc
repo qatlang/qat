@@ -5348,7 +5348,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 				}
 				break;
 			}
-			case TokenType::Await: {
+			case TokenType::Wait: {
 				auto expRes = do_expression(preCtx, None, i, None);
 				setCachedExpr(ast::Await::create(expRes.first, RangeSpan(i, expRes.second)), expRes.second);
 				i = expRes.second;

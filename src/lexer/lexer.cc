@@ -1017,8 +1017,8 @@ void Lexer::tokeniser() {
 						break;
 					}
 				}
-				bool skipPreRead = false;
-				bool breakLoop   = false;
+				bool skipPreRead         = false;
+				bool breakIdentifierLoop = false;
 				while (not has_file_ended()) {
 					if (idVal.length() != 0) {
 						idRange = this->get_position(idVal.length());
@@ -1035,9 +1035,9 @@ void Lexer::tokeniser() {
 							auto tempRange = idVal.empty() ? idRange : this->get_position(idVal.length());
 							if (not(idVal.empty() ? (CURRENT_IS_ALPHABET || (get() == '_'))
 							                      : (CURRENT_IS_ALPHABET || CURRENT_IS_DIGIT || (get() == '_')))) {
-								skipPreRead = true;
-								breakLoop   = true;
-								idRange     = std::move(tempRange);
+								skipPreRead         = true;
+								breakIdentifierLoop = true;
+								idRange             = std::move(tempRange);
 								break;
 							}
 							bytes[0] = get();
@@ -1124,7 +1124,7 @@ void Lexer::tokeniser() {
 							break;
 						}
 					}
-					if (breakLoop) {
+					if (breakIdentifierLoop) {
 						break;
 					}
 					auto scalar = utils::utf8_to_unicode_scalar(bytes);
@@ -1199,7 +1199,7 @@ Maybe<Token> Lexer::word_to_token(String const& wordValue, Lexer* lexInst) {
 	else Check_Normal_Keyword("say", say);
 	else Check_Normal_Keyword("as", as);
 	else Check_Normal_Keyword("lib", lib);
-	else Check_Normal_Keyword("await", Await);
+	else Check_Normal_Keyword("wait", Wait);
 	else Check_Normal_Keyword("default", Default);
 	else Check_Normal_Keyword("static", Static);
 	else Check_Normal_Keyword("variadic", variadic);

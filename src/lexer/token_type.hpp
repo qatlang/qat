@@ -69,7 +69,7 @@ enum class TokenType : u8 {
 	fatArrow,
 	genericTypeStart,
 	genericTypeEnd,
-	Await,
+	Wait,
 	semiColon,
 	super,
 	variadic,

@@ -1407,6 +1407,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					if (is_next(TokenType::genericTypeEnd, i)) {
 						cacheTy = ast::GenericIntegerType::create_specific(bitVal.first, ValueAt(start) == "uint",
 						                                                   RangeSpan(start, i + 1));
+						i++;
 					} else {
 						add_error("Expected ] after this to end the type", RangeSpan(start, i));
 					}
@@ -6688,7 +6689,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				}
 				break;
 			}
-			case TokenType::ignore: {
+			case TokenType::blank: {
 				const auto start = i;
 				if (is_next(TokenType::assignment, i)) {
 					i++;
@@ -6809,99 +6810,89 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 				}
 				break;
 			}
+			case TokenType::use: {
+				const auto start = i;
+				if (not is_next(TokenType::identifier, i)) {
+					add_error("Expected an identifier after this for the name of the " + color_error("use") +
+					              " binding",
+					          RangeAt(start));
+				}
+				auto name = IdentifierAt(i + 1);
+				i++;
+				ast::Type* declType = nullptr;
+				if (is_next(TokenType::typeSeparator, i)) {
+					auto typRes = do_type(preCtx, i + 1, None);
+					declType    = typRes.first;
+					i           = typRes.second;
+				}
+				if (not is_next(TokenType::assignment, i)) {
+					add_error("Expected = after this, to precede the value for the " + color_error("use") + " binding",
+					          RangeSpan(start, i));
+				}
+				i++;
+				auto expRes = do_expression(preCtx, None, i, None);
+				i           = expRes.second;
+				if (not is_next(TokenType::stop, i)) {
+					add_error("Expected . after this to end the " + color_error("use") + " binding",
+					          RangeSpan(start, i));
+				}
+				i++;
+				addSentence(ast::UseDeclaration::create(std::move(name), declType, expRes.first, RangeSpan(start, i)));
+				break;
+			}
 			case TokenType::let: {
 				const auto start = i;
-				if (is_next(TokenType::use, i)) {
-					if (not is_next(TokenType::identifier, i + 1)) {
-						add_error("Expected an identifier after this for the name of the use-value declaration",
-						          RangeSpan(start, i + 1));
-					}
-					auto name = IdentifierAt(i + 2);
-					i += 2;
-					ast::Type* declType = nullptr;
+				SHOW("Found let")
+				bool isRef     = false;
+				bool isVarDecl = false;
+				if (is_next(TokenType::var, i)) {
+					isVarDecl = true;
+					i++;
+				}
+				if (is_next(TokenType::identifier, i)) {
+					auto                    name = IdentifierAt(i + 1);
+					ast::Type*              type = nullptr;
+					Maybe<ast::Expression*> value;
+					bool                    isBlank = false;
+					i++;
 					if (is_next(TokenType::typeSeparator, i)) {
-						auto typRes = do_type(preCtx, i + 1, None);
-						declType    = typRes.first;
+						i++;
+						auto typRes = do_type(preCtx, i, None);
+						type        = typRes.first;
 						i           = typRes.second;
+					} else if (is_next(TokenType::stop, i)) {
+						add_error(
+						    "Only " + color_error("let") +
+						        " bindings with an associated type can skip the value for initialisation. Use the syntax " +
+						        color_error("let " + name.value + " :: Type."),
+						    RangeSpan(start, i + 1));
 					}
-					if (not is_next(TokenType::assignment, i)) {
-						add_error("Expected = after this, to precede the value to be used in the declaration",
+					if (is_next(TokenType::assignment, i)) {
+						i++;
+						if (is_next(TokenType::blank, i)) {
+							isBlank = true;
+							i++;
+						} else {
+							auto expRes = do_expression(preCtx, None, i, None);
+							value       = expRes.first;
+							i           = expRes.second;
+						}
+					}
+					if (not is_next(TokenType::stop, i)) {
+						add_error("Expected . after this to end the " + color_error("let") + " binding",
 						          RangeSpan(start, i));
 					}
 					i++;
-					auto expRes = do_expression(preCtx, None, i, None);
-					i           = expRes.second;
-					if (not is_next(TokenType::stop, i)) {
-						add_error("Expected . after this to end the use-value declaration", RangeSpan(start, i));
-					}
-					i++;
-					addSentence(
-					    ast::UseDeclaration::create(std::move(name), declType, expRes.first, RangeSpan(start, i)));
+					addSentence(ast::LocalDeclaration::create(isVarDecl, std::move(name), type, value, isBlank,
+					                                          RangeSpan(start, i)));
+					break;
+				} else if (is_next(TokenType::blank, i)) {
+					add_error("If you intend to ignore a value, use the syntax " + color_error("_ = value.") +
+					              " instead of providing a blank name for a " + color_error("let") + " binding",
+					          RangeAt(i + 1));
 				} else {
-					SHOW("Found new")
-					bool isRef     = false;
-					bool isVarDecl = false;
-					if (is_next(TokenType::var, i)) {
-						isVarDecl = true;
-						if (is_next(TokenType::referenceType, i + 1)) {
-							isRef = true;
-							i += 2;
-						} else {
-							i++;
-						}
-					} else if (is_next(TokenType::referenceType, i)) {
-						isRef = true;
-						i++;
-					}
-					if (is_next(TokenType::identifier, i)) {
-						auto name = IdentifierAt(i + 1);
-						if (is_next(TokenType::assignment, i + 1)) {
-							auto expRes = do_expression(preCtx, None, i + 2, None);
-							i           = expRes.second;
-							if (is_next(TokenType::stop, i)) {
-								i++;
-								addSentence(ast::LocalDeclaration::create(nullptr, isRef, name, expRes.first, isVarDecl,
-								                                          RangeSpan(start, i)));
-							} else {
-								add_error("Expected . to end the local declaration", RangeSpan(start, i));
-							}
-						} else if (is_next(TokenType::typeSeparator, i + 1)) {
-							auto endRes = first_primary_position(TokenType::stop, i + 2);
-							if (endRes.has_value()) {
-								if (is_primary_within(TokenType::assignment, i + 2, endRes.value())) {
-									auto  asgnPos = first_primary_position(TokenType::assignment, i + 2).value();
-									auto* typeRes = do_type(preCtx, i + 2, asgnPos).first;
-									auto* exp     = do_expression(preCtx, None, asgnPos, endRes.value()).first;
-									addSentence(ast::LocalDeclaration::create(typeRes, isRef, IdentifierAt(i + 1), exp,
-									                                          isVarDecl,
-									                                          RangeSpan(start, endRes.value())));
-								} else {
-									// No value for the assignment
-									auto* typeRes = do_type(preCtx, i + 2, endRes.value()).first;
-									addSentence(ast::LocalDeclaration::create(typeRes, isRef, IdentifierAt(i + 1), None,
-									                                          isVarDecl,
-									                                          RangeSpan(start, endRes.value())));
-								}
-								i = endRes.value();
-								break;
-							} else {
-								add_error("Expected . to mark the end of this declaration", RangeSpan(start, i + 1));
-							}
-						} else if (is_next(TokenType::from, i + 1)) {
-							add_error("Initialisation via constructor or convertor can be used "
-							          "only if there is a type provided. This is an inferred "
-							          "declaration",
-							          RangeSpan(start, i + 2));
-						} else if (is_next(TokenType::stop, i + 1)) {
-							add_error("Only declarations with `maybe` type can omit the value to be assigned",
-							          RangeSpan(start, i + 2));
-						} else {
-							add_error("Unexpected token found after the beginning of local declaration",
-							          RangeAt(i + 1));
-						}
-					} else {
-						add_error("Expected an identifier for the name of the local value", RangeSpan(start, i));
-					}
+					add_error("Expected an identifier for the name of the " + color_error("let") + " binding",
+					          RangeSpan(start, i));
 				}
 				break;
 			}

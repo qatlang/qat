@@ -83,8 +83,9 @@ ir::Value* Logic::handle_pass_semantics(ast::EmitCtx* ctx, ir::Type* expectedTyp
 	} else if (value->is_ref() && value->get_ir_type()->as_ref()->get_subtype()->is_same(expectedType)) {
 		if (value->should_be_ref()) {
 			ctx->Error("This expression was confirmed to be a reference using the " +
-			               ctx->color(value->get_ir_type()->as_ref()->has_variability() ? "'@var" : "'@") +
-			               " expression. Please avoid this to remove the reference confirmation",
+			               ctx->color(value->get_ir_type()->as_ref()->has_variability() ? "'ref:var" : "'ref") +
+			               " expression. Please avoid this to remove the reference confirmation, as a value of type " +
+			               ctx->color(expectedType->to_string()) + " is expected here",
 			           valueRange);
 		}
 		value->load_ghost_ref(ctx->irCtx->builder);

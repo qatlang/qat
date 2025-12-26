@@ -1,4 +1,5 @@
 #include "./local_declaration.hpp"
+#include "../../IR/logic.hpp"
 #include "../../IR/types/maybe.hpp"
 #include "../../IR/types/pointer.hpp"
 #include "../../show.hpp"
@@ -10,10 +11,19 @@ namespace qat::ast {
 ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	auto* block = ctx->get_fn()->get_block();
 	if (block->has_value(name.value)) {
-		ctx->Error("A local value named " + ctx->color(name.value) +
-		               " already exists in this scope. Please change name of this "
-		               "declaration or check the logic",
-		           fileRange);
+		ctx->Error("A " + ctx->color("let") + "binding named " + ctx->color(name.value) +
+		               " already exists in this scope. Please change name of this " + ctx->color("let") +
+		               " binding or check the logic",
+		           fileRange,
+		           std::make_pair("The previous " + ctx->color("let") + " binding was found here",
+		                          block->get_value(name.value)->get_file_range()));
+	} else if (block->has_used_value(name.value)) {
+		ctx->Error("A " + ctx->color("use") + " binding named " + ctx->color(name.value) +
+		               " already exists in this scope. Please change name of this " + ctx->color("let") +
+		               " binding or check the logic",
+		           fileRange,
+		           std::make_pair("The previous " + ctx->color("use") + " binding was found here",
+		                          block->get_used_value(name.value)->get_range()));
 	} else {
 		ctx->genericNameCheck(name.value, name.range);
 	}
@@ -36,7 +46,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 			}
 			if (declType->is_ptr() && declType->as_ptr()->get_owner().is_prerun()) {
 				ctx->Error("Prerun " + String(declType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
-				               " cannot be used in normal declarations",
+				               " cannot be used in " + ctx->color("let") + " bindings in normal functions",
 				           fileRange);
 			}
 		}
@@ -45,7 +55,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	ir::Value* expVal = nullptr;
 	if (value.has_value()) {
 		SHOW("LocalDecl value kind is " << (int)value.value()->nodeType())
-		if (type && not declType) {
+		if (type) {
 			declType = type->emit(ctx);
 			typeCheck();
 		}
@@ -70,152 +80,85 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 				           value.value()->fileRange);
 			}
 			return valRes;
+		} else {
+			SHOW("Emitting value")
+			expVal = value.value()->emit(ctx);
+			SHOW("Pass type of value to be assigned to local value " << name.value << " is "
+			                                                         << expVal->get_pass_type()->to_string())
+			if (not declType) {
+				declType = expVal->get_pass_type();
+				typeCheck();
+			}
+			expVal   = ir::Logic::handle_pass_semantics(ctx, declType, expVal, value.value()->fileRange);
+			auto res = ctx->get_fn()->get_block()->new_local(name.value, declType, variability, ctx->irCtx, name.range);
+			ctx->irCtx->builder.CreateStore(expVal->get_llvm(), res->get_llvm(), false);
+			return nullptr;
 		}
-		SHOW("Emitting value")
-		expVal = value.value()->emit(ctx);
-		SHOW("Type of value to be assigned to local value " << name.value << " is "
-		                                                    << expVal->get_ir_type()->to_string())
 	} else {
-		if (type) {
+		if (isBlankValue) {
+			if (not type) {
+				ctx->Error("Ignoring the initialisation of the " + ctx->color("let") +
+				               " binding using _ is only allowed if a type is provided. Use the syntax " +
+				               ctx->color("let " + String(variability ? "var " : "") + name.value + " :: Type = _."),
+				           fileRange);
+			}
 			declType = type->emit(ctx);
-			if (declType->has_simple_move()) {
-				auto result =
-				    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, ctx->irCtx, name.range);
-				ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(declType->get_llvm_type()),
-				                                result->get_llvm());
-				return result->to_new_ir_value();
-			} else {
+			typeCheck();
+			if (not declType->has_simple_copy() && not declType->has_simple_move()) {
+				ctx->Error("Ignoring the initialisation of the " + ctx->color("let") +
+				               " binding using _ is only allowed if the type has both"
+				               " simple-copy and simple-move. The type provided is " +
+				               ctx->color(declType->to_string()) + " which does not satisfy this condition",
+				           fileRange);
+			}
+			(void)ctx->get_fn()->get_block()->new_local(name.value, declType, variability, ctx->irCtx, name.range);
+			return nullptr;
+		} else if (type) {
+			declType = type->emit(ctx);
+			typeCheck();
+			if (not declType->is_maybe()) {
 				ctx->Error(
-				    "The type of the local declaration is " + ctx->color(declType->to_string()) +
-				        " which does not have simple-move. Expression to be assigned can only be skipped if the type supports simple-move",
+				    "The type of the " + ctx->color("let") + " binding is " + ctx->color(declType->to_string()) +
+				        ". Value for initialisation can only be skipped if it is a " + ctx->color("maybe") + " type." +
+				        (declType->has_simple_move()
+				             ? ((declType->is_underlying_type_integer() || declType->is_underlying_type_unsigned() ||
+				                 declType->is_underlying_type_float())
+				                    ? ("\n- Since the type " + ctx->color(declType->to_string()) +
+				                       " is a numeric type, it is recommended to use 0 for initialisation.")
+				                    : ("\n- Since the type " + ctx->color(declType->to_string()) +
+				                       " has simple-move, you can use the expression" + ctx->color("zero") +
+				                       " to zero-initialise the data."))
+				             : "") +
+				        ((declType->has_simple_copy() && declType->has_simple_move())
+				             ? ("\n- Since the type " + ctx->color(declType->to_string()) +
+				                " has both simple-copy and simple-move, you may ignore the initialisation of the " +
+				                ctx->color("let") +
+				                " binding using the _ expression. Do this only if you must, and if know what you"
+				                " are doing. This means that the binding may have a random value in"
+				                " it (don't use this for randomness, please). Use the syntax " +
+				                ctx->color("let " + String(variability ? "var " : "") + name.value +
+				                           " :: " + type->to_string() + " = _.") +
+				                " to ignore initialisation.")
+				             : ""),
 				    fileRange);
 			}
-		}
-	}
-	SHOW("Type inference for value is complete")
-	if (type) {
-		SHOW("Checking & setting declType")
-		if (not declType) {
-			declType = type->emit(ctx);
-			typeCheck();
-		}
-		SHOW("About to type match")
-		if (value &&
-		    (((declType->is_ref() && not expVal->is_ref()) &&
-		      not declType->as_ref()->get_subtype()->is_same(expVal->get_ir_type())) &&
-		     (declType->is_maybe() && not(declType->as_maybe()->get_subtype()->is_same(expVal->get_ir_type()))) &&
-		     not declType->is_same(expVal->get_ir_type()))) {
-			ctx->Error("Type of the local value " + ctx->color(name.value) + " is " +
-			               ctx->color(declType->to_string()) +
-			               " which is not compatible with the expression to be assigned which is of type " +
-			               ctx->color(expVal->get_ir_type()->to_string()),
+			auto result =
+			    ctx->get_fn()->get_block()->new_local(name.value, declType, variability, ctx->irCtx, name.range);
+			ctx->irCtx->builder.CreateStore(llvm::Constant::getNullValue(declType->get_llvm_type()),
+			                                result->get_llvm());
+			return nullptr;
+		} else {
+			ctx->Error("This " + ctx->color("let") +
+			               " binding does not have a type associated with it and also"
+			               " does not have a value provided for initialisation."
+			               " If a value is provided, the type can be inferred from it."
+			               " If a type is provided and if it is a " +
+			               ctx->color("maybe") + " type, the " + ctx->color("let") + " binding can be initialised to " +
+			               ctx->color("none") + " in the absence of a value.",
 			           fileRange);
-		}
-	} else {
-		SHOW("No type for decl. Getting type from value")
-		if (expVal) {
-			SHOW("Getting type from expression")
-			declType = expVal->get_ir_type();
-			typeCheck();
-			if (expVal->get_ir_type()->is_ref()) {
-				if (not isRef) {
-					declType = expVal->get_ir_type()->as_ref()->get_subtype();
-				}
-			}
-		} else {
-			ctx->Error("Type inference for declarations require a value", fileRange);
+			std::unreachable();
 		}
 	}
-	if (declType->is_ref() && ((not expVal->get_ir_type()->is_ref()) && expVal->is_ghost_ref())) {
-		if (declType->as_ref()->has_variability() && (not expVal->has_variability())) {
-			ctx->Error("The referred type of the left hand side has variability, but the "
-			           "value provided for initialisation do not have variability",
-			           value.value()->fileRange);
-		}
-	} else if (declType->is_ref() && expVal->get_ir_type()->is_ref()) {
-		if (declType->as_ref()->has_variability() && (not expVal->get_ir_type()->as_ref()->has_variability())) {
-			ctx->Error("The reference on the left hand side refers to a value with "
-			           "variability, but the value provided for initialisation is a "
-			           "reference that refers to a value without variability",
-			           value.value()->fileRange);
-		}
-	}
-	SHOW("Creating new value")
-	auto* new_value = block->new_local(name.value, declType, variability, ctx->irCtx, name.range);
-	if (expVal) {
-		if (expVal->get_ir_type()->is_ref() || expVal->is_ghost_ref()) {
-			if (expVal->get_ir_type()->is_ref()) {
-				expVal->load_ghost_ref(ctx->irCtx->builder);
-			}
-			auto* expValTy = expVal->get_ir_type()->is_ref() ? expVal->get_ir_type()->as_ref()->get_subtype()
-			                                                 : expVal->get_ir_type();
-			if (not expValTy->is_same(new_value->get_ir_type())) {
-				ctx->Error("Type of the provided expression is " + ctx->color(expValTy->to_string()) +
-				               " and does not match the type of the declaration which is " +
-				               ctx->color(declType->to_string()),
-				           value.value()->fileRange);
-			}
-			if (expValTy->has_simple_copy() || expValTy->has_simple_move()) {
-				ctx->irCtx->builder.CreateStore(
-				    ctx->irCtx->builder.CreateLoad(expValTy->get_llvm_type(), expVal->get_llvm()),
-				    new_value->get_llvm());
-				if (not expValTy->has_simple_copy()) {
-					if (expVal->is_ref() && not expVal->get_ir_type()->as_ref()->has_variability()) {
-						ctx->Error(
-						    "This expression is of type " + ctx->color(expVal->get_ir_type()->to_string()) +
-						        " which is a reference without variability and hence simple-move is not possible",
-						    value.value()->fileRange);
-					} else if (not expVal->has_variability()) {
-						ctx->Error("This expression does not have variability and hence simple-move is not possible",
-						           value.value()->fileRange);
-					}
-					// MOVE WARNING
-					ctx->irCtx->Warning("There is a simple-move occuring here. Do you want to use " +
-					                        ctx->color("'move") + " to make it explicit and clear?",
-					                    value.value()->fileRange);
-					ctx->irCtx->builder.CreateStore(llvm::ConstantExpr::getNullValue(expValTy->get_llvm_type()),
-					                                expVal->get_llvm());
-					if (expVal->is_local_value()) {
-						ctx->get_fn()->get_block()->add_moved_value(expVal->get_local_id().value());
-					}
-				}
-			} else {
-				// NON-TRIVIAL COPY & MOVE ERROR
-				ctx->Error("The expression provided is of type " + ctx->color(expValTy->to_string()) +
-				               " which does not have simple-copy and simple-move. Please do " + ctx->color("'copy") +
-				               " or " + ctx->color("'move") + " accordingly",
-				           value.value()->fileRange);
-			}
-		} else {
-			if (not expVal->get_ir_type()->is_same(new_value->get_ir_type())) {
-				ctx->Error("Type of the provided expression is " + ctx->color(expVal->get_ir_type()->to_string()) +
-				               " and does not match the type of the declaration which is " +
-				               ctx->color(declType->to_string()),
-				           value.value()->fileRange);
-			}
-			ctx->irCtx->builder.CreateStore(expVal->get_llvm(), new_value->get_alloca());
-		}
-		return nullptr;
-	} else {
-		if (declType && declType->is_maybe()) {
-			if (declType->as_maybe()->has_sized_sub_type(ctx->irCtx)) {
-				ctx->irCtx->builder.CreateStore(
-				    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u),
-				    ctx->irCtx->builder.CreateStructGEP(declType->get_llvm_type(), new_value->get_alloca(), 0u));
-				ctx->irCtx->builder.CreateStore(
-				    llvm::Constant::getNullValue(declType->as_maybe()->get_subtype()->get_llvm_type()),
-				    ctx->irCtx->builder.CreateStructGEP(declType->get_llvm_type(), new_value->get_alloca(), 1u));
-			} else {
-				ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), 0u),
-				                                new_value->get_alloca(), 0u);
-			}
-		} else {
-			ctx->Error("Expected an expression to be initialised for the declaration. Only declaration with " +
-			               ctx->color("maybe") + " type can omit initialisation",
-			           fileRange);
-		}
-	}
-	return nullptr;
 }
 
 Json LocalDeclaration::to_json() const {

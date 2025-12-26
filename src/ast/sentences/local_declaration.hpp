@@ -10,20 +10,21 @@ namespace qat::ast {
 
 class LocalDeclaration final : public Sentence {
   private:
-	Type*              type = nullptr;
-	Identifier         name;
-	Maybe<Expression*> value;
 	bool               variability;
-	bool               isRef;
+	Identifier         name;
+	Type*              type;
+	Maybe<Expression*> value;
+	bool               isBlankValue;
 
   public:
-	LocalDeclaration(Type* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value, bool _variability,
+	LocalDeclaration(bool isVar, Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isBlankValue,
 	                 FileRangePtr _fileRange)
-	    : Sentence(_fileRange), type(_type), name(_name), value(_value), variability(_variability), isRef(_isRef) {}
+	    : Sentence(_fileRange), variability(isVar), name(_name), type(_type), value(_value),
+	      isBlankValue(_isBlankValue) {}
 
-	useit static LocalDeclaration* create(Type* _type, bool _isRef, Identifier _name, Maybe<Expression*> _value,
-	                                      bool _variability, FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(LocalDeclaration), _type, _isRef, _name, _value, _variability, _fileRange);
+	useit static LocalDeclaration* create(bool isVar, Identifier name, Type* type, Maybe<Expression*> value,
+	                                      bool isBlankValue, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(LocalDeclaration), isVar, name, type, value, isBlankValue, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
@@ -36,7 +37,8 @@ class LocalDeclaration final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json       to_json() const final;
+
+	useit Json to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::LOCAL_DECLARATION; }
 };

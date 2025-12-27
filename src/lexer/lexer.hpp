@@ -3,7 +3,10 @@
 
 #include "../utils/file_range.hpp"
 #include "./token.hpp"
+
 #include <filesystem>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 namespace qat::ir {
@@ -29,6 +32,16 @@ class Lexer {
 	Vec<TokenType> bracketOccurences;
 
 	ir::Ctx* irCtx;
+
+	static const std::unordered_map<StringView, TokenType> keywordMapping;
+
+	static const std::unordered_set<StringView> nativeTypeMapping;
+
+	static const std::unordered_set<StringView> floatTypeMapping;
+
+	static const std::unordered_set<StringView> intTypeMapping;
+
+	static const std::unordered_set<StringView> unsignedTypeMapping;
 
   public:
 	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};

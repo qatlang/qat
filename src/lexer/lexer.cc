@@ -14,14 +14,6 @@
 #define NanosecondsInMilliseconds 1000000
 #define NanosecondsInSeconds      1000000000
 
-#define Check_Normal_Keyword(ident, tokenName)                                                                         \
-	if (wordValue == ident)                                                                                            \
-	return Token(TokenType::tokenName, getPos(std::string::traits_type::length(ident)))
-
-#define Check_VALUED_Keyword(ident, tokenName)                                                                         \
-	if (wordValue == ident)                                                                                            \
-	return Token(TokenType::tokenName, ident, getPos(std::string::traits_type::length(ident)))
-
 #define NORMAL_TOKEN(typ, rng)     tokens.emplace_back(typ, rng);
 #define VALUE_TOKEN(typ, val, rng) tokens.emplace_back(typ, val, rng);
 
@@ -29,6 +21,104 @@ namespace qat::lexer {
 
 u64 Lexer::timeInNanoseconds = 0;
 u64 Lexer::lineCount         = 0;
+
+const std::unordered_map<StringView, TokenType> Lexer::keywordMapping = {
+    {"_", TokenType::blank},
+    {"null", TokenType::null},
+    {"pub", TokenType::pub},
+    {"let", TokenType::let},
+    {"self", TokenType::selfWord},
+    {"void", TokenType::voidType},
+    {"ref", TokenType::referenceType},
+    {"type", TokenType::Type},
+    {"define", TokenType::define},
+    {"skill", TokenType::skill},
+    {"pre", TokenType::pre},
+    {"up", TokenType::super},
+    {"from", TokenType::from},
+    {"to", TokenType::to},
+    {"true", TokenType::TRUE},
+    {"false", TokenType::FALSE},
+    {"say", TokenType::say},
+    {"as", TokenType::as},
+    {"lib", TokenType::lib},
+    {"wait", TokenType::Wait},
+    {"default", TokenType::Default},
+    {"static", TokenType::Static},
+    {"variadic", TokenType::variadic},
+    {"loop", TokenType::loop},
+    {"heap", TokenType::heap},
+    {"operator", TokenType::Operator},
+    {"mix", TokenType::mix},
+    {"match", TokenType::match},
+    {"copy", TokenType::copy},
+    {"move", TokenType::move},
+    {"swap", TokenType::swap},
+    {"text", TokenType::textType},
+    {"ptr", TokenType::ptrType},
+    {"multi", TokenType::multiPtrType},
+    {"char", TokenType::characterType},
+    {"for", TokenType::For},
+    {"give", TokenType::give},
+    {"var", TokenType::var},
+    {"if", TokenType::If},
+    {"not", TokenType::Not},
+    {"any", TokenType::any},
+    {"else", TokenType::Else},
+    {"where", TokenType::where},
+    {"do", TokenType::Do},
+    {"break", TokenType::Break},
+    {"continue", TokenType::Continue},
+    {"own", TokenType::own},
+    {"end", TokenType::end},
+    {"choice", TokenType::choice},
+    {"flag", TokenType::flag},
+    {"future", TokenType::futureType},
+    {"maybe", TokenType::maybeType},
+    {"none", TokenType::none},
+    {"meta", TokenType::meta},
+    {"region", TokenType::region},
+    {"slice", TokenType::sliceType},
+    {"struct", TokenType::structType},
+    {"toggle", TokenType::toggle},
+    {"vec", TokenType::vectorType},
+    {"is", TokenType::is},
+    {"in", TokenType::in},
+    {"ok", TokenType::ok},
+    {"of", TokenType::of},
+    {"or", TokenType::orWord},
+    {"and", TokenType::andWord},
+    {"range", TokenType::range},
+    {"result", TokenType::result},
+    {"error", TokenType::error},
+    {"integer", TokenType::genericIntegerType},
+    {"opaque", TokenType::opaque},
+    {"assembly", TokenType::assembly},
+    {"volatile", TokenType::Volatile},
+    {"inline", TokenType::Inline},
+    {"use", TokenType::use},
+    {"poly", TokenType::polymorph},
+    {"ignore", TokenType::ignore},
+    {"atomic", TokenType::atomic},
+};
+
+const std::unordered_set<StringView> Lexer::nativeTypeMapping = {
+    "int",      "uint",     "byte",      "ubyte",   "shortint", "ushortint", "widechar",   "uwidechar",  "longint",
+    "ulongint", "longlong", "ulonglong", "usize",   "isize",    "float",     "double",     "longdouble", "intmax",
+    "uintmax",  "intptr",   "uintptr",   "ptrdiff", "uptrdiff", "sigatomic", "bytestring", "widebool",
+};
+
+const std::unordered_set<StringView> Lexer::intTypeMapping = {
+    "i1", "i2", "i4", "i8", "i16", "i32", "i64", "i128", "i256", "i512", "i1024",
+};
+
+const std::unordered_set<StringView> Lexer::unsignedTypeMapping = {
+    "u1", "u2", "u4", "u8", "u16", "u21", "u32", "u64", "u128", "u256", "u512", "u1024",
+};
+
+const std::unordered_set<StringView> Lexer::floatTypeMapping = {
+    "f16", "fbrain", "f32", "f64", "f80", "f128", "f128ppc",
+};
 
 void Lexer::read() {
 	if (has_file_ended()) {
@@ -1180,150 +1270,27 @@ Maybe<Token> Lexer::word_to_token(String const& wordValue, Lexer* lexInst) {
 			return FileRange::null;
 		}
 	};
-
-	Check_Normal_Keyword("null", null);
-	else Check_Normal_Keyword("pub", pub);
-	else Check_Normal_Keyword("let", let);
-	else Check_Normal_Keyword("self", selfWord);
-	else Check_Normal_Keyword("void", voidType);
-	else Check_Normal_Keyword("ref", referenceType);
-	else Check_Normal_Keyword("type", Type);
-	else Check_Normal_Keyword("define", define);
-	else Check_Normal_Keyword("skill", skill);
-	else Check_Normal_Keyword("pre", pre);
-	else Check_Normal_Keyword("up", super);
-	else Check_Normal_Keyword("from", from);
-	else Check_Normal_Keyword("to", to);
-	else Check_Normal_Keyword("true", TRUE);
-	else Check_Normal_Keyword("false", FALSE);
-	else Check_Normal_Keyword("say", say);
-	else Check_Normal_Keyword("as", as);
-	else Check_Normal_Keyword("lib", lib);
-	else Check_Normal_Keyword("wait", Wait);
-	else Check_Normal_Keyword("default", Default);
-	else Check_Normal_Keyword("static", Static);
-	else Check_Normal_Keyword("variadic", variadic);
-	else Check_Normal_Keyword("loop", loop);
-	else Check_Normal_Keyword("heap", heap);
-	else Check_Normal_Keyword("operator", Operator);
-	else Check_Normal_Keyword("mix", mix);
-	else Check_Normal_Keyword("match", match);
-	else Check_Normal_Keyword("copy", copy);
-	else Check_Normal_Keyword("move", move);
-	else Check_Normal_Keyword("swap", swap);
-	else Check_Normal_Keyword("text", textType);
-	else Check_Normal_Keyword("ptr", ptrType);
-	else Check_Normal_Keyword("multi", multiPtrType);
-	else Check_Normal_Keyword("char", characterType);
-	else Check_Normal_Keyword("for", For);
-	else Check_Normal_Keyword("give", give);
-	else Check_Normal_Keyword("var", var);
-	else Check_Normal_Keyword("if", If);
-	else Check_Normal_Keyword("not", Not);
-	else Check_Normal_Keyword("any", any);
-	else Check_Normal_Keyword("else", Else);
-	else Check_Normal_Keyword("where", where);
-	else Check_Normal_Keyword("do", Do);
-	else Check_Normal_Keyword("break", Break);
-	else Check_Normal_Keyword("continue", Continue);
-	else Check_Normal_Keyword("own", own);
-	else Check_Normal_Keyword("end", end);
-	else Check_Normal_Keyword("choice", choice);
-	else Check_Normal_Keyword("flag", flag);
-	else Check_Normal_Keyword("future", futureType);
-	else Check_Normal_Keyword("maybe", maybeType);
-	else Check_Normal_Keyword("none", none);
-	else Check_Normal_Keyword("meta", meta);
-	else Check_Normal_Keyword("region", region);
-	else Check_VALUED_Keyword("bool", unsignedIntegerType);
-	else Check_Normal_Keyword("slice", sliceType);
-	else Check_Normal_Keyword("struct", structType);
-	else Check_Normal_Keyword("toggle", toggle);
-	else Check_Normal_Keyword("vec", vectorType);
-	else Check_Normal_Keyword("is", is);
-	else Check_Normal_Keyword("in", in);
-	else Check_Normal_Keyword("ok", ok);
-	else Check_Normal_Keyword("of", of);
-	else Check_Normal_Keyword("or", orWord);
-	else Check_Normal_Keyword("and", andWord);
-	else Check_Normal_Keyword("range", range);
-	else Check_Normal_Keyword("result", result);
-	else Check_Normal_Keyword("error", error);
-	else Check_Normal_Keyword("integer", genericIntegerType);
-	else Check_Normal_Keyword("opaque", opaque);
-	else Check_Normal_Keyword("assembly", assembly);
-	else Check_Normal_Keyword("volatile", Volatile);
-	else Check_Normal_Keyword("inline", Inline);
-	else Check_Normal_Keyword("use", use);
-	else Check_Normal_Keyword("poly", polymorph);
-	else Check_Normal_Keyword("ignore", ignore);
-	else Check_Normal_Keyword("atomic", atomic);
-	else Check_VALUED_Keyword("int", nativeType);
-	else Check_VALUED_Keyword("uint", nativeType);
-	else Check_VALUED_Keyword("byte", nativeType);
-	else Check_VALUED_Keyword("ubyte", nativeType);
-	else Check_VALUED_Keyword("shortint", nativeType);
-	else Check_VALUED_Keyword("ushortint", nativeType);
-	else Check_VALUED_Keyword("widechar", nativeType);
-	else Check_VALUED_Keyword("uwidechar", nativeType);
-	else Check_VALUED_Keyword("longint", nativeType);
-	else Check_VALUED_Keyword("ulongint", nativeType);
-	else Check_VALUED_Keyword("longlong", nativeType);
-	else Check_VALUED_Keyword("ulonglong", nativeType);
-	else Check_VALUED_Keyword("usize", nativeType);
-	else Check_VALUED_Keyword("isize", nativeType);
-	else Check_VALUED_Keyword("float", nativeType);
-	else Check_VALUED_Keyword("double", nativeType);
-	else Check_VALUED_Keyword("longdouble", nativeType);
-	else Check_VALUED_Keyword("intmax", nativeType);
-	else Check_VALUED_Keyword("uintmax", nativeType);
-	else Check_VALUED_Keyword("intptr", nativeType);
-	else Check_VALUED_Keyword("uintptr", nativeType);
-	else Check_VALUED_Keyword("ptrdiff", nativeType);
-	else Check_VALUED_Keyword("uptrdiff", nativeType);
-	else Check_VALUED_Keyword("sigatomic", nativeType);
-	else Check_VALUED_Keyword("bytestring", nativeType);
-	else Check_VALUED_Keyword("widebool", nativeType);
-	else if (wordValue.substr(0, 1) == "u" &&
-	         ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+	if (keywordMapping.contains(wordValue)) {
+		return Token(keywordMapping.at(wordValue), getPos(wordValue.length()));
+	} else if (intTypeMapping.contains(wordValue)) {
+		return Token(TokenType::integerType, wordValue.substr(1, wordValue.length() - 1), getPos(wordValue.length()));
+	} else if (unsignedTypeMapping.contains(wordValue)) {
 		return Token(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),
 		             getPos(wordValue.length()));
-	}
-	else if (wordValue.substr(0, 1) == "i" &&
-	         ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+	} else if (wordValue == "bool") {
+		return Token(TokenType::unsignedIntegerType, "bool", getPos(String::traits_type::length("bool")));
+	} else if (floatTypeMapping.contains(wordValue)) {
+		return Token(TokenType::floatType, wordValue, getPos(wordValue.length()));
+	} else if (nativeTypeMapping.contains(wordValue)) {
+		return Token(TokenType::nativeType, wordValue, getPos(wordValue.length()));
+	} else if (wordValue[0] == 'u' &&
+	           ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
+		return Token(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),
+		             getPos(wordValue.length()));
+	} else if (wordValue[0] == 'i' &&
+	           ((wordValue.length() > 1) ? utils::is_integer(wordValue.substr(1, wordValue.length() - 1)) : false)) {
 		return Token(TokenType::integerType, wordValue.substr(1, wordValue.length() - 1), getPos(wordValue.length()));
-	}
-#define FBRAIN_NAME  "fbrain"
-#define F16_NAME     "f16"
-#define F32_NAME     "f32"
-#define F64_NAME     "f64"
-#define F80_NAME     "f80"
-#define F128PPC_NAME "f128ppc"
-#define F128_NAME    "f128"
-	// Yes, I know the lengths of these literals, however repeating the strings can lead me into a rabbit hole
-	// of confusing behaviour. It has happened before
-	else if (wordValue == FBRAIN_NAME) {
-		return Token(TokenType::floatType, FBRAIN_NAME, getPos(String::traits_type::length(FBRAIN_NAME)));
-	}
-	else if (wordValue == F16_NAME) {
-		return Token(TokenType::floatType, F16_NAME, getPos(String::traits_type::length(F16_NAME)));
-	}
-	else if (wordValue == F32_NAME) {
-		return Token(TokenType::floatType, F32_NAME, getPos(String::traits_type::length(F32_NAME)));
-	}
-	else if (wordValue == F64_NAME) {
-		return Token(TokenType::floatType, F64_NAME, getPos(String::traits_type::length(F64_NAME)));
-	}
-	else if (wordValue == F80_NAME) {
-		return Token(TokenType::floatType, F80_NAME, getPos(String::traits_type::length(F80_NAME)));
-	}
-	else if (wordValue == F128PPC_NAME) {
-		return Token(TokenType::floatType, F128PPC_NAME, getPos(String::traits_type::length(F128PPC_NAME)));
-	}
-	else if (wordValue == F128_NAME) {
-		return Token(TokenType::floatType, F128_NAME, getPos(String::traits_type::length(F128_NAME)));
-	}
-	else {
+	} else {
 		if (wordValue.empty()) {
 			return None;
 		}

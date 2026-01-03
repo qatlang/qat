@@ -170,12 +170,12 @@ LinkNames Method::get_link_names_from(MethodParent* parent, bool, Identifier nam
 }
 
 Method::Method(MethodType _fnType, bool _isVariation, MethodParent* _parent, const Identifier& _name, bool _isInline,
-               ReturnType* returnType, Vec<Argument> _args, bool _is_static, Maybe<FileRangePtr> _fileRange,
-               const VisibilityInfo& _visibility_info, ir::Ctx* irCtx)
+               ReturnType* returnType, Vec<Argument> _args, Maybe<Variadics> _variadics, bool _isStatic,
+               Maybe<FileRangePtr> _fileRange, const VisibilityInfo& _visibility_info, ir::Ctx* irCtx)
     : Function(_parent->get_module(), Identifier(_name.value, _name.range),
-               get_link_names_from(_parent, _is_static, _name, _isVariation, _fnType, _args, returnType->get_type()),
-               {/* Generics */}, _isInline, returnType, _args, _fileRange, _visibility_info, irCtx, true),
-      parent(_parent), isStatic(_is_static), isVariation(_isVariation), fnType(_fnType), selfName(_name) {
+               get_link_names_from(_parent, _isStatic, _name, _isVariation, _fnType, _args, returnType->get_type()),
+               {/* Generics */}, _isInline, returnType, _args, _variadics, _fileRange, _visibility_info, irCtx, true),
+      parent(_parent), isStatic(_isStatic), isVariation(_isVariation), fnType(_fnType), selfName(_name) {
 	switch (fnType) {
 		case MethodType::defaultConstructor: {
 			if (parent->is_done_skill()) {
@@ -342,30 +342,31 @@ String method_type_to_string(MethodType type) { return Method::methodTypes[type]
 
 Method::~Method() {}
 
-Method* Method::Create(MethodParent* parent, bool is_variation, const Identifier& name, bool isInline,
-                       ReturnType* returnTy, const Vec<Argument>& args, Maybe<FileRangePtr> fileRange,
-                       const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx) {
-	Vec<Argument> args_info;
-	args_info.push_back(Argument::Create(
-	    Identifier("''", parent->get_type_range()),
-	    RefType::get(is_variation, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
+Method* Method::Create(MethodParent* parent, bool isVar, Identifier const& name, bool isInline, ReturnType* returnTy,
+                       Vec<Argument> const& args, Maybe<Variadics> variadics, Maybe<FileRangePtr> fileRange,
+                       VisibilityInfo const& visibilityInfo, ir::Ctx* irCtx) {
+	Vec<Argument> argsInfo;
+	argsInfo.push_back(
+	    Argument::Create(Identifier("''", parent->get_type_range()),
+	                     RefType::get(isVar, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	for (const auto& arg : args) {
-		args_info.push_back(arg);
+		argsInfo.push_back(arg);
 	}
-	return std::construct_at(OwnNormal(Method), MethodType::normal, is_variation, parent, name, isInline, returnTy,
-	                         std::move(args_info), false, fileRange, visibilityInfo, irCtx);
+	return std::construct_at(OwnNormal(Method), MethodType::normal, isVar, parent, name, isInline, returnTy,
+	                         std::move(argsInfo), variadics, false, fileRange, visibilityInfo, irCtx);
 }
 
-Method* Method::CreateValued(MethodParent* parent, const Identifier& name, bool isInline, Type* returnTy,
-                             const Vec<Argument>& args, Maybe<FileRangePtr> fileRange,
-                             const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx) {
-	Vec<Argument> args_info;
-	args_info.push_back(Argument::Create(Identifier("''", parent->get_type_range()), parent->get_parent_type(), 0));
+Method* Method::CreateValued(MethodParent* parent, Identifier const& name, bool isInline, Type* returnTy,
+                             Vec<Argument> const& args, Maybe<Variadics> variadics, Maybe<FileRangePtr> fileRange,
+                             VisibilityInfo const& visibilityInfo, ir::Ctx* irCtx) {
+	Vec<Argument> argsInfo;
+	argsInfo.push_back(Argument::Create(Identifier("''", parent->get_type_range()), parent->get_parent_type(), 0));
 	for (const auto& arg : args) {
-		args_info.push_back(arg);
+		argsInfo.push_back(arg);
 	}
 	return std::construct_at(OwnNormal(Method), MethodType::valueMethod, false, parent, name, isInline,
-	                         ReturnType::get(returnTy), std::move(args_info), false, fileRange, visibilityInfo, irCtx);
+	                         ReturnType::get(returnTy), std::move(argsInfo), variadics, false, fileRange,
+	                         visibilityInfo, irCtx);
 }
 
 Method* Method::DefaultConstructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
@@ -377,8 +378,8 @@ Method* Method::DefaultConstructor(MethodParent* parent, FileRangePtr nameRange,
 	return std::construct_at(OwnNormal(Method), MethodType::defaultConstructor, true, parent,
 	                         Identifier("default", nameRange),
 	                         // FIXME - Make file range optional instead of creating it using empty values
-	                         isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false,
-	                         fileRange, visibInfo, irCtx);
+	                         isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), None,
+	                         false, fileRange, visibInfo, irCtx);
 }
 
 Method* Method::CopyConstructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
@@ -391,8 +392,8 @@ Method* Method::CopyConstructor(MethodParent* parent, FileRangePtr nameRange, bo
 	    otherName, RefType::get(false, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	return std::construct_at(OwnNormal(Method), MethodType::copyConstructor, true, parent,
 	                         Identifier{"copy", std::move(nameRange)}, isInline,
-	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                         VisibilityInfo::pub(), irCtx);
+	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), None, false,
+	                         fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::MoveConstructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
@@ -405,8 +406,8 @@ Method* Method::MoveConstructor(MethodParent* parent, FileRangePtr nameRange, bo
 	    otherName, RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
 	return std::construct_at(OwnNormal(Method), MethodType::moveConstructor, true, parent,
 	                         Identifier{"move", std::move(nameRange)}, isInline,
-	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), false, fileRange,
-	                         VisibilityInfo::pub(), irCtx);
+	                         ReturnType::get(ir::VoidType::get(irCtx->llctx)), std::move(argsInfo), None, false,
+	                         fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CopyAssignment(MethodParent* parent, FileRangePtr nameRange, bool isInline, const Identifier& otherName,
@@ -419,7 +420,7 @@ Method* Method::CopyAssignment(MethodParent* parent, FileRangePtr nameRange, boo
 	    otherName, RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
 	return std::construct_at(OwnNormal(Method), MethodType::copyAssignment, true, parent,
 	                         Identifier{"copy=", nameRange}, isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)),
-	                         std::move(argsInfo), false, fileRange, VisibilityInfo::pub(), irCtx);
+	                         std::move(argsInfo), None, false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::MoveAssignment(MethodParent* parent, FileRangePtr nameRange, bool isInline, const Identifier& otherName,
@@ -432,12 +433,12 @@ Method* Method::MoveAssignment(MethodParent* parent, FileRangePtr nameRange, boo
 	    otherName, RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0u));
 	return std::construct_at(OwnNormal(Method), MethodType::moveAssignment, true, parent,
 	                         Identifier{"move=", nameRange}, isInline, ReturnType::get(ir::VoidType::get(irCtx->llctx)),
-	                         std::move(argsInfo), false, fileRange, VisibilityInfo::pub(), irCtx);
+	                         std::move(argsInfo), None, false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CreateConstructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
-                                  const Vec<Argument>& args, Maybe<FileRangePtr> fileRange,
-                                  const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
+                                  Vec<Argument> const& args, Maybe<Variadics> variadics, Maybe<FileRangePtr> fileRange,
+                                  VisibilityInfo const& visibInfo, ir::Ctx* irCtx) {
 	Vec<Argument> argsInfo;
 	argsInfo.push_back(
 	    Argument::Create(Identifier("''", parent->get_type_range()),
@@ -447,7 +448,7 @@ Method* Method::CreateConstructor(MethodParent* parent, FileRangePtr nameRange, 
 	}
 	return std::construct_at(
 	    OwnNormal(Method), MethodType::constructor, true, parent, Identifier("from", std::move(nameRange)), isInline,
-	    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, fileRange, visibInfo, irCtx);
+	    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, variadics, false, fileRange, visibInfo, irCtx);
 }
 
 Method* Method::CreateFromConvertor(MethodParent* parent, FileRangePtr nameRange, bool isInline, Type* sourceType,
@@ -462,7 +463,7 @@ Method* Method::CreateFromConvertor(MethodParent* parent, FileRangePtr nameRange
 	SHOW("Created candidate type")
 	auto result = std::construct_at(
 	    OwnNormal(Method), MethodType::fromConvertor, true, parent, Identifier("from", nameRange), isInline,
-	    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, false, fileRange, visibInfo, irCtx);
+	    ReturnType::get(VoidType::get(irCtx->llctx)), argsInfo, None, false, fileRange, visibInfo, irCtx);
 	return result;
 }
 
@@ -474,15 +475,14 @@ Method* Method::CreateToConvertor(MethodParent* parent, FileRangePtr nameRange, 
 	                     RefType::get(false, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	return std::construct_at(OwnNormal(Method), MethodType::toConvertor, false, parent,
 	                         Identifier("to'" + destType->to_string(), nameRange), isInline, ReturnType::get(destType),
-	                         argsInfo, false, fileRange, visibInfo, irCtx);
+	                         argsInfo, None, false, fileRange, visibInfo, irCtx);
 }
 
-Method* Method::CreateStatic(MethodParent* parent, const Identifier& name, bool isInline, Type* returnTy,
-                             const Vec<Argument>& args, Maybe<FileRangePtr> fileRange, const VisibilityInfo& visib_info,
-                             ir::Ctx* irCtx //
-) {
+Method* Method::CreateStatic(MethodParent* parent, Identifier const& name, bool isInline, Type* returnTy,
+                             Vec<Argument> const& args, Maybe<Variadics> variadics, Maybe<FileRangePtr> fileRange,
+                             VisibilityInfo const& visibInfo, ir::Ctx* irCtx) {
 	return std::construct_at(OwnNormal(Method), MethodType::staticFn, false, parent, name, isInline,
-	                         ir::ReturnType::get(returnTy), args, true, fileRange, visib_info, irCtx);
+	                         ir::ReturnType::get(returnTy), args, variadics, true, fileRange, visibInfo, irCtx);
 }
 
 Method* Method::CreateDestructor(MethodParent* parent, FileRangePtr nameRange, bool isInline,
@@ -494,22 +494,22 @@ Method* Method::CreateDestructor(MethodParent* parent, FileRangePtr nameRange, b
 	    Vec<Argument>({Argument::Create(
 	        Identifier("''", parent->get_type_range()),
 	        RefType::get(true, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0)}),
-	    false, fileRange, VisibilityInfo::pub(), irCtx);
+	    None, false, fileRange, VisibilityInfo::pub(), irCtx);
 }
 
 Method* Method::CreateOperator(MethodParent* parent, FileRangePtr nameRange, bool isBinary, bool isVariationFn,
                                const String& opr, bool isInline, ReturnType* returnType, const Vec<Argument>& args,
                                Maybe<FileRangePtr> fileRange, const VisibilityInfo& visibInfo, ir::Ctx* irCtx) {
-	Vec<Argument> args_info;
-	args_info.push_back(Argument::Create(
+	Vec<Argument> argsInfo;
+	argsInfo.push_back(Argument::Create(
 	    Identifier("''", parent->get_type_range()),
 	    RefType::get(isVariationFn, parent->get_parent_type(), parent->get_self_address_space(), irCtx), 0));
 	for (const auto& arg : args) {
-		args_info.push_back(arg);
+		argsInfo.push_back(arg);
 	}
 	return std::construct_at(OwnNormal(Method), isBinary ? MethodType::binaryOperator : MethodType::unaryOperator,
-	                         isVariationFn, parent, Identifier(opr, nameRange), isInline, returnType, args_info, false,
-	                         fileRange, visibInfo, irCtx);
+	                         isVariationFn, parent, Identifier(opr, nameRange), isInline, returnType, argsInfo, None,
+	                         false, fileRange, visibInfo, irCtx);
 }
 
 String Method::get_full_name() const {
@@ -543,7 +543,16 @@ void Method::update_overview() {
 	    ._("isVariation", isVariation)
 	    ._("methodType", method_type_to_string(fnType))
 	    ._("visibility", visibilityInfo)
-	    ._("isVariadic", hasVariadicArguments)
+	    ._("isVariadic", variadics.has_value())
+	    ._("variadics",
+	       variadics.has_value()
+	           ? Json()
+	                 ._("kind", variadics.value().kind == VariadicsKind::NORMAL
+	                                ? "normal"
+	                                : (variadics.value().kind == VariadicsKind::LEGACY ? "legacy" : "typed"))
+	                 ._("type",
+	                    variadics.value().kind == VariadicsKind::TYPED ? variadics.value().type->get_id() : JsonValue())
+	           : JsonValue())
 	    ._("locals", localsJson);
 }
 

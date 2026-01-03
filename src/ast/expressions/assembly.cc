@@ -41,7 +41,7 @@ ir::Value* InlineAssembly::emit(EmitCtx* ctx) {
 			}
 			asmFnTy = irTy->as_function();
 		} else {
-			asmFnTy = ir::FunctionType::create(ir::ReturnType::get(ir::VoidType::get(ctx->irCtx->llctx)), {},
+			asmFnTy = ir::FunctionType::create(ir::ReturnType::get(ir::VoidType::get(ctx->irCtx->llctx)), {}, None,
 			                                   ctx->irCtx->llctx);
 		}
 		auto asmStrExp = asmValue->emit(ctx);

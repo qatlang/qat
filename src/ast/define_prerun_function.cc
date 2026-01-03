@@ -52,9 +52,7 @@ void DefinePrerunFunction::create_function(EmitCtx* ctx) {
 	Vec<ir::ArgumentType*> irArgs;
 	for (usize i = 0; i < arguments.size(); i++) {
 		auto arg = arguments[i];
-		if (arg->is_variadic_arg() && (i != (arguments.size() - 1))) {
-			ctx->Error("Variadic argument should be the last argument", arg->get_name().range);
-		} else if (arg->is_member_arg()) {
+		if (arg->is_member_arg()) {
 			ctx->Error("Member arguments are not allowed for normal functions", arg->get_name().range);
 		}
 		auto argTy = arg->get_type()->emit(ctx);

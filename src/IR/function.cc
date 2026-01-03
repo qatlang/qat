@@ -263,14 +263,13 @@ void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
 }
 
 Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<FileRangePtr> _fileRange,
-                   const VisibilityInfo& _visibility_info, ir::Ctx* _ctx, bool isMemberFn,
-                   Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
+                   bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<Variadics> _variadics,
+                   Maybe<FileRangePtr> _fileRange, VisibilityInfo const& _visibilityInfo, ir::Ctx* _ctx,
+                   bool isMemberFn, Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
     : Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
       namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))), generics(std::move(_generics)), mod(_mod),
-      arguments(std::move(_args)), visibilityInfo(_visibility_info), fileRange(std::move(_fileRange)),
-      hasVariadicArguments(not arguments.empty() && (arguments.back().kind == ArgumentKind::VARIADIC)),
-      isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
+      arguments(std::move(_args)), visibilityInfo(_visibilityInfo), fileRange(std::move(_fileRange)),
+      variadics(_variadics), isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
 {
 	SHOW("ir::Function constructor")
 	Maybe<String> foreignID;
@@ -309,7 +308,7 @@ Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Ve
 	for (auto const& arg : arguments) {
 		argTypes.push_back(arg.to_arg_type());
 	}
-	type = FunctionType::create(returnType, argTypes, ctx->llctx);
+	type = FunctionType::create(returnType, argTypes, variadics, ctx->llctx);
 	if (isMemberFn) {
 		ll = llvm::Function::Create(llvm::cast<llvm::FunctionType>(get_ir_type()->get_llvm_type()),
 		                            llvmLinkage.value_or(DEFAULT_FUNCTION_LINKAGE), 0U, linkingName,
@@ -362,12 +361,12 @@ ir::Value* Function::call(ir::Ctx* irCtx, const Vec<llvm::Value*>& argValues, Ma
 }
 
 Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> _generics,
-                           bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<FileRangePtr> fileRange,
-                           const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+                           bool isInline, ReturnType* returnTy, Vec<Argument> args, Maybe<Variadics> variadics,
+                           Maybe<FileRangePtr> fileRange, VisibilityInfo const& visibilityInfo, ir::Ctx* irCtx,
                            Maybe<llvm::GlobalValue::LinkageTypes> linkage, Maybe<MetaInfo> metaInfo) {
 	return std::construct_at(OwnNormal(Function), mod, std::move(name), namingInfo, std::move(_generics), isInline,
-	                         returnTy, std::move(args), std::move(fileRange), visibilityInfo, irCtx, false, linkage,
-	                         metaInfo);
+	                         returnTy, std::move(args), variadics, std::move(fileRange), visibilityInfo, irCtx, false,
+	                         linkage, metaInfo);
 }
 
 void Function::update_overview() {
@@ -395,7 +394,6 @@ void Function::update_overview() {
 	    ._("functionID", get_id())
 	    ._("moduleID", mod->get_id())
 	    ._("visibility", visibilityInfo)
-	    ._("isVariadic", hasVariadicArguments)
 	    ._("locals", localsJson);
 }
 

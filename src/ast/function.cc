@@ -134,20 +134,13 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			irCtx->Error("Function is not a method of a struct type and cannot use member argument syntax",
 			             arg->get_name().range);
 		}
-		if (arg->is_variadic_arg()) {
-			isVariadic = true;
-			if (i != (arguments.size() - 1)) {
-				irCtx->Error("Variadic argument should always be the last argument", arg->get_name().range);
-			}
-		} else {
-			auto* genType = arg->get_type()->emit(EmitCtx::get(irCtx, mod));
-			if (genType->is_ptr() && genType->as_ptr()->get_owner().is_prerun()) {
-				irCtx->Error("Prerun " + String(genType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
-				                 " are not allowed for arguments of a normal function",
-				             arg->get_name().range);
-			}
-			generatedTypes.push_back(genType);
+		auto* genType = arg->get_type()->emit(EmitCtx::get(irCtx, mod));
+		if (genType->is_ptr() && genType->as_ptr()->get_owner().is_prerun()) {
+			irCtx->Error("Prerun " + String(genType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
+			                 " are not allowed for arguments of a normal function",
+			             arg->get_name().range);
 		}
+		generatedTypes.push_back(genType);
 	}
 	SHOW("Types generated")
 	if (isMainFn) {
@@ -186,7 +179,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			}
 		}
 	}
-	Vec<ir::Argument> args;
+	Maybe<ir::Variadics> variadicsIR;
+	Vec<ir::Argument>    args;
 	SHOW("Setting variability of arguments")
 	if (isMainFn) {
 		if (not arguments.empty()) {
@@ -201,6 +195,10 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			                     ir::PtrOwner::of_none(), false, None, irCtx),
 			    1u));
 		}
+		if (variadics.has_value()) {
+			irCtx->Error("The " + irCtx->color("main") + " function cannot have variadic arguments.",
+			             variadics.value().range);
+		}
 	} else {
 		for (usize i = 0; i < generatedTypes.size(); i++) {
 			args.push_back(
@@ -209,8 +207,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			                                       arguments.at(i)->get_type()->emit(EmitCtx::get(irCtx, mod)), i)
 			        : ir::Argument::Create(arguments.at(i)->get_name(), generatedTypes.at(i), i));
 		}
-		if (isVariadic) {
-			args.push_back(ir::Argument::CreateVariadic("", arguments.back()->get_name().range, arguments.size() - 1));
+		if (variadics.has_value()) {
+			variadicsIR = variadics.value().to_ir(emitCtx);
 		}
 	}
 	SHOW("Variability setting complete")
@@ -242,7 +240,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 		}
 		SHOW("About to create generic function")
 		auto* fun = ir::Function::Create(mod, Identifier(fnName, name.range), None, std::move(genericTypes),
-		                                 inlineFunction, ir::ReturnType::get(retTy), args, fileRange,
+		                                 inlineFunction, ir::ReturnType::get(retTy), args, variadicsIR, fileRange,
 		                                 emitCtx->get_visibility_info(visibSpec), irCtx, None, irMetaInfo);
 		SHOW("Created IR function")
 		return fun;
@@ -255,8 +253,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 		                                           LinkUnitType::function)},
 		                             "C", nullptr))
 		             : None,
-		    {}, inlineFunction, ir::ReturnType::get(retTy), args, fileRange, emitCtx->get_visibility_info(visibSpec),
-		    irCtx,
+		    {}, inlineFunction, ir::ReturnType::get(retTy), args, variadicsIR, fileRange,
+		    emitCtx->get_visibility_info(visibSpec), irCtx,
 		    definition.has_value()
 		        ? None
 		        : Maybe<llvm::GlobalValue::LinkageTypes>(llvm::GlobalValue::LinkageTypes::ExternalLinkage),

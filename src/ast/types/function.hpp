@@ -2,21 +2,23 @@
 #define QAT_AST_TYPES_FUNCTION_TYPE_HPP
 
 #include "./qat_type.hpp"
+#include "./variadics.hpp"
 
 namespace qat::ast {
 
 class FunctionType final : public Type {
   private:
-	Type*      returnType;
-	Vec<Type*> argTypes;
-	bool       isVariadic;
+	Type*            returnType;
+	Vec<Type*>       argTypes;
+	Maybe<Variadics> variadics;
 
   public:
-	FunctionType(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic, FileRangePtr _fileRange)
-	    : Type(_fileRange), returnType(_retType), argTypes(_argTypes), isVariadic(_isVariadic) {}
+	FunctionType(Type* _retType, Vec<Type*> _argTypes, Maybe<Variadics> _variadics, FileRangePtr _fileRange)
+	    : Type(_fileRange), returnType(_retType), argTypes(_argTypes), variadics(_variadics) {}
 
-	useit static FunctionType* create(Type* _retType, Vec<Type*> _argTypes, bool _isVariadic, FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(FunctionType), _retType, _argTypes, _isVariadic, _fileRange);
+	useit static FunctionType* create(Type* retType, Vec<Type*> argTypes, Maybe<Variadics> variadics,
+	                                  FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(FunctionType), retType, argTypes, variadics, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,

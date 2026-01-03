@@ -3,10 +3,11 @@
 
 #include "../IR/context.hpp"
 #include "./argument.hpp"
+#include "./meta_info.hpp"
 #include "./node.hpp"
 #include "./sentence.hpp"
-#include "meta_info.hpp"
-#include "types/generic_abstract.hpp"
+#include "./types/generic_abstract.hpp"
+#include "./types/variadics.hpp"
 
 namespace qat::ast {
 
@@ -15,6 +16,7 @@ class FunctionPrototype final : public IsEntity {
 	Identifier            name;
 	Vec<Argument*>        arguments;
 	Maybe<Type*>          returnType;
+	Maybe<Variadics>      variadics;
 	Maybe<MetaInfo>       metaInfo;
 	Maybe<VisibilitySpec> visibSpec;
 	PrerunExpression*     defineChecker;

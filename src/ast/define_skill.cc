@@ -24,6 +24,9 @@ void SkillMethod::update_dependencies(ir::EmitPhase phase, ir::DependType, ir::E
 			UPDATE_DEPS(arg->get_type());
 		}
 	}
+	if (variadics.has_value() && variadics.value().kind == VariadicKind::TYPED) {
+		UPDATE_DEPS(variadics.value().type);
+	}
 	if (defineChecker != nullptr) {
 		UPDATE_DEPS(defineChecker);
 	}
@@ -161,17 +164,12 @@ void DefineSkill::create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irC
 		Vec<ir::SkillArg*> args;
 		for (usize i = 0; i < fn.arguments.size(); i++) {
 			auto& arg = fn.arguments[i];
-			if (arg->is_variadic_arg() && (i != (fn.arguments.size() - 1))) {
-				ctx->Error("Variadic argument should be the last argument", arg->get_name().range);
-			}
 			if (arg->is_member_arg()) {
 				ctx->Error("Member arguments are not supported in skill methods", arg->get_name().range);
 			}
-			if (arg->is_variadic_arg()) {
-				args.push_back(ir::SkillArg::create_variadic(arg->get_name()));
-			} else {
-				args.push_back(ir::SkillArg::create(ir::TypeInSkill::get(arg->get_type(), arg->get_type()->emit(ctx)),
-				                                    arg->get_name(), arg->is_variable()));
+			args.push_back(ir::SkillArg::create(ir::TypeInSkill::get(arg->get_type(), arg->get_type()->emit(ctx)),
+			                                    arg->get_name(), arg->is_variable()));
+		}
 			}
 		}
 		ir::TypeInSkill givenType = fn.givenType ? ir::TypeInSkill::get(fn.givenType, fn.givenType->emit(ctx))

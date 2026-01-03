@@ -11,9 +11,9 @@
 namespace qat::ast {
 
 MethodPrototype::MethodPrototype(MethodType _fnTy, Identifier _name, PrerunExpression* _condition,
-                                 Vec<Argument*> _arguments, bool _isVariadic, Maybe<Type*> _returnType,
+                                 Vec<Argument*> _arguments, Maybe<Variadics> _variadics, Maybe<Type*> _returnType,
                                  Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
-    : fnTy(_fnTy), name(std::move(_name)), arguments(std::move(_arguments)), isVariadic(_isVariadic),
+    : fnTy(_fnTy), name(std::move(_name)), arguments(std::move(_arguments)), variadics(_variadics),
       returnType(_returnType), visibSpec(_visibSpec), fileRange(_fileRange), defineChecker(_condition),
       metaInfo(_metaInfo) {}
 
@@ -23,28 +23,28 @@ MethodPrototype::~MethodPrototype() {
 	}
 }
 
-MethodPrototype* MethodPrototype::Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
-                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
-                                         FileRangePtr _fileRange) {
-	return std::construct_at(OwnNormal(MethodPrototype), _isVariationFn ? MethodType::variation : MethodType::normal,
-	                         _name, _condition, _arguments, _isVariadic, _returnType, _metaInfo, visibSpec, _fileRange);
+MethodPrototype* MethodPrototype::Normal(bool isVariationFn, Identifier const& name, PrerunExpression* condition,
+                                         Vec<Argument*> const& arguments, Maybe<Variadics> variadics,
+                                         Maybe<Type*> returnType, Maybe<MetaInfo> metaInfo,
+                                         Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
+	return std::construct_at(OwnNormal(MethodPrototype), isVariationFn ? MethodType::variation : MethodType::normal,
+	                         name, condition, arguments, variadics, returnType, metaInfo, visibSpec, fileRange);
 }
 
-MethodPrototype* MethodPrototype::Static(const Identifier& _name, PrerunExpression* _condition,
-                                         const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                         Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
-                                         FileRangePtr _fileRange) {
-	return std::construct_at(OwnNormal(MethodPrototype), MethodType::Static, _name, _condition, _arguments, _isVariadic,
-	                         _returnType, _metaInfo, visibSpec, _fileRange);
+MethodPrototype* MethodPrototype::Static(Identifier const& name, PrerunExpression* condition,
+                                         Vec<Argument*> const& arguments, Maybe<Variadics> variadics,
+                                         Maybe<Type*> returnType, Maybe<MetaInfo> metaInfo,
+                                         Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
+	return std::construct_at(OwnNormal(MethodPrototype), MethodType::Static, name, condition, arguments, variadics,
+	                         returnType, metaInfo, visibSpec, fileRange);
 }
 
-MethodPrototype* MethodPrototype::Value(const Identifier& _name, PrerunExpression* _condition,
-                                        const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-                                        Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> visibSpec,
-                                        FileRangePtr _fileRange) {
-	return std::construct_at(OwnNormal(MethodPrototype), MethodType::valued, _name, _condition, _arguments, _isVariadic,
-	                         _returnType, _metaInfo, visibSpec, _fileRange);
+MethodPrototype* MethodPrototype::Value(Identifier const& name, PrerunExpression* condition,
+                                        Vec<Argument*> const& arguments, Maybe<Variadics> variadics,
+                                        Maybe<Type*> returnType, Maybe<MetaInfo> metaInfo,
+                                        Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
+	return std::construct_at(OwnNormal(MethodPrototype), MethodType::valued, name, condition, arguments, variadics,
+	                         returnType, metaInfo, visibSpec, fileRange);
 }
 
 void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
@@ -183,7 +183,7 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		if (arg->is_member_arg()) {
 			if (not state.parent->get_parent_type()->is_struct()) {
 				irCtx->Error(
-				    "The parent type of this function is not a struct type and hence the member argument syntax cannot be used",
+				    "The parent type of this method is not a struct type and hence the member argument syntax cannot be used",
 				    arg->get_name().range);
 			}
 			if (fnTy != MethodType::Static && fnTy != MethodType::valued) {
@@ -228,23 +228,12 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 				                 ". So it cannot use the member argument syntax",
 				             arg->get_name().range);
 			}
-		} else if (arg->is_variadic_arg()) {
-			if (i != (arguments.size() - 1)) {
-				irCtx->Error("Variadic argument should always be the last argument", arg->get_name().range);
-			}
-			if (skillMethod && (skillMethod->get_args().back()->kind != ir::SkillArgKind::VARIADIC)) {
-				irCtx->Error("The method found in the skill " +
-				                 irCtx->color(skillMethod->get_parent_skill()->get_full_name()) + " with the name " +
-				                 irCtx->color(name.value) +
-				                 " does not have a variadic argument, but a variadic argument has been provided here",
-				             arg->get_name().range);
-			}
 		} else {
 			auto argIRTy = arg->get_type()->emit(emitCtx);
 			if (skillMethod) {
 				auto skArg = skillMethod->get_arg_at(i);
 				if (skArg->isVar != arg->is_variable()) {
-					irCtx->Error("In the method named " + irCtx->color(name.value) + " in the skill " +
+					irCtx->Error("In the skill-method implemented by this method " +
 					                 irCtx->color(skillMethod->get_parent_skill()->get_full_name()) +
 					                 ", the corresponding argument " + skArg->name.value +
 					                 (skArg->isVar ? " has variability" : " does not have variability") +
@@ -252,16 +241,37 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 					                 (arg->is_variable() ? " has variability" : " does not have variability"),
 					             arg->get_name().range);
 				}
-				if (not skArg->type.irType->is_same(argIRTy)) {
-					irCtx->Error(
-					    "Expected the argument to be of type " + irCtx->color(skArg->type.irType->to_string()) +
-					        ", but instead got an argument of type " + irCtx->color(argIRTy->to_string()) + " here",
-					    arg->get_name().range);
+				if (skArg->type.irType && not skArg->type.irType->is_same(argIRTy)) {
+					irCtx->Error("Expected the argument to be of type " +
+					                 irCtx->color(skArg->type.irType->to_string()) +
+					                 ", as found in the skill, but instead got an argument of type " +
+					                 irCtx->color(argIRTy->to_string()) + " here",
+					             arg->get_name().range);
 				}
 			}
 			generatedTypes.push_back(argIRTy);
 		}
 	}
+	if (skillMethod and (skillMethod->is_variadic() != variadics.has_value())) {
+		if (skillMethod->is_variadic()) {
+			irCtx->Error(
+			    "The skill-method implemented by this method supports variadic arguments. The variadic specification found in the skill-method is " +
+			        irCtx->color(skillMethod->get_variadics().to_string()) +
+			        ", but this method is not variadic. It is expected that the variadic specification in implementations match the skill-method",
+			    fileRange,
+			    std::make_pair("The skill-method implemented by this method can be found here",
+			                   skillMethod->get_name().range));
+		} else {
+			irCtx->Error(
+			    "The skill-method implemented by this method does not support variadic arguments. But the variadic specification " +
+			        irCtx->color(variadics.value().to_string()) +
+			        " was provided in this method. It is expected that the variadic specification in implementations match the skill-method",
+			    variadics.value().range,
+			    std::make_pair("The skill-method implemented by this method can be found here",
+			                   skillMethod->get_name().range));
+		}
+	}
+	Maybe<ir::Variadics> variadicsIR;
 	SHOW("Argument types generated")
 	Vec<ir::Argument> args;
 	SHOW("Setting variability of arguments")
@@ -269,9 +279,6 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		if (arguments[i]->is_member_arg()) {
 			SHOW("Argument at " << i << " named " << arguments[i]->get_name().value << " is a type member")
 			args.push_back(ir::Argument::CreateMember(arguments[i]->get_name(), generatedTypes[i], i));
-		} else if (arguments[i]->is_variadic_arg()) {
-			args.push_back(
-			    ir::Argument::CreateVariadic(arguments[i]->get_name().value, arguments[i]->get_name().range, i));
 		} else {
 			SHOW("Argument at " << i << " named " << arguments.at(i)->get_name().value << " is not a type member")
 			args.push_back(arguments.at(i)->is_variable()
@@ -281,25 +288,29 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		}
 	}
 	SHOW("Variability setting complete")
+	SHOW("Variadic handling")
+	if (variadics.has_value()) {
+		variadicsIR = variadics.value().to_ir(emitCtx);
+	}
 	SHOW("About to create function")
 	if (fnTy == MethodType::Static) {
 		SHOW("MemberFn :: " << name.value << " Static Method")
-		state.result =
-		    ir::Method::CreateStatic(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(),
-		                             retTy, args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+		state.result = ir::Method::CreateStatic(state.parent, name,
+		                                        state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy, args,
+		                                        variadicsIR, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
 	} else if (fnTy == MethodType::valued) {
 		SHOW("MemberFn :: " << name.value << " Valued Method")
 		if (not parentType->has_simple_copy()) {
 			irCtx->Error("The parent type does not have simple-copy and hence cannot have value methods", fileRange);
 		}
-		state.result =
-		    ir::Method::CreateValued(state.parent, name, state.metaInfo.has_value() && state.metaInfo->get_inline(),
-		                             retTy, args, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
+		state.result = ir::Method::CreateValued(state.parent, name,
+		                                        state.metaInfo.has_value() && state.metaInfo->get_inline(), retTy, args,
+		                                        variadicsIR, fileRange, emitCtx->get_visibility_info(visibSpec), irCtx);
 	} else {
 		SHOW("MemberFn :: " << name.value << " Method or Variation")
 		state.result = ir::Method::Create(state.parent, fnTy == MethodType::variation, name,
 		                                  state.metaInfo.has_value() && state.metaInfo->get_inline(),
-		                                  ir::ReturnType::get(retTy, isSelfReturn), args, fileRange,
+		                                  ir::ReturnType::get(retTy, isSelfReturn), args, variadicsIR, fileRange,
 		                                  emitCtx->get_visibility_info(visibSpec), irCtx);
 	}
 	state.result->skillMethod = skillMethod;
@@ -317,7 +328,7 @@ Json MethodPrototype::to_json() const {
 	    ._("hasReturnType", returnType.has_value())
 	    ._("returnType", returnType.has_value() ? returnType.value()->to_json() : JsonValue())
 	    ._("arguments", args)
-	    ._("isVariadic", isVariadic);
+	    ._("variadics", variadics.has_value() ? variadics.value().to_json() : JsonValue());
 }
 
 void MethodDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
@@ -356,14 +367,13 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 				memPtr = irCtx->builder.CreateLoad(memTy->as_ref()->get_llvm_type(), memPtr);
 			}
 			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), memPtr, false);
-		} else if (not argIRTypes.at(i)->is_variadic_argument()) {
-			if (not argIRTypes.at(i)->get_type()->has_simple_copy() || argIRTypes.at(i)->is_variable()) {
-				auto* argVal = block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
-				                                argIRTypes.at(i)->is_variable(), irCtx,
-				                                prototype->arguments.at(i - 1)->get_name().range);
-				SHOW("Created local value for the argument")
-				irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
-			}
+		} else if (not(argIRTypes[i]->get_type()->has_simple_copy() and argIRTypes[i]->get_type()->has_simple_move()) or
+		           argIRTypes.at(i)->is_variable()) {
+			auto* argVal = block->new_local(argIRTypes.at(i)->get_name(), argIRTypes.at(i)->get_type(),
+			                                argIRTypes.at(i)->is_variable(), irCtx,
+			                                prototype->arguments.at(i - 1)->get_name().range);
+			SHOW("Created local value for the argument")
+			irCtx->builder.CreateStore(fnEmit->get_llvm_function()->getArg(i), argVal->get_alloca(), false);
 		}
 	}
 	emit_sentences(

@@ -19,34 +19,26 @@ Json TypeInSkill::to_json() const {
 	    ._("irType", irType ? irType->get_id() : JsonValue());
 }
 
-SkillArg::SkillArg(SkillArgKind _kind, TypeInSkill _type, Identifier _name, bool _isVar)
-    : type(_type), kind(_kind), name(_name), isVar(_isVar) {}
-
-Json SkillArg::to_json() const {
-	return Json()
-	    ._("type", type.to_json())
-	    ._("name", name)
-	    ._("kind", kind == SkillArgKind::NORMAL ? "normal" : "variadic")
-	    ._("isVar", isVar);
-}
+Json SkillArg::to_json() const { return Json()._("type", type.to_json())._("name", name)._("isVar", isVar); }
 
 SkillMethod::SkillMethod(SkillMethodKind _fnTy, Skill* _skill, Identifier _name, TypeInSkill _returnType,
-                         Vec<SkillArg*> _arguments)
+                         Vec<SkillArg*> _arguments, Maybe<SkillVariadics> _variadics)
     : index(_skill->prototypes.size()), parent(_skill), name(_name), methodKind(_fnTy), returnType(_returnType),
-      arguments(_arguments) {
+      arguments(_arguments), variadics(_variadics) {
 
 	parent->prototypes.push_back(this);
 }
 
 SkillMethod* SkillMethod::create_static_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
-                                               Vec<SkillArg*> _arguments) {
-	return std::construct_at(OwnNormal(SkillMethod), SkillMethodKind::STATIC, _parent, _name, _returnType, _arguments);
+                                               Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics) {
+	return std::construct_at(OwnNormal(SkillMethod), SkillMethodKind::STATIC, _parent, _name, _returnType, _arguments,
+	                         variadics);
 }
 
 SkillMethod* SkillMethod::create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
-                                        Vec<SkillArg*> _arguments) {
+                                        Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics) {
 	return std::construct_at(OwnNormal(SkillMethod), _isVar ? SkillMethodKind::VARIATION : SkillMethodKind::NORMAL,
-	                         _parent, _name, _returnType, _arguments);
+	                         _parent, _name, _returnType, _arguments, variadics);
 }
 
 String SkillMethod::to_string() const {
@@ -70,19 +62,20 @@ String SkillMethod::to_string() const {
 	result += "(";
 	for (usize i = 0; i < arguments.size(); i++) {
 		auto* arg = arguments[i];
-		if (arg->kind != SkillArgKind::VARIADIC) {
-			if (arg->isVar) {
-				result += "var ";
-			}
-			result += arg->name.value;
-			result += " :: ";
-			result += arg->type.astType->to_string();
+		if (arg->isVar) {
+			result.append("var ");
 		}
-		if (i != (arguments.size() - 1)) {
+		result.append(arg->name.value)
+		    .append(" :: ")
+		    .append(arg->type.irType ? arg->type.irType->to_string() : arg->type.astType->to_string());
+		if ((i != (arguments.size() - 1)) or is_variadic()) {
 			result += ", ";
 		}
 	}
-	result += ")";
+	if (is_variadic()) {
+		result.append(variadics.value().to_string());
+	}
+	result.append(")");
 	return result;
 }
 

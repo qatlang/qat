@@ -28,6 +28,7 @@ add_library(QAT_AST_TYPES
 	tuple.cc
 	typed_generic.cc
 	unsigned.cc
+	variadics.cc
 	vector.cc
 	void.cc)
 

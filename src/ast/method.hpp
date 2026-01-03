@@ -9,6 +9,7 @@
 #include "./meta_info.hpp"
 #include "./sentence.hpp"
 #include "./types/qat_type.hpp"
+#include "./types/variadics.hpp"
 
 #include <llvm/IR/GlobalValue.h>
 #include <string>
@@ -54,7 +55,7 @@ class MethodPrototype {
 	MethodType            fnTy;
 	Identifier            name;
 	Vec<Argument*>        arguments;
-	bool                  isVariadic;
+	Maybe<Variadics>      variadics;
 	Maybe<Type*>          returnType;
 	Maybe<VisibilitySpec> visibSpec;
 	FileRangePtr          fileRange;
@@ -63,23 +64,24 @@ class MethodPrototype {
 	Maybe<MetaInfo>   metaInfo;
 
   public:
-	MethodPrototype(MethodType _fnTy, Identifier _name, PrerunExpression* _defineChecker, Vec<Argument*> _arguments,
-	                bool _isVariadic, Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
-	                Maybe<VisibilitySpec> visibSpec, FileRangePtr _fileRange);
+	MethodPrototype(MethodType fnTy, Identifier name, PrerunExpression* defineChecker, Vec<Argument*> arguments,
+	                Maybe<Variadics> variadics, Maybe<Type*> returnType, Maybe<MetaInfo> metaInfo,
+	                Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange);
 
 	static MethodPrototype* Normal(bool _isVariationFn, const Identifier& _name, PrerunExpression* _condition,
-	                               const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-	                               Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-	                               FileRangePtr _fileRange);
+	                               Vec<Argument*> const& _arguments, Maybe<Variadics> variadics,
+	                               Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
+	                               Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange);
 
-	static MethodPrototype* Static(const Identifier& _name, PrerunExpression* _condition,
-	                               const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-	                               Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-	                               FileRangePtr _fileRange);
+	static MethodPrototype* Static(Identifier const& _name, PrerunExpression* _condition,
+	                               Vec<Argument*> const& _arguments, Maybe<Variadics> variadics,
+	                               Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo,
+	                               Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange);
 
 	static MethodPrototype* Value(const Identifier& _name, PrerunExpression* _condition,
-	                              const Vec<Argument*>& _arguments, bool _isVariadic, Maybe<Type*> _returnType,
-	                              Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange);
+	                              const Vec<Argument*>& _arguments, Maybe<Variadics> variadics,
+	                              Maybe<Type*> _returnType, Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                              FileRangePtr _fileRange);
 
 	ir::EntityChildType fn_type_to_child_type() {
 		switch (fnTy) {

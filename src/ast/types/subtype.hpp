@@ -11,6 +11,7 @@ namespace qat::ast {
 
 class SubType final : public Type {
 	friend class MethodPrototype;
+	friend class DefineSkill;
 
 	Maybe<FileRangePtr> skill;
 	Maybe<FileRangePtr> doneSkill;

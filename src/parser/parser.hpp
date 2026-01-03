@@ -3,6 +3,7 @@
 
 #include "../ast/meta_info.hpp"
 #include "../ast/type_like.hpp"
+#include "../ast/types/variadics.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
 #include "../utils/helpers.hpp"
@@ -131,7 +132,8 @@ class Parser {
 
 	useit Pair<CacheSymbol, usize> do_symbol(ParserContext& prevCtx, usize start);
 
-	useit Pair<Vec<ast::Argument*>, bool> do_function_parameters(ParserContext& prevCtx, usize from, usize upto);
+	useit Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> do_function_parameters(ParserContext& prevCtx, usize from,
+	                                                                              usize upto);
 
 	useit Pair<ast::PrerunExpression*, usize> do_prerun_expression(ParserContext& prevCtx, usize from,
 	                                                               Maybe<usize> upto, bool returnOnFirstExp = false);

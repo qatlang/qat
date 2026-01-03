@@ -225,7 +225,7 @@ class Function : public Value, public Uniq, public EntityOverview {
 	Vec<Argument>         arguments;
 	VisibilityInfo        visibilityInfo;
 	Maybe<FileRangePtr>   fileRange;
-	bool                  hasVariadicArguments;
+	Maybe<Variadics>      variadics;
 	bool                  isInline;
 	Vec<Block*>           blocks;
 	ir::LocalValue*       commonIndex = nullptr;
@@ -236,14 +236,14 @@ class Function : public Value, public Uniq, public EntityOverview {
 	mutable usize activeBlock      = 0;
 
   public:
-	Function(Mod* mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics, bool isInline,
-	         ReturnType* returnType, Vec<Argument> _args, Maybe<FileRangePtr> fileRange,
-	         const VisibilityInfo& _visibility_info, ir::Ctx* irCtx, bool _isMemberFn = false,
-	         Maybe<llvm::GlobalValue::LinkageTypes> _linkage = None, Maybe<MetaInfo> _metaInfo = None);
+	Function(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> generics, bool isInline,
+	         ReturnType* returnType, Vec<Argument> args, Maybe<Variadics> variadics, Maybe<FileRangePtr> fileRange,
+	         const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx, bool isMemberFn = false,
+	         Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
-	static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
-	                        bool isInline, ReturnType* return_type, Vec<Argument> args, Maybe<FileRangePtr> fileRange,
-	                        const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx,
+	static Function* Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInfo, Vec<GenericArgument*> generics,
+	                        bool isInline, ReturnType* returnType, Vec<Argument> args, Maybe<Variadics> variadics,
+	                        Maybe<FileRangePtr> fileRange, VisibilityInfo const& visibilityInfo, ir::Ctx* irCtx,
 	                        Maybe<llvm::GlobalValue::LinkageTypes> linkage = None, Maybe<MetaInfo> metaInfo = None);
 
 	useit Value* call(Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod) override;
@@ -252,7 +252,9 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 	useit Method* as_method() { return reinterpret_cast<Method*>(this); }
 
-	useit bool has_variadic_args() const { return hasVariadicArguments; }
+	useit bool has_variadic_args() const { return variadics.has_value(); }
+
+	useit Variadics get_variadics() const { return variadics.value(); }
 
 	useit Identifier arg_name_at(u32 index) const { return arguments[index].get_name(); }
 

@@ -1687,12 +1687,35 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 				}
 				auto pClose = pCloseResult.value();
 				if (is_next(TokenType::givenTypeSeparator, pClose)) {
-					Vec<ast::Type*> argTypes;
-					bool            isVariadic = false;
+					Vec<ast::Type*>       argTypes;
+					Maybe<ast::Variadics> variadics;
 					while (i < pClose) {
 						if (is_next(TokenType::variadic, i)) {
-							isVariadic = true;
-							i++;
+							if (is_next(TokenType::colon, i + 1)) {
+								if (not is_next(TokenType::identifier, i + 2)) {
+									add_error("Expected the identifier " + color_error("legacy") + " after this.",
+									          RangeSpan(i + 1, i + 2));
+								}
+								if (ValueAt(i + 3) != "legacy") {
+									add_error("Expected the identifier " + color_error("legacy") +
+									              " after this, but found the identifier " +
+									              color_error(ValueAt(i + 3)) + " instead.",
+									          RangeSpan(i + 1, i + 3));
+								}
+								variadics = ast::Variadics{.kind  = ast::VariadicKind::LEGACY,
+								                           .type  = nullptr,
+								                           .range = RangeSpan(i + 1, i + 3)};
+								i += 3;
+							} else if (is_next(TokenType::typeSeparator, i + 1)) {
+								auto typRes = do_type(preCtx, i + 2, None);
+								variadics   = ast::Variadics{.kind  = ast::VariadicKind::TYPED,
+								                             .type  = typRes.first,
+								                             .range = RangeSpan(i + 1, typRes.second)};
+								i           = typRes.second;
+							} else {
+								variadics = ast::Variadics{
+								    .kind = ast::VariadicKind::NORMAL, .type = nullptr, .range = RangeAt(i = 1)};
+							}
 							if (is_next(TokenType::separator, i)) {
 								i++;
 							}
@@ -1702,17 +1725,19 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 							if (i + 1 == pClose) {
 								break;
 							} else {
-								add_error(
-								    "Expected the list of argument types to end here, but it did not. Variadic argument should always be the last argument",
-								    RangeSpan(i, pClose));
+								add_error("Expected the list of argument types to end here, but it did not. Variadic "
+								          "specification is supposed to be at the end of the argument list",
+								          RangeSpan(i, pClose));
 							}
 						} else if (is_next(TokenType::selfInstance, i)) {
 							if (is_next(TokenType::identifier, i + 1)) {
-								add_error("Member arguments are not allowed in function types",
-								          RangeSpan(i + 1, i + 2));
+								add_error(
+								    "Member arguments are not allowed in function types, as the function type is not aware of the types of the member fields",
+								    RangeSpan(i + 1, i + 2));
 							} else {
 								add_error(
-								    "It seems like you were trying to provide member argument here. Note that the name is missing after this. And member arguments are not allowed in function types",
+								    "It seems like you were trying to provide member argument here. Note that the "
+								    "name is missing after this. And member arguments are not allowed in function types",
 								    RangeAt(i + 1));
 							}
 						} else if (is_next(TokenType::separator, i)) {
@@ -1744,7 +1769,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					}
 					i             = pClose + 1;
 					auto retTyRes = do_type(preCtx, pClose + 1, None);
-					cacheTy       = ast::FunctionType::create(retTyRes.first, argTypes, isVariadic,
+					cacheTy       = ast::FunctionType::create(retTyRes.first, argTypes, variadics,
 					                                          RangeSpan(start, retTyRes.second));
 					i             = retTyRes.second;
 				} else {
@@ -3149,7 +3174,7 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 						retType     = typRes.first;
 						i           = typRes.second;
 					}
-					Pair<Vec<ast::Argument*>, bool> argResult = {{}, false};
+					Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> argResult = {{}, None};
 					if (is_next(TokenType::parenthesisOpen, i)) {
 						auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
 						if (pCloseRes.has_value()) {
@@ -3402,7 +3427,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 								retTy        = typeRes.first;
 								i            = typeRes.second;
 							}
-							Pair<Vec<ast::Argument*>, bool> argsRes = {{}, false};
+							Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> argsRes = {{}, None};
 							if (is_next(TokenType::parenthesisOpen, i)) {
 								auto pCloseRes =
 								    get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
@@ -3467,7 +3492,7 @@ void Parser::do_type_contents(ParserContext& preCtx, usize from, usize upto, ast
 						retTy        = typeRes.first;
 						i            = typeRes.second;
 					}
-					Pair<Vec<ast::Argument*>, bool> argsRes = {{}, false};
+					Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> argsRes = {{}, None};
 					if (is_next(TokenType::parenthesisOpen, i)) {
 						auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
 						if (pCloseRes.has_value()) {
@@ -7255,13 +7280,15 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 	return resultSentences;
 }
 
-Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& preCtx, usize from, usize upto) {
+Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> Parser::do_function_parameters(ParserContext& preCtx, usize from,
+                                                                                usize upto) {
 	using ast::FloatType;
 	using ast::IntegerType;
 	using ir::FloatTypeKind;
 	using lexer::TokenType;
 	SHOW("Starting parsing function parameters")
-	Vec<ast::Argument*> args;
+	Vec<ast::Argument*>   args;
+	Maybe<ast::Variadics> variadics;
 
 	for (usize i = from + 1; ((i < upto) && (i < tokens.size())); i++) {
 		auto const& token = tokens.at(i);
@@ -7294,17 +7321,36 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
 				break;
 			}
 			case TokenType::variadic: {
-				if (is_next(TokenType::identifier, i)) {
-					// FIXME - Variadic argument can be var?
-					args.push_back(ast::Argument::create_variadic(RangeSpan(i, i + 1)));
-					if (is_next(TokenType::parenthesisClose, i + 1) ||
-					    (is_next(TokenType::separator, i + 1) && is_next(TokenType::parenthesisClose, i + 2))) {
-						return {args, true};
-					} else {
-						add_error("Variadic argument should be the last argument of the function", token.fileRange);
+				if (is_next(TokenType::colon, i)) {
+					if (not is_next(TokenType::identifier, i + 1)) {
+						add_error("Expected the identifier " + color_error("legacy") + " after " +
+						              color_error("variadic:"),
+						          RangeSpan(i, i + 1));
 					}
+					if (ValueAt(i + 2) != "legacy") {
+						add_error("Expected the identifier " + color_error("legacy") + " after " +
+						              color_error("variadic:") + ", but found the identifier " +
+						              color_error(ValueAt(i + 2)) + " instead.",
+						          RangeAt(i + 2));
+					}
+					variadics = ast::Variadics{
+					    .kind = ast::VariadicKind::LEGACY, .type = nullptr, .range = RangeSpan(i, i + 2)};
+					i += 2;
+				} else if (is_next(TokenType::typeSeparator, i)) {
+					auto typRes = do_type(preCtx, i + 1, None);
+					variadics   = ast::Variadics{
+					      .kind = ast::VariadicKind::TYPED, .type = typRes.first, .range = RangeSpan(i, typRes.second)};
+					i = typRes.second;
 				} else {
-					add_error("Expected name for the variadic argument. Please provide a name", token.fileRange);
+					variadics = ast::Variadics{.kind = ast::VariadicKind::NORMAL, .type = nullptr, .range = RangeAt(i)};
+				}
+				if (is_next(TokenType::separator, i)) {
+					i++;
+				}
+				if (not is_next(TokenType::parenthesisClose, i)) {
+					add_error("Expected the argument list to end after this. The variadic "
+					          "specification is supposed to be at the end of the function argument list",
+					          RangeSpan(from + 1, i));
 				}
 				break;
 			}
@@ -7327,7 +7373,7 @@ Pair<Vec<ast::Argument*>, bool> Parser::do_function_parameters(ParserContext& pr
 			}
 		}
 	}
-	return {args, false};
+	return {args, variadics};
 }
 
 Maybe<usize> Parser::get_pair_end(const lexer::TokenType startType, const lexer::TokenType endType,

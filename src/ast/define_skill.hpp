@@ -4,6 +4,7 @@
 #include "./argument.hpp"
 #include "./expression.hpp"
 #include "./node.hpp"
+#include "./types/variadics.hpp"
 
 namespace qat::ast {
 
@@ -61,6 +62,7 @@ struct SkillMethod {
 	SkillMethodKind       kind;
 	Identifier            name;
 	Vec<Argument*>        arguments;
+	Maybe<Variadics>      variadics;
 	Type*                 givenType;
 	PrerunExpression*     defineChecker;
 	FileRangePtr          fileRange;
@@ -78,6 +80,7 @@ struct SkillMethod {
 		    ._("kind", method_kind_to_string(kind))
 		    ._("name", name)
 		    ._("arguments", argsJSON)
+		    ._("variadics", variadics.has_value() ? variadics.value().to_json() : JsonValue())
 		    ._("hasGivenType", givenType != nullptr)
 		    ._("givenType", givenType ? givenType->to_json() : JsonValue())
 		    ._("hasDefineCondition", defineChecker != nullptr)

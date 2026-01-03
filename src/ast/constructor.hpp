@@ -4,10 +4,11 @@
 #include "../IR/context.hpp"
 #include "../IR/types/struct_type.hpp"
 #include "./argument.hpp"
+#include "./member_parent_like.hpp"
 #include "./meta_info.hpp"
 #include "./node.hpp"
-#include "member_parent_like.hpp"
-#include "sentence.hpp"
+#include "./sentence.hpp"
+#include "./types/variadics.hpp"
 
 namespace qat::ast {
 
@@ -24,6 +25,7 @@ class ConstructorPrototype {
 
   private:
 	Vec<Argument*>        arguments;
+	Maybe<Variadics>      variadics;
 	Maybe<VisibilitySpec> visibSpec;
 	ConstructorType       type;
 	Maybe<Identifier>     argName;
@@ -76,6 +78,9 @@ class ConstructorPrototype {
 			if (arg->get_type()) {
 				UPDATE_DEPS(arg->get_type());
 			}
+		}
+		if (variadics.has_value() and variadics.value().kind == VariadicKind::TYPED) {
+			UPDATE_DEPS(variadics.value().type);
 		}
 	}
 

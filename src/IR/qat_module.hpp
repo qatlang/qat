@@ -724,8 +724,9 @@ class Mod final : public Uniq, public EntityOverview {
 	useit const VisibilityInfo& get_visibility() const;
 
 	useit Function* create_function(Identifier const& name, bool isInline, Type* returnType, Vec<Argument> args,
-	                                FileRangePtr fileRange, VisibilityInfo const& visibility,
-	                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
+	                                Maybe<Variadics> variadics, FileRangePtr fileRange,
+	                                VisibilityInfo const& visibility, Maybe<llvm::GlobalValue::LinkageTypes> linkage,
+	                                ir::Ctx* irCtx);
 
 	useit bool is_submodule() const { return parent != nullptr; }
 

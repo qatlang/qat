@@ -8,6 +8,7 @@
 #include "./generic_variant.hpp"
 #include "./generics.hpp"
 #include "./link_names.hpp"
+#include "./types/function.hpp"
 #include "./types/qat_type.hpp"
 
 #include <set>
@@ -37,23 +38,15 @@ struct TypeInSkill {
 	useit Json to_json() const;
 };
 
-enum class SkillArgKind { NORMAL, VARIADIC };
-
 struct SkillArg {
-	TypeInSkill  type;
-	SkillArgKind kind;
-	Identifier   name;
-	bool         isVar;
+	TypeInSkill type;
+	Identifier  name;
+	bool        isVar;
 
-	SkillArg(SkillArgKind _kind, TypeInSkill _type, Identifier _name, bool _isVar);
+	SkillArg(TypeInSkill _type, Identifier _name, bool _isVar) : type(_type), name(_name), isVar(_isVar) {}
 
 	useit static SkillArg* create(TypeInSkill type, Identifier name, bool isVar) {
-		return std::construct_at(OwnNormal(SkillArg), SkillArgKind::NORMAL, type, std::move(name), isVar);
-	}
-
-	useit static SkillArg* create_variadic(Identifier name) {
-		return std::construct_at(OwnNormal(SkillArg), SkillArgKind::VARIADIC, TypeInSkill{nullptr, nullptr},
-		                         std::move(name), false);
+		return std::construct_at(OwnNormal(SkillArg), type, std::move(name), isVar);
 	}
 
 	useit Json to_json() const;
@@ -63,6 +56,23 @@ enum class SkillMethodKind {
 	STATIC,
 	NORMAL,
 	VARIATION,
+	VALUE,
+};
+
+struct SkillVariadics {
+	VariadicsKind      kind;
+	Maybe<TypeInSkill> type;
+
+	useit String to_string() const {
+		switch (kind) {
+			case VariadicsKind::NORMAL:
+				return "variadic";
+			case VariadicsKind::LEGACY:
+				return "variadic:legacy";
+			case VariadicsKind::TYPED:
+				return "variadic :: " + type.value().to_string();
+		}
+	}
 };
 
 class SkillMethod {
@@ -70,20 +80,21 @@ class SkillMethod {
 
 	usize index;
 
-	Skill*          parent;
-	Identifier      name;
-	SkillMethodKind methodKind;
-	TypeInSkill     returnType;
-	Vec<SkillArg*>  arguments;
+	Skill*                parent;
+	Identifier            name;
+	SkillMethodKind       methodKind;
+	TypeInSkill           returnType;
+	Vec<SkillArg*>        arguments;
+	Maybe<SkillVariadics> variadics;
 
   public:
-	SkillMethod(SkillMethodKind _fnTy, Skill* _parent, Identifier _name, TypeInSkill _returnType,
-	            Vec<SkillArg*> _arguments);
+	SkillMethod(SkillMethodKind fnTy, Skill* parent, Identifier name, TypeInSkill returnType, Vec<SkillArg*> arguments,
+	            Maybe<SkillVariadics> variadics);
 
 	useit static SkillMethod* create_static_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
-	                                               Vec<SkillArg*> _arguments);
+	                                               Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics);
 	useit static SkillMethod* create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
-	                                        Vec<SkillArg*> _arguments);
+	                                        Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics);
 
 	useit usize get_method_index() const { return index; }
 
@@ -101,6 +112,10 @@ class SkillMethod {
 
 	useit SkillArg* get_arg_at(usize index) { return arguments.at(index); }
 
+	useit bool is_variadic() const { return variadics.has_value(); }
+
+	useit SkillVariadics get_variadics() const { return variadics.value(); }
+
 	useit String to_string() const;
 
 	useit Json to_json() const {
@@ -112,9 +127,21 @@ class SkillMethod {
 		    ._("name", name)
 		    ._("kind", methodKind == SkillMethodKind::NORMAL
 		                   ? "normal"
-		                   : (methodKind == SkillMethodKind::STATIC ? "static" : "variation"))
+		                   : (methodKind == SkillMethodKind::STATIC
+		                          ? "static"
+		                          : (methodKind == SkillMethodKind::VARIATION ? "variation" : "value")))
 		    ._("givenType", returnType.to_json())
-		    ._("arguments", argsJSON);
+		    ._("arguments", argsJSON)
+		    ._("hasVariadics", variadics.has_value())
+		    ._("variadics",
+		       variadics.has_value()
+		           ? Json()
+		                 ._("kind", variadics.value().kind == VariadicsKind::NORMAL
+		                                ? "normal"
+		                                : (variadics.value().kind == VariadicsKind::LEGACY ? "legacy" : "typed"))
+		                 ._("type", variadics.value().kind == VariadicsKind::TYPED ? variadics.value().type->to_json()
+		                                                                           : JsonValue())
+		           : JsonValue());
 	}
 };
 

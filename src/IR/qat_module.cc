@@ -319,13 +319,13 @@ void Mod::addMember(Mod* mod) {
 }
 
 Function* Mod::create_function(Identifier const& name, bool isInline, Type* returnType, Vec<Argument> args,
-                               FileRangePtr fileRange, const VisibilityInfo& visibility,
+                               Maybe<Variadics> variadics, FileRangePtr fileRange, const VisibilityInfo& visibility,
                                Maybe<llvm::GlobalValue::LinkageTypes> linkage, Ctx* ctx) {
 	SHOW("Creating IR function")
 	auto nmUnits = get_link_names();
 	nmUnits.addUnit(LinkNameUnit(name.value, LinkUnitType::function, {}), None);
 	auto* fun = Function::Create(this, name, nmUnits, {/* Generics */}, isInline, ir::ReturnType::get(returnType),
-	                             std::move(args), fileRange, visibility, ctx, linkage);
+	                             std::move(args), variadics, fileRange, visibility, ctx, linkage);
 	SHOW("Created function")
 	functions.push_back(fun);
 	return fun;
@@ -576,7 +576,7 @@ Function* Mod::get_mod_initialiser(Ctx* ctx) {
 		    this,
 		    Identifier("module'initialiser'" + get_referrable_name(),
 		               FileRange::from_path(std::construct_at(OwnNormal(String), filePath.string()))),
-		    None, {/* Generics */}, false, ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {},
+		    None, {/* Generics */}, false, ir::ReturnType::get(ir::VoidType::get(ctx->llctx)), {}, None,
 		    name.range ? Maybe<FileRangePtr>(name.range) : nullptr, VisibilityInfo::pub(), ctx);
 		auto* entry = ir::Block::create(moduleInitialiser, nullptr);
 		entry->set_active(ctx->builder);

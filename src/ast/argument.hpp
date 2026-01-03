@@ -9,7 +9,6 @@ namespace qat::ast {
 enum class ArgKind {
 	NORMAL,
 	MEMBER,
-	VARIADIC,
 };
 
 useit inline String arg_kind_to_string(ArgKind kind) {
@@ -18,8 +17,6 @@ useit inline String arg_kind_to_string(ArgKind kind) {
 			return "normal";
 		case ArgKind::MEMBER:
 			return "member";
-		case ArgKind::VARIADIC:
-			return "variadic";
 	}
 }
 
@@ -42,10 +39,6 @@ class Argument {
 		return std::construct_at(OwnNormal(Argument), ArgKind::MEMBER, name, isVar, type);
 	}
 
-	useit static Argument* create_variadic(FileRangePtr range) {
-		return std::construct_at(OwnNormal(Argument), ArgKind::VARIADIC, Identifier{"", range}, false, nullptr);
-	}
-
 	useit Identifier get_name() const { return name; }
 
 	useit bool is_variable() const { return isVar; }
@@ -53,8 +46,6 @@ class Argument {
 	useit Type* get_type() { return type; }
 
 	useit bool is_member_arg() const { return kind == ArgKind::MEMBER; }
-
-	useit bool is_variadic_arg() const { return kind == ArgKind::VARIADIC; }
 
 	useit Json to_json() const {
 		return Json()

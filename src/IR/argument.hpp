@@ -31,10 +31,6 @@ class Argument {
 		return {ArgumentKind::NORMAL, name, type, true, arg_index};
 	}
 
-	useit static Argument CreateVariadic(String name, FileRangePtr range, u64 argIndex) {
-		return {ArgumentKind::VARIADIC, {name, range}, nullptr, false, argIndex};
-	}
-
 	useit Identifier get_name() const { return name; }
 
 	useit ArgumentType* to_arg_type() const {
@@ -43,8 +39,6 @@ class Argument {
 				return ArgumentType::create_normal(type, name.value, variability);
 			case ArgumentKind::MEMBER:
 				return ArgumentType::create_member(name.value, type);
-			case ArgumentKind::VARIADIC:
-				return ArgumentType::create_variadic(name.value.empty() ? None : Maybe<String>(name.value));
 		}
 	}
 

@@ -11,6 +11,8 @@
 
 namespace qat::ir {
 
+String TypeInSkill::to_string() const { return irType ? irType->to_string() : astType->to_string(); }
+
 Json TypeInSkill::to_json() const {
 	return Json()
 	    ._("hasAST", astType != nullptr)
@@ -52,6 +54,10 @@ String SkillMethod::to_string() const {
 		}
 		case SkillMethodKind::VARIATION: {
 			result += "var:";
+			break;
+		}
+		case SkillMethodKind::VALUE: {
+			result += "self:";
 			break;
 		}
 	}

@@ -35,6 +35,8 @@ struct TypeInSkill {
 		return TypeInSkill{.astType = astType, .irType = irType};
 	}
 
+	useit String to_string() const;
+
 	useit Json to_json() const;
 };
 

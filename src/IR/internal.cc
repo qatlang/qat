@@ -10,15 +10,15 @@ namespace qat::ir {
 FunctionType* Internal::printf_signature(Ctx* irCtx) {
 	return FunctionType::create(
 	    ReturnType::get(NativeType::get_int(irCtx)),
-	    {ArgumentType::create_normal(NativeType::get_bytestring(false, false, None, irCtx), None, false),
-	     ArgumentType::create_variadic(None)},
-	    irCtx->llctx);
+	    {ArgumentType::create_normal(NativeType::get_bytestring(false, false, None, irCtx), None, false)},
+	    Variadics{.kind = VariadicsKind::LEGACY}, irCtx->llctx);
 }
 
 FunctionType* Internal::malloc_signature(Ctx* irCtx) {
 	return FunctionType::create(ReturnType::get(PtrType::get(true, VoidType::get(irCtx->llctx), false,
 	                                                         PtrOwner::of_none(), false, None, irCtx)),
-	                            {ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)}, irCtx->llctx);
+	                            {ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)}, None,
+	                            irCtx->llctx);
 }
 
 FunctionType* Internal::realloc_signature(Ctx* irCtx) {
@@ -26,7 +26,7 @@ FunctionType* Internal::realloc_signature(Ctx* irCtx) {
 	return FunctionType::create(ReturnType::get(ptrTy),
 	                            {ArgumentType::create_normal(ptrTy, None, false),
 	                             ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)},
-	                            irCtx->llctx);
+	                            None, irCtx->llctx);
 }
 
 FunctionType* Internal::free_signature(Ctx* irCtx) {
@@ -34,7 +34,7 @@ FunctionType* Internal::free_signature(Ctx* irCtx) {
 	                            {ArgumentType::create_normal(PtrType::get(true, VoidType::get(irCtx->llctx), false,
 	                                                                      PtrOwner::of_none(), false, None, irCtx),
 	                                                         None, false)},
-	                            irCtx->llctx);
+	                            None, irCtx->llctx);
 }
 
 } // namespace qat::ir

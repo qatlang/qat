@@ -11,7 +11,7 @@
 
 namespace qat::ir {
 
-enum class ArgumentKind : u8 { NORMAL, MEMBER, VARIADIC };
+enum class ArgumentKind : u8 { NORMAL, MEMBER };
 
 class ArgumentType {
 	Maybe<String> name;
@@ -31,10 +31,6 @@ class ArgumentType {
 		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::MEMBER, name, type, false);
 	}
 
-	useit static ArgumentType* create_variadic(Maybe<String> name) {
-		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::VARIADIC, std::move(name), nullptr, false);
-	}
-
 	useit bool is_same_as(ArgumentType* other) {
 		if (kind != other->kind) {
 			return false;
@@ -45,10 +41,6 @@ class ArgumentType {
 			}
 			case ArgumentKind::MEMBER: {
 				return (name.value() == other->name.value());
-			}
-			case ArgumentKind::VARIADIC: {
-				return (type != nullptr) ? ((other->type != nullptr) && type->is_same(other->type))
-				                         : (other->type == nullptr);
 			}
 		}
 	}
@@ -65,8 +57,6 @@ class ArgumentType {
 
 	useit bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
 
-	useit bool is_variadic_argument() const { return kind == ArgumentKind::VARIADIC; }
-
 	useit Json to_json() const {
 		return Json()
 		    ._("hasName", name.has_value())
@@ -74,8 +64,7 @@ class ArgumentType {
 		    ._("hasType", type != nullptr)
 		    ._("type", type ? type->get_id() : JsonValue())
 		    ._("isVar", variability)
-		    ._("kind",
-		       kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
+		    ._("kind", kind == ArgumentKind::MEMBER ? "member" : "normal");
 	}
 
 	useit String to_string() const {
@@ -85,9 +74,6 @@ class ArgumentType {
 				       type->to_string();
 			case ArgumentKind::MEMBER:
 				return "''" + name.value();
-			case ArgumentKind::VARIADIC:
-				return "variadic " + (name.has_value() ? name.value() : "") +
-				       (type ? (" :: " + type->to_string()) : "");
 		}
 	}
 };
@@ -110,29 +96,54 @@ class ReturnType {
 	useit String to_string() const;
 };
 
+enum class VariadicsKind {
+	NORMAL,
+	LEGACY,
+	TYPED,
+};
+
+struct Variadics {
+	VariadicsKind kind;
+	ir::Type*     type = nullptr;
+
+	useit String to_string() const {
+		switch (kind) {
+			case VariadicsKind::NORMAL:
+				return "variadic";
+			case VariadicsKind::LEGACY:
+				return "variadic:legacy";
+			case VariadicsKind::TYPED:
+				return "variadic :: " + type->to_string();
+		}
+	}
+};
+
 class FunctionType final : public Type {
 	ReturnType*        returnType;
 	Vec<ArgumentType*> argTypes;
-	bool               isVariadicArgs;
+	Maybe<Variadics>   variadics;
 
   public:
-	FunctionType(ReturnType* _retType, Vec<ArgumentType*> _argTypes, llvm::LLVMContext& ctx);
+	FunctionType(ReturnType* retType, Vec<ArgumentType*> argTypes, Maybe<Variadics> variadics, llvm::LLVMContext& ctx);
 
-	useit static FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, llvm::LLVMContext& llCtx) {
-		return std::construct_at(OwnNormal(FunctionType), retTy, std::move(argTys), llCtx);
+	useit static FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, Maybe<Variadics> variadics,
+	                                  llvm::LLVMContext& llCtx) {
+		return std::construct_at(OwnNormal(FunctionType), retTy, std::move(argTys), variadics, llCtx);
 	}
 
 	~FunctionType() final;
 
-	useit ReturnType* get_return_type();
+	useit ReturnType* get_return_type() const { return returnType; }
 
-	useit ArgumentType* get_argument_type_at(u64 index);
+	useit ArgumentType* get_argument_type_at(u64 index) const { return argTypes[index]; }
 
-	useit Vec<ArgumentType*> get_argument_types() const;
+	useit Vec<ArgumentType*> const& get_argument_types() const { return argTypes; }
 
-	useit u64 get_argument_count() const;
+	useit u64 get_argument_count() const { return argTypes.size(); }
 
-	useit bool is_variadic() const { return isVariadicArgs; }
+	useit bool is_variadic() const { return variadics.has_value(); }
+
+	useit Variadics get_variadics() const { return variadics.value(); }
 
 	useit TypeKind type_kind() const final { return TypeKind::FUNCTION; }
 

@@ -29,12 +29,6 @@ namespace qat::ir {
 
 Type::Type() { allTypes.push_back(this); }
 
-Type::~Type() {
-	for (auto* skill : doneSkills) {
-		std::destroy_at(skill);
-	}
-}
-
 Vec<Type*> Type::allTypes = {};
 
 Vec<Region*> Type::allRegions() {
@@ -51,51 +45,6 @@ void Type::clear_all() {
 	for (auto* typ : allTypes) {
 		std::destroy_at(typ);
 	}
-}
-
-bool Type::has_unnamed_implementation_for(Skill* skill) const {
-	for (auto done : doneSkills) {
-		if (done->is_normal_skill() && not done->has_name()) {
-			if (done->get_skill()->get_id() == skill->get_id()) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-DoneSkill* Type::get_unnamed_implementation_for(Skill* skill) const {
-	for (auto done : doneSkills) {
-		if (done->is_normal_skill() && not done->has_name()) {
-			if (done->get_skill()->get_id() == skill->get_id()) {
-				return done;
-			}
-		}
-	}
-	return nullptr;
-}
-
-bool Type::has_named_implementation_for(Skill* skill) const {
-	for (auto done : doneSkills) {
-		if (done->is_normal_skill() && done->has_name()) {
-			if (done->get_skill()->get_id() == skill->get_id()) {
-				return true;
-			}
-		}
-	}
-	return false;
-}
-
-Vec<DoneSkill*> Type::get_named_implementations_for(Skill* skill) const {
-	Vec<DoneSkill*> res;
-	for (auto done : doneSkills) {
-		if (done->is_normal_skill() && not done->has_name()) {
-			if (done->get_skill()->get_id() == skill->get_id()) {
-				res.push_back(done);
-			}
-		}
-	}
-	return res;
 }
 
 String Type::get_name_for_linking() const { return linkingName; }

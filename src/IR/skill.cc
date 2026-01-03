@@ -280,7 +280,11 @@ DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill
       typeRange(_typeRange) {
 	SHOW("DoneSkill constructor start")
 	if (skill.has_value()) {
-		candidateType->doneSkills.push_back(this);
+		if (name.has_value()) {
+			candidateType->namedImplementations.insert(std::make_pair(skill.value(), this));
+		} else {
+			candidateType->unnamedImplementations.insert(std::make_pair(skill.value(), this));
+		}
 	} else {
 		candidateType->defaultImplementations.push_back(this);
 	}

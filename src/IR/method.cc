@@ -196,7 +196,23 @@ Method::Method(MethodType _fnType, bool _isVariation, MethodParent* _parent, con
 		case MethodType::normal: {
 			selfName = _name;
 			if (parent->is_done_skill()) {
-				parent->as_done_skill()->memberFunctions.push_back(this);
+				const auto doneSkill = parent->as_done_skill();
+				doneSkill->memberFunctions.push_back(this);
+				if (parent->get_parent_type()->methodToSkillsMapping.contains(name.value)) {
+					const auto range         = parent->get_parent_type()->methodToSkillsMapping.equal_range(name.value);
+					bool       containsSkill = false;
+					for (auto it = range.first; it != range.second; it++) {
+						if ((*it).second->get_id() == doneSkill->get_skill()->get_id()) {
+							containsSkill = true;
+							break;
+						}
+					}
+					if (not containsSkill) {
+						parent->get_parent_type()->methodToSkillsMapping.insert({name.value, doneSkill->get_skill()});
+					}
+				} else {
+					parent->get_parent_type()->methodToSkillsMapping.insert({name.value, doneSkill->get_skill()});
+				}
 			} else {
 				parent->as_expanded()->memberFunctions.push_back(this);
 			}
@@ -205,7 +221,23 @@ Method::Method(MethodType _fnType, bool _isVariation, MethodParent* _parent, con
 		case MethodType::valueMethod: {
 			selfName = _name;
 			if (parent->is_done_skill()) {
-				parent->as_done_skill()->valuedMemberFunctions.push_back(this);
+				const auto doneSkill = parent->as_done_skill();
+				doneSkill->valuedMemberFunctions.push_back(this);
+				if (parent->get_parent_type()->methodToSkillsMapping.contains(name.value)) {
+					const auto range         = parent->get_parent_type()->methodToSkillsMapping.equal_range(name.value);
+					bool       containsSkill = false;
+					for (auto it = range.first; it != range.second; it++) {
+						if ((*it).second->get_id() == doneSkill->get_skill()->get_id()) {
+							containsSkill = true;
+							break;
+						}
+					}
+					if (not containsSkill) {
+						parent->get_parent_type()->methodToSkillsMapping.insert({name.value, doneSkill->get_skill()});
+					}
+				} else {
+					parent->get_parent_type()->methodToSkillsMapping.insert({name.value, doneSkill->get_skill()});
+				}
 			} else {
 				parent->as_expanded()->valuedMemberFunctions.push_back(this);
 			}

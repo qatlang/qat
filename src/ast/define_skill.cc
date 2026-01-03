@@ -3,6 +3,8 @@
 #include "../IR/types/definition.hpp"
 #include "../IR/types/void.hpp"
 #include "./types/generic_abstract.hpp"
+#include "./types/subtype.hpp"
+#include "./types/type_kind.hpp"
 
 #include <llvm/Analysis/ConstantFolding.h>
 
@@ -45,6 +47,9 @@ void DefineSkill::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 
 void DefineSkill::update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) {
 	auto ctx = EmitCtx::get(irCtx, parent);
+	if (polyQualifier) {
+		polyQualifier->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
+	}
 	for (auto* gen : generics) {
 		gen->update_dependencies(ir::EmitPhase::phase_1, ir::DependType::complete, entityState, ctx);
 	}
@@ -170,15 +175,41 @@ void DefineSkill::create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irC
 			args.push_back(ir::SkillArg::create(ir::TypeInSkill::get(arg->get_type(), arg->get_type()->emit(ctx)),
 			                                    arg->get_name(), arg->is_variable()));
 		}
+		Maybe<ir::SkillVariadics> variadicsSk;
+		if (fn.variadics.has_value()) {
+			auto                   kind = ir::VariadicsKind::NORMAL;
+			Maybe<ir::TypeInSkill> type;
+			switch (fn.variadics.value().kind) {
+				case VariadicKind::NORMAL:
+					break;
+				case VariadicKind::LEGACY: {
+					kind = ir::VariadicsKind::LEGACY;
+					break;
+				}
+				case VariadicKind::TYPED: {
+					kind         = ir::VariadicsKind::TYPED;
+					auto astType = fn.variadics.value().type;
+					if (not(astType->type_kind() == AstTypeKind::SUBTYPE and
+					        reinterpret_cast<SubType*>(astType)->skill.has_value())) {
+						type = ir::TypeInSkill{.astType = astType, .irType = astType->emit(ctx)};
+					}
+					break;
+				}
 			}
+			variadicsSk = ir::SkillVariadics{.kind = kind, .type = type};
 		}
-		ir::TypeInSkill givenType = fn.givenType ? ir::TypeInSkill::get(fn.givenType, fn.givenType->emit(ctx))
+		ir::Type* fnGivenType = nullptr;
+		if (not(fn.givenType and fn.givenType->type_kind() == AstTypeKind::SUBTYPE and
+		        reinterpret_cast<SubType*>(fn.givenType)->skill.has_value())) {
+			fnGivenType = fn.givenType->emit(ctx);
+		}
+		ir::TypeInSkill givenType = fn.givenType ? ir::TypeInSkill::get(fn.givenType, fnGivenType)
 		                                         : ir::TypeInSkill::get(nullptr, ir::VoidType::get(irCtx->llctx));
 		if (fn.kind == SkillMethodKind::STATIC) {
-			(void)ir::SkillMethod::create_static_method(skill, fn.name, givenType, std::move(args));
+			(void)ir::SkillMethod::create_static_method(skill, fn.name, givenType, std::move(args), variadicsSk);
 		} else if (fn.kind == SkillMethodKind::NORMAL || fn.kind == SkillMethodKind::VARIATION) {
 			(void)ir::SkillMethod::create_method(skill, fn.name, fn.kind == SkillMethodKind::VARIATION, givenType,
-			                                     std::move(args));
+			                                     std::move(args), variadicsSk);
 		}
 	}
 }

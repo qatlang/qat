@@ -5,6 +5,8 @@
 #include "../uniq.hpp"
 #include "./type_kind.hpp"
 
+#include <unordered_map>
+
 namespace llvm {
 class Type;
 class LLVMContext;
@@ -48,38 +50,50 @@ class Polymorph;
 class FlagType;
 struct TypeInfo;
 class Skill;
+class Method;
 
 // Type is the base class for all types in the IR
 class Type : public Uniq {
 	friend DoneSkill;
 	friend TypeInfo;
+	friend Method;
 
   protected:
 	static Vec<Type*> allTypes;
 
-	String          linkingName;
-	llvm::Type*     llvmType;
-	Vec<DoneSkill*> defaultImplementations;
-	Vec<DoneSkill*> doneSkills;
+	String      linkingName;
+	llvm::Type* llvmType;
+
+	Vec<DoneSkill*>                             defaultImplementations;
+	std::unordered_map<Skill*, DoneSkill*>      unnamedImplementations;
+	std::unordered_multimap<Skill*, DoneSkill*> namedImplementations;
+	std::unordered_multimap<String, Skill*>     methodToSkillsMapping;
 
 	TypeInfo* typeInfo = nullptr;
 
   public:
 	Type();
-	virtual ~Type();
+	virtual ~Type() = default;
+
 	static void clear_all();
 
 	useit bool has_default_implementations() const { return not defaultImplementations.empty(); }
 
 	useit Vec<DoneSkill*> const& get_default_implementations() const { return defaultImplementations; }
 
-	useit bool has_unnamed_implementation_for(Skill* skill) const;
+	useit bool has_unnamed_implementation_for(Skill* skill) const { return unnamedImplementations.contains(skill); }
 
-	useit DoneSkill* get_unnamed_implementation_for(Skill* skill) const;
+	useit DoneSkill* get_unnamed_implementation_for(Skill* skill) const { return unnamedImplementations.at(skill); }
 
-	useit bool has_named_implementation_for(Skill* skill) const;
+	useit bool has_named_implementation_for(Skill* skill) const { return namedImplementations.contains(skill); }
 
-	useit Vec<DoneSkill*> get_named_implementations_for(Skill* skill) const;
+	useit auto get_named_implementations_for(Skill* skill) const { return namedImplementations.equal_range(skill); }
+
+	useit bool has_skills_for_method_name(String const& mName) const { return methodToSkillsMapping.contains(mName); }
+
+	useit auto get_skills_for_method_name(String const& mName) const {
+		return methodToSkillsMapping.equal_range(mName);
+	}
 
 	useit virtual bool          can_be_prerun_generic() const;
 	useit virtual Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const;

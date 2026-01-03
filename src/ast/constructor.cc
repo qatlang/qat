@@ -94,24 +94,50 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 		if (state.parent->is_done_skill() &&
 		    state.parent->as_done_skill()->has_constructor_with_types(generatedTypes)) {
 			irCtx->Error(
-			    "A constructor with the same signature exists in the same implementation " +
-			        irCtx->color(state.parent->as_done_skill()->to_string()),
+			    "A constructor with a similar signature exist in this implementation." +
+			        String(variadics.has_value()
+			                   ? " This ambiguity exists because this constructor supports variadic arguments,"
+			                     " and a call to this constructor without any arguments for the variadic"
+			                     " argument list will look identical to a call to the other constructor."
+			                   : ""),
 			    fileRange,
-			    Pair<String, FileRangePtr>{
-			        "The existing constructor can be found here",
-			        state.parent->as_done_skill()->get_constructor_with_types(generatedTypes)->get_name().range});
+			    std::make_pair(
+			        "The other constructor was found here",
+			        state.parent->as_done_skill()->get_constructor_with_types(generatedTypes)->get_name().range));
 		}
 		if (state.parent->get_parent_type()->is_expanded() &&
 		    state.parent->get_parent_type()->as_expanded()->has_constructor_with_types(generatedTypes)) {
-			irCtx->Error("A constructor with the same signature exists in the parent type " +
-			                 irCtx->color(state.parent->get_parent_type()->to_string()),
+			irCtx->Error("A constructor with a similar signature exists in the parent type " +
+			                 irCtx->color(state.parent->get_parent_type()->to_string()) + "." +
+			                 (variadics.has_value()
+			                      ? " This ambiguity exists because this constructor supports variadic arguments,"
+			                        " and a call to this constructor without any arguments for the variadic"
+			                        " argument list will look identical to a call to the other constructor."
+			                      : ""),
 			             fileRange,
-			             Pair<String, FileRangePtr>{"The existing constructor can be found here",
-			                                        state.parent->get_parent_type()
-			                                            ->as_expanded()
-			                                            ->get_constructor_with_types(generatedTypes)
-			                                            ->get_name()
-			                                            .range});
+			             std::make_pair("The other constructor in the type can be found here",
+			                            state.parent->get_parent_type()
+			                                ->as_expanded()
+			                                ->get_constructor_with_types(generatedTypes)
+			                                ->get_name()
+			                                .range));
+		}
+		for (auto doneSkill : state.parent->get_parent_type()->get_default_implementations()) {
+			if (state.parent->is_done_skill() and state.parent->as_done_skill()->get_id() == doneSkill->get_id()) {
+				continue;
+			}
+			if (doneSkill->has_constructor_with_types(generatedTypes)) {
+				irCtx->Error("A constructor with a similar signature exists in a default implementation for the type " +
+				                 irCtx->color(state.parent->get_parent_type()->to_string()) + "." +
+				                 (variadics.has_value()
+				                      ? " This ambiguity exists because this constructor supports variadic arguments,"
+				                        " and a call to this constructor without any arguments for the variadic"
+				                        " argument list will look identical to a call to the other constructor."
+				                      : ""),
+				             fileRange,
+				             std::make_pair("The other constructor in the default implementation can be found here",
+				                            doneSkill->get_constructor_with_types(generatedTypes)->get_name().range));
+			}
 		}
 		if (state.parent->get_parent_type()->is_struct()) {
 			auto  structType = state.parent->get_parent_type()->as_struct();

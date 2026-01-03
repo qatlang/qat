@@ -159,16 +159,15 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				}
 				if (not targetType->has_unnamed_implementation_for(skRes)) {
 					String extraInfo;
-					bool   moreThanOne = false;
+					usize  namedImplCount = 0;
 					if (targetType->has_named_implementation_for(skRes)) {
-						auto allDoneSkills = targetType->get_named_implementations_for(skRes);
-						moreThanOne        = allDoneSkills.size() > 1;
-						for (usize i = 0; i < allDoneSkills.size(); i++) {
-							extraInfo += allDoneSkills[i]->get_full_name() + " in " +
-							             allDoneSkills[i]->get_module()->get_referrable_name();
-							if (i != (allDoneSkills.size())) {
-								extraInfo += "\n";
-							}
+						auto allNamed = targetType->get_named_implementations_for(skRes);
+						for (auto it = allNamed.first; it != allNamed.second; it++) {
+							auto done = (*it).second;
+							extraInfo += done->get_full_name() + " in " + done->get_module()->get_referrable_name() +
+							             " at " +
+							             (done->get_name().range != nullptr ? done->get_name().range->to_string() : "");
+							namedImplCount++;
 						}
 					}
 					ctx->Error(
@@ -177,9 +176,10 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 					        ctx->color(skRes->get_full_name()) +
 					        (extraInfo.empty()
 					             ? "."
-					             : (String(". Found the following named implementation") + (moreThanOne ? "s " : " ") +
-					                "of the skill " + ctx->color(skRes->get_full_name()) +
-					                " for the type. Use the syntax " + ctx->color("from ImplementationName") +
+					             : (String(". Found the following named implementation") +
+					                ((namedImplCount > 1) ? "s " : " ") + "of the skill " +
+					                ctx->color(skRes->get_full_name()) + " for the type. Use the syntax " +
+					                ctx->color("from ImplementationName") +
 					                " here to explicitly provide the implementation to create the polymorph from\n" +
 					                extraInfo)),
 					    sk.range);

@@ -15,20 +15,22 @@
 
 namespace qat::ir {
 
-std::map<MethodType, String> Method::methodTypes = {{MethodType::normal, "normalMethod"},
-                                                    {MethodType::staticFn, "staticFunction"},
-                                                    {MethodType::valueMethod, "valueMethod"},
-                                                    {MethodType::fromConvertor, "fromConvertor"},
-                                                    {MethodType::toConvertor, "toConvertor"},
-                                                    {MethodType::constructor, "constructor"},
-                                                    {MethodType::copyConstructor, "copyConstructor"},
-                                                    {MethodType::moveConstructor, "moveConstructor"},
-                                                    {MethodType::copyAssignment, "copyAssignment"},
-                                                    {MethodType::moveAssignment, "moveAssignment"},
-                                                    {MethodType::destructor, "destructor"},
-                                                    {MethodType::binaryOperator, "binaryOperator"},
-                                                    {MethodType::unaryOperator, "unaryOperator"},
-                                                    {MethodType::defaultConstructor, "defaultConstructor"}};
+std::unordered_map<MethodType, String> Method::methodTypes = {
+    {MethodType::normal, "normalMethod"},
+    {MethodType::staticFn, "staticFunction"},
+    {MethodType::valueMethod, "valueMethod"},
+    {MethodType::fromConvertor, "fromConvertor"},
+    {MethodType::toConvertor, "toConvertor"},
+    {MethodType::constructor, "constructor"},
+    {MethodType::copyConstructor, "copyConstructor"},
+    {MethodType::moveConstructor, "moveConstructor"},
+    {MethodType::copyAssignment, "copyAssignment"},
+    {MethodType::moveAssignment, "moveAssignment"},
+    {MethodType::destructor, "destructor"},
+    {MethodType::binaryOperator, "binaryOperator"},
+    {MethodType::unaryOperator, "unaryOperator"},
+    {MethodType::defaultConstructor, "defaultConstructor"},
+};
 
 Vec<MethodParent*> MethodParent::allMemberParents = {};
 

@@ -12,6 +12,7 @@
 
 #include <set>
 #include <string>
+#include <unordered_map>
 
 namespace qat::ast {
 class MethodPrototype;
@@ -94,7 +95,7 @@ class Method : public Function {
 	       ReturnType* returnType, Vec<Argument> args, Maybe<Variadics> variadics, bool isStatic,
 	       Maybe<FileRangePtr> fileRange, VisibilityInfo const& _visibility_info, ir::Ctx* irCtx);
 
-	static std::map<MethodType, String> methodTypes;
+	static std::unordered_map<MethodType, String> methodTypes;
 
 	useit static Method* Create(MethodParent* parent, bool isVar, Identifier const& name, bool isInline,
 	                            ReturnType* returnType, Vec<Argument> const& args, Maybe<Variadics> variadics,

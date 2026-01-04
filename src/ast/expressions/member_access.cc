@@ -31,17 +31,9 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 	} else {
 		if (instance->nodeType() == NodeType::SELF) {
 			ctx->Error("Do not use this syntax for accessing members of the parent instance. Use " +
-			               ctx->color(String("''") +
-			                          (isVarRange.has_value() ? (isVarRange.value().first ? "var:" : "const:") : "") +
-			                          name.value) +
-			               " instead",
+			               ctx->color("''" + name.value) + " instead",
 			           fileRange);
 		}
-	}
-	if (isVarRange.has_value()) {
-		ctx->Error("Found " + ctx->color("var:") +
-		               " in the member access, but it is only allowed for calling variation methods",
-		           isVarRange.value().second);
 	}
 
 	auto* inst             = instance->emit(ctx);

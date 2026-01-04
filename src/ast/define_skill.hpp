@@ -63,8 +63,8 @@ struct SkillMethod {
 	Identifier            name;
 	Vec<Argument*>        arguments;
 	Maybe<Variadics>      variadics;
-	Type*                 givenType;
-	PrerunExpression*     defineChecker;
+	Type*                 givenType     = nullptr;
+	PrerunExpression*     defineChecker = nullptr;
 	FileRangePtr          fileRange;
 
 	void update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent, EmitCtx* ctx);

@@ -152,18 +152,19 @@ void DefineSkill::create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irC
 	auto ctx = EmitCtx::get(irCtx, parent)->with_skill(skill);
 	for (auto& fn : methods) {
 		if (skill->has_definition(fn.name.value)) {
-			ctx->Error("Found a type definition named " + ctx->color(fn.name.value) + " in the parent skill",
+			ctx->Error("Found a type definition named " + ctx->color(fn.name.value) +
+			               " in the parent skill, which conflicts with the name of this method",
 			           fn.name.range);
 		}
 		if (skill->has_prototype(fn.name.value, method_kind_to_ir(fn.kind))) {
-			ctx->Error("Found a " + method_kind_to_string(fn.kind) + " method with the same name " +
+			ctx->Error("Found a " + method_kind_to_string(fn.kind) + "-method with the same name " +
 			               ctx->color(fn.name.value) + " in the parent skill",
 			           fn.name.range);
 		}
 		if (skill->has_prototype(fn.name.value, ir::SkillMethodKind::STATIC)) {
-			ctx->Error("Found a static method named " + ctx->color(fn.name.value) + " in the parent skill. A " +
+			ctx->Error("Found a static-method named " + ctx->color(fn.name.value) + " in the parent skill. A " +
 			               ctx->color(method_kind_to_string(fn.kind)) +
-			               " method cannot have the same name as a static method",
+			               "-method cannot have the same name as a static method",
 			           fn.name.range);
 		}
 		Vec<ir::SkillArg*> args;
@@ -172,16 +173,22 @@ void DefineSkill::create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irC
 			if (arg->is_member_arg()) {
 				ctx->Error("Member arguments are not supported in skill methods", arg->get_name().range);
 			}
-			args.push_back(ir::SkillArg::create(ir::TypeInSkill::get(arg->get_type(), arg->get_type()->emit(ctx)),
-			                                    arg->get_name(), arg->is_variable()));
+			ir::Type* irType = nullptr;
+			if ((arg->get_type()->type_kind() == AstTypeKind::SUBTYPE and
+			     reinterpret_cast<SubType*>(arg->get_type())->skill.has_value())) {
+				irType = arg->get_type()->emit(ctx);
+			}
+			args.push_back(ir::SkillArg::create(ir::TypeInSkill::get(arg->get_type(), irType), arg->get_name(),
+			                                    arg->is_variable()));
 		}
 		Maybe<ir::SkillVariadics> variadicsSk;
 		if (fn.variadics.has_value()) {
 			auto                   kind = ir::VariadicsKind::NORMAL;
 			Maybe<ir::TypeInSkill> type;
 			switch (fn.variadics.value().kind) {
-				case VariadicKind::NORMAL:
+				case VariadicKind::NORMAL: {
 					break;
+				}
 				case VariadicKind::LEGACY: {
 					kind = ir::VariadicsKind::LEGACY;
 					break;
@@ -198,18 +205,27 @@ void DefineSkill::create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irC
 			}
 			variadicsSk = ir::SkillVariadics{.kind = kind, .type = type};
 		}
-		ir::Type* fnGivenType = nullptr;
-		if (not(fn.givenType and fn.givenType->type_kind() == AstTypeKind::SUBTYPE and
-		        reinterpret_cast<SubType*>(fn.givenType)->skill.has_value())) {
-			fnGivenType = fn.givenType->emit(ctx);
+		ir::Type* fnGivenTypeIR = nullptr;
+		if (fn.givenType and not((fn.givenType->type_kind() == AstTypeKind::SUBTYPE) and
+		                         reinterpret_cast<SubType*>(fn.givenType)->skill.has_value())) {
+			fnGivenTypeIR = fn.givenType->emit(ctx);
 		}
-		ir::TypeInSkill givenType = fn.givenType ? ir::TypeInSkill::get(fn.givenType, fnGivenType)
+		ir::TypeInSkill givenType = fn.givenType ? ir::TypeInSkill::get(fn.givenType, fnGivenTypeIR)
 		                                         : ir::TypeInSkill::get(nullptr, ir::VoidType::get(irCtx->llctx));
-		if (fn.kind == SkillMethodKind::STATIC) {
-			(void)ir::SkillMethod::create_static_method(skill, fn.name, givenType, std::move(args), variadicsSk);
-		} else if (fn.kind == SkillMethodKind::NORMAL || fn.kind == SkillMethodKind::VARIATION) {
-			(void)ir::SkillMethod::create_method(skill, fn.name, fn.kind == SkillMethodKind::VARIATION, givenType,
-			                                     std::move(args), variadicsSk);
+		switch (fn.kind) {
+			case SkillMethodKind::STATIC: {
+				(void)ir::SkillMethod::create_static_method(skill, fn.name, givenType, std::move(args), variadicsSk);
+				break;
+			}
+			case SkillMethodKind::NORMAL: {
+				(void)ir::SkillMethod::create_method(skill, fn.name, false, givenType, std::move(args), variadicsSk);
+				break;
+			}
+			case SkillMethodKind::VARIATION: {
+				(void)ir::SkillMethod::create_method(skill, fn.name, true, givenType, std::move(args), variadicsSk);
+				break;
+			}
+				// NOTE - add value-methods
 		}
 	}
 }

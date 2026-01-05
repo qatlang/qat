@@ -2305,7 +2305,8 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 				if (not is_next(TokenType::assignment, i)) {
 					add_error("Expected = after this", RangeAt(i));
 				}
-				auto polyRes  = do_prerun_expression(preCtx, i + 1, None);
+				i++;
+				auto polyRes  = do_prerun_expression(preCtx, i, None);
 				polyQualifier = polyRes.first;
 				i             = polyRes.second;
 				if (not is_next(TokenType::stop, i)) {
@@ -2392,14 +2393,16 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 						          RangeSpan(start, i));
 					}
 				}
-				Vec<ast::Argument*> arguments;
+				Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> arguments{{}, None};
 				if (is_next(TokenType::parenthesisOpen, i)) {
 					auto pEnd = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 1);
 					if (not pEnd.has_value()) {
 						add_error("Expected ) after this to end the list of arguments", RangeAt(i + 1));
 					}
 					if (pEnd.value() != i + 2) {
-						arguments = std::move(do_function_parameters(preCtx, i + 1, pEnd.value()).first);
+						auto paramRes    = do_function_parameters(preCtx, i + 1, pEnd.value());
+						arguments.first  = std::move(paramRes.first);
+						arguments.second = std::move(paramRes.second);
 					}
 					i = pEnd.value();
 				}
@@ -2414,7 +2417,8 @@ Pair<ast::DefineSkill*, usize> Parser::do_skill(Maybe<ast::VisibilitySpec> visib
 				methods.push_back(ast::SkillMethod{.visibSpec     = getVisibSpec(),
 				                                   .kind          = methodKind,
 				                                   .name          = std::move(methodName),
-				                                   .arguments     = std::move(arguments),
+				                                   .arguments     = std::move(arguments.first),
+				                                   .variadics     = std::move(arguments.second),
 				                                   .givenType     = givenType,
 				                                   .defineChecker = entMeta.defineChecker,
 				                                   .fileRange     = RangeSpan(start, i)});
@@ -4979,33 +4983,61 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 					setCachedExpr(ast::Swap::create(ast::SelfInstance::create(RangeAt(i)), subExpr.first, true,
 					                                RangeSpan(i, i + 1)),
 					              i);
-				} else if (((is_next(TokenType::var, i) || is_next(TokenType::constant, i)) &&
-				            is_next(TokenType::colon, i + 1) && is_next(TokenType::identifier, i + 2)) ||
-				           is_next(TokenType::identifier, i)) {
-					auto                            start = i;
-					Maybe<Pair<bool, FileRangePtr>> callNature;
-					if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
-						callNature = std::make_pair(true, RangeAt(i + 1));
+				} else if (is_next(TokenType::identifier, i) or
+				           (is_next(TokenType::var, i) and is_next(TokenType::colon, i + 1) and
+				            is_next(TokenType::identifier, i + 2))) {
+					auto start      = i;
+					auto callNature = ast::MethodCallNature::NONE;
+					if (is_next(TokenType::var, i)) {
+						callNature = ast::MethodCallNature::VAR;
 						i += 2;
+						// NOTE - Colon is not checked as it is already checked in this else-if branch
 					}
-					// FIXME - Support generic member function calls
+					auto name = IdentifierAt(i + 1);
+					// FIXME - Support generic method calls
 					if (is_next(TokenType::parenthesisOpen, i + 1)) {
 						auto pCloseRes = get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
 						if (pCloseRes.has_value()) {
-							auto pClose = pCloseRes.value();
-							auto args   = do_separated_expressions(preCtx, i + 2, pClose);
-							setCachedExpr(ast::MethodCall::create(ast::SelfInstance::create(RangeAt(start)), true,
-							                                      IdentifierAt(i + 1), args, callNature,
-							                                      RangeSpan(start, pClose)),
-							              pClose);
-							i = pClose;
+							auto pClose                    = pCloseRes.value();
+							auto args                      = do_separated_expressions(preCtx, i + 2, pClose);
+							i                              = pClose;
+							auto              disambiguity = ast::MethodDisambiguity::NONE;
+							Maybe<Identifier> doneSkill;
+							if (is_next(TokenType::child, i) and is_next(TokenType::of, i + 1) and
+							    is_next(TokenType::colon, i + 2)) {
+								i += 3;
+								if (is_next(TokenType::Type, i)) {
+									disambiguity = ast::MethodDisambiguity::TYPE;
+								} else if (is_next(TokenType::skill, i)) {
+									disambiguity = ast::MethodDisambiguity::SKILL;
+								} else if (is_next(TokenType::identifier, i)) {
+									disambiguity = ast::MethodDisambiguity::DONE_SKILL;
+									doneSkill    = IdentifierAt(i + 1);
+								} else {
+									add_error(
+									    "Invalid method disambiguity found here. The possible disambiguities are " +
+									        color_error("'of:type") + ", " + color_error("'of:skill") + " and " +
+									        color_error("'of:ImplementationName"),
+									    RangeSpan(i - 3, i));
+								}
+								i++;
+							}
+							setCachedExpr(ast::MethodCall::create(ast::SelfInstance::create(RangeAt(start)), true, name,
+							                                      args, callNature, disambiguity, doneSkill,
+							                                      RangeSpan(start, i)),
+							              i);
 							break;
 						} else {
 							add_error("Expected end for (", RangeAt(i + 2));
 						}
 					} else {
-						setCachedExpr(ast::MemberAccess::create(ast::SelfInstance::create(RangeAt(start)), true,
-						                                        callNature, IdentifierAt(i + 1),
+						if (callNature == ast::MethodCallNature::VAR) {
+							add_error("Found " + color_error("'var:") +
+							              " without a call. It is only meant to be used to call variation-methods."
+							              " Note that getting pointers to methods are not allowed",
+							          RangeSpan(start, i + 1));
+						}
+						setCachedExpr(ast::MemberAccess::create(ast::SelfInstance::create(RangeAt(start)), true, name,
 						                                        RangeSpan(start, i + 1)),
 						              i + 1);
 						i++;
@@ -6027,32 +6059,62 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						                                        RangeSpan(start, i)),
 						              i);
 						break;
-					} else if ((is_next(TokenType::var, i) && is_next(TokenType::colon, i + 1) &&
-					            is_next(TokenType::identifier, i + 2)) ||
-					           is_next(TokenType::identifier, i)) {
-						auto                            start = i;
-						Maybe<Pair<bool, FileRangePtr>> callNature;
-						if (is_next(TokenType::var, i) || is_next(TokenType::constant, i)) {
-							callNature = std::make_pair(tokens.at(i + 1).type == TokenType::var, RangeAt(i + 1));
+					} else if (is_next(TokenType::identifier, i) or
+					           (is_next(TokenType::var, i) and is_next(TokenType::colon, i + 1) and
+					            is_next(TokenType::identifier, i + 2))) {
+						auto start      = i;
+						auto callNature = ast::MethodCallNature::NONE;
+						if (is_next(TokenType::var, i)) {
+							callNature = ast::MethodCallNature::VAR;
 							i += 2;
+							// NOTE - Colon is not checked as it is already checked in this else-if branch
 						}
+						const auto name = IdentifierAt(i + 1);
 						// FIXME - Support generic member function calls
 						if (is_next(TokenType::parenthesisOpen, i + 1)) {
-							auto pCloseRes =
+							auto              disambiguity = ast::MethodDisambiguity::NONE;
+							Maybe<Identifier> doneSkill;
+							auto              pCloseRes =
 							    get_pair_end(TokenType::parenthesisOpen, TokenType::parenthesisClose, i + 2);
 							if (pCloseRes.has_value()) {
 								auto pClose = pCloseRes.value();
 								auto args   = do_separated_expressions(preCtx, i + 2, pClose);
-								setCachedExpr(ast::MethodCall::create(exp, false, IdentifierAt(i + 1), args, callNature,
-								                                      exp->fileRange->spanTo(RangeSpan(start, pClose))),
-								              pClose);
-								i = pClose;
+								i           = pClose;
+								if (is_next(TokenType::child, i) and is_next(TokenType::of, i + 1) and
+								    is_next(TokenType::colon, i + 2)) {
+									i += 3;
+									if (is_next(TokenType::Type, i)) {
+										disambiguity = ast::MethodDisambiguity::TYPE;
+									} else if (is_next(TokenType::skill, i)) {
+										disambiguity = ast::MethodDisambiguity::SKILL;
+									} else if (is_next(TokenType::identifier, i)) {
+										disambiguity = ast::MethodDisambiguity::DONE_SKILL;
+										doneSkill    = IdentifierAt(i + 1);
+									} else {
+										add_error(
+										    "Invalid method disambiguity found here. The possible disambiguities are " +
+										        color_error("'of:type") + ", " + color_error("'of:skill") + " and " +
+										        color_error("'of:ImplementationName"),
+										    RangeSpan(i - 3, i));
+									}
+									i++;
+								}
+								setCachedExpr(ast::MethodCall::create(exp, false, name, args, callNature, disambiguity,
+								                                      doneSkill,
+								                                      exp->fileRange->spanTo(RangeSpan(start, i))),
+								              i);
 								break;
 							} else {
 								add_error("Expected end for (", RangeAt(i + 2));
 							}
 						} else {
-							setCachedExpr(ast::MemberAccess::create(exp, false, callNature, IdentifierAt(i + 1),
+							if (callNature == ast::MethodCallNature::VAR) {
+								add_error("Found " + color_error("'var:") +
+								              " without a call. It can only be used to call variation-methods."
+								              " Note that getting pointers of methods are not allowed",
+								          RangeSpan(start, i + 1));
+							}
+							setCachedExpr(ast::MemberAccess::create(exp, false, name,
 							                                        exp->fileRange->spanTo(RangeSpan(i, i + 1))),
 							              i + 1);
 							i++;

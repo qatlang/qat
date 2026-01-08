@@ -1,4 +1,4 @@
-add_library(QAT_AST_TYPES
+add_library(ASTTypes STATIC
 	address_space.cc
 	array.cc
 	char.cc
@@ -32,8 +32,12 @@ add_library(QAT_AST_TYPES
 	vector.cc
 	void.cc)
 
-target_include_directories(QAT_AST_TYPES PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(ASTTypes PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_directories(QAT_AST_TYPES PUBLIC ../../utils)
+target_include_directories(ASTTypes SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
 
-target_link_libraries(QAT_AST_TYPES QAT_UTILS)
+target_link_directories(ASTTypes PUBLIC ../../utils)
+
+target_link_libraries(ASTTypes utils)

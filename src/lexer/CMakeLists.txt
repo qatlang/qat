@@ -1,9 +1,14 @@
-add_library(QAT_LEXER lexer.cc)
+add_library(lexer STATIC
+  lexer.cc)
 
-target_include_directories(QAT_LEXER PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(lexer PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_directories(QAT_LEXER
+target_include_directories(lexer SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+
+target_link_directories(lexer
 	PUBLIC ../cli
 	PUBLIC ../utils)
 
-target_link_libraries(QAT_LEXER QAT_CLI QAT_UTILS)
+target_link_libraries(lexer cli utils)

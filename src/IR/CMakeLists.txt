@@ -1,4 +1,4 @@
-add_library(QAT_IR STATIC
+add_library(IR STATIC
 	context.cc
 	control_flow.cc
 	generics.cc
@@ -18,13 +18,17 @@ add_library(QAT_IR STATIC
 	type_id.cc
 	value.cc)
 
-target_include_directories(QAT_IR PUBLIC "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}")
+target_compile_options(IR PRIVATE
+  -Wall
+  -Wunused)
+
+target_include_directories(IR SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}")
 
 add_subdirectory(types/)
 
-target_link_directories(QAT_IR
+target_link_directories(IR
 	PUBLIC ../lexer
 	PUBLIC ../utils
 	PUBLIC ../ast)
 
-target_link_libraries(QAT_IR QAT_LEXER QAT_UTILS QAT_AST QAT_IR_TYPES QAT_AST_PRERUN_SENTENCES)
+target_link_libraries(IR lexer utils AST IRTypes ASTPrerunSentences)

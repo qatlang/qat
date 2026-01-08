@@ -1,4 +1,4 @@
-add_library(QAT_AST_PRERUN_SENTENCES
+add_library(ASTPrerunSentences STATIC
   break.cc
   continue.cc
   expression_sentence.cc
@@ -8,8 +8,12 @@ add_library(QAT_AST_PRERUN_SENTENCES
   say.cc
 )
 
-target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(ASTPrerunSentences PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_directories(QAT_AST_SENTENCES PUBLIC ../../utils)
+target_include_directories(ASTPrerunSentences SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
 
-target_link_libraries(QAT_AST_PRERUN_SENTENCES PUBLIC QAT_UTILS QAT_IR)
+target_link_directories(ASTPrerunSentences PUBLIC ../../utils)
+
+target_link_libraries(ASTPrerunSentences PUBLIC utils IR)

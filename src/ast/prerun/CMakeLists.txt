@@ -1,4 +1,4 @@
-add_library(QAT_AST_PRERUN
+add_library(ASTPrerun STATIC
 	array_literal.cc
 	binary_op.cc
 	bitwise_not.cc
@@ -28,8 +28,12 @@ add_library(QAT_AST_PRERUN
 	unsigned_literal.cc
 	variant_initialiser.cc)
 
-target_link_directories(QAT_AST_PRERUN PUBLIC ../../utils)
+target_compile_options(ASTPrerun PRIVATE
+  -Wall
+  -Wunused)
 
-target_include_directories(QAT_AST_PRERUN PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_link_directories(ASTPrerun PUBLIC ../../utils)
 
-target_link_libraries(QAT_AST_PRERUN QAT_UTILS)
+target_include_directories(ASTPrerun SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+
+target_link_libraries(ASTPrerun utils)

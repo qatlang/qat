@@ -1,9 +1,16 @@
-add_library(QAT_AST_META
+add_library(ASTMeta STATIC
   intrinsic.cc
   math.cc
   registers.cc
   todo.cc
 )
-target_link_directories(QAT_AST_META PUBLIC ../../cli)
-target_include_directories(QAT_AST_META PUBLIC "${LLVM_INCLUDE_DIRS}")
-target_link_libraries(QAT_AST_META QAT_CLI)
+
+target_compile_options(ASTMeta PRIVATE
+  -Wall
+  -Wunused)
+
+target_link_directories(ASTMeta PUBLIC ../../cli)
+
+target_include_directories(ASTMeta SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+
+target_link_libraries(ASTMeta cli)

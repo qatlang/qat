@@ -196,7 +196,7 @@ void Lexer::analyse() {
 
 void Lexer::change_file(fs::path newFilePath) {
 	tokens.clear();
-	filePath   = std::construct_at(OwnNormal(String), std::move(newFilePath.string()));
+	filePath   = std::construct_at(OwnNormal(String), newFilePath.string());
 	cursor     = -1;
 	lineNumber = 1;
 	byteNumber = 0;

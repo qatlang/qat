@@ -1,4 +1,4 @@
-add_library(QAT_UTILS
+add_library(utils STATIC
 	file_range.cpp
 	identifier.cpp
 	json_parser.cpp
@@ -12,6 +12,10 @@ add_library(QAT_UTILS
 	utils.cc
 )
 
-target_include_directories(QAT_UTILS PUBLIC "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include")
+target_compile_options(utils PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_libraries(QAT_UTILS PUBLIC Boost::filesystem)
+target_include_directories(utils SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include")
+
+target_link_libraries(utils PUBLIC Boost::filesystem)

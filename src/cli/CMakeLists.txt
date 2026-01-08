@@ -1,4 +1,4 @@
-add_library(QAT_CLI
+add_library(cli STATIC
 	error.cc
 	color.cc
 	config.cc
@@ -6,8 +6,12 @@ add_library(QAT_CLI
 	display.cc
 	logger.cc)
 
-target_include_directories(QAT_CLI PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(cli PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_directories(QAT_CLI PUBLIC ../utils)
+target_include_directories(cli SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
 
-target_link_libraries(QAT_CLI QAT_UTILS)
+target_link_directories(cli PUBLIC ../utils)
+
+target_link_libraries(cli utils)

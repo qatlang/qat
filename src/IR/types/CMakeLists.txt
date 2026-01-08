@@ -1,4 +1,4 @@
-add_library(QAT_IR_TYPES STATIC
+add_library(IRTypes STATIC
 	address_space.cc
 	array.cc
 	char.cc
@@ -32,8 +32,12 @@ add_library(QAT_IR_TYPES STATIC
 	void.cc
 )
 
-target_include_directories(QAT_IR_TYPES PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(IRTypes PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_directories(QAT_IR_TYPES PUBLIC ../../utils)
+target_include_directories(IRTypes SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
 
-target_link_libraries(QAT_IR_TYPES QAT_UTILS)
+target_link_directories(IRTypes PUBLIC ../../utils)
+
+target_link_libraries(IRTypes utils)

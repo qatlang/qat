@@ -1,4 +1,4 @@
-add_library(QAT_AST STATIC
+add_library(AST STATIC
 	assembly_block.cc
 	convertor.cc
 	constructor.cc
@@ -33,7 +33,11 @@ add_library(QAT_AST STATIC
 	type_like.cc
 )
 
-target_include_directories(QAT_AST PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(AST PRIVATE
+  -Wall
+  -Wunused)
+
+target_include_directories(AST SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
 
 add_subdirectory(types/)
 add_subdirectory(expressions/)
@@ -42,16 +46,16 @@ add_subdirectory(prerun/)
 add_subdirectory(prerun_sentences/)
 add_subdirectory(meta/)
 
-target_link_directories(QAT_AST
+target_link_directories(AST
 	PUBLIC ../utils
 	PUBLIC ../IR)
 
-target_link_libraries(QAT_AST
-	QAT_AST_TYPES
-	QAT_AST_EXPRESSIONS
-	QAT_AST_SENTENCES
-	QAT_AST_PRERUN_SENTENCES
-	QAT_AST_PRERUN
-	QAT_AST_META
-	QAT_UTILS
-	QAT_IR)
+target_link_libraries(AST
+	ASTTypes
+	ASTExpressions
+	ASTSentences
+	ASTPrerunSentences
+	ASTPrerun
+	ASTMeta
+	utils
+	IR)

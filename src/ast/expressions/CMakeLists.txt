@@ -1,4 +1,4 @@
-add_library(QAT_AST_EXPRESSIONS STATIC
+add_library(ASTExpressions STATIC
 	address_of.cc
 	array_literal.cc
 	assembly.cc
@@ -43,8 +43,12 @@ add_library(QAT_AST_EXPRESSIONS STATIC
 	tuple_value.cc
 	variant_initialiser.cc)
 
-target_link_directories(QAT_AST_EXPRESSIONS PUBLIC ../../utils)
+target_compile_options(ASTExpressions PRIVATE
+  -Wall
+  -Wunused)
 
-target_include_directories(QAT_AST_EXPRESSIONS PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_link_directories(ASTExpressions PUBLIC ../../utils)
 
-target_link_libraries(QAT_AST_EXPRESSIONS QAT_UTILS)
+target_include_directories(ASTExpressions SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+
+target_link_libraries(ASTExpressions utils)

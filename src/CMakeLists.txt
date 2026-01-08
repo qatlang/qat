@@ -124,7 +124,7 @@ if(is_os_linux)
 	if(is_mode_release)
 		set(CMAKE_CXX_FLAGS "-O3 -w -s -flto ${CMAKE_CXX_FLAGS}")
 	else()
-		set(CMAKE_CXX_FLAGS "-g -O0 -Wall -Wunused ${CMAKE_CXX_FLAGS}")
+		set(CMAKE_CXX_FLAGS "-g -O0 ${CMAKE_CXX_FLAGS}")
 	endif()
 elseif(is_os_macos)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -std=c++23 -flto -w -s -funwind-tables -fno-rtti")
@@ -181,13 +181,13 @@ set(LLVM_LIB_PATHS ${LLVM_LIB_PATHS})
 
 if(is_os_linux)
 	target_link_libraries(
-		${PROJECT_NAME} ${LLVM_LIB_PATHS} QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
+		${PROJECT_NAME} ${LLVM_LIB_PATHS} AST lexer parser IR utils cli
 		stdc++ rt pthread m
 		"${LIBS_DIR}/icu4c/lib/libicuuc.a" "${LIBS_DIR}/icu4c/lib/libicudata.a"
 	)
 elseif(is_os_macos)
 	target_link_libraries(${PROJECT_NAME}
-		${LLVM_LIB_PATHS} QAT_AST QAT_LEXER QAT_PARSER QAT_IR QAT_UTILS QAT_CLI
+		${LLVM_LIB_PATHS} AST lexer parser IR utils cli
 		"${LIBS_DIR}/icu4c/lib/libicuuc.a" "${LIBS_DIR}/icu4c/lib/libicudata.a"
 	)
 	if (CMAKE_CROSSCOMPILING)
@@ -201,13 +201,13 @@ elseif(is_os_windows)
 
 	if(MINGW)
 		target_link_libraries(${PROJECT_NAME}
-			QAT_UTILS QAT_CLI QAT_AST QAT_LEXER QAT_PARSER QAT_IR
+			utils cli AST lexer parser IR
 			${LLVM_LIBRARIES} pthread
 			"${LIBS_DIR}/icu4c/lib/libicuuc.a" "${LIBS_DIR}/icu4c/lib/libicudata.a"
 		)
 	else()
 		target_link_libraries(${PROJECT_NAME}
-			QAT_UTILS QAT_CLI QAT_AST QAT_LEXER QAT_PARSER QAT_IR
+			utils cli AST lexer parser IR
 			${LLVM_LIBRARIES} ${LLD_LIBRARIES}
 			"${LIBS_DIR}/icu4c/lib/icuuc.lib" "${LIBS_DIR}/icu4c/lib/icudt.lib"
 		)

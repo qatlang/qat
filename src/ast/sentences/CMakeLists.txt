@@ -1,4 +1,4 @@
-add_library(QAT_AST_SENTENCES
+add_library(ASTSentences STATIC
 	assignment.cc
 	break.cc
 	continue.cc
@@ -17,8 +17,12 @@ add_library(QAT_AST_SENTENCES
 	use_declaration.cc
 )
 
-target_include_directories(QAT_AST_SENTENCES PUBLIC "${LLVM_INCLUDE_DIRS}")
+target_compile_options(ASTSentences PRIVATE
+  -Wall
+  -Wunused)
 
-target_link_directories(QAT_AST_SENTENCES PUBLIC ../../utils)
+target_include_directories(ASTSentences SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
 
-target_link_libraries(QAT_AST_SENTENCES QAT_UTILS)
+target_link_directories(ASTSentences PUBLIC ../../utils)
+
+target_link_libraries(ASTSentences utils)

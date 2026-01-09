@@ -2,8 +2,8 @@
 #define QAT_IR_STATIC_MEMBER_HPP
 
 #include "../utils/identifier.hpp"
+#include "../utils/mentionable.hpp"
 #include "../utils/visibility.hpp"
-#include "./entity_overview.hpp"
 #include "./value.hpp"
 
 namespace qat::ir {
@@ -11,7 +11,7 @@ namespace qat::ir {
 class StructType;
 class Mod;
 
-class StaticMember final : public Value, public EntityOverview {
+class StaticMember final : public Value, public Mentionable {
 	Identifier     name;
 	StructType*    parent;
 	Value*         initial;
@@ -39,9 +39,6 @@ class StaticMember final : public Value, public EntityOverview {
 	useit Value* get_initial() const { return initial; }
 
 	useit Json to_json() const;
-
-	void update_overview() final;
-
 	~StaticMember() final = default;
 };
 

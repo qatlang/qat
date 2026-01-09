@@ -24,10 +24,9 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
                  Vec<Pair<Identifier, Maybe<Type*>>> _subtypes, Maybe<usize> _defaultVal, ir::Ctx* irCtx,
                  bool addNoneVariant, bool _isPacked, const VisibilityInfo& _visibility, FileRangePtr _fileRange,
                  Maybe<MetaInfo> _metaInfo)
-    : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
-      EntityOverview("mixType", Json(), _name.range), subtypes(std::move(_subtypes)), isPack(_isPacked),
-      defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo), hasNoneVariant(addNoneVariant),
-      opaquedType(_opaquedTy) {
+    : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility), subtypes(std::move(_subtypes)),
+      isPack(_isPacked), defaultVal(_defaultVal), fileRange(std::move(_fileRange)), metaInfo(_metaInfo),
+      hasNoneVariant(addNoneVariant), opaquedType(_opaquedTy) {
 	for (const auto& sub : subtypes) {
 		if (sub.second.has_value()) {
 			auto* typ = sub.second.value();
@@ -64,10 +63,8 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
 		parent->mixTypes.push_back(this);
 	}
 	opaquedType->set_sub_type(this);
-	ovInfo            = opaquedType->ovInfo;
-	ovRange           = opaquedType->ovRange;
-	ovMentions        = opaquedType->ovMentions;
-	ovBroughtMentions = opaquedType->ovBroughtMentions;
+	mentions         = std::move(opaquedType->mentions);
+	importedMentions = std::move(opaquedType->importedMentions);
 }
 
 LinkNames MixType::get_link_names() const {
@@ -101,28 +98,6 @@ LinkNames MixType::get_link_names() const {
 	}
 	linkNames.setLinkAlias(linkAlias);
 	return linkNames;
-}
-
-void MixType::update_overview() {
-	Vec<JsonValue> subTyJson;
-	for (auto const& sub : subtypes) {
-		subTyJson.push_back(Json()
-		                        ._("name", sub.first)
-		                        ._("hasType", sub.second.has_value())
-		                        ._("typeID", sub.second.has_value() ? sub.second.value()->get_id() : JsonValue())
-		                        ._("type", sub.second.has_value() ? sub.second.value()->to_string() : JsonValue()));
-	}
-	ovInfo._("typeID", get_id())
-	    ._("fullName", get_full_name())
-	    ._("moduleID", parent->get_id())
-	    ._("tagBitWidth", tagBitWidth)
-	    ._("isPacked", isPack)
-	    ._("hasDefaultValue", defaultVal.has_value())
-	    ._("subTypes", subTyJson)
-	    ._("visibility", visibility);
-	if (has_default_variant()) {
-		ovInfo._("defaultValue", defaultVal.value());
-	}
 }
 
 void MixType::find_tag_bitwidth() {

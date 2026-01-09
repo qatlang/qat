@@ -18,15 +18,7 @@ ChoiceType::ChoiceType(Identifier _name, Mod* _parent, bool _hasNoneVariant, Vec
                        Maybe<Vec<llvm::ConstantInt*>> _values, Maybe<ir::Type*> _providedType, bool areValuesUnsigned,
                        Maybe<usize> _defaultVal, const VisibilityInfo& _visibility, ir::Ctx* _ctx,
                        FileRangePtr _fileRange, Maybe<MetaInfo> _metaInfo)
-    : EntityOverview("choiceType",
-                     Json()
-                         ._("moduleID", _parent->get_id())
-                         ._("hasValues", _values.has_value())
-                         ._("areValuesUnsigned", areValuesUnsigned)
-                         ._("hasDefault", _defaultVal.has_value())
-                         ._("visibility", _visibility),
-                     _name.range),
-      name(std::move(_name)), parent(_parent), hasNoneVariant(_hasNoneVariant), fields(std::move(_fields)),
+    : name(std::move(_name)), parent(_parent), hasNoneVariant(_hasNoneVariant), fields(std::move(_fields)),
       values(std::move(_values)), providedType(_providedType), visibility(_visibility), defaultVal(_defaultVal),
       metaInfo(_metaInfo), irCtx(_ctx), fileRange(_fileRange) {
 	Maybe<String> foreignID;
@@ -194,33 +186,6 @@ void ChoiceType::get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missi
 }
 
 const VisibilityInfo& ChoiceType::get_visibility() const { return visibility; }
-
-void ChoiceType::update_overview() {
-	Vec<JsonValue> fieldsJson;
-	for (const auto& field : fields) {
-		Vec<JsonValue> namesJSON;
-		for (auto& it : field) {
-			namesJSON.push_back(it);
-		}
-		fieldsJson.push_back(namesJSON);
-	}
-	auto valuesJson = Json();
-	if (values) {
-		Vec<JsonValue> valsValsJson;
-		for (auto val : values.value()) {
-			valsValsJson.push_back(val);
-		}
-	}
-	ovInfo._("fields", fieldsJson)
-	    ._("values", valuesJson)
-	    ._("typeID", get_id())
-	    ._("fullName", get_full_name())
-	    ._("bitWidth", bitwidth)
-	    ._("areValuesUnsigned", areValuesUnsigned);
-	if (defaultVal) {
-		ovInfo._("defaultValue", defaultVal.value());
-	}
-}
 
 Maybe<String> ChoiceType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	if (can_be_prerun_generic()) {

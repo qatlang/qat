@@ -10,9 +10,8 @@ namespace qat::ir {
 ToggleType::ToggleType(Identifier _name, Vec<GenericArgument*> _generics, Vec<Pair<Vec<Identifier>, Type*>> _variants,
                        ir::OpaqueType* _opaqueType, ir::Mod* _parent, VisibilityInfo const& _visibility,
                        Maybe<MetaInfo> _metaInfo, ir::Ctx* irCtx)
-    : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility),
-      EntityOverview(_generics.empty() ? "toggleType" : "genericToggleType", Json()._("name", _name), _name.range),
-      variants(std::move(_variants)), metaInfo(std::move(_metaInfo)) {
+    : ExpandedType(std::move(_name), std::move(_generics), _parent, _visibility), variants(std::move(_variants)),
+      metaInfo(std::move(_metaInfo)) {
 	opaqueEquivalent                 = _opaqueType;
 	usize       candidateSizeInBytes = 0;
 	usize       candidateAlign       = 1024;
@@ -83,40 +82,10 @@ LinkNames ToggleType::get_link_names() const {
 	return linkNames;
 }
 
-void ToggleType::update_overview() {
-	Vec<JsonValue> genericArgumentsJSON;
-	for (auto gen : generics) {
-		genericArgumentsJSON.push_back(gen->to_json());
-	}
-	Vec<JsonValue> variantsJSON;
-	for (auto& var : variants) {
-		Vec<JsonValue> namesJSON;
-		for (auto& it : var.first) {
-			namesJSON.push_back(it);
-		}
-		variantsJSON.push_back(
-		    Json()._("names", namesJSON)._("typeID", var.second->get_id())._("type", var.second->to_string()));
-	}
-	ovInfo = Json()
-	             ._("typeID", get_id())
-	             ._("fullName", get_full_name())
-	             ._("genericArguments", genericArgumentsJSON)
-	             ._("moduleID", parent->get_id())
-	             ._("variants", variantsJSON)
-	             ._("visibility", visibility);
-}
-
 GenericToggleType::GenericToggleType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                      ast::PrerunExpression* _constraint, ast::DefineToggleType* _defineToggleType,
                                      Mod* _parent, VisibilityInfo const& _visibInfo)
-    : EntityOverview("genericToggleType",
-                     Json()
-                         ._("name", _name.value)
-                         ._("fullName", _parent->get_fullname_with_child(_name.value))
-                         ._("visibility", _visibInfo)
-                         ._("moduleID", _parent->get_id()),
-                     _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), defineToggleType(_defineToggleType), parent(_parent),
+    : name(std::move(_name)), generics(std::move(_generics)), defineToggleType(_defineToggleType), parent(_parent),
       visibility(_visibInfo), constraint(_constraint) {
 	parent->genericToggleTypes.push_back(this);
 }
@@ -177,21 +146,6 @@ Type* GenericToggleType::fill_generics(Vec<GenericToFill*>& toFillTypes, ir::Ctx
 	}
 	irCtx->remove_active_generic();
 	return resultTy;
-}
-
-void GenericToggleType::update_overview() {
-	Vec<JsonValue> genericParamsJSON;
-	for (auto* param : generics) {
-		genericParamsJSON.push_back(param->to_json());
-	}
-	Vec<JsonValue> variantsJSON;
-	for (auto var : variants) {
-		variantsJSON.push_back(var.get()->overviewToJson());
-	}
-	ovInfo._("genericParameters", genericParamsJSON)
-	    ._("hasConstraint", constraint != nullptr)
-	    ._("constraint", constraint ? constraint->to_string() : JsonValue())
-	    ._("variants", variantsJSON);
 }
 
 } // namespace qat::ir

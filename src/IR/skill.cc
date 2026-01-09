@@ -87,36 +87,12 @@ String SkillMethod::to_string() const {
 
 Skill::Skill(Identifier _name, bool _canBePoly, Vec<GenericArgument*> _generics, Mod* _parent,
              VisibilityInfo _visibInfo)
-    : EntityOverview("skill",
-                     Json()
-                         ._("name", _name)
-                         ._("canBePolymorph", _canBePoly)
-                         ._("fullName", _parent->get_fullname_with_child(_name.value))
-                         ._("parent", _parent->get_id())
-                         ._("visibility", _visibInfo),
-                     _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)),
+    : name(std::move(_name)), generics(std::move(_generics)), parent(_parent), visibInfo(std::move(_visibInfo)),
       canBePolymorph(_canBePoly) {
 	SHOW("Skill name is " << name.value)
 	if (generics.empty()) {
 		parent->skills.push_back(this);
 	}
-}
-
-void Skill::update_overview() {
-	Vec<JsonValue> genJSON;
-	for (auto* gen : generics) {
-		genJSON.push_back(gen->to_json());
-	}
-	Vec<JsonValue> protoJSON;
-	for (auto* proto : prototypes) {
-		protoJSON.push_back(proto->to_json());
-	}
-	Vec<JsonValue> defJSON;
-	for (auto* def : definitions) {
-		defJSON.push_back(Json()._("name", def->get_name())._("id", def->get_id()));
-	}
-	ovInfo._("generics", genJSON)._("methods", protoJSON)._("definitions", defJSON);
 }
 
 String Skill::get_full_name() const { return parent->get_fullname_with_child(name.value); }
@@ -179,9 +155,8 @@ LinkNames Skill::get_link_names() const {
 GenericSkill::GenericSkill(Identifier _name, Mod* _parent, Vec<ast::GenericAbstractType*> _generics,
                            ast::DefineSkill* _defineSkill, ast::PrerunExpression* _constraint,
                            VisibilityInfo _visibInfo)
-    : EntityOverview("genericSkill", Json(), _name.range), name(std::move(_name)), parent(_parent),
-      generics(std::move(_generics)), defineSkill(_defineSkill), constraint(_constraint),
-      visibInfo(std::move(_visibInfo)) {
+    : name(std::move(_name)), parent(_parent), generics(std::move(_generics)), defineSkill(_defineSkill),
+      constraint(_constraint), visibInfo(std::move(_visibInfo)) {
 	parent->genericSkills.push_back(this);
 }
 
@@ -252,37 +227,9 @@ Skill* GenericSkill::fill_generics(Vec<ir::GenericToFill*>& toFillTypes, ir::Ctx
 	return skill;
 }
 
-void GenericSkill::update_overview() {
-	Vec<JsonValue> genericsJSON;
-	for (auto* gen : generics) {
-		genericsJSON.push_back(gen->to_json());
-	}
-	Vec<JsonValue> variantsJSON;
-	for (auto& sk : variants) {
-		variantsJSON.push_back(Json()._("id", sk.get()->get_id())._("fullName", sk.get()->get_full_name()));
-	}
-	ovInfo._("name", name)
-	    ._("parent", parent->get_id())
-	    ._("generics", genericsJSON)
-	    ._("visibility", visibInfo)
-	    ._("constraint", constraint ? constraint->to_json() : JsonValue())
-	    ._("variants", variantsJSON);
-}
-
 DoneSkill::DoneSkill(Maybe<Identifier> _name, Mod* _parent, Maybe<Skill*> _skill, FileRangePtr _fileRange,
                      Type* _candidateType, FileRangePtr _typeRange)
-    : EntityOverview("doneSkill",
-                     Json()
-                         ._("hasName", _name.has_value())
-                         ._("name", _name.has_value() ? _name.value() : JsonValue())
-                         ._("parent", _parent->get_id())
-                         ._("hasSkill", _skill.has_value())
-                         ._("skill", _skill.has_value() ? _skill.value()->get_id() : JsonValue())
-                         ._("fileRange", _fileRange)
-                         ._("candidateType", _candidateType->get_id())
-                         ._("typeRange", _typeRange),
-                     _typeRange),
-      name(std::move(_name)), parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType),
+    : name(std::move(_name)), parent(_parent), skill(_skill), fileRange(_fileRange), candidateType(_candidateType),
       typeRange(_typeRange) {
 	SHOW("DoneSkill constructor start")
 	if (skill.has_value()) {

@@ -21,19 +21,11 @@ class Expression;
 
 namespace qat::ir {
 
-class StructField final : public EntityOverview, public Uniq {
+class StructField final : public Uniq, public Mentionable {
   public:
 	StructField(Identifier _name, Type* _type, bool _variability, Maybe<ast::Expression*> _defVal,
 	            const VisibilityInfo& _visibility)
-	    : EntityOverview("structField",
-	                     Json()
-	                         ._("name", _name.value)
-	                         ._("type", _type->to_string())
-	                         ._("typeID", _type->get_id())
-	                         ._("isVariable", _variability)
-	                         ._("visibility", _visibility),
-	                     _name.range),
-	      name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility),
+	    : name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility),
 	      variability(_variability) {}
 
 	useit static StructField* create(Identifier name, Type* type, bool variability, Maybe<ast::Expression*> defaultVal,
@@ -41,7 +33,7 @@ class StructField final : public EntityOverview, public Uniq {
 		return std::construct_at(OwnNormal(StructField), name, type, variability, defaultVal, visibility);
 	}
 
-	~StructField() final = default;
+	~StructField() = default;
 
 	Identifier              name;
 	Type*                   type;
@@ -50,7 +42,7 @@ class StructField final : public EntityOverview, public Uniq {
 	bool                    variability;
 };
 
-class StructType final : public ExpandedType, public EntityOverview {
+class StructType final : public ExpandedType {
 	friend class StructField;
 	friend class Method;
 	friend class GenericArgument;
@@ -169,11 +161,9 @@ class StructType final : public ExpandedType, public EntityOverview {
 
 	void add_static_member(const Identifier& name, Type* type, bool variability, Value* initial,
 	                       const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
-
-	void update_overview() final;
 };
 
-class GenericStructType : public Uniq, public EntityOverview {
+class GenericStructType : public Uniq, public Mentionable {
 	friend ast::DefineStructType;
 
   private:
@@ -224,8 +214,6 @@ class GenericStructType : public Uniq, public EntityOverview {
 	useit ast::GenericAbstractType* getGenericAt(usize index) const;
 
 	useit VisibilityInfo get_visibility() const;
-
-	void update_overview() final;
 };
 
 } // namespace qat::ir

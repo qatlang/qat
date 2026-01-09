@@ -19,8 +19,8 @@ namespace qat::ir {
 StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
                        Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext&,
                        Maybe<MetaInfo> _metaInfo, bool isPacked)
-    : ExpandedType(std::move(_name), _generics, mod, _visibility), EntityOverview("structType", Json(), _name.range),
-      opaquedType(_opaqued), members(std::move(_members)), metaInfo(_metaInfo) {
+    : ExpandedType(std::move(_name), _generics, mod, _visibility), opaquedType(_opaqued), members(std::move(_members)),
+      metaInfo(_metaInfo) {
 	SHOW("Generating LLVM Type for struct type members")
 	Vec<llvm::Type*> subtypes;
 	for (auto* mem : members) {
@@ -35,10 +35,8 @@ StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generi
 		mod->structTypes.push_back(this);
 	}
 	opaquedType->set_sub_type(this);
-	ovInfo            = opaquedType->ovInfo;
-	ovMentions        = opaquedType->ovMentions;
-	ovBroughtMentions = opaquedType->ovBroughtMentions;
-	ovRange           = opaquedType->ovRange;
+	mentions         = std::move(opaquedType->mentions);
+	importedMentions = std::move(opaquedType->importedMentions);
 }
 
 LinkNames StructType::get_link_names() const {
@@ -81,42 +79,6 @@ StructType::~StructType() {
 	for (auto* gen : generics) {
 		std::destroy_at(gen);
 	}
-}
-
-void StructType::update_overview() {
-	Vec<JsonValue> memJson;
-	for (auto* mem : members) {
-		memJson.push_back(mem->overviewToJson());
-	}
-	Vec<JsonValue> statMemJson;
-	for (auto* statMem : staticMembers) {
-		statMemJson.push_back(statMem->overviewToJson());
-	}
-	Vec<JsonValue> memFnJson;
-	for (auto* mFn : memberFunctions) {
-		memFnJson.push_back(mFn->overviewToJson());
-	}
-	Vec<JsonValue> genericArgumentsJSON;
-	for (auto* arg : generics) {
-		genericArgumentsJSON.push_back(arg->to_json());
-	}
-	ovInfo = Json()
-	             ._("typeID", get_id())
-	             ._("fullName", get_full_name())
-	             ._("genericArguments", genericArgumentsJSON)
-	             ._("moduleID", parent->get_id())
-	             ._("members", memJson)
-	             ._("staticFields", statMemJson)
-	             ._("memberFunctions", memFnJson)
-	             ._("isDefaultConstructible", is_default_constructible())
-	             ._("isDestructible", is_destructible())
-	             ._("hasSimpleCopy", has_simple_copy())
-	             ._("hasSimpleMove", has_simple_move())
-	             ._("isCopyConstructible", is_copy_constructible())
-	             ._("isMoveConstructible", is_move_constructible())
-	             ._("isCopyAssignable", is_copy_assignable())
-	             ._("isMoveAssignable", is_move_assignable())
-	             ._("visibility", visibility);
 }
 
 u64 StructType::get_field_count() const { return members.size(); }
@@ -435,31 +397,9 @@ String StructType::to_string() const { return get_full_name(); }
 GenericStructType::GenericStructType(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                      ast::PrerunExpression* _constraint, ast::DefineStructType* _defineStructType,
                                      Mod* _parent, const VisibilityInfo& _visibInfo)
-    : EntityOverview("genericStructType",
-                     Json()
-                         ._("name", _name.value)
-                         ._("fullName", _parent->get_fullname_with_child(_name.value))
-                         ._("visibility", _visibInfo)
-                         ._("moduleID", _parent->get_id()),
-                     _name.range),
-      name(std::move(_name)), generics(_generics), defineStructType(_defineStructType), parent(_parent),
+    : name(std::move(_name)), generics(_generics), defineStructType(_defineStructType), parent(_parent),
       visibility(_visibInfo), constraint(_constraint) {
 	parent->genericStructTypes.push_back(this);
-}
-
-void GenericStructType::update_overview() {
-	Vec<JsonValue> genericParamsJson;
-	for (auto* param : generics) {
-		genericParamsJson.push_back(param->to_json());
-	}
-	Vec<JsonValue> variantsJson;
-	for (auto var : variants) {
-		variantsJson.push_back(var.get()->overviewToJson());
-	}
-	ovInfo._("genericParameters", genericParamsJson)
-	    ._("hasConstraint", constraint != nullptr)
-	    ._("constraint", constraint ? constraint->to_string() : JsonValue())
-	    ._("variants", variantsJson);
 }
 
 Identifier GenericStructType::get_name() const { return name; }

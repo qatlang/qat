@@ -22,8 +22,7 @@ Region* Region::get(Identifier name, usize blockSize, Mod* parent, const Visibil
 
 Region::Region(Identifier _name, usize _blockSize, Mod* _module, const VisibilityInfo& _visibInfo, ir::Ctx* irCtx,
                FileRangePtr _fileRange)
-    : EntityOverview("region", Json()._("moduleID", _module->get_id())._("visibility", _visibInfo), _name.range),
-      name(std::move(_name)), blockSize(_blockSize), parent(_module), visibInfo(_visibInfo),
+    : name(std::move(_name)), blockSize(_blockSize), parent(_module), visibInfo(_visibInfo),
       fileRange(std::move(_fileRange)) {
 	parent->regions.push_back(this);
 	auto linkNames          = parent->get_link_names().newWith(LinkNameUnit(_name.value, LinkUnitType::region), None);
@@ -477,8 +476,6 @@ void Region::destroyObjects(ir::Ctx* irCtx) {
 }
 
 ir::Mod* Region::get_module() const { return parent; }
-
-void Region::update_overview() { ovInfo._("typeID", get_id())._("fullName", get_full_name()); }
 
 String Region::to_string() const { return parent->get_fullname_with_child(name.value); }
 

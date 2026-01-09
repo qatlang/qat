@@ -4,7 +4,6 @@
 #include "../../utils/file_range.hpp"
 #include "../../utils/identifier.hpp"
 #include "../../utils/visibility.hpp"
-#include "../entity_overview.hpp"
 #include "../generics.hpp"
 #include "./expanded_type.hpp"
 #include "./qat_type.hpp"
@@ -15,7 +14,7 @@ namespace qat::ir {
 
 class Mod;
 
-class MixType : public ExpandedType, public EntityOverview {
+class MixType : public ExpandedType {
   private:
 	Vec<Pair<Identifier, Maybe<Type*>>> subtypes;
 
@@ -95,7 +94,6 @@ class MixType : public ExpandedType, public EntityOverview {
 	void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 	void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
-	void update_overview() final;
 };
 
 } // namespace qat::ir

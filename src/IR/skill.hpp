@@ -2,9 +2,9 @@
 #define QAT_IR_SKILL_HPP
 
 #include "../utils/identifier.hpp"
+#include "../utils/mentionable.hpp"
 #include "../utils/qat_region.hpp"
 #include "../utils/visibility.hpp"
-#include "./entity_overview.hpp"
 #include "./generic_variant.hpp"
 #include "./generics.hpp"
 #include "./link_names.hpp"
@@ -147,7 +147,7 @@ class SkillMethod {
 	}
 };
 
-class Skill : public Uniq, public EntityOverview {
+class Skill : public Uniq, public Mentionable {
 	friend class DefinitionType;
 	friend class SkillMethod;
 	friend class ast::DoSkill;
@@ -191,11 +191,9 @@ class Skill : public Uniq, public EntityOverview {
 	useit SkillMethod* get_prototype(String const& name, SkillMethodKind kind) const;
 
 	LinkNames get_link_names() const;
-
-	void update_overview() final;
 };
 
-class GenericSkill : public Uniq, public EntityOverview {
+class GenericSkill : public Uniq, public Mentionable {
 	friend class ast::DefineSkill;
 
 	Identifier                     name;
@@ -236,11 +234,9 @@ class GenericSkill : public Uniq, public EntityOverview {
 	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
 
 	useit VisibilityInfo const& get_visibility() const { return visibInfo; }
-
-	void update_overview() final;
 };
 
-class DoneSkill : public EntityOverview, public Uniq {
+class DoneSkill : public Uniq, public Mentionable {
 	friend class Method;
 	friend class DefinitionType;
 	friend class ast::ConvertorPrototype;

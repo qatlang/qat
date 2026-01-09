@@ -4,10 +4,10 @@
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
+#include "../utils/mentionable.hpp"
 #include "../utils/qat_region.hpp"
 #include "../utils/visibility.hpp"
 #include "./argument.hpp"
-#include "./entity_overview.hpp"
 #include "./generic_variant.hpp"
 #include "./generics.hpp"
 #include "./types/qat_type.hpp"
@@ -46,7 +46,7 @@ enum class ExternFnType {
 	CPP,
 };
 
-class LocalValue final : public Value, public Uniq, public EntityOverview {
+class LocalValue final : public Value, public Uniq, public Mentionable {
 	String name;
 
   public:
@@ -64,12 +64,12 @@ class LocalValue final : public Value, public Uniq, public EntityOverview {
 	useit ir::Value* to_new_ir_value() const;
 };
 
-class UseValue final : public Value, public Uniq, public EntityOverview {
+class UseValue final : public Value, public Uniq, public Mentionable {
 	String name;
 
   public:
 	UseValue(String _name, llvm::Value* _value, ir::Type* _type, FileRangePtr _fileRange)
-	    : Value(_value, _type, false), EntityOverview("useValue", Json(), _fileRange), name(_name) {
+	    : Value(_value, _type, false), name(_name) {
 		associatedRange = _fileRange;
 	}
 
@@ -206,14 +206,16 @@ class Block : public Uniq {
 	void add_moved_value(u64 locID) const { movedValues.push_back(locID); }
 
 	void set_active(llvm::IRBuilder<>& builder);
+
 	void collect_all_local_values_so_far(Vec<LocalValue*>& vals) const;
+
 	void collect_locals_from(Vec<LocalValue*>& vals) const;
+
 	void destroy_locals(ast::EmitCtx* ctx);
-	void output_local_overview(Vec<JsonValue>& jsonVals);
 };
 
 // Function represents a normal function in the language
-class Function : public Value, public Uniq, public EntityOverview {
+class Function : public Value, public Uniq, public Mentionable {
 	friend class Block;
 
   protected:
@@ -311,12 +313,10 @@ class Function : public Value, public Uniq, public EntityOverview {
 
 	void set_active_block(usize index) const { activeBlock = index; }
 
-	void update_overview() override;
-
 	~Function() override;
 };
 
-class GenericFunction : public Uniq, public EntityOverview {
+class GenericFunction : public Uniq, public Mentionable {
 	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;
 	ast::FunctionPrototype*        functionDefinition;
@@ -351,8 +351,6 @@ class GenericFunction : public Uniq, public EntityOverview {
 	useit VisibilityInfo            get_visibility() const;
 	useit Function*                 fill_generics(Vec<ir::GenericToFill*> _types, Ctx* irCtx, FileRangePtr fileRange);
 	useit bool                      all_generics_have_default() const;
-
-	void update_overview() final;
 };
 
 void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, FileRangePtr fileRange);

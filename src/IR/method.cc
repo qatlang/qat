@@ -551,43 +551,4 @@ String Method::get_full_name() const {
 	       (isVariation ? "var:" : "") + name.value;
 }
 
-void Method::update_overview() {
-	Vec<JsonValue> localsJson;
-	for (auto* block : blocks) {
-		block->output_local_overview(localsJson);
-	}
-	Vec<JsonValue> argsJSON;
-	for (auto arg : arguments) {
-		if (arg.get_type() != nullptr) {
-			argsJSON.push_back(Json()
-			                       ._("isVar", arg.get_variability())
-			                       ._("name", arg.get_name().value != "" ? arg.get_name().value : JsonValue())
-			                       ._("typeID", arg.get_type()->get_id()));
-		}
-	}
-	ovRange = selfName.range;
-	ovInfo._("fullName", get_full_name())
-	    ._("name", selfName)
-	    ._("arguments", argsJSON)
-	    ._("isInSkill", is_in_skill())
-	    ._("skillID", is_in_skill() ? get_parent_skill()->get_id() : JsonValue())
-	    ._("parentTypeID", parent->get_parent_type()->get_id())
-	    ._("moduleID", parent->is_done_skill() ? parent->as_done_skill()->get_module()->get_id()
-	                                           : parent->as_expanded()->get_module()->get_id())
-	    ._("isVariation", isVariation)
-	    ._("methodType", method_type_to_string(fnType))
-	    ._("visibility", visibilityInfo)
-	    ._("isVariadic", variadics.has_value())
-	    ._("variadics",
-	       variadics.has_value()
-	           ? Json()
-	                 ._("kind", variadics.value().kind == VariadicsKind::NORMAL
-	                                ? "normal"
-	                                : (variadics.value().kind == VariadicsKind::LEGACY ? "legacy" : "typed"))
-	                 ._("type",
-	                    variadics.value().kind == VariadicsKind::TYPED ? variadics.value().type->get_id() : JsonValue())
-	           : JsonValue())
-	    ._("locals", localsJson);
-}
-
 } // namespace qat::ir

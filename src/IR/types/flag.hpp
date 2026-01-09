@@ -2,9 +2,9 @@
 #define QAT_IR_TYPES_FLAG_HPP
 
 #include "../../utils/identifier.hpp"
+#include "../../utils/mentionable.hpp"
 #include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
-#include "../entity_overview.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {
@@ -20,7 +20,7 @@ struct FlagVariant {
 	bool            isDefault;
 };
 
-class FlagType final : public EntityOverview, public Type {
+class FlagType final : public Type, public Mentionable {
 	friend struct ast::PatternFlag;
 
 	Identifier               name;

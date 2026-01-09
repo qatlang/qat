@@ -3,6 +3,7 @@
 
 #include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
+#include "../utils/macros.hpp"
 
 namespace qat::ir {
 class Value;

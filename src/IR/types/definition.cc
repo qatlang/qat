@@ -13,8 +13,7 @@ namespace qat::ir {
 
 DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericArgument*> _generics,
                                Maybe<TypeDefParent> _methodParent, Mod* _mod, const VisibilityInfo& _visibInfo)
-    : ExpandedType(_name, _generics, _mod, _visibInfo), EntityOverview("typeDefinition", Json(), _name.range),
-      parentEntity(_methodParent), subType(_subType) {
+    : ExpandedType(_name, _generics, _mod, _visibInfo), parentEntity(_methodParent), subType(_subType) {
 	setSubType(subType);
 	linkingName = subType->get_name_for_linking();
 	if (parentEntity.has_value()) {
@@ -111,20 +110,6 @@ bool DefinitionType::has_simple_copy() const { return subType->has_simple_copy()
 
 bool DefinitionType::has_simple_move() const { return subType->has_simple_move(); }
 
-void DefinitionType::update_overview() {
-	Vec<JsonValue> genJson;
-	for (auto* gen : generics) {
-		genJson.push_back(gen->to_json());
-	}
-	ovInfo._("fullName", get_full_name())
-	    ._("typeID", get_id())
-	    ._("subTypeID", subType->get_id())
-	    ._("visibility", visibility)
-	    ._("hasGenerics", not generics.empty())
-	    ._("generics", genJson)
-	    ._("moduleID", parent->get_id());
-}
-
 Maybe<String> DefinitionType::to_prerun_generic_string(ir::PrerunValue* constant) const {
 	if (subType->can_be_prerun_generic()) {
 		return subType->to_prerun_generic_string(constant);
@@ -149,14 +134,7 @@ GenericDefinitionType::GenericDefinitionType(Identifier _name, Vec<ast::GenericA
                                              Maybe<ast::PrerunExpression*> _constraint,
                                              ast::TypeDefinition* _defineTypeDef, Mod* _parent,
                                              const VisibilityInfo& _visibInfo)
-    : EntityOverview("genericTypeDefinition",
-                     Json()
-                         ._("name", _name.value)
-                         ._("fullName", _parent->get_fullname_with_child(_name.value))
-                         ._("visibility", _visibInfo)
-                         ._("moduleID", _parent->get_id()),
-                     _name.range),
-      name(_name), generics(_generics), defineTypeDef(_defineTypeDef), parent(_parent), visibility(_visibInfo),
+    : name(_name), generics(_generics), defineTypeDef(_defineTypeDef), parent(_parent), visibility(_visibInfo),
       constraint(_constraint) {
 	parent->genericTypeDefinitions.push_back(this);
 }

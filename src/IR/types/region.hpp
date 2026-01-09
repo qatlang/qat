@@ -10,7 +10,7 @@ namespace qat::ir {
 
 class Mod;
 
-class Region : public Type, public EntityOverview {
+class Region : public Type, public Mentionable {
   private:
 	Identifier     name;
 	usize          blockSize;
@@ -42,10 +42,9 @@ class Region : public Type, public EntityOverview {
 
 	void destroyObjects(ir::Ctx* irCtx);
 
-	useit bool                  is_accessible(const AccessInfo& reqInfo) const;
-	useit const VisibilityInfo& get_visibility() const;
+	useit bool is_accessible(const AccessInfo& reqInfo) const;
 
-	void update_overview() final;
+	useit const VisibilityInfo& get_visibility() const;
 
 	useit TypeKind type_kind() const final { return TypeKind::REGION; }
 

@@ -13,7 +13,7 @@ class DefineMixType;
 
 namespace qat::ir {
 
-class ExpandedType : public Type {
+class ExpandedType : public Type, public Mentionable {
 	friend class Method;
 	friend class DefinitionType;
 	friend class ast::DefineStructType;

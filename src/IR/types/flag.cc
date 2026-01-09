@@ -8,14 +8,7 @@ namespace qat::ir {
 
 FlagType::FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, Maybe<Vec<PrerunValue*>> _values,
                    UnsignedType* _underlyingType, FileRangePtr _range, VisibilityInfo _visibility)
-    : EntityOverview("flagType",
-                     Json()
-                         ._("name", _name)
-                         ._("parent", _parent->get_id())
-                         ._("underlyingType", _underlyingType->get_id())
-                         ._("visibility", _visibility),
-                     _name.range),
-      name(std::move(_name)), parent(_parent), variants(std::move(_variants)), values(std::move(_values)),
+    : name(std::move(_name)), parent(_parent), variants(std::move(_variants)), values(std::move(_values)),
       underlyingType(_underlyingType), range(std::move(_range)), visibility(std::move(_visibility)) {
 	for (auto& it : variants) {
 		if (it.isDefault) {

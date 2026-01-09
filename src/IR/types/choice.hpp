@@ -3,9 +3,9 @@
 
 #include "../../utils/file_range.hpp"
 #include "../../utils/identifier.hpp"
+#include "../../utils/mentionable.hpp"
 #include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
-#include "../entity_overview.hpp"
 #include "../meta_info.hpp"
 #include "./qat_type.hpp"
 
@@ -16,7 +16,7 @@ namespace qat::ir {
 
 class Mod;
 
-class ChoiceType : public Type, public EntityOverview {
+class ChoiceType : public Type, public Mentionable {
   private:
 	Identifier                     name;
 	Mod*                           parent;
@@ -99,8 +99,6 @@ class ChoiceType : public Type, public EntityOverview {
 	void find_bitwidth_for_values() const;
 
 	void get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
-
-	void update_overview() final;
 
 	useit bool is_type_sized() const final;
 

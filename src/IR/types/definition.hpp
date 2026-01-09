@@ -6,7 +6,6 @@
 #include "../../utils/identifier.hpp"
 #include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
-#include "../entity_overview.hpp"
 #include "../generic_variant.hpp"
 #include "./expanded_type.hpp"
 
@@ -58,7 +57,7 @@ struct TypeDefParent {
 	useit MethodParent* as_method_parent() const { return (MethodParent*)data; }
 };
 
-class DefinitionType : public ExpandedType, public EntityOverview {
+class DefinitionType : public ExpandedType {
 	Maybe<TypeDefParent> parentEntity;
 	Type*                subType;
 
@@ -122,8 +121,6 @@ class DefinitionType : public ExpandedType, public EntityOverview {
 
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-	void update_overview() final;
-
 	useit bool can_be_prerun() const final { return subType->can_be_prerun(); }
 
 	useit bool can_be_prerun_generic() const final { return subType->can_be_prerun_generic(); }
@@ -135,7 +132,7 @@ class DefinitionType : public ExpandedType, public EntityOverview {
 	useit VisibilityInfo get_visibility() const;
 };
 
-class GenericDefinitionType : public Uniq, public EntityOverview {
+class GenericDefinitionType : public Uniq, public Mentionable {
   private:
 	Identifier                     name;
 	Vec<ast::GenericAbstractType*> generics;

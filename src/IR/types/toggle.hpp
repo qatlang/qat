@@ -11,7 +11,7 @@ class DefineToggleType;
 
 namespace qat::ir {
 
-class ToggleType : public ExpandedType, public EntityOverview {
+class ToggleType : public ExpandedType {
 	Vec<Pair<Vec<Identifier>, Type*>> variants;
 	usize                             underlyingTypeIndex = 0;
 
@@ -100,11 +100,9 @@ class ToggleType : public ExpandedType, public EntityOverview {
 	useit TypeKind type_kind() const final { return TypeKind::TOGGLE; }
 
 	useit String to_string() const final { return name.value; }
-
-	void update_overview() final;
 };
 
-class GenericToggleType : public Uniq, public EntityOverview {
+class GenericToggleType : public Uniq, public Mentionable {
 	friend ast::DefineToggleType;
 
   private:
@@ -146,8 +144,6 @@ class GenericToggleType : public Uniq, public EntityOverview {
 	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics[index]; }
 
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
-
-	void update_overview() final;
 };
 
 } // namespace qat::ir

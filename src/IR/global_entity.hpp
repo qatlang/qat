@@ -2,15 +2,15 @@
 #define QAT_IR_GLOBAL_ENTITY_HPP
 
 #include "../utils/identifier.hpp"
+#include "../utils/mentionable.hpp"
 #include "../utils/visibility.hpp"
-#include "./entity_overview.hpp"
 #include "./value.hpp"
 
 namespace qat::ir {
 
 class Mod;
 
-class PrerunGlobal : public PrerunValue, public EntityOverview {
+class PrerunGlobal : public PrerunValue, public Mentionable {
 	Identifier     name;
 	VisibilityInfo visibility;
 	Mod*           parent;
@@ -34,7 +34,7 @@ class PrerunGlobal : public PrerunValue, public EntityOverview {
 	useit VisibilityInfo const& get_visibility() const { return visibility; }
 };
 
-class GlobalEntity : public Value, public EntityOverview {
+class GlobalEntity : public Value, public Mentionable {
 	Identifier             name;
 	VisibilityInfo         visibility;
 	Mod*                   parent;

@@ -11,16 +11,7 @@ namespace qat::ir {
 OpaqueType::OpaqueType(Identifier _name, Vec<GenericArgument*> _generics, Maybe<u64> _genericID,
                        Maybe<OpaqueSubtypeKind> _subtypeKind, ir::Mod* _parent, Maybe<usize> _size,
                        VisibilityInfo _visibility, llvm::LLVMContext& llctx, Maybe<MetaInfo> _metaInfo)
-    : EntityOverview(
-          _subtypeKind.has_value()
-              ? (_subtypeKind.value() == OpaqueSubtypeKind::STRUCT
-                     ? "structType"
-                     : (_subtypeKind.value() == OpaqueSubtypeKind::MIX
-                            ? "mixType"
-                            : (_subtypeKind.value() == OpaqueSubtypeKind::TOGGLE ? "toggleType" : "opaqueType")))
-              : "opaqueType",
-          Json(), _name.range),
-      name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
+    : name(_name), generics(_generics), genericID(_genericID), subtypeKind(_subtypeKind), parent(_parent), size(_size),
       visibility(_visibility), metaInfo(_metaInfo) {
 	Maybe<String> foreignID;
 	Maybe<String> linkAlias;

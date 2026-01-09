@@ -19,7 +19,7 @@ class Config;
 
 using ErrorLocation = std::variant<FileRangePtr, fs::path>;
 
-useit inline fs::path getPathFromErrorLocation(ErrorLocation& loc) {
+inline fs::path getPathFromErrorLocation(ErrorLocation& loc) {
 	if (loc.index() == 0) {
 		return *std::get<FileRangePtr>(loc)->file;
 	} else {
@@ -40,7 +40,7 @@ class Logger {
   public:
 	Logger();
 	~Logger() = default;
-	useit static Unique<Logger> const& get();
+	static Unique<Logger> const& get();
 
 	void say(String message) const {
 		if (logLevel == LogLevel::NONE) {
@@ -54,7 +54,7 @@ class Logger {
 	void diagnostic(String message) const;
 	void warn(String message, Maybe<ErrorLocation> range);
 
-	exitFn void fatalError(String message, Maybe<ErrorLocation> range);
+	[[noreturn]] void fatalError(String message, Maybe<ErrorLocation> range);
 };
 
 } // namespace qat

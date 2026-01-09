@@ -36,8 +36,7 @@ PrerunFunction::PrerunFunction(Mod* _parent, Identifier _name, Type* _retTy, Vec
                                Pair<Vec<ast::PrerunSentence*>, FileRangePtr> _sentences, VisibilityInfo visib,
                                llvm::LLVMContext& ctx)
     : PrerunValue((llvm::Constant*)this, ir::FunctionType::create(ReturnType::get(_retTy), _argTys, None, ctx)),
-      EntityOverview("prerunFunction", Json(), _name.range), name(_name), returnType(_retTy), argTypes(_argTys),
-      parent(_parent), visibility(visib), sentences(_sentences) {
+      name(_name), returnType(_retTy), argTypes(_argTys), parent(_parent), visibility(visib), sentences(_sentences) {
 	parent->prerunFunctions.push_back(this);
 }
 
@@ -63,20 +62,6 @@ PrerunValue* PrerunFunction::call_prerun(Vec<PrerunValue*> argValues, Ctx* irCtx
 		irCtx->Error("This prerun function did not give any value", fileRange);
 	}
 	std::unreachable();
-}
-
-void PrerunFunction::update_overview() {
-	Vec<JsonValue> argTyJSON;
-	for (auto* argTy : argTypes) {
-		argTyJSON.push_back(argTy->to_json());
-	}
-	ovInfo = Json()
-	             ._("name", name)
-	             ._("fullName", get_full_name())
-	             ._("arguments", argTyJSON)
-	             ._("parent", parent->get_id())
-	             ._("givenType", returnType->get_id())
-	             ._("visibility", visibility);
 }
 
 } // namespace qat::ir

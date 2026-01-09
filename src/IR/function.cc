@@ -32,15 +32,7 @@
 namespace qat::ir {
 
 LocalValue::LocalValue(String _name, ir::Type* _type, bool _isVar, Function* fun, FileRangePtr _fileRange)
-    : Value(nullptr, _type, _isVar), EntityOverview("localValue",
-                                                    Json()
-                                                        ._("name", _name)
-                                                        ._("typeID", _type->get_id())
-                                                        ._("type", _type->to_string())
-                                                        ._("isVariable", _isVar)
-                                                        ._("functionID", fun->get_id()),
-                                                    _fileRange),
-      name(std::move(_name)) {
+    : Value(nullptr, _type, _isVar), name(std::move(_name)) {
 	associatedRange = std::move(_fileRange);
 	SHOW("Type is " << type->to_string())
 	SHOW("Creating llvm::AllocaInst for " << name)
@@ -253,20 +245,11 @@ void Block::destroy_locals(ast::EmitCtx* ctx) {
 	}
 }
 
-void Block::output_local_overview(Vec<JsonValue>& jsonVals) {
-	for (auto* loc : values) {
-		jsonVals.push_back(loc->overviewToJson());
-	}
-	for (auto* child : children) {
-		child->output_local_overview(jsonVals);
-	}
-}
-
 Function::Function(Mod* _mod, Identifier _name, Maybe<LinkNames> _namingInfo, Vec<GenericArgument*> _generics,
                    bool _isInline, ReturnType* returnType, Vec<Argument> _args, Maybe<Variadics> _variadics,
                    Maybe<FileRangePtr> _fileRange, VisibilityInfo const& _visibilityInfo, ir::Ctx* _ctx,
                    bool isMemberFn, Maybe<llvm::GlobalValue::LinkageTypes> llvmLinkage, Maybe<MetaInfo> _metaInfo)
-    : Value(nullptr, nullptr, false), EntityOverview("function", Json(), _name.range), name(std::move(_name)),
+    : Value(nullptr, nullptr, false), name(std::move(_name)),
       namingInfo(_namingInfo.value_or(LinkNames({}, None, _mod))), generics(std::move(_generics)), mod(_mod),
       arguments(std::move(_args)), visibilityInfo(_visibilityInfo), fileRange(std::move(_fileRange)),
       variadics(_variadics), isInline(_isInline), metaInfo(_metaInfo), ctx(_ctx) //
@@ -369,34 +352,6 @@ Function* Function::Create(Mod* mod, Identifier name, Maybe<LinkNames> namingInf
 	                         linkage, metaInfo);
 }
 
-void Function::update_overview() {
-	Vec<JsonValue> localsJson;
-	for (auto* block : blocks) {
-		block->output_local_overview(localsJson);
-	}
-	Vec<JsonValue> argsJSON;
-	for (auto arg : arguments) {
-		if (arg.get_type() != nullptr) {
-			argsJSON.push_back(Json()
-			                       ._("isVar", arg.get_variability())
-			                       ._("name", arg.get_name().value != "" ? arg.get_name() : JsonValue())
-			                       ._("typeID", arg.get_type()->get_id()));
-		}
-	}
-	Vec<JsonValue> genericArgsJSON;
-	for (auto* param : generics) {
-		genericArgsJSON.push_back(param->to_json());
-	}
-	ovInfo._("name", name.value)
-	    ._("fullName", get_full_name())
-	    ._("genericArguments", genericArgsJSON)
-	    ._("arguments", argsJSON)
-	    ._("functionID", get_id())
-	    ._("moduleID", mod->get_id())
-	    ._("visibility", visibilityInfo)
-	    ._("locals", localsJson);
-}
-
 String Function::get_full_name() const { return mod->get_fullname_with_child(name.value); }
 
 ir::LocalValue* Function::get_str_comparison_index(ir::Ctx* irCtx) {
@@ -410,25 +365,9 @@ ir::LocalValue* Function::get_str_comparison_index(ir::Ctx* irCtx) {
 GenericFunction::GenericFunction(Identifier _name, Vec<ast::GenericAbstractType*> _generics,
                                  ast::PrerunExpression* _constraint, ast::FunctionPrototype* _functionDef, Mod* _parent,
                                  const VisibilityInfo& _visibInfo)
-    : EntityOverview("genericFunction",
-                     Json()
-                         ._("name", _name.value)
-                         ._("fullName", _parent->get_fullname_with_child(_name.value))
-                         ._("functionID", get_id())
-                         ._("moduleID", _parent->get_id())
-                         ._("visibility", _visibInfo),
-                     _name.range),
-      name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), constraint(_constraint),
+    : name(std::move(_name)), generics(std::move(_generics)), functionDefinition(_functionDef), constraint(_constraint),
       parent(_parent), visibInfo(_visibInfo) {
 	parent->genericFunctions.push_back(this);
-}
-
-void GenericFunction::update_overview() {
-	Vec<JsonValue> genericParamsJSON;
-	for (auto* param : generics) {
-		genericParamsJSON.push_back(param->to_json());
-	}
-	ovInfo._("genericParameters", genericParamsJSON);
 }
 
 Identifier GenericFunction::get_name() const { return name; }

@@ -2,11 +2,11 @@
 #define QAT_IR_TYPES_OPAQUE_HPP
 
 #include "../../utils/identifier.hpp"
+#include "../../utils/mentionable.hpp"
 #include "../../utils/visibility.hpp"
-#include "../entity_overview.hpp"
 #include "../generics.hpp"
 #include "../meta_info.hpp"
-#include "qat_type.hpp"
+#include "./qat_type.hpp"
 
 #include <llvm/IR/LLVMContext.h>
 
@@ -22,7 +22,7 @@ class Method;
 
 enum class OpaqueSubtypeKind { STRUCT, MIX, TOGGLE, unknown };
 
-class OpaqueType : public Type, public EntityOverview {
+class OpaqueType : public Type, public Mentionable {
 	friend class ast::DefineStructType;
 	friend class ast::DefineMixType;
 	friend class ir::StructType;

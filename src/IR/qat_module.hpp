@@ -8,7 +8,6 @@
 #include "../utils/visibility.hpp"
 #include "./brought.hpp"
 #include "./emit_phase.hpp"
-#include "./entity_overview.hpp"
 #include "./function.hpp"
 #include "./global_entity.hpp"
 #include "./link_names.hpp"
@@ -438,7 +437,7 @@ class GenericStructType;
 class Skill;
 struct ModTypeInfo;
 
-class Mod final : public Uniq, public EntityOverview {
+class Mod final : public Uniq, public Mentionable {
 	friend class Region;
 	friend class OpaqueType;
 	friend class StructType;
@@ -596,7 +595,6 @@ class Mod final : public Uniq, public EntityOverview {
 	mutable bool hasHandledFilesystemBrings   = false;
 	mutable bool hasCreatedEntities           = false;
 	mutable bool hasUpdatedEntityDependencies = false;
-	mutable bool isOverviewOutputted          = false;
 
 	bool isCompiledToObject = false;
 	bool isBundled          = false;
@@ -765,14 +763,6 @@ class Mod final : public Uniq, public EntityOverview {
 	void add_filesystem_import_mention(ir::Mod* otherMod, FileRangePtr fileRange);
 
 	useit Vec<Pair<Mod*, FileRangePtr>> const& get_fs_bring_mentions() const;
-
-	void update_overview() final;
-	void output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-	                         Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
-	                         Vec<JsonValue>& genericStructTypesJSON, Vec<JsonValue>& structTypesJson,
-	                         Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
-	                         Vec<JsonValue>& defsJson, Vec<JsonValue>& genericTypeDefsJSON, Vec<JsonValue>& skillsJSON,
-	                         Vec<JsonValue>& genericSkillsJSON);
 
 	// LIB
 

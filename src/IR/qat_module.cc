@@ -149,8 +149,8 @@ Mod* Mod::get_folder_module(const fs::path& fPath) {
 
 Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
          Ctx* ctx)
-    : EntityOverview("module", Json(), _name.range), name(std::move(_name)), moduleType(_type),
-      filePath(std::move(_filepath)), basePath(std::move(_basePath)), visibility(_visibility) {
+    : name(std::move(_name)), moduleType(_type), filePath(std::move(_filepath)), basePath(std::move(_basePath)),
+      visibility(_visibility) {
 	SHOW("Module constructor " << this << ", name := " << name.value)
 	llvmModule = std::construct_at(OwnNormal(llvm::Module), get_full_name(), ctx->llctx);
 	llvmModule->setModuleIdentifier(get_full_name());
@@ -387,98 +387,6 @@ void Mod::add_filesystem_import_mention(Mod* otherMod, FileRangePtr fileRange) {
 }
 
 Vec<Pair<Mod*, FileRangePtr>> const& Mod::get_fs_bring_mentions() const { return fsBroughtMentions; }
-
-void Mod::update_overview() {
-	String moduleTyStr;
-	switch (moduleType) {
-		case ModuleType::file: {
-			moduleTyStr = "file";
-			break;
-		}
-		case ModuleType::folder: {
-			moduleTyStr = "folder";
-			break;
-		}
-		case ModuleType::lib: {
-			moduleTyStr = "lib";
-			break;
-		}
-	}
-	Vec<JsonValue> integerBitsVal;
-	Vec<JsonValue> unsignedBitsVal;
-	for (auto bit : integerBitwidths) {
-		integerBitsVal.push_back(bit);
-	}
-	for (auto bit : unsignedBitwidths) {
-		unsignedBitsVal.push_back(bit);
-	}
-	Vec<JsonValue> fsBroughtMentionsJson;
-	for (auto const& men : fsBroughtMentions) {
-		fsBroughtMentionsJson.push_back(men.second);
-	}
-	ovInfo._("moduleID", get_id())
-	    ._("fullName", get_full_name())
-	    ._("isFilesystemLib", rootLib)
-	    ._("moduleType", moduleTyStr)
-	    ._("visibility", visibility)
-	    ._("hasModuleInitialiser", ((moduleInitialiser != nullptr) && (nonConstantGlobals > 0)))
-	    ._("integerBitwidths", integerBitsVal)
-	    ._("unsignedBitwidths", unsignedBitsVal)
-	    ._("filesystemBroughtMentions", fsBroughtMentionsJson);
-}
-
-void Mod::output_all_overview(Vec<JsonValue>& modulesJson, Vec<JsonValue>& functionsJson,
-                              Vec<JsonValue>& prerunFunctionJSON, Vec<JsonValue>& genericFunctionsJson,
-                              Vec<JsonValue>& genericStructTypesJson, Vec<JsonValue>& structTypesJson,
-                              Vec<JsonValue>& mixTypesJson, Vec<JsonValue>& regionJson, Vec<JsonValue>& choiceJson,
-                              Vec<JsonValue>& defsJson, Vec<JsonValue>& genericTypeDefsJSON, Vec<JsonValue>& skillsJSON,
-                              Vec<JsonValue>& genericSkillsJSON) {
-	if (not isOverviewOutputted) {
-		isOverviewOutputted = true;
-		modulesJson.push_back(overviewToJson());
-		for (auto* fun : functions) {
-			functionsJson.push_back(fun->overviewToJson());
-		}
-		for (auto* pre : prerunFunctions) {
-			prerunFunctionJSON.push_back(pre->overviewToJson());
-		}
-		for (auto* fun : genericFunctions) {
-			genericFunctionsJson.push_back(fun->overviewToJson());
-		}
-		for (auto* cTy : structTypes) {
-			structTypesJson.push_back(cTy->overviewToJson());
-		}
-		for (auto* cTy : genericStructTypes) {
-			genericStructTypesJson.push_back(cTy->overviewToJson());
-		}
-		for (auto* mTy : mixTypes) {
-			mixTypesJson.push_back(mTy->overviewToJson());
-		}
-		for (auto* reg : regions) {
-			regionJson.push_back(reg->overviewToJson());
-		}
-		for (auto* chTy : choiceTypes) {
-			choiceJson.push_back(chTy->overviewToJson());
-		}
-		for (auto* tDef : typeDefs) {
-			defsJson.push_back(tDef->overviewToJson());
-		}
-		for (auto* tDef : genericTypeDefinitions) {
-			genericTypeDefsJSON.push_back(tDef->overviewToJson());
-		}
-		for (auto* sk : skills) {
-			skillsJSON.push_back(sk->overviewToJson());
-		}
-		for (auto* sk : genericSkills) {
-			genericSkillsJSON.push_back(sk->overviewToJson());
-		}
-		for (auto* sub : submodules) {
-			sub->output_all_overview(modulesJson, functionsJson, prerunFunctionJSON, genericFunctionsJson,
-			                         genericStructTypesJson, structTypesJson, mixTypesJson, regionJson, choiceJson,
-			                         defsJson, genericTypeDefsJSON, skillsJSON, genericSkillsJSON);
-		}
-	}
-}
 
 String Mod::get_name() const { return name.value; }
 
@@ -3553,14 +3461,12 @@ void Mod::bundle_modules(Ctx* ctx) {
 				}
 			}
 			ctx->add_exe_path(fs::absolute(outPath).lexically_normal());
-			if (cfg->export_code_metadata()) {
-				std::ifstream file(filePath, std::ios::binary);
-				auto          fsize = file.tellg();
-				file.seekg(0, std::ios::end);
-				fsize = file.tellg() - fsize;
-				ctx->add_binary_size(fsize);
-				file.close();
-			}
+			std::ifstream file(filePath, std::ios::binary);
+			auto          fsize = file.tellg();
+			file.seekg(0, std::ios::end);
+			fsize = file.tellg() - fsize;
+			ctx->add_binary_size(fsize);
+			file.close();
 		} else {
 			auto windowsTripleToMachine = [](llvm::Triple const& triple) -> String {
 				if (triple.isWindowsArm64EC()) {

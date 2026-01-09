@@ -47,7 +47,6 @@ class Config {
 	bool bundleWorkflow  = false;
 	bool analyseWorkflow = false;
 	bool clearLLVMFiles  = false;
-	bool exportCodeInfo  = false;
 	bool isFreestanding  = false;
 	bool isNoCoreLib     = false;
 	bool diagnostic      = false;
@@ -110,8 +109,6 @@ class Config {
 	useit bool is_freestanding() const { return isFreestanding; }
 
 	useit bool is_no_corelib_enabled() const { return isNoCoreLib || isFreestanding; }
-
-	useit bool export_code_metadata() const { return exportCodeInfo; }
 
 	useit ColorMode color_mode() const { return colorMode; }
 

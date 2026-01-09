@@ -210,8 +210,6 @@ class Method : public Function {
 	void add_method_call(ir::Method* other) { memberFunctionCalls.insert(other); }
 
 	void add_init_member(Pair<usize, FileRangePtr> memInfo) { initTypeMembers.push_back(memInfo); }
-
-	void update_overview() final;
 };
 
 } // namespace qat::ir

@@ -40,9 +40,12 @@ class IfElse final : public Sentence {
 	}
 
 	useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
-	useit bool              getKnownValue(usize ind) const;
-	useit bool              hasValueAt(usize ind) const;
-	useit bool              isFalseTill(usize ind) const;
+
+	useit bool getKnownValue(usize ind) const;
+
+	useit bool hasValueAt(usize ind) const;
+
+	useit bool isFalseTill(usize ind) const;
 
 	useit bool hasAnyKnownValue() const {
 		for (const auto& val : knownVals) {
@@ -54,7 +57,6 @@ class IfElse final : public Sentence {
 	};
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json       to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::IF_ELSE_IF; }
 };

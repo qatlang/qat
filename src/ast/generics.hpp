@@ -35,7 +35,6 @@ class FillGeneric {
 
 	useit ir::GenericToFill* toFill(EmitCtx* ctx) const;
 
-	useit Json   to_json() const;
 	useit String to_string() const;
 };
 

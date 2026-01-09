@@ -25,8 +25,4 @@ ir::Value* LogicalNot::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json LogicalNot::to_json() const {
-	return Json()._("nodeType", "notExpression")._("expression", exp->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

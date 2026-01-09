@@ -120,8 +120,7 @@ class MethodPrototype {
 		}
 	}
 
-	void       define(MethodState& state, ir::Ctx* irCtx);
-	useit Json to_json() const;
+	void define(MethodState& state, ir::Ctx* irCtx);
 
 	useit NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
 
@@ -152,9 +151,9 @@ class MethodDefinition {
 		}
 	}
 
-	void  define(MethodState& state, ir::Ctx* irCtx);
+	void define(MethodState& state, ir::Ctx* irCtx);
+
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
-	useit Json       to_json() const;
 
 	useit NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };

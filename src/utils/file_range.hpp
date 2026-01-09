@@ -1,23 +1,22 @@
 #ifndef QAT_UTILS_FILE_PLACEMENT_HPP
 #define QAT_UTILS_FILE_PLACEMENT_HPP
 
-#include "./json.hpp"
+#include "./helpers.hpp"
 
+#include <boost/json.hpp>
 #include <filesystem>
 
 namespace qat {
 
 struct FilePos {
-	explicit FilePos(Json json);
 	FilePos(u64 line, u64 byteOffset);
 
 	u64 line;
 	u64 byteOffset;
 
-	operator JsonValue() const;
-	operator Json() const;
+	boost::json::object to_json() const { return {{"line", line}, {"byteOffset", byteOffset}}; }
 
-	operator String() const { return std::to_string(line) + ":" + std::to_string(byteOffset); }
+	String to_string() const { return std::to_string(line) + ":" + std::to_string(byteOffset); }
 };
 
 std::ostream& operator<<(std::ostream& os, FilePos const& pos);
@@ -38,21 +37,27 @@ class FileRange {
 
 	static FileRangePtr null;
 
-	useit static FileRangePtr from_path(String* _filePath);
+	static FileRangePtr from_path(String* _filePath);
 
-	useit static FileRangePtr from(String* _file, FilePos _start, FilePos _end);
+	static FileRangePtr from(String* _file, FilePos _start, FilePos _end);
 
-	useit static FileRange* var_from(String* _file, FilePos _start, FilePos _end);
+	static FileRange* var_from(String* _file, FilePos _start, FilePos _end);
 
-	useit static FileRangePtr merge(FileRangePtr first, FileRangePtr second);
+	static FileRangePtr merge(FileRangePtr first, FileRangePtr second);
 
-	useit FileRangePtr spanTo(FileRangePtr other) const;
-	useit FileRangePtr trimTo(FilePos othStart) const;
-	useit String       start_to_string() const;
-	useit bool         is_before(FileRangePtr another) const;
-	useit String       to_string() const;
-	useit Json         to_json() const;
-	useit JsonValue    to_json_value() const;
+	FileRangePtr spanTo(FileRangePtr other) const;
+
+	FileRangePtr trimTo(FilePos othStart) const;
+
+	String start_to_string() const;
+
+	bool is_before(FileRangePtr another) const;
+
+	boost::json::object to_json() const {
+		return {{"path", *file}, {"start", start.to_json()}, {"end", end.to_json()}};
+	}
+
+	String to_string() const;
 };
 
 std::ostream& operator<<(std::ostream& os, FileRangePtr) = delete;

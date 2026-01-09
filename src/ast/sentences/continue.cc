@@ -50,8 +50,4 @@ ir::Value* Continue::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Continue::to_json() const {
-	return Json()._("hasTag", tag.has_value())._("tag", tag.has_value() ? tag.value() : JsonValue());
-}
-
 } // namespace qat::ast

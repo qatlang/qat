@@ -37,7 +37,6 @@ class CustomIntegerLiteral final : public PrerunExpression, public TypeInferrabl
 
 	useit static String radixToString(u8 val);
 
-	useit Json   to_json() const final;
 	useit String to_string() const final;
 
 	useit NodeType nodeType() const final { return NodeType::CUSTOM_INTEGER_LITERAL; }

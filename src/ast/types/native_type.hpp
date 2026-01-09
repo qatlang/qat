@@ -35,14 +35,14 @@ class NativeType final : public Type {
 		return std::construct_at(OwnNormal(NativeType), cTypeKind, false, None, None, fileRange);
 	}
 
-	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*);
+	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final;
 
 	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+
 	useit ir::Type* emit(EmitCtx* ctx) final;
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::NATIVE_TYPE; }
 
-	useit Json   to_json() const final;
 	useit String to_string() const final;
 };
 

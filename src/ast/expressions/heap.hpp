@@ -29,8 +29,6 @@ class HeapGet final : public Expression {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::HEAP_GET; }
-
-	useit Json to_json() const final;
 };
 
 class HeapPut final : public Expression {
@@ -51,8 +49,6 @@ class HeapPut final : public Expression {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::HEAP_PUT; }
-
-	useit Json to_json() const final;
 };
 
 class HeapGrow final : public Expression {
@@ -79,8 +75,6 @@ class HeapGrow final : public Expression {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::HEAP_GROW; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

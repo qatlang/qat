@@ -27,7 +27,6 @@ class Assignment final : public Sentence {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx);
-	useit Json       to_json() const;
 
 	useit NodeType nodeType() const { return NodeType::ASSIGNMENT; }
 };

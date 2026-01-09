@@ -28,6 +28,4 @@ ir::Value* SelfInstance::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json SelfInstance::to_json() const { return Json()._("nodeType", "selfInstance")._("fileRange", fileRange); }
-
 } // namespace qat::ast

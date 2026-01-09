@@ -29,8 +29,6 @@ class Character final : public PrerunExpression {
 	useit NodeType nodeType() const final { return NodeType::CHARACTER; }
 
 	useit String to_string() const final;
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

@@ -39,12 +39,4 @@ void AssemblyBlock::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	mod->get_llvm_module()->appendModuleInlineAsm(ir::TextType::value_to_string(cont));
 }
 
-useit Json AssemblyBlock::to_json() const {
-	return Json()
-	    ._("nodeType", "assemblyBlock")
-	    ._("content", content->to_json())
-	    ._("defineChecker", defineChecker->to_json())
-	    ._("fileRange", fileRange->to_json());
-}
-
 } // namespace qat::ast

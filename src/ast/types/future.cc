@@ -12,23 +12,19 @@ void FutureType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> 
 }
 
 Maybe<usize> FutureType::get_type_bitsize(EmitCtx* ctx) const {
-	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(llvm::StructType::create(
-	    {llvm::Type::getInt64Ty(ctx->irCtx->llctx), llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
-	     llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace()),
-	     llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx), ctx->irCtx->dataLayout.getProgramAddressSpace())})));
+	return (usize)(ctx->mod->get_llvm_module()->getDataLayout().getTypeAllocSizeInBits(
+	    llvm::StructType::create({llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+	                              llvm::PointerType::get(llvm::Type::getInt64Ty(ctx->irCtx->llctx),
+	                                                     ctx->irCtx->dataLayout.getProgramAddressSpace()),
+	                              llvm::PointerType::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
+	                                                     ctx->irCtx->dataLayout.getProgramAddressSpace()),
+	                              llvm::PointerType::get(llvm::Type::getInt8Ty(ctx->irCtx->llctx),
+	                                                     ctx->irCtx->dataLayout.getProgramAddressSpace())})));
 }
 
 ir::Type* FutureType::emit(EmitCtx* ctx) { return ir::FutureType::get(subType->emit(ctx), isPacked, ctx->irCtx); }
 
 AstTypeKind FutureType::type_kind() const { return AstTypeKind::FUTURE; }
-
-Json FutureType::to_json() const {
-	return Json()
-	    ._("typeKind", "future")
-	    ._("isPacked", isPacked)
-	    ._("subType", subType->to_json())
-	    ._("fileRange", fileRange);
-}
 
 String FutureType::to_string() const {
 	return "future:[" + String(isPacked ? "pack, " : "") + subType->to_string() + "]";

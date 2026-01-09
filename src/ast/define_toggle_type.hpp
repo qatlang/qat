@@ -63,8 +63,6 @@ class DefineToggleType : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final;
-
 	useit NodeType nodeType() const final { return NodeType::DEFINE_TOGGLE_TYPE; }
 };
 

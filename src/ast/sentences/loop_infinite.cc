@@ -53,17 +53,4 @@ ir::Value* LoopInfinite::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json LoopInfinite::to_json() const {
-	Vec<JsonValue> snts;
-	for (auto* snt : sentences) {
-		snts.push_back(snt->to_json());
-	}
-	return Json()
-	    ._("nodeType", "loopNormal")
-	    ._("sentences", snts)
-	    ._("hasTag", tag.has_value())
-	    ._("tag", tag.has_value() ? tag.value() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

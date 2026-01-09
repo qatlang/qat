@@ -183,24 +183,4 @@ void DefineToggleType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 	}
 }
 
-Json DefineToggleType::to_json() const {
-	Vec<JsonValue> variantsJSON;
-	for (auto& it : variants) {
-		Json itJson;
-		itJson._("type", it.second->to_json());
-		Vec<JsonValue> namesJson;
-		for (auto& itName : it.first) {
-			namesJson.push_back((JsonValue)itName);
-		}
-		itJson._("names", namesJson);
-		variantsJSON.push_back(itJson);
-	}
-	return Json()
-	    ._("nodeType", "defineToggleType")
-	    ._("name", name)
-	    ._("variants", variantsJSON)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue());
-}
-
 } // namespace qat::ast

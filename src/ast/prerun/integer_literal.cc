@@ -59,8 +59,4 @@ ir::PrerunValue* IntegerLiteral::emit(EmitCtx* ctx) {
 
 String IntegerLiteral::to_string() const { return value; }
 
-Json IntegerLiteral::to_json() const {
-	return Json()._("nodeType", "integerLiteral")._("value", value)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

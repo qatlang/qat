@@ -59,8 +59,7 @@ class OperatorPrototype {
 		}
 	}
 
-	void       define(MethodState& state, ir::Ctx* irCtx);
-	useit Json to_json() const;
+	void define(MethodState& state, ir::Ctx* irCtx);
 
 	useit NodeType nodeType() const { return NodeType::OPERATOR_PROTOTYPE; }
 
@@ -90,9 +89,9 @@ class OperatorDefinition {
 		}
 	}
 
-	void  define(MethodState& state, ir::Ctx* irCtx);
+	void define(MethodState& state, ir::Ctx* irCtx);
+
 	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
-	useit Json       to_json() const;
 
 	useit NodeType nodeType() const { return NodeType::OPERATOR_DEFINITION; }
 };

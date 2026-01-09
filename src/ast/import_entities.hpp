@@ -32,12 +32,14 @@ class ImportGroup {
 	}
 
 	void add_member(ImportGroup* mem);
+
 	void extend_filerange(FileRangePtr end);
+
 	void perform_import() const;
 
 	useit bool has_members() const;
+
 	useit bool is_all_imported() const;
-	useit Json to_json() const;
 };
 
 class ImportEntities final : public IsEntity {
@@ -56,12 +58,12 @@ class ImportEntities final : public IsEntity {
 	}
 
 	void create_entity(ir::Mod* mod, ir::Ctx* irCtx) final;
+
 	void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
+
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
 	void handle_imports(ir::Mod* mod, ir::Ctx* irCtx) const;
-
-	useit Json to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::IMPORT_ENTITIES; }
 

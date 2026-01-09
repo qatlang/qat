@@ -316,21 +316,6 @@ void MethodPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	state.result->skillMethod = skillMethod;
 }
 
-Json MethodPrototype::to_json() const {
-	Vec<JsonValue> args;
-	for (auto* arg : arguments) {
-		args.push_back(arg->to_json());
-	}
-	return Json()
-	    ._("nodeType", "methodPrototype")
-	    ._("functionType", method_type_to_string(fnTy))
-	    ._("name", name)
-	    ._("hasReturnType", returnType.has_value())
-	    ._("returnType", returnType.has_value() ? returnType.value()->to_json() : JsonValue())
-	    ._("arguments", args)
-	    ._("variadics", variadics.has_value() ? variadics.value().to_json() : JsonValue());
-}
-
 void MethodDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
 
 ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
@@ -382,18 +367,6 @@ ir::Value* MethodDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	ir::function_return_handler(irCtx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
 	SHOW("Sentences emitted")
 	return nullptr;
-}
-
-Json MethodDefinition::to_json() const {
-	Vec<JsonValue> sntcs;
-	for (auto* sentence : sentences) {
-		sntcs.push_back(sentence->to_json());
-	}
-	return Json()
-	    ._("nodeType", "memberDefinition")
-	    ._("prototype", prototype->to_json())
-	    ._("body", sntcs)
-	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

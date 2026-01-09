@@ -41,8 +41,6 @@ class PolySkillSpec {
 	useit DoneSkillEntity& as_done_skill() { return std::get<1>(spec); }
 
 	useit FileRangePtr get_range() const { return range; }
-
-	useit Json to_json() const { return is_skill() ? as_skill().to_json() : as_done_skill().to_json(); }
 };
 
 class GetPolymorph final : public Expression {
@@ -86,23 +84,6 @@ class GetPolymorph final : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::GET_POLYMORPH; }
-
-	useit Json to_json() const final {
-		Vec<JsonValue> skillsJSON;
-		for (auto& sk : skills) {
-			skillsJSON.push_back(sk.to_json());
-		}
-		return Json()
-		    ._("nodeType", "getPolymorph")
-		    ._("value", value->to_json())
-		    ._("isVar", isVar)
-		    ._("isType", isTypeRange.has_value())
-		    ._("typeRange", isTypeRange.has_value() ? isTypeRange.value()->to_json_value() : JsonValue())
-		    ._("skillSpecifications", skillsJSON)
-		    ._("hasPointerOwner", owner.has_value())
-		    ._("pointerOwner", owner.has_value() ? owner.value().to_json() : JsonValue())
-		    ._("fileRange", fileRange);
-	}
 };
 
 } // namespace qat::ast

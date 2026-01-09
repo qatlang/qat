@@ -38,10 +38,6 @@ class DefinePrerunFunction : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final {
-		return Json()._("nodeType", "definePrerunFunction")._("name", name)._("fileRange", fileRange);
-	}
-
 	useit NodeType nodeType() const final { return NodeType::DEFINE_PRERUN_FUNCTION; }
 };
 

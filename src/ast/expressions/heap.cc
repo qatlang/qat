@@ -78,14 +78,6 @@ ir::Value* HeapGet::emit(EmitCtx* ctx) {
 	}
 }
 
-Json HeapGet::to_json() const {
-	return Json()
-	    ._("nodeType", "heapGet")
-	    ._("type", type->to_json())
-	    ._("count", count->to_json())
-	    ._("fileRange", fileRange);
-}
-
 ir::Value* HeapPut::emit(EmitCtx* ctx) {
 	if (ptr->nodeType() == NodeType::NULL_POINTER) {
 		ctx->Error("Null pointers cannot be freed", ptr->fileRange);
@@ -126,10 +118,6 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 	                                                              ctx->irCtx->dataLayout.getProgramAddressSpace()))}),
 	                      ir::VoidType::get(ctx->irCtx->llctx), false)
 	    ->with_range(fileRange);
-}
-
-Json HeapPut::to_json() const {
-	return Json()._("nodeType", "heapPut")._("pointer", ptr->to_json())._("fileRange", fileRange);
 }
 
 ir::Value* HeapGrow::emit(EmitCtx* ctx) {
@@ -247,15 +235,6 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		           count->fileRange);
 	}
 	std::unreachable();
-}
-
-Json HeapGrow::to_json() const {
-	return Json()
-	    ._("nodeType", "heapGrow")
-	    ._("type", type->to_json())
-	    ._("pointer", ptr->to_json())
-	    ._("count", count->to_json())
-	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

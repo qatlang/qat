@@ -34,10 +34,10 @@ class DefineChoiceType : public IsEntity {
 	}
 
 	void create_entity(ir::Mod* mod, ir::Ctx* irCtx) final;
-	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
-	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final;
+	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+
+	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::DEFINE_CHOICE_TYPE; }
 };

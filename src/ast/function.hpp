@@ -52,19 +52,22 @@ class FunctionPrototype final : public IsEntity {
 	}
 
 	useit bool is_generic() const;
+
 	useit Vec<GenericAbstractType*> get_generics() const;
 
 	void set_variant_name(const String& value) const;
+
 	void unset_variant_name() const;
 
 	ir::Function* create_function(ir::Mod* mod, ir::Ctx* irCtx) const;
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	void       emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
-	useit Json to_json() const final;
+	void emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
 
 	useit NodeType nodeType() const final { return NodeType::FUNCTION_PROTOTYPE; }
 

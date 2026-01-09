@@ -50,20 +50,6 @@ class PolymorphType final : public Type {
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::POLYMORPH; }
 
-	useit Json to_json() const final {
-		Vec<JsonValue> skillsJSON;
-		for (auto sk : skills) {
-			skillsJSON.push_back(sk.to_json());
-		}
-		return Json()
-		    ._("typeKind", "polymorph")
-		    ._("isVar", isVar)
-		    ._("isTyped", isTyped)
-		    ._("skills", skillsJSON)
-		    ._("hasPtrOwner", owner.has_value())
-		    ._("ptrOwner", owner.has_value() ? owner.value().to_json() : JsonValue());
-	}
-
 	useit String to_string() const final {
 		String skillStr;
 		for (usize i = 0; i < skills.size(); i++) {

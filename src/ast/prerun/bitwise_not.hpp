@@ -21,8 +21,8 @@ class PrerunBitwiseNot final : public PrerunExpression {
 	}
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx);
-	useit String           to_string() const final;
-	useit Json             to_json() const final;
+
+	useit String to_string() const final;
 
 	useit NodeType nodeType() const final { return NodeType::PRERUN_BITWISE_NOT; }
 };

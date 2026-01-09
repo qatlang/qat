@@ -45,8 +45,4 @@ ir::Value* ConfirmRef::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json ConfirmRef::to_json() const {
-	return Json()._("nodeType", "CONFIRM_REF")._("subExpression", subExpr->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

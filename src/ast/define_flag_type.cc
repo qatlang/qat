@@ -6,19 +6,6 @@
 
 namespace qat::ast {
 
-Json FlagVariant::to_json() const {
-	Vec<JsonValue> namesJSON;
-	for (auto& name : names) {
-		namesJSON.push_back(name);
-	}
-	return Json()
-	    ._("names", namesJSON)
-	    ._("hasValue", value != nullptr)
-	    ._("value", value ? value->to_json() : JsonValue())
-	    ._("isDefault", isDefault)
-	    ._("fileRange", range);
-}
-
 void DefineFlagType::create_entity(ir::Mod* mod, ir::Ctx* irCtx) {
 	mod->entity_name_check(irCtx, name, ir::EntityType::flagType);
 	entityState = mod->add_entity(name, ir::EntityType::flagType, this, ir::EmitPhase::phase_1);
@@ -106,21 +93,6 @@ void DefineFlagType::do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irC
 		                           foundOneValue ? Maybe<Vec<ir::PrerunValue*>>(valuesList) : None, underType,
 		                           fileRange, ctx->get_visibility_info(visibSpec));
 	}
-}
-
-Json DefineFlagType::to_json() const {
-	Vec<JsonValue> variantsJSON;
-	for (auto& var : variants) {
-		variantsJSON.push_back(var.to_json());
-	}
-	return Json()
-	    ._("name", name)
-	    ._("variants", variantsJSON)
-	    ._("hasProvidedType", providedType != nullptr)
-	    ._("providedType", providedType ? providedType->to_json() : JsonValue())
-	    ._("fileRange", fileRange)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue());
 }
 
 } // namespace qat::ast

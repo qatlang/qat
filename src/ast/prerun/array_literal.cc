@@ -92,9 +92,4 @@ String PrerunArrayLiteral::to_string() const {
 	return result;
 }
 
-Json PrerunArrayLiteral::to_json() const {
-	Vec<JsonValue> valuesJson;
-	return Json()._("nodeType", "arrayLiteral")._("values", valuesJson)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

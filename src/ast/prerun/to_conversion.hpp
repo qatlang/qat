@@ -21,8 +21,8 @@ class PrerunTo final : public PrerunExpression {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx);
-	useit String           to_string() const final;
-	useit Json             to_json() const final;
+
+	useit String to_string() const final;
 
 	useit NodeType nodeType() const final { return NodeType::PRERUN_TO_CONVERSION; }
 };

@@ -94,8 +94,4 @@ ir::Value* Await::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Await::to_json() const {
-	return Json()._("nodeType", "await")._("expression", exp->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

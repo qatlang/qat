@@ -27,8 +27,6 @@ class AssemblyBlock final : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final;
-
 	useit NodeType nodeType() const final { return NodeType::ASSEMBLY_BLOCK; }
 };
 

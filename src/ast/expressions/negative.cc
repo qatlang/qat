@@ -84,8 +84,4 @@ ir::Value* Negative::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json Negative::to_json() const {
-	return Json()._("nodeType", "negative")._("subExpression", value->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

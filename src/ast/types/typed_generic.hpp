@@ -44,8 +44,6 @@ class TypedGenericAbstract final : public GenericAbstractType {
 	void       setType(ir::Type* typ) const;
 	void       unset() const final;
 
-	useit Json to_json() const final;
-
 	~TypedGenericAbstract() final;
 };
 

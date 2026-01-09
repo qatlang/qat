@@ -169,20 +169,4 @@ void TypeDefinition::create_type_in_parent(TypeInParentState& state, ir::Mod* mo
 
 ir::DefinitionType* TypeDefinition::getDefinition() const { return typeDefinition; }
 
-Json TypeDefinition::to_json() const {
-	Vec<JsonValue> genJson;
-	for (auto* gen : generics) {
-		genJson.push_back(gen->to_json());
-	}
-	return Json()
-	    ._("nodeType", "typeDefinition")
-	    ._("name", name)
-	    ._("subType", subType->to_json())
-	    ._("hasGenerics", not generics.empty())
-	    ._("generics", genJson)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

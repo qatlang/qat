@@ -90,23 +90,6 @@ class AtomicOperations : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::ATOMIC_OPERATIONS; }
-
-	useit Json to_json() const final {
-		Vec<JsonValue> argsJSON;
-		for (auto* arg : arguments) {
-			argsJSON.push_back(arg->to_json());
-		}
-		Vec<JsonValue> ordersJSON;
-		for (auto* ord : ordering) {
-			ordersJSON.push_back(ord->to_json());
-		}
-		return Json()
-		    ._("operation", operation_to_string(ops))
-		    ._("candidate", candidate->to_json())
-		    ._("orderings", ordersJSON)
-		    ._("arguments", argsJSON)
-		    ._("fileRange", fileRange->to_json());
-	}
 };
 
 } // namespace qat::ast

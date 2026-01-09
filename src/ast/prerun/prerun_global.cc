@@ -39,14 +39,4 @@ void PrerunGlobal::define(ir::Mod* mod, ir::Ctx* irCtx) const {
 	                               emitCtx->get_visibility_info(visibSpec), name.range);
 }
 
-Json PrerunGlobal::to_json() const {
-	return Json()
-	    ._("nodeType", "prerunGlobal")
-	    ._("name", name)
-	    ._("hasType", type.has_value())
-	    ._("type", type.has_value() ? type.value()->to_json() : JsonValue())
-	    ._("value", value->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -33,11 +33,12 @@ class GlobalDeclaration : public IsEntity {
 	}
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx);
-	void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx);
-	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx);
-	void define(ir::Mod* mod, ir::Ctx* irCtx);
 
-	useit Json to_json() const final;
+	void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx);
+
+	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx);
+
+	void define(ir::Mod* mod, ir::Ctx* irCtx);
 
 	useit NodeType nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
 };

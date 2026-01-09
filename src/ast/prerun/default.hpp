@@ -32,7 +32,6 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
 	useit NodeType nodeType() const final { return NodeType::PRERUN_DEFAULT; }
 
 	useit String to_string() const final;
-	useit Json   to_json() const final;
 };
 
 } // namespace qat::ast

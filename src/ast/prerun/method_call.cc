@@ -312,16 +312,4 @@ String PrerunMemberFnCall::to_string() const {
 	return instance->to_string() + "'" + memberName.value + "(" + argStr + ")";
 }
 
-Json PrerunMemberFnCall::to_json() const {
-	Vec<JsonValue> argJson;
-	for (auto arg : arguments) {
-		argJson.push_back(arg->to_json());
-	}
-	return Json()
-	    ._("instance", instance->to_json())
-	    ._("memberName", memberName)
-	    ._("arguments", argJson)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

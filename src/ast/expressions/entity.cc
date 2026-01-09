@@ -309,12 +309,4 @@ ir::Value* Entity::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Entity::to_json() const {
-	Vec<JsonValue> namesJs;
-	for (auto const& nam : names) {
-		namesJs.push_back(JsonValue(nam));
-	}
-	return Json()._("nodeType", "entity")._("names", namesJs)._("relative", relative)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

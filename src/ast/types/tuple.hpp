@@ -27,8 +27,6 @@ class TupleType final : public Type {
 
 	useit AstTypeKind type_kind() const final;
 
-	useit Json to_json() const final;
-
 	useit String to_string() const final;
 };
 

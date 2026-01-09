@@ -13,16 +13,6 @@ namespace qat::ir {
 
 String TypeInSkill::to_string() const { return irType ? irType->to_string() : astType->to_string(); }
 
-Json TypeInSkill::to_json() const {
-	return Json()
-	    ._("hasAST", astType != nullptr)
-	    ._("astType", astType ? astType->to_json() : JsonValue())
-	    ._("hasIR", irType != nullptr)
-	    ._("irType", irType ? irType->get_id() : JsonValue());
-}
-
-Json SkillArg::to_json() const { return Json()._("type", type.to_json())._("name", name)._("isVar", isVar); }
-
 SkillMethod::SkillMethod(SkillMethodKind _fnTy, Skill* _skill, Identifier _name, TypeInSkill _returnType,
                          Vec<SkillArg*> _arguments, Maybe<SkillVariadics> _variadics)
     : index(_skill->prototypes.size()), parent(_skill), name(_name), methodKind(_fnTy), returnType(_returnType),

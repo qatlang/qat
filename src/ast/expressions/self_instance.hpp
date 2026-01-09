@@ -16,7 +16,6 @@ class SelfInstance final : public Expression {
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
-	useit Json       to_json() const override;
 
 	useit NodeType nodeType() const override { return NodeType::SELF; }
 };

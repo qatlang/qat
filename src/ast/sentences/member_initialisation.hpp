@@ -33,8 +33,6 @@ class MemberInit final : public Sentence {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::MEMBER_INIT; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

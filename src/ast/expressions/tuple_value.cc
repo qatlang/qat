@@ -86,12 +86,4 @@ ir::Value* TupleValue::emit(EmitCtx* ctx) {
 	}
 }
 
-Json TupleValue::to_json() const {
-	Vec<JsonValue> mems;
-	for (auto mem : members) {
-		mems.push_back(mem->to_json());
-	}
-	return Json()._("nodeType", "tupleValue")._("isPacked", isPacked)._("members", mems)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

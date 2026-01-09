@@ -62,8 +62,6 @@ ir::PrerunValue* FlagInitialiser::emit(EmitCtx* ctx) {
 	}
 }
 
-Json FlagInitialiser::to_json() const { return Json()._("nodeType", "flagInitialiser"); }
-
 String FlagInitialiser::to_string() const { return ""; }
 
 } // namespace qat::ast

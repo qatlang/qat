@@ -106,17 +106,4 @@ void ImportPaths::handle_filesystem_imports(ir::Mod* mod, ir::Ctx* irCtx) const 
 	}
 }
 
-Json ImportPaths::to_json() const {
-	Vec<JsonValue> pathsJSON;
-	for (auto* path : paths) {
-		pathsJSON.push_back(path->to_json());
-	}
-	return Json()
-	    ._("nodeType", "importPaths")
-	    ._("paths", std::move(pathsJSON))
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

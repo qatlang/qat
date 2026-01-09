@@ -27,8 +27,8 @@ class TypeWrap final : public PrerunExpression {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
 	ir::PrerunValue* emit(EmitCtx* ctx);
-	Json             to_json() const;
-	String           to_string() const;
+
+	String to_string() const;
 
 	NodeType nodeType() const { return NodeType::TYPE_WRAP; }
 };

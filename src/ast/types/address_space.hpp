@@ -19,8 +19,6 @@ struct AddressSpace {
 	useit ir::AddressSpace to_ir(EmitCtx* ctx) const;
 
 	useit String to_string() const;
-
-	useit Json to_json() const;
 };
 
 } // namespace qat::ast

@@ -10,8 +10,4 @@ ir::PrerunValue* BooleanLiteral::emit(EmitCtx* ctx) {
 
 String BooleanLiteral::to_string() const { return value ? "true" : "false"; }
 
-Json BooleanLiteral::to_json() const {
-	return Json()._("nodeType", "booleanLiteral")._("value", value)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

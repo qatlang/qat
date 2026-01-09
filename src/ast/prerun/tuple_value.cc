@@ -70,12 +70,4 @@ String PrerunTupleValue::to_string() const {
 	return result;
 }
 
-Json PrerunTupleValue::to_json() const {
-	Vec<JsonValue> memsJson;
-	for (auto mem : members) {
-		memsJson.push_back(mem->to_json());
-	}
-	return Json()._("nodeType", "prerunTupleValue")._("values", memsJson)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

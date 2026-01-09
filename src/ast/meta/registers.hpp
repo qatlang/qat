@@ -23,15 +23,6 @@ class MetaRegisterRead : public Expression {
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
-	useit Json to_json() const final {
-		return Json()
-		    ._("nodeType", "metaRegisterRead")
-		    ._("isVolatile", isVolatile)
-		    ._("registerName", registerName->to_json())
-		    ._("registerType", registerType->to_json())
-		    ._("fileRange", fileRange->to_json_value());
-	}
-
 	useit NodeType nodeType() const final { return NodeType::META_REGISTER_READ; }
 };
 
@@ -55,15 +46,6 @@ class MetaRegisterWrite : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("nodeType", "metaRegisterWrite")
-		    ._("registerName", registerName->to_json())
-		    ._("registerType", registerType->to_json())
-		    ._("value", value->to_json())
-		    ._("fileRange", fileRange->to_json_value());
-	}
 
 	useit NodeType nodeType() const final { return NodeType::META_REGISTER_WRITE; }
 };

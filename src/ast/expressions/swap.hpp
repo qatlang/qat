@@ -27,13 +27,6 @@ class Swap final : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::SWAP; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("expression", candidate->to_json())
-		    ._("value", value->to_json())
-		    ._("fileRange", fileRange->to_json());
-	}
 };
 
 } // namespace qat::ast

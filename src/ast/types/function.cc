@@ -75,25 +75,4 @@ String FunctionType::to_string() const {
 	return result;
 }
 
-Json FunctionType::to_json() const {
-	Vec<JsonValue> args;
-	for (auto argTy : argTypes) {
-		args.push_back(argTy->to_json());
-	}
-	return Json()
-	    ._("typeKind", "function")
-	    ._("returnType", returnType->to_json())
-	    ._("arguments", args)
-	    ._("hasVariadics", variadics.has_value())
-	    ._("variadic",
-	       variadics.has_value()
-	           ? Json()
-	                 ._("kind", variadics.value().kind == VariadicKind::NORMAL
-	                                ? "normal"
-	                                : (variadics.value().kind == VariadicKind::LEGACY ? "legacy" : "typed"))
-	                 ._("type",
-	                    variadics.value().kind == VariadicKind::TYPED ? variadics.value().type->to_json() : JsonValue())
-	           : JsonValue());
-}
-
 } // namespace qat::ast

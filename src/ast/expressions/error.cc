@@ -143,8 +143,4 @@ ir::Value* ErrorExpression::emit(EmitCtx* ctx) {
 	return ir::Value::get(newAlloc, resTy, false)->with_range(fileRange);
 }
 
-Json ErrorExpression::to_json() const {
-	return Json()._("nodeType", "errorExpression")._("errorValue", errorValue->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

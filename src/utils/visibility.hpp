@@ -2,7 +2,6 @@
 #define QAT_UTILS_VISIBILITY_HPP
 
 #include "./helpers.hpp"
-#include "./json.hpp"
 #include "./macros.hpp"
 
 namespace qat {
@@ -55,10 +54,6 @@ class VisibilityInfo {
 	useit bool is_accessible(Maybe<AccessInfo> reqInfo) const;
 
 	useit bool operator==(const VisibilityInfo& other) const;
-
-	useit operator Json() const;
-
-	useit operator JsonValue() const;
 };
 
 class AccessInfo {

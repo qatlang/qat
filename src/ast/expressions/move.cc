@@ -162,8 +162,4 @@ ir::Value* Move::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Move::to_json() const {
-	return Json()._("nodeType", "move")._("expression", exp->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

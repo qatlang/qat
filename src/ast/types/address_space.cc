@@ -35,12 +35,4 @@ ir::AddressSpace AddressSpace::to_ir(EmitCtx* ctx) const {
 
 String AddressSpace::to_string() const { return value ? ("of(" + value->to_string() + ")") : ("of:" + name.value); }
 
-Json AddressSpace::to_json() const {
-	return Json()
-	    ._("name", name)
-	    ._("hasValue", value != nullptr)
-	    ._("value", value ? value->to_json() : JsonValue())
-	    ._("range", fileRange ? fileRange->to_json_value() : JsonValue());
-}
-
 } // namespace qat::ast

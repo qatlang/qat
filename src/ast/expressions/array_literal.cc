@@ -140,12 +140,4 @@ ir::Value* ArrayLiteral::emit(EmitCtx* ctx) {
 	}
 }
 
-Json ArrayLiteral::to_json() const {
-	Vec<JsonValue> vals;
-	for (auto* exp : values) {
-		vals.push_back(exp->to_json());
-	}
-	return Json()._("nodeType", "arrayLiteral")._("values", vals);
-}
-
 } // namespace qat::ast

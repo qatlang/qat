@@ -181,17 +181,4 @@ ir::Value* ConstructorCall::emit(EmitCtx* ctx) {
 	return get_creation_result(ctx->irCtx, typ, fileRange);
 }
 
-Json ConstructorCall::to_json() const {
-	Vec<JsonValue> argsJson;
-	for (auto* arg : args) {
-		argsJson.push_back(arg->to_json());
-	}
-	return Json()
-	    ._("nodeType", "constructorCall")
-	    ._("hasType", (bool)type)
-	    ._("type", type.to_json_value())
-	    ._("arguments", argsJson)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

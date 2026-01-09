@@ -26,13 +26,6 @@ String PtrOwner::to_string() const {
 	}
 }
 
-Json PtrOwner::to_json() const {
-	return Json()
-	    ._("kind", ptr_owner_to_string(kind))
-	    ._("hasAssociatedType", candidate != nullptr)
-	    ._("associatedType", candidate ? candidate->to_json() : JsonValue());
-}
-
 String ptr_owner_to_string(OwnerKind ownType) {
 	switch (ownType) {
 		case OwnerKind::STATIC:

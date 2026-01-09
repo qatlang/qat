@@ -25,11 +25,11 @@ class NullPointer final : public PrerunExpression, public TypeInferrable {
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
-	useit Json             to_json() const override;
-	useit String           to_string() const final;
+	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const override { return NodeType::NULL_POINTER; }
+	useit String to_string() const final;
+
+	useit NodeType nodeType() const final { return NodeType::NULL_POINTER; }
 };
 
 } // namespace qat::ast

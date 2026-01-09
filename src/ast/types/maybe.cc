@@ -33,14 +33,6 @@ ir::Type* MaybeType::emit(EmitCtx* ctx) {
 	return ir::MaybeType::get(subType, isPacked, ctx->irCtx);
 }
 
-Json MaybeType::to_json() const {
-	return Json()
-	    ._("typeKind", "maybe")
-	    ._("isPacked", isPacked)
-	    ._("subType", subTyp->to_json())
-	    ._("fileRange", fileRange);
-}
-
 String MaybeType::to_string() const { return String(isPacked ? "pack " : "") + "maybe:[" + subTyp->to_string() + "]"; }
 
 } // namespace qat::ast

@@ -233,15 +233,4 @@ ir::Value* VariantInitialiser::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json VariantInitialiser::to_json() const {
-	return Json()
-	    ._("nodeType", "variantInitialiser")
-	    ._("hasType", (bool)type)
-	    ._("type", type.to_json_value())
-	    ._("subName", subName)
-	    ._("hasExpression", expression != nullptr)
-	    ._("expression", expression ? expression->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

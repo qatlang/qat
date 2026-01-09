@@ -13,9 +13,7 @@ class Identifier {
 	String       value;
 	FileRangePtr range;
 
-	operator JsonValue() const;
-
-	useit static Identifier named(String value) { return Identifier{std::move(value), FileRange::null}; }
+	static Identifier named(String value) { return Identifier{std::move(value), FileRange::null}; }
 
 	static Identifier fullName(Vec<Identifier> ids);
 };

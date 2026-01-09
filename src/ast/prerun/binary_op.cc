@@ -592,13 +592,4 @@ String PrerunBinaryOperator::to_string() const {
 	return lhs->to_string() + " " + operator_to_string(opr) + " " + rhs->to_string();
 }
 
-Json PrerunBinaryOperator::to_json() const {
-	return Json()
-	    ._("nodeType", "prerunBinaryOp")
-	    ._("lhs", lhs->to_json())
-	    ._("operator", operator_to_string(opr))
-	    ._("rhs", rhs->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

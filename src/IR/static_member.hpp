@@ -38,7 +38,6 @@ class StaticMember final : public Value, public Mentionable {
 
 	useit Value* get_initial() const { return initial; }
 
-	useit Json to_json() const;
 	~StaticMember() final = default;
 };
 

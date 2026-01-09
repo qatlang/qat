@@ -33,7 +33,6 @@ class InlineAssembly : public Expression {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json       to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::INLINE_ASSEMBLY; }
 };

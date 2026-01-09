@@ -16,8 +16,4 @@ ir::PrerunValue* PrerunBitwiseNot::emit(EmitCtx* ctx) {
 
 String PrerunBitwiseNot::to_string() const { return "~" + value->to_string(); }
 
-Json PrerunBitwiseNot::to_json() const {
-	return Json()._("nodeType", "prerunBitwiseNot")._("value", value->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

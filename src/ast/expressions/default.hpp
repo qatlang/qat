@@ -34,8 +34,6 @@ class Default final : public Expression, public LocalDeclCompatible, public InPl
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::DEFAULT; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

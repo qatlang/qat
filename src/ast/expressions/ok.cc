@@ -145,8 +145,4 @@ ir::Value* OkExpression::emit(EmitCtx* ctx) {
 	return createIn;
 }
 
-Json OkExpression::to_json() const {
-	return Json()._("nodeType", "ok")._("hasSubExpression", subExpr != nullptr)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

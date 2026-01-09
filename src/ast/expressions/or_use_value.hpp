@@ -25,14 +25,6 @@ class OrUseValue : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::OR_USE_VALUE; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("nodeType", "orUseValue")
-		    ._("expression", expression->to_json())
-		    ._("candidate", candidate->to_json())
-		    ._("fileRange", fileRange->to_json_value());
-	}
 };
 
 } // namespace qat::ast

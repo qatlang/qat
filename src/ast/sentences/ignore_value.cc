@@ -15,11 +15,4 @@ ir::Value* IgnoreValue::emit(EmitCtx* ctx) {
 	                      ir::VoidType::get(ctx->irCtx->llctx), false);
 }
 
-Json IgnoreValue::to_json() const {
-	return Json()
-	    ._("nodeType", "ignoreValue")
-	    ._("expression", candidate->to_json())
-	    ._("fileRange", fileRange->to_json());
-}
-
 } // namespace qat::ast

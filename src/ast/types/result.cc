@@ -40,13 +40,4 @@ String ResultType::to_string() const {
 	return "result:[" + String(isPacked ? "pack, " : "") + validType->to_string() + ", " + errorType->to_string() + "]";
 }
 
-Json ResultType::to_json() const {
-	return Json()
-	    ._("typeKind", "result")
-	    ._("validType", validType->to_json())
-	    ._("errorType", errorType->to_json())
-	    ._("isPacked", isPacked)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

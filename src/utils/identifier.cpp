@@ -5,10 +5,6 @@ namespace qat {
 Identifier::Identifier(String _value, FileRangePtr _fileRange)
     : value(std::move(_value)), range(std::move(_fileRange)) {}
 
-Identifier::operator JsonValue() const {
-	return Json()._("value", value)._("fileRange", range ? range->to_json() : JsonValue());
-}
-
 Identifier Identifier::fullName(Vec<Identifier> ids) {
 	auto         name  = ids.front().value;
 	FileRangePtr range = ids.front().range;

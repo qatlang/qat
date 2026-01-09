@@ -95,16 +95,4 @@ ir::Value* LoopIf::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json LoopIf::to_json() const {
-	Vec<JsonValue> snts;
-	for (auto* snt : sentences) {
-		snts.push_back(snt->to_json());
-	}
-	return Json()
-	    ._("nodeType", "loopWhile")
-	    ._("condition", condition->to_json())
-	    ._("sentences", snts)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

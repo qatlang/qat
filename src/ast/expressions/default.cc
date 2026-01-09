@@ -124,11 +124,4 @@ ir::Value* Default::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Default::to_json() const {
-	return Json()
-	    ._("nodeType", "default")
-	    ._("hasProvidedType", providedType != nullptr)
-	    ._("providedType", (providedType ? providedType->to_json() : JsonValue()));
-}
-
 } // namespace qat::ast

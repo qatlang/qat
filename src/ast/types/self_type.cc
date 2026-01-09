@@ -33,10 +33,6 @@ ir::Type* SelfType::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json SelfType::to_json() const {
-	return Json()._("nodeType", "selfType")._("isJustType", isJustType)._("fileRange", fileRange);
-}
-
 String SelfType::to_string() const { return isJustType ? "self" : "''"; }
 
 } // namespace qat::ast

@@ -17,8 +17,6 @@ class VoidType final : public Type {
 
 	useit AstTypeKind type_kind() const;
 
-	useit Json to_json() const;
-
 	useit String to_string() const;
 };
 

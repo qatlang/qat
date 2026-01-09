@@ -1,19 +1,11 @@
 #include "./file_range.hpp"
-#include "./json.hpp"
 #include "./qat_region.hpp"
 
 #include <filesystem>
 
 namespace qat {
 
-FilePos::FilePos(Json json)
-    : line(std::stoul(json["line"].asString())), byteOffset(std::stoul(json["byteOffset"].asString())) {}
-
 FilePos::FilePos(u64 _line, u64 _byte) : line(_line), byteOffset(_byte) {}
-
-FilePos::operator JsonValue() const { return (Json)(*this); }
-
-FilePos::operator Json() const { return Json()._("line", line)._("byteOffset", byteOffset); }
 
 std::ostream& operator<<(std::ostream& os, FilePos const& pos) { return os << pos.line << ":" << pos.byteOffset; }
 
@@ -48,10 +40,6 @@ bool FileRange::is_before(FileRangePtr another) const {
 	        ((end.line == another->start.line) && (end.byteOffset < another->start.byteOffset)));
 }
 
-Json FileRange::to_json() const { return Json()._("path", *file)._("start", start)._("end", end); }
-
-JsonValue FileRange::to_json_value() const { return to_json(); }
-
-String FileRange::to_string() const { return *file + ":" + (String)start + " - " + (String)end; }
+String FileRange::to_string() const { return *file + ":" + start.to_string() + " - " + end.to_string(); }
 
 } // namespace qat

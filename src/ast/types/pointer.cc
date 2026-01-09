@@ -45,19 +45,6 @@ ir::Type* PtrType::emit(EmitCtx* ctx) {
 
 AstTypeKind PtrType::type_kind() const { return AstTypeKind::POINTER; }
 
-Json PtrType::to_json() const {
-	return Json()
-	    ._("typeKind", "pointer")
-	    ._("isMulti", isMulti)
-	    ._("isNonNullable", isNonNullable)
-	    ._("isSubtypeVariable", isSubtypeVar)
-	    ._("subType", type->to_json())
-	    ._("owner", owner.to_json())
-	    ._("hasAddressSpace", addressSpace.has_value())
-	    ._("addressSpace", addressSpace.has_value() ? addressSpace.value().to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 String PtrType::to_string() const {
 	return (isMulti ? (isNonNullable ? "multi![" : "multi:[") : (isNonNullable ? "ptr![" : "ptr:[")) +
 	       String(isSubtypeVar ? "var " : "") + type->to_string() +

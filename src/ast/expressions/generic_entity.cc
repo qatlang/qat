@@ -157,16 +157,4 @@ ir::Value* GenericEntity::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json GenericEntity::to_json() const {
-	Vec<JsonValue> namesJs;
-	for (auto const& nam : names) {
-		namesJs.push_back(JsonValue(nam));
-	}
-	Vec<JsonValue> typs;
-	for (auto* typ : genericTypes) {
-		typs.push_back(typ->to_json());
-	}
-	return Json()._("nodeType", "genericEntity")._("names", namesJs)._("types", typs)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

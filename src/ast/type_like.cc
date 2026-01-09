@@ -19,19 +19,6 @@ String TypeLike::to_string() const {
 	return "";
 }
 
-JsonValue TypeLike::to_json_value() const {
-	if (data) {
-		if (kind == TypeLikeKind::TYPE) {
-			return ((Type*)data)->to_json();
-		} else if (kind == TypeLikeKind::PRERUN) {
-			return ((PrerunExpression*)data)->to_json();
-		} else {
-			return ((Expression*)data)->to_json();
-		}
-	}
-	return JsonValue();
-}
-
 FileRangePtr TypeLike::get_range() const {
 	if (data) {
 		if (kind == TypeLikeKind::TYPE) {

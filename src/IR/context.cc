@@ -10,6 +10,7 @@
 #include "./qat_module.hpp"
 #include "./value.hpp"
 
+#include <boost/json.hpp>
 #include <clang/Basic/AddressSpaces.h>
 #include <clang/Basic/DiagnosticDriver.h>
 #include <cstdint>
@@ -26,14 +27,6 @@ namespace qat::ir {
 
 CodeProblem::CodeProblem(bool _isError, String _message, Maybe<FileRangePtr> _range)
     : isError(_isError), message(std::move(_message)), range(std::move(_range)) {}
-
-CodeProblem::operator Json() const {
-	return Json()
-	    ._("isError", isError)
-	    ._("message", message)
-	    ._("hasRange", range.has_value())
-	    ._("fileRange", range.has_value() ? range.value()->to_json() : JsonValue());
-}
 
 QatError::QatError() = default;
 
@@ -106,30 +99,31 @@ String Ctx::highlightWarning(const String& message) {
 
 void Ctx::write_json_result(bool status) const {
 	SHOW("Pushing problems")
-	Vec<JsonValue> problems;
+	boost::json::array problems;
 	for (auto& prob : codeProblems) {
 		SHOW("Pushing code problem")
-		problems.push_back((Json)prob);
+		problems.push_back(prob.to_json());
 	}
 	SHOW("Pushed all code problems")
-	Json result;
 	SHOW("Setting binary sizes in result")
-	Vec<JsonValue> binarySizesJson;
+	boost::json::array binarySizesJson;
 	for (auto binSiz : binarySizes) {
 		binarySizesJson.push_back(binSiz);
 	}
 	SHOW("Creating JSON object for result")
-	result._("status", status)
-	    ._("problems", problems)
-	    ._("lineCount", lexer::Lexer::lineCount > 0 ? lexer::Lexer::lineCount - 1 : 0)
-	    ._("lexerTime", lexer::Lexer::timeInNanoseconds)
-	    ._("parserTime", parser::Parser::timeInNanoseconds)
-	    ._("compilationTime",
-	       qatCompileTimeInNanoseconds.has_value() ? qatCompileTimeInNanoseconds.value() : JsonValue())
-	    ._("linkingTime",
-	       clangAndLinkTimeInNanoseconds.has_value() ? clangAndLinkTimeInNanoseconds.value() : JsonValue())
-	    ._("binarySizes", binarySizesJson)
-	    ._("hasMain", hasMain);
+	boost::json::object result = {
+	    {"status", status},
+	    {"problems", problems},
+	    {"lineCount", lexer::Lexer::lineCount > 0 ? lexer::Lexer::lineCount - 1 : 0},
+	    {"lexerTime", lexer::Lexer::timeInNanoseconds},
+	    {"parserTime", parser::Parser::timeInNanoseconds},
+	    {"compilationTime",
+	     qatCompileTimeInNanoseconds.has_value() ? qatCompileTimeInNanoseconds.value() : boost::json::value(nullptr)},
+	    {"linkingTime", clangAndLinkTimeInNanoseconds.has_value() ? clangAndLinkTimeInNanoseconds.value()
+	                                                              : boost::json::value(nullptr)},
+	    {"binarySizes", binarySizesJson},
+	    {"hasMain", hasMain},
+	};
 	SHOW("Creating compilation result file")
 	std::ofstream output;
 	auto          outPath = cli::Config::get()->get_output_path() / "QatCompilationResult.json";
@@ -211,7 +205,7 @@ void Ctx::add_error(ir::Mod* activeMod, String const& message, Maybe<FileRangePt
 			remove_active_generic();
 		}
 		modulesWithErrors.push_back(activeMod);
-		for (const auto& modNRange : activeMod->get_brought_mentions()) {
+		for (const auto& modNRange : activeMod->importedMentions) {
 			add_error(modNRange.first, "Error occured in this file", modNRange.second);
 		}
 	}

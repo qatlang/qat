@@ -36,10 +36,6 @@ ir::PrerunValue* UnsignedLiteral::emit(EmitCtx* ctx) {
 	// NOLINTEND(readability-magic-numbers)
 }
 
-Json UnsignedLiteral::to_json() const {
-	return Json()._("nodeType", "unsignedLiteral")._("value", value)._("fileRange", fileRange);
-}
-
 String UnsignedLiteral::to_string() const { return value; }
 
 } // namespace qat::ast

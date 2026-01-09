@@ -37,7 +37,6 @@ class MemberAccess final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
-	useit Json       to_json() const override;
 
 	useit NodeType nodeType() const override { return NodeType::MEMBER_ACCESS; }
 };

@@ -28,7 +28,6 @@ class FunctionType final : public Type {
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::FUNCTION; }
 
-	useit Json   to_json() const final;
 	useit String to_string() const final;
 };
 

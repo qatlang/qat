@@ -8,6 +8,7 @@
 #include "./qat_module.hpp"
 #include "./types/atomic.hpp"
 
+#include <boost/json.hpp>
 #include <chrono>
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Basic/TargetInfo.h>
@@ -75,7 +76,15 @@ class CodeProblem {
 
   public:
 	CodeProblem(bool isError, String message, Maybe<FileRangePtr> range);
-	operator Json() const;
+
+	boost::json::object to_json() const {
+		return {
+		    {"isError", isError},
+		    {"message", message},
+		    {"hasRange", range.has_value()},
+		    {"range", range.has_value() ? range.value()->to_json() : boost::json::value(nullptr)},
+		};
+	}
 };
 
 class QatError {

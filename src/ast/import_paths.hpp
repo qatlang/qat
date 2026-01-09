@@ -23,8 +23,6 @@ class ImportPaths final : public Node {
 
 	void handle_filesystem_imports(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-	useit Json to_json() const final;
-
 	useit NodeType nodeType() const final { return NodeType::IMPORT_PATHS; }
 };
 

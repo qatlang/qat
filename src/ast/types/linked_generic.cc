@@ -43,8 +43,4 @@ AstTypeKind LinkedGeneric::type_kind() const { return AstTypeKind::LINKED_GENERI
 
 String LinkedGeneric::to_string() const { return genAbs->get_name().value; }
 
-Json LinkedGeneric::to_json() const {
-	return Json()._("genericParameter", genAbs->get_name())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -16,17 +16,6 @@ struct SkillTypeDefinition {
 	FileRangePtr          range;
 
 	void update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent, EmitCtx* ctx);
-
-	useit Json to_json() const {
-		return Json()
-		    ._("hasVisibility", visibSpec.has_value())
-		    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue())
-		    ._("name", name)
-		    ._("hasDefineCondition", defineChecker != nullptr)
-		    ._("defineCondition", defineChecker ? defineChecker->to_json() : JsonValue())
-		    ._("type", type->to_json())
-		    ._("fileRange", range);
-	}
 };
 
 enum class SkillMethodKind {
@@ -68,25 +57,6 @@ struct SkillMethod {
 	FileRangePtr          fileRange;
 
 	void update_dependencies(ir::EmitPhase phase, ir::DependType depend, ir::EntityState* ent, EmitCtx* ctx);
-
-	useit Json to_json() const {
-		Vec<JsonValue> argsJSON;
-		for (auto& arg : arguments) {
-			argsJSON.push_back(arg->to_json());
-		}
-		return Json()
-		    ._("hasVisibility", visibSpec.has_value())
-		    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue())
-		    ._("kind", method_kind_to_string(kind))
-		    ._("name", name)
-		    ._("arguments", argsJSON)
-		    ._("variadics", variadics.has_value() ? variadics.value().to_json() : JsonValue())
-		    ._("hasGivenType", givenType != nullptr)
-		    ._("givenType", givenType ? givenType->to_json() : JsonValue())
-		    ._("hasDefineCondition", defineChecker != nullptr)
-		    ._("defineCondition", defineChecker ? defineChecker->to_json() : JsonValue())
-		    ._("fileRange", fileRange);
-	}
 };
 
 class DefineSkill final : public IsEntity {
@@ -135,18 +105,6 @@ class DefineSkill final : public IsEntity {
 	void create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irCtx);
 
 	useit NodeType nodeType() const final { return NodeType::DEFINE_SKILL; }
-
-	useit Json to_json() const final {
-		Vec<JsonValue> typeJSON;
-		for (auto& ty : typeDefinitions) {
-			typeJSON.push_back(ty.to_json());
-		}
-		Vec<JsonValue> methodJSON;
-		for (auto& mt : methods) {
-			typeJSON.push_back(mt.to_json());
-		}
-		return Json()._("typeDefinitions", typeJSON)._("methods", methodJSON);
-	}
 };
 
 } // namespace qat::ast

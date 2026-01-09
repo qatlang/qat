@@ -48,12 +48,4 @@ ir::Value* GiveSentence::emit(EmitCtx* ctx) {
 	}
 }
 
-Json GiveSentence::to_json() const {
-	return Json()
-	    ._("nodeType", "giveSentence")
-	    ._("hasValue", value != nullptr)
-	    ._("value", value ? value->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

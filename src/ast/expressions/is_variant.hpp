@@ -59,15 +59,6 @@ class IsVariant final : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::IS_VARIANT; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("expression", expression->to_json())
-		    ._("kind", is_variant_kind_to_string(kind))
-		    ._("hasName", name.has_value())
-		    ._("name", name.has_value() ? (JsonValue)name.value() : JsonValue())
-		    ._("fileRange", fileRange->to_json_value());
-	}
 };
 
 } // namespace qat::ast

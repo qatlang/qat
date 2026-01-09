@@ -36,8 +36,6 @@ struct TypeInSkill {
 	}
 
 	useit String to_string() const;
-
-	useit Json to_json() const;
 };
 
 struct SkillArg {
@@ -50,8 +48,6 @@ struct SkillArg {
 	useit static SkillArg* create(TypeInSkill type, Identifier name, bool isVar) {
 		return std::construct_at(OwnNormal(SkillArg), type, std::move(name), isVar);
 	}
-
-	useit Json to_json() const;
 };
 
 enum class SkillMethodKind {
@@ -119,32 +115,6 @@ class SkillMethod {
 	useit SkillVariadics get_variadics() const { return variadics.value(); }
 
 	useit String to_string() const;
-
-	useit Json to_json() const {
-		Vec<JsonValue> argsJSON;
-		for (auto* arg : arguments) {
-			argsJSON.push_back(arg->to_json());
-		}
-		return Json()
-		    ._("name", name)
-		    ._("kind", methodKind == SkillMethodKind::NORMAL
-		                   ? "normal"
-		                   : (methodKind == SkillMethodKind::STATIC
-		                          ? "static"
-		                          : (methodKind == SkillMethodKind::VARIATION ? "variation" : "value")))
-		    ._("givenType", returnType.to_json())
-		    ._("arguments", argsJSON)
-		    ._("hasVariadics", variadics.has_value())
-		    ._("variadics",
-		       variadics.has_value()
-		           ? Json()
-		                 ._("kind", variadics.value().kind == VariadicsKind::NORMAL
-		                                ? "normal"
-		                                : (variadics.value().kind == VariadicsKind::LEGACY ? "legacy" : "typed"))
-		                 ._("type", variadics.value().kind == VariadicsKind::TYPED ? variadics.value().type->to_json()
-		                                                                           : JsonValue())
-		           : JsonValue());
-	}
 };
 
 class Skill : public Uniq, public Mentionable {

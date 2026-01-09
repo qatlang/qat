@@ -7,8 +7,6 @@ ir::Type* VoidType::emit(EmitCtx* ctx) { return ir::VoidType::get(ctx->irCtx->ll
 
 AstTypeKind VoidType::type_kind() const { return AstTypeKind::VOID; }
 
-Json VoidType::to_json() const { return Json()._("typeKind", "void")._("fileRange", fileRange); }
-
 String VoidType::to_string() const { return "void"; }
 
 } // namespace qat::ast

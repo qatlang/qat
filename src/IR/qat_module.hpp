@@ -965,16 +965,12 @@ class Mod final : public Uniq, public Mentionable {
 	void handle_native_libs(Ctx* irCtx);
 	void bundle_modules(Ctx* irCtx);
 
-	void export_json_from_ast(Ctx* irCtx);
-
 	/// This returns the name of the linked function or symbol
 	/// Even known units like printf can have a different name for the underlying function, especially in freehosting
 	/// environments
 	useit String link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRangePtr fileRange);
 
 	useit llvm::Function* link_intrinsic(IntrinsicID intr);
-
-	Json to_json() const;
 };
 
 } // namespace qat::ir

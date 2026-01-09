@@ -31,8 +31,6 @@ class LoopTo final : public Sentence {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::LOOP_N_TIMES; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

@@ -26,7 +26,6 @@ class FunctionCall final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
-	useit Json       to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::FUNCTION_CALL; }
 };

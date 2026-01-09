@@ -28,10 +28,6 @@ class ErrorType final : public Type {
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::ERROR; }
 
-	useit Json to_json() const final {
-		return Json()._("typeKind", "errorType")._("subType", subType->to_json())._("fileRange", fileRange->to_json());
-	}
-
 	useit String to_string() const final {
 		return (hasNoneVariant ? "error:[" : "error![") + subType->to_string() + "]";
 	}

@@ -33,8 +33,6 @@ class Copy final : public Expression, public LocalDeclCompatible, public InPlace
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::COPY; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

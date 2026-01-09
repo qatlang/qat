@@ -42,17 +42,6 @@ ir::Type* GenericIntegerType::emit(EmitCtx* ctx) {
 	}
 }
 
-Json GenericIntegerType::to_json() const {
-	return Json()
-	    ._("typeKind", "genericInteger")
-	    ._("bits", bitValue->to_json())
-	    ._("hasUnsignedValue", isUnsigned.has_value())
-	    ._("isUnsignedValue", isUnsigned.has_value() ? isUnsigned.value() : JsonValue())
-	    ._("hasUnsignedExpr", isUnsignedExp != nullptr)
-	    ._("isUnsignedExpr", isUnsignedExp ? isUnsignedExp->to_json() : Json())
-	    ._("fileRange", fileRange);
-}
-
 String GenericIntegerType::to_string() const {
 	return isUnsignedExp ? ("integer:[" + isUnsignedExp->to_string() + ", " + bitValue->to_string() + "]")
 	                     : ((isUnsigned ? "uint:[" : "int:[") + bitValue->to_string() + "]");

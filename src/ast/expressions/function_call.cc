@@ -180,16 +180,4 @@ ir::Value* FunctionCall::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json FunctionCall::to_json() const {
-	Vec<JsonValue> args;
-	for (auto* arg : values) {
-		args.emplace_back(arg->to_json());
-	}
-	return Json()
-	    ._("nodeType", "functionCall")
-	    ._("function", fnExpr->to_json())
-	    ._("arguments", args)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

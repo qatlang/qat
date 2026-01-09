@@ -119,12 +119,4 @@ ir::Value* Assignment::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Assignment::to_json() const {
-	return Json()
-	    ._("nodeType", "assignment")
-	    ._("lhs", lhs->to_json())
-	    ._("rhs", value->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

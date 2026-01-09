@@ -20,8 +20,6 @@ class Break final : public Sentence {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::BREAK; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

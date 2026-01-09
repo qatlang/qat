@@ -70,8 +70,6 @@ class GenericArgument {
 
 	useit String to_string() const;
 
-	useit virtual Json to_json() const = 0;
-
 	virtual ~GenericArgument() = default;
 };
 
@@ -83,8 +81,6 @@ class TypedGeneric : public GenericArgument {
 	useit static TypedGeneric* get(Identifier name, ir::Type* type, FileRangePtr range);
 
 	useit ir::Type* get_type() const;
-
-	useit Json to_json() const final;
 };
 
 class PrerunGeneric : public GenericArgument {
@@ -95,9 +91,8 @@ class PrerunGeneric : public GenericArgument {
 	useit static PrerunGeneric* get(Identifier name, ir::PrerunValue* type, FileRangePtr range);
 
 	useit ir::PrerunValue* get_expression() const;
-	useit ir::Type* get_type() const;
 
-	useit Json to_json() const final;
+	useit ir::Type* get_type() const;
 };
 
 } // namespace qat::ir

@@ -192,8 +192,6 @@ class Method : public Function {
 
 	useit SkillMethod* get_skill_method() const { return skillMethod; }
 
-	useit Json to_json() const { return Json()._("parentType", parent->get_parent_type()->get_id()); }
-
 	useit Maybe<FileRangePtr> is_member_initted(usize memInd) const {
 		for (auto mem : initTypeMembers) {
 			if (mem.first == memInd) {

@@ -29,14 +29,6 @@ class PrerunChoiceInitialiser : public TypeInferrable, public PrerunExpression {
 	useit NodeType nodeType() const final { return NodeType::PRERUN_CHOICE_INITIALISER; }
 
 	useit String to_string() const final { return type.to_string() + "::" + variant.value; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("hasType", (bool)type)
-		    ._("type", type.to_json_value())
-		    ._("variant", variant)
-		    ._("fileRange", fileRange->to_json());
-	}
 };
 
 } // namespace qat::ast

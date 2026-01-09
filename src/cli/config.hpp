@@ -41,7 +41,6 @@ class Config {
 	bool verbose         = false;
 	bool saveDocs        = false;
 	bool showReport      = false;
-	bool exportAST       = false;
 	bool buildWorkflow   = false;
 	bool runWorkflow     = false;
 	bool bundleWorkflow  = false;
@@ -87,8 +86,6 @@ class Config {
 	useit bool should_show_report() const { return showReport; }
 
 	useit bool is_verbose() const { return verbose; }
-
-	useit bool should_export_ast() const { return exportAST; }
 
 	useit bool should_save_docs() const { return saveDocs; }
 

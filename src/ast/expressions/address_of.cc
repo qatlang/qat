@@ -24,8 +24,4 @@ ir::Value* AddressOf::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json AddressOf::to_json() const {
-	return Json()._("nodeType", "addressOf")._("instance", instance->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

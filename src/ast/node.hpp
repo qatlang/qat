@@ -7,7 +7,6 @@
 #include "../IR/types/text.hpp"
 #include "../utils/file_range.hpp"
 #include "../utils/helpers.hpp"
-#include "../utils/json.hpp"
 #include "./node_type.hpp"
 
 namespace qat::ast {
@@ -33,10 +32,6 @@ struct VisibilitySpec {
 			case VisibilityKind::skill:
 				return "pub:skill";
 		}
-	}
-
-	useit Json to_json() const {
-		return Json()._("visibilityKind", kind_to_string(kind))._("fileRange", range->to_json());
 	}
 };
 
@@ -79,9 +74,9 @@ class Node {
 
 	useit virtual bool is_entity() const { return false; }
 
-	useit virtual Json     to_json() const  = 0;
 	useit virtual NodeType nodeType() const = 0;
-	static void            clear_all();
+
+	static void clear_all();
 };
 
 class IsEntity : public Node {
@@ -94,8 +89,10 @@ class IsEntity : public Node {
 
 	useit bool is_entity() const final { return true; }
 
-	virtual void create_entity(ir::Mod* parent, ir::Ctx* irCtx)                 = 0;
-	virtual void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx)    = 0;
+	virtual void create_entity(ir::Mod* parent, ir::Ctx* irCtx) = 0;
+
+	virtual void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) = 0;
+
 	virtual void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) = 0;
 };
 

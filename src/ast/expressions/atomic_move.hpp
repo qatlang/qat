@@ -27,15 +27,6 @@ class AtomicMove : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::ATOMIC_MOVE; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("nodeType", "atomicMove")
-		    ._("candidate", candidate->to_json())
-		    ._("hasOrdering", ordering != nullptr)
-		    ._("ordering", ordering ? ordering->to_json() : JsonValue())
-		    ._("fileRange", fileRange->to_json());
-	}
 };
 
 } // namespace qat::ast

@@ -111,7 +111,6 @@ class Expression : public Node {
 	useit virtual ir::Value* emit(EmitCtx* emitCtx) = 0;
 
 	useit NodeType nodeType() const override = 0;
-	useit Json     to_json() const override  = 0;
 };
 
 class PrerunExpression : public Expression {
@@ -121,9 +120,10 @@ class PrerunExpression : public Expression {
 	~PrerunExpression() override = default;
 
 	useit ir::PrerunValue* emit(EmitCtx* emitCtx) override = 0;
-	useit NodeType         nodeType() const override       = 0;
-	useit Json             to_json() const override        = 0;
-	useit virtual String   to_string() const               = 0;
+
+	useit virtual NodeType nodeType() const = 0;
+
+	useit virtual String to_string() const = 0;
 };
 
 } // namespace qat::ast

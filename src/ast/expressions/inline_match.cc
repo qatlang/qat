@@ -386,16 +386,4 @@ ir::Value* InlineMatch::emit(EmitCtx* ctx) {
 	}
 }
 
-Json InlineMatch::to_json() const {
-	Vec<JsonValue> valuesJSON;
-	for (auto val : values) {
-		valuesJSON.push_back(val->to_json());
-	}
-	return Json()
-	    ._("nodeType", "inlineMatch")
-	    ._("expression", expression->to_json())
-	    ._("values", valuesJSON)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

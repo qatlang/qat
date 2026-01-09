@@ -199,26 +199,4 @@ void DefineChoiceType::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("Created choice type")
 }
 
-Json DefineChoiceType::to_json() const {
-	Vec<JsonValue> fieldsJson;
-	for (const auto& field : fields) {
-		Vec<JsonValue> namesJSON;
-		for (auto& name : field.first) {
-			namesJSON.push_back(name);
-		}
-		fieldsJson.push_back(
-		    Json()
-		        ._("name", namesJSON)
-		        ._("hasValue", field.second.has_value())
-		        ._("value", field.second.has_value() ? field.second.value()->to_json() : JsonValue())
-		        ._("valueRange", field.second.has_value() ? field.second.value()->fileRange : JsonValue()));
-	}
-	return Json()
-	    ._("name", name)
-	    ._("fields", fieldsJson)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -42,8 +42,6 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 
 	useit DoSkill* as_done_skill() final { return this; }
 
-	Json to_json() const final;
-
 	NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };
 

@@ -34,18 +34,6 @@ class LoopIn : public Sentence {
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
-	useit Json to_json() const final {
-		Vec<JsonValue> sentencesJSON;
-		for (auto* snt : sentences) {
-			sentencesJSON.push_back(snt->to_json());
-		}
-		return Json()
-		    ._("itemName", itemName)
-		    ._("hasIndexName", indexName.has_value())
-		    ._("sentences", sentencesJSON)
-		    ._("fileRange", fileRange);
-	}
-
 	useit NodeType nodeType() const { return NodeType::LOOP_OVER; }
 };
 

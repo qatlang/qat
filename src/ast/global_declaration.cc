@@ -141,17 +141,4 @@ void GlobalDeclaration::define(ir::Mod* mod, ir::Ctx* irCtx) {
 	SHOW("Created global entity")
 }
 
-Json GlobalDeclaration::to_json() const {
-	return Json()
-	    ._("nodeType", "globalDeclaration")
-	    ._("name", name)
-	    ._("type", type ? type->to_json() : Json())
-	    ._("hasValue", value.has_value())
-	    ._("value", value ? value.value()->to_json() : JsonValue())
-	    ._("variability", is_variable)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

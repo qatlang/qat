@@ -21,20 +21,7 @@ bool MixOrChoiceMatchValue::is_variable() const { return isVar; }
 
 Identifier MixOrChoiceMatchValue::getValueName() const { return valueName.value(); }
 
-Json MixOrChoiceMatchValue::to_json() const {
-	return Json()
-	    ._("matchValueType", "mix")
-	    ._("name", name)
-	    ._("hasValue", valueName.has_value())
-	    ._("valueName", valueName.has_value() ? valueName.value() : JsonValue());
-}
-
 Expression* ExpressionMatchValue::getExpression() const { return exp; }
-
-Json ExpressionMatchValue::to_json() const {
-	SHOW("Expression node type is: " << (int)exp->nodeType())
-	return Json()._("matchValueType", "expression")._("expression", exp->to_json());
-}
 
 CaseResult::CaseResult(Maybe<bool> _result, bool _areAllConst) : result(_result), areAllConstant(_areAllConst) {}
 
@@ -552,38 +539,6 @@ bool Match::isTrueForACase() {
 		}
 	}
 	return false;
-}
-
-Json Match::to_json() const {
-	Vec<JsonValue> chainJson;
-	for (const auto& elem : chain) {
-		Vec<JsonValue> sentencesJson;
-		SHOW("Converting sentences to JSON")
-		for (auto* snt : elem.second) {
-			SHOW("Sentence node type is: ")
-			SHOW((int)snt->nodeType())
-			SHOW("Got node type")
-			sentencesJson.push_back(snt->to_json());
-		}
-		Vec<JsonValue> matchValsJson;
-		for (auto* mVal : elem.first) {
-			SHOW("Match value type is: " << (int)mVal->getType())
-			matchValsJson.push_back(mVal->to_json());
-		}
-		chainJson.push_back(Json()._("matchValues", matchValsJson)._("sentences", sentencesJson));
-	}
-	Vec<JsonValue> elseJson;
-	if (elseCase.has_value()) {
-		for (auto* snt : elseCase.value().first) {
-			elseJson.push_back(snt->to_json());
-		}
-	}
-	return Json()
-	    ._("candidate", candidate->to_json())
-	    ._("matchChain", chainJson)
-	    ._("hasElse", elseCase.has_value())
-	    ._("elseSentences", elseJson)
-	    ._("elseRange", elseCase.has_value() ? elseCase->second->to_json() : JsonValue());
 }
 
 } // namespace qat::ast

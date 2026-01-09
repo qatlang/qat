@@ -49,6 +49,4 @@ String NullPointer::to_string() const {
 	return "null" + (providedType.has_value() ? (":[" + providedType.value()->to_string() + "]") : "");
 }
 
-Json NullPointer::to_json() const { return Json()._("nodeType", "nullPointer")._("fileRange", fileRange); }
-
 } // namespace qat::ast

@@ -50,18 +50,6 @@ class EndPointer : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::END_POINTER; }
-
-	useit Json to_json() const final {
-		Vec<JsonValue> argsJSON;
-		for (auto* arg : args) {
-			argsJSON.push_back(arg->to_json());
-		}
-		return Json()
-		    ._("candidate", candidate->to_json())
-		    ._("arguments", argsJSON)
-		    ._("kind", kind_to_string())
-		    ._("fileRange", fileRange ? fileRange->to_json() : JsonValue());
-	}
 };
 
 } // namespace qat::ast

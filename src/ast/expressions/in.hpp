@@ -57,8 +57,6 @@ class InExpression : public TypeInferrable, public Expression {
 	ir::Value* emit(EmitCtx* ctx);
 
 	useit NodeType nodeType() const final { return NodeType::IN_EXPRESSION; }
-
-	useit Json to_json() const final { return Json(); }
 };
 
 } // namespace qat::ast

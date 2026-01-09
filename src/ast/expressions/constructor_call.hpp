@@ -39,8 +39,6 @@ class ConstructorCall final : public Expression,
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

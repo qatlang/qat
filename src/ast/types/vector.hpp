@@ -29,8 +29,6 @@ class VectorType final : public Type {
 
 	AstTypeKind type_kind() const final { return AstTypeKind::VECTOR; }
 
-	Json to_json() const final;
-
 	String to_string() const final;
 };
 

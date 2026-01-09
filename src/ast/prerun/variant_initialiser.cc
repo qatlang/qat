@@ -138,15 +138,4 @@ String PrerunVariantInitialiser::to_string() const {
 	       (expression.has_value() ? ("(" + expression.value()->to_string() + ")") : "");
 }
 
-Json PrerunVariantInitialiser::to_json() const {
-	return Json()
-	    ._("nodeType", "prerunMixOrChoiceInit")
-	    ._("hasType", (bool)type)
-	    ._("type", type.to_json_value())
-	    ._("subName", subName)
-	    ._("hasExpression", expression.has_value())
-	    ._("expression", expression.has_value() ? expression.value()->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

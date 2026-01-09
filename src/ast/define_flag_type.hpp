@@ -10,8 +10,6 @@ struct FlagVariant {
 	PrerunExpression* value;
 	bool              isDefault;
 	FileRangePtr      range;
-
-	useit Json to_json() const;
 };
 
 class DefineFlagType final : public IsEntity {
@@ -37,8 +35,6 @@ class DefineFlagType final : public IsEntity {
 	void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
-
-	useit Json to_json() const final;
 
 	useit NodeType nodeType() const final { return NodeType::DEFINE_FLAG_TYPE; }
 };

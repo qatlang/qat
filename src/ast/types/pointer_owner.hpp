@@ -62,8 +62,6 @@ struct PtrOwner {
 		return PtrOwner{.kind = OwnerKind::PRERUN, .candidate = nullptr, .range = range};
 	}
 
-	useit Json to_json() const;
-
 	useit String to_string() const;
 };
 

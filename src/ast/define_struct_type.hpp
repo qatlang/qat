@@ -32,8 +32,6 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 		Maybe<VisibilitySpec> visibSpec;
 		Maybe<Expression*>    expression;
 		FileRangePtr          fileRange;
-
-		useit Json to_json() const;
 	};
 
 	// Static member representation in the AST
@@ -55,8 +53,6 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 		Expression*           value;
 		Maybe<VisibilitySpec> visibSpec;
 		FileRangePtr          fileRange;
-
-		useit Json to_json() const;
 	};
 
   private:
@@ -123,11 +119,17 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	void set_simple_move(FileRangePtr range) { simpleMove = std::move(range); }
 
 	useit bool is_generic() const;
+
 	useit bool has_default_constructor() const;
+
 	useit bool has_destructor() const;
+
 	useit bool has_copy_constructor() const;
+
 	useit bool has_move_constructor() const;
+
 	useit bool has_copy_assignment() const;
+
 	useit bool has_move_assignment() const;
 
 	useit bool is_define_struct_type() const final { return true; }
@@ -135,10 +137,10 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	useit DefineStructType* as_define_struct_type() final { return this; }
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
-	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
-	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final;
+	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+
+	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::DEFINE_STRUCT_TYPE; }
 

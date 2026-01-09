@@ -342,12 +342,4 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json MemberAccess::to_json() const {
-	return Json()
-	    ._("nodeType", "memberVariable")
-	    ._("instance", instance->to_json())
-	    ._("member", name)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

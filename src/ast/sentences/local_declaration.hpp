@@ -38,8 +38,6 @@ class LocalDeclaration final : public Sentence {
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
-	useit Json to_json() const final;
-
 	useit NodeType nodeType() const final { return NodeType::LOCAL_DECLARATION; }
 };
 

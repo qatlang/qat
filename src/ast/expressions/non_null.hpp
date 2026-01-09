@@ -22,13 +22,6 @@ class NonNull : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::NON_NULL; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("nodeType", "nonNull")
-		    ._("candidate", candidate->to_json())
-		    ._("fileRange", fileRange->to_json());
-	}
 };
 
 }; // namespace qat::ast

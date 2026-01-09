@@ -49,8 +49,4 @@ ir::PrerunValue* CustomFloatLiteral::emit(EmitCtx* ctx) {
 
 String CustomFloatLiteral::to_string() const { return value + "_" + kind; }
 
-Json CustomFloatLiteral::to_json() const {
-	return Json()._("nodeType", "customFloatLiteral")._("nature", kind)._("value", value)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

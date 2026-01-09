@@ -128,24 +128,4 @@ String PrerunPlainInit::to_string() const {
 	return result;
 }
 
-Json PrerunPlainInit::to_json() const {
-	Vec<JsonValue> fieldsJson;
-	Vec<JsonValue> fieldValsJson;
-	if (fields.has_value()) {
-		for (auto& f : fields.value()) {
-			fieldsJson.push_back(Json()._("name", f.value)._("range", f.range));
-		}
-	}
-	for (auto f : fieldValues) {
-		fieldValsJson.push_back(f->to_json());
-	}
-	return Json()
-	    ._("nodeType", "prerunPlainInitialiser")
-	    ._("hasType", (bool)type)
-	    ._("type", type.to_json_value())
-	    ._("hasFields", fields.has_value())
-	    ._("fields", fieldsJson)
-	    ._("fieldValues", fieldValsJson);
-}
-
 } // namespace qat::ast

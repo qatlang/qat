@@ -21,8 +21,4 @@ const VisibilityInfo& StaticMember::get_visibility() const { return visibility; 
 
 bool StaticMember::has_initial() const { return (initial != nullptr); }
 
-Json StaticMember::to_json() const {
-	// TODO - Implement
-	return Json();
-}
 } // namespace qat::ir

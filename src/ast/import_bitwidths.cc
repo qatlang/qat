@@ -37,12 +37,4 @@ void ImportBitwidths::create_module(ir::Mod* mod, ir::Ctx* irCtx) const {
 	}
 }
 
-Json ImportBitwidths::to_json() const {
-	Vec<JsonValue> typesJson;
-	for (auto typ : importedTypes) {
-		typesJson.push_back(typ->to_json());
-	}
-	return Json()._("nodeType", "importBitwidths")._("types", typesJson)._("fileRange", fileRange->to_json());
-}
-
 } // namespace qat::ast

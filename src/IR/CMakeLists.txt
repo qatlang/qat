@@ -4,7 +4,6 @@ add_library(IR STATIC
 	generics.cc
 	internal.cc
 	logic.cc
-	entity_overview.cc
 	function.cc
 	global_entity.cc
 	link_names.cc
@@ -31,4 +30,4 @@ target_link_directories(IR
 	PUBLIC ../utils
 	PUBLIC ../ast)
 
-target_link_libraries(IR lexer utils AST IRTypes ASTPrerunSentences)
+target_link_libraries(IR lexer utils AST IRTypes ASTPrerunSentences Boost::json)

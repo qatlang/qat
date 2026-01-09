@@ -31,12 +31,4 @@ ir::Value* SayLike::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json SayLike::to_json() const {
-	Vec<JsonValue> exps;
-	for (auto* exp : expressions) {
-		exps.push_back(exp->to_json());
-	}
-	return Json()._("nodeType", "saySentence")._("values", exps)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

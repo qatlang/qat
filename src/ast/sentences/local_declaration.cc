@@ -161,16 +161,4 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 	}
 }
 
-Json LocalDeclaration::to_json() const {
-	return Json()
-	    ._("nodeType", "localDeclaration")
-	    ._("name", name)
-	    ._("isVariable", variability)
-	    ._("hasType", (type != nullptr))
-	    ._("type", (type != nullptr) ? type->to_json() : Json())
-	    ._("hasValue", value.has_value())
-	    ._("value", value.has_value() ? value.value()->to_json() : Json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

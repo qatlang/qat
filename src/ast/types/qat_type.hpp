@@ -33,8 +33,6 @@ class Type {
 
 	useit virtual AstTypeKind type_kind() const = 0;
 
-	useit virtual Json to_json() const = 0;
-
 	useit virtual String to_string() const = 0;
 
 	virtual void destroy() {}

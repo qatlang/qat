@@ -153,8 +153,4 @@ ir::Value* Copy::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Copy::to_json() const {
-	return Json()._("nodeType", "copyExpression")._("expression", exp->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

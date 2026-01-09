@@ -46,15 +46,6 @@ class Argument {
 	useit Type* get_type() { return type; }
 
 	useit bool is_member_arg() const { return kind == ArgKind::MEMBER; }
-
-	useit Json to_json() const {
-		return Json()
-		    ._("name", name)
-		    ._("isVar", isVar)
-		    ._("hasType", type != nullptr)
-		    ._("type", (type != nullptr) ? type->to_json() : Json())
-		    ._("kind", arg_kind_to_string(kind));
-	}
 };
 
 } // namespace qat::ast

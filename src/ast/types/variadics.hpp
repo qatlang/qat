@@ -27,12 +27,6 @@ struct Variadics {
 		}
 	}
 
-	useit Json to_json() const {
-		return Json()
-		    ._("kind", kind == VariadicKind::NORMAL ? "normal" : (kind == VariadicKind::LEGACY ? "legacy" : "typed"))
-		    ._("type", kind == VariadicKind::TYPED ? type->to_json() : JsonValue());
-	}
-
 	useit ir::Variadics to_ir(EmitCtx* irCtx) const;
 };
 

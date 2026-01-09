@@ -55,12 +55,4 @@ String Character::to_string() const {
 	}
 }
 
-Json Character::to_json() const {
-	return Json()
-	    ._("nodeType", "character")
-	    ._("isByte", isByte)
-	    ._("bytes", JsonValue(Vec<JsonValue>{bytes[0], bytes[1], bytes[2], bytes[3]}))
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

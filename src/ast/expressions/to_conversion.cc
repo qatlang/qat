@@ -314,12 +314,4 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json ToConversion::to_json() const {
-	return Json()
-	    ._("nodeType", "toConversion")
-	    ._("instance", source->to_json())
-	    ._("targetType", destinationType->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

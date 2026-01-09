@@ -165,15 +165,6 @@ TypedGeneric* TypedGeneric::get(Identifier name, ir::Type* type, FileRangePtr ra
 
 ir::Type* TypedGeneric::get_type() const { return type; }
 
-Json TypedGeneric::to_json() const {
-	return Json()
-	    ._("name", name)
-	    ._("genericKind", "typedGeneric")
-	    ._("typeID", type->get_id())
-	    ._("valueString", type->to_string())
-	    ._("range", range);
-}
-
 PrerunGeneric::PrerunGeneric(Identifier _name, ir::PrerunValue* _val, FileRangePtr _range)
     : GenericArgument(std::move(_name), GenericKind::prerunGeneric, std::move(_range)), constant(_val) {}
 
@@ -184,16 +175,5 @@ PrerunGeneric* PrerunGeneric::get(Identifier name, ir::PrerunValue* val, FileRan
 ir::PrerunValue* PrerunGeneric::get_expression() const { return constant; }
 
 ir::Type* PrerunGeneric::get_type() const { return constant->get_ir_type(); };
-
-Json PrerunGeneric::to_json() const {
-	return Json()
-	    ._("name", name)
-	    ._("genericKind", "prerunGeneric")
-	    ._("typeID", constant->get_ir_type()->get_id())
-	    ._("valueString", constant->get_ir_type()->can_be_prerun_generic()
-	                          ? constant->get_ir_type()->to_prerun_generic_string(constant).value_or("")
-	                          : "")
-	    ._("range", range);
-}
 
 } // namespace qat::ir

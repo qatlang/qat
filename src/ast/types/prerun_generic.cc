@@ -49,17 +49,6 @@ void PrerunGenericAbstract::unset() const { expressionValue.pop_back(); }
 
 ir::PrerunGeneric* PrerunGenericAbstract::to_ir() const { return ir::PrerunGeneric::get(name, getPrerun(), range); }
 
-Json PrerunGenericAbstract::to_json() const {
-	return Json()
-	    ._("genericKind", "prerunGeneric")
-	    ._("index", index)
-	    ._("name", name)
-	    ._("hasDefault", defaultValueAST.has_value())
-	    ._("defaultValue", defaultValueAST.has_value() ? defaultValueAST.value()->to_json() : JsonValue())
-	    ._("defaultValueString", defaultValueAST.has_value() ? defaultValueAST.value()->to_string() : JsonValue())
-	    ._("range", range->to_json());
-}
-
 PrerunGenericAbstract::~PrerunGenericAbstract() {}
 
 } // namespace qat::ast

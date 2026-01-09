@@ -61,15 +61,6 @@ ir::Type* VectorType::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json VectorType::to_json() const {
-	return Json()
-	    ._("typeKind", "vector")
-	    ._("subType", subType->to_json())
-	    ._("count", count->to_json())
-	    ._("isScalable", scalable.has_value())
-	    ._("fileRange", fileRange);
-}
-
 String VectorType::to_string() const {
 	return String("vec:[") + (scalable.has_value() ? "?, " : "") + count->to_string() + ", " + subType->to_string() +
 	       "]";

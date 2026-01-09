@@ -51,12 +51,4 @@ ir::Value* Cast::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Cast::to_json() const {
-	return Json()
-	    ._("nodeType", "cast")
-	    ._("expression", instance->to_json())
-	    ._("targetType", destination->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

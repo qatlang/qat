@@ -23,8 +23,8 @@ class SelfType final : public Type {
 	}
 
 	useit ir::Type* emit(EmitCtx* ctx);
-	useit Json      to_json() const;
-	useit String    to_string() const;
+
+	useit String to_string() const;
 
 	useit AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
 };

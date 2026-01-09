@@ -12,18 +12,4 @@ void Lib::create_module(ir::Mod* mod, ir::Ctx* irCtx) const {
 	mod->close_lib_after_creation();
 }
 
-Json Lib::to_json() const {
-	Vec<JsonValue> membersJsonValue;
-	for (auto* mem : members) {
-		membersJsonValue.emplace_back(mem->to_json());
-	}
-	return Json()
-	    ._("name", name)
-	    ._("nodeType", "lib")
-	    ._("members", membersJsonValue)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

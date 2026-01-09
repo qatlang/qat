@@ -38,8 +38,6 @@ class PrerunVariantInitialiser final : public PrerunExpression, public TypeInfer
 
 	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit Json to_json() const final;
-
 	useit String to_string() const final;
 
 	useit NodeType nodeType() const final { return NodeType::PRERUN_VARIANT_INITIALISER; }

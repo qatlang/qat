@@ -36,8 +36,6 @@ class TypeLike {
 	useit FileRangePtr get_range() const;
 
 	useit String to_string() const;
-
-	useit JsonValue to_json_value() const;
 };
 
 } // namespace qat::ast

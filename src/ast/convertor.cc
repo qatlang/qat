@@ -140,17 +140,6 @@ void ConvertorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	}
 }
 
-Json ConvertorPrototype::to_json() const {
-	return Json()
-	    ._("nodeType", "convertorPrototype")
-	    ._("isFrom", isFrom)
-	    ._("hasArgument", argName.has_value())
-	    ._("argumentName", argName.has_value() ? argName.value().operator JsonValue() : Json())
-	    ._("candidateType", candidateType->to_json())
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue());
-}
-
 void ConvertorDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
 
 ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
@@ -357,18 +346,6 @@ ir::Value* ConvertorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	ir::function_return_handler(irCtx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
 	SHOW("Sentences emitted")
 	return nullptr;
-}
-
-Json ConvertorDefinition::to_json() const {
-	Vec<JsonValue> sntcs;
-	for (auto* sentence : sentences) {
-		sntcs.push_back(sentence->to_json());
-	}
-	return Json()
-	    ._("nodeType", "functionDefinition")
-	    ._("prototype", prototype->to_json())
-	    ._("body", sntcs)
-	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

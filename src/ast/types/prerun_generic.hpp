@@ -49,9 +49,10 @@ class PrerunGenericAbstract final : public GenericAbstractType {
 	useit ir::PrerunGeneric* to_ir() const;
 
 	useit bool isSet() const final;
-	void       setExpression(ir::PrerunValue* exp) const;
-	void       unset() const final;
-	useit Json to_json() const final;
+
+	void setExpression(ir::PrerunValue* exp) const;
+
+	void unset() const final;
 
 	~PrerunGenericAbstract() final;
 };

@@ -43,8 +43,6 @@ class SliceType final : public Type {
 
 	useit AstTypeKind type_kind() const { return AstTypeKind::SLICE; }
 
-	useit Json to_json() const;
-
 	useit String to_string() const;
 };
 

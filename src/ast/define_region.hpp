@@ -26,8 +26,6 @@ class DefineRegion : public IsEntity {
 	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final;
-
 	useit NodeType nodeType() const final { return NodeType::DEFINE_REGION; }
 };
 

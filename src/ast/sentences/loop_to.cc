@@ -110,16 +110,4 @@ ir::Value* LoopTo::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json LoopTo::to_json() const {
-	Vec<JsonValue> snts;
-	for (auto* snt : sentences) {
-		snts.push_back(snt->to_json());
-	}
-	return Json()
-	    ._("nodeType", "loopTimes")
-	    ._("count", count->to_json())
-	    ._("sentences", snts)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

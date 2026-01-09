@@ -39,18 +39,6 @@ class MetaMath : public Expression {
 
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
-	useit Json to_json() const final {
-		Vec<JsonValue> argsJSON;
-		for (auto arg : arguments) {
-			argsJSON.push_back(arg->to_json());
-		}
-		return Json()
-		    ._("nodeType", "metaMath")
-		    ._("name", name)
-		    ._("arguments", argsJSON)
-		    ._("fileRange", fileRange->to_json_value());
-	}
-
 	useit NodeType nodeType() const final { return NodeType::META_MATH; }
 };
 

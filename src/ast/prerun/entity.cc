@@ -273,14 +273,6 @@ ir::PrerunValue* PrerunEntity::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json PrerunEntity::to_json() const {
-	Vec<JsonValue> idsJs;
-	for (auto const& idnt : identifiers) {
-		idsJs.push_back(idnt);
-	}
-	return Json()._("nodeType", "constantEntity")._("identifiers", idsJs)._("fileRange", fileRange);
-}
-
 String PrerunEntity::to_string() const {
 	String result;
 	for (usize i = 0; i < relative; i++) {

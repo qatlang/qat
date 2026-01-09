@@ -78,8 +78,4 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json Dereference::to_json() const {
-	return Json()._("nodeType", "dereference")._("expression", exp->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

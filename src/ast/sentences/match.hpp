@@ -20,10 +20,12 @@ class MatchValue {
 	                                 EmitCtx* ctx) = 0;
 
 	useit MixOrChoiceMatchValue* asMixOrChoice();
-	useit ExpressionMatchValue*  asExp();
-	useit virtual FileRangePtr   getMainRange() const = 0;
-	useit virtual MatchType      getType() const      = 0;
-	useit virtual Json           to_json() const      = 0;
+
+	useit ExpressionMatchValue* asExp();
+
+	useit virtual FileRangePtr getMainRange() const = 0;
+
+	useit virtual MatchType getType() const = 0;
 };
 
 class MixOrChoiceMatchValue final : public MatchValue {
@@ -49,8 +51,6 @@ class MixOrChoiceMatchValue final : public MatchValue {
 	useit MatchType getType() const final { return MatchType::mixOrChoice; }
 
 	useit FileRangePtr getMainRange() const final { return name.range; }
-
-	useit Json to_json() const final;
 };
 
 class ExpressionMatchValue final : public MatchValue {
@@ -73,8 +73,6 @@ class ExpressionMatchValue final : public MatchValue {
 	useit MatchType getType() const final { return MatchType::Exp; }
 
 	useit FileRangePtr getMainRange() const final { return exp->fileRange; }
-
-	useit Json to_json() const final;
 };
 
 struct CaseResult {
@@ -125,8 +123,6 @@ class Match final : public Sentence {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::MATCH; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

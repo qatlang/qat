@@ -55,14 +55,6 @@ ir::PrerunValue* PrerunMemberAccess::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json PrerunMemberAccess::to_json() const {
-	return Json()
-	    ._("nodeType", "prerunMemberAccess")
-	    ._("expression", expr->to_json())
-	    ._("memberName", memberName)
-	    ._("fileRange", fileRange);
-}
-
 String PrerunMemberAccess::to_string() const { return expr->to_string() + "'" + memberName.value; }
 
 } // namespace qat::ast

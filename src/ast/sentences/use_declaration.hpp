@@ -24,8 +24,6 @@ class UseDeclaration final : public Sentence {
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::USE_DECLARATION; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

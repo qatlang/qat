@@ -18,8 +18,6 @@ struct SkillEntity {
 	useit ir::Skill* find_skill(EmitCtx* ctx) const;
 
 	useit String to_string() const;
-
-	useit Json to_json() const;
 };
 
 struct DoneSkillEntity {
@@ -33,8 +31,6 @@ struct DoneSkillEntity {
 	useit ir::DoneSkill* find_done_skill(EmitCtx* ctx) const;
 
 	useit String to_string() const;
-
-	useit Json to_json() const;
 };
 
 } // namespace qat::ast

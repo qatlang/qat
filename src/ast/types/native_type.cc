@@ -164,18 +164,6 @@ Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 	}
 }
 
-Json NativeType::to_json() const {
-	return Json()
-	    ._("typeKind", "nativeType")
-	    ._("nativeKind", ir::NativeType::kind_to_string(nativeKind))
-	    ._("isNonNullable", isNonNullable)
-	    ._("hasVar", varRange.has_value())
-	    ._("varRange", varRange.has_value() ? varRange.value()->to_json_value() : JsonValue())
-	    ._("hasAddressSpace", addressSpace.has_value())
-	    ._("addressSpace", addressSpace.has_value() ? addressSpace.value().to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 String NativeType::to_string() const {
 	if (nativeKind == ir::NativeTypeKind::ByteString) {
 		String res = "bytestring";

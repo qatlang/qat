@@ -32,8 +32,6 @@ class OkExpression final : public Expression,
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::OK; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

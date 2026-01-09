@@ -140,8 +140,4 @@ ir::Value* InlineAssembly::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json InlineAssembly::to_json() const {
-	return Json()._("nodeType", "assemblyBlock")._("asmValue", asmValue->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

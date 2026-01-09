@@ -22,11 +22,11 @@ class MaybeType final : public Type {
 	                         EmitCtx* ctx) final;
 
 	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+
 	useit ir::Type* emit(EmitCtx* ctx) final;
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::MAYBE; }
 
-	useit Json   to_json() const final;
 	useit String to_string() const final;
 };
 

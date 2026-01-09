@@ -4,6 +4,7 @@
 #include "../utils/file_range.hpp"
 #include "./token.hpp"
 
+#include "../utils/macros.hpp"
 #include <filesystem>
 #include <unordered_map>
 #include <unordered_set>

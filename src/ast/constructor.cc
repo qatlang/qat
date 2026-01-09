@@ -202,19 +202,6 @@ void ConstructorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	}
 }
 
-Json ConstructorPrototype::to_json() const {
-	Vec<JsonValue> args;
-	for (auto* arg : arguments) {
-		args.push_back(arg->to_json());
-	}
-	return Json()
-	    ._("nodeType", "constructorPrototype")
-	    ._("arguments", args)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 void ConstructorDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
 
 ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
@@ -436,18 +423,6 @@ ir::Value* ConstructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	ir::function_return_handler(irCtx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
 	SHOW("Sentences emitted")
 	return nullptr;
-}
-
-Json ConstructorDefinition::to_json() const {
-	Vec<JsonValue> sntcs;
-	for (auto* sentence : sentences) {
-		sntcs.push_back(sentence->to_json());
-	}
-	return Json()
-	    ._("nodeType", "constructorDefinition")
-	    ._("prototype", prototype->to_json())
-	    ._("body", sntcs)
-	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

@@ -42,21 +42,6 @@ ir::PrerunValue* PrerunSubEntity::emit(EmitCtx* ctx) {
 	}
 }
 
-Json PrerunSubEntity::to_json() const {
-	Vec<JsonValue> namesJSON;
-	for (auto& id : names) {
-		namesJSON.push_back(id);
-	}
-	return Json()
-	    ._("nodeType", "prerunSubEntity")
-	    ._("hasSkill", skill.has_value())
-	    ._("skillRange", skill.has_value() ? skill.value() : JsonValue())
-	    ._("names", namesJSON)
-	    ._("hasParentType", (bool)parentType)
-	    ._("parentType", (JsonValue)parentType)
-	    ._("fileRange", fileRange);
-}
-
 String PrerunSubEntity::to_string() const {
 	String nameStr;
 	for (usize i = 0; i < names.size(); i++) {

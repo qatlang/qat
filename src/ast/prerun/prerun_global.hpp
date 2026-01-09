@@ -23,11 +23,12 @@ class PrerunGlobal final : public IsEntity {
 	}
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
+
 	void update_entity_dependencies(ir::Mod* parent, ir::Ctx* irCtx) final;
+
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	void       define(ir::Mod* mod, ir::Ctx* irCtx) const;
-	useit Json to_json() const final;
+	void define(ir::Mod* mod, ir::Ctx* irCtx) const;
 
 	useit NodeType nodeType() const final { return NodeType::PRERUN_GLOBAL; }
 };

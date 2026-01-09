@@ -154,21 +154,4 @@ void DefineMixType::create_type(ir::Mod* mod, ir::Ctx* irCtx) {
 	                          isPacked, EmitCtx::get(irCtx, mod)->get_visibility_info(visibSpec), fileRange, None);
 }
 
-Json DefineMixType::to_json() const {
-	Vec<JsonValue> subTypesJson;
-	for (const auto& sub : subtypes) {
-		subTypesJson.push_back(Json()
-		                           ._("name", sub.first)
-		                           ._("hasType", sub.second.has_value())
-		                           ._("type", sub.second.has_value() ? sub.second.value()->to_json() : JsonValue()));
-	}
-	return Json()
-	    ._("nodeType", "defineMixType")
-	    ._("name", name)
-	    ._("subTypes", subTypesJson)
-	    ._("fileRange", fileRange)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue());
-}
-
 } // namespace qat::ast

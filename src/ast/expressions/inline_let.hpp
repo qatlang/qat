@@ -21,8 +21,6 @@ class InlineLet final : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::INLINE_LET; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

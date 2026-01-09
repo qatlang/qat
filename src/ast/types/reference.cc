@@ -36,16 +36,6 @@ ir::Type* RefType::emit(EmitCtx* ctx) {
 
 AstTypeKind RefType::type_kind() const { return AstTypeKind::REFERENCE; }
 
-Json RefType::to_json() const {
-	return Json()
-	    ._("typeKind", "reference")
-	    ._("subType", type->to_json())
-	    ._("isSubtypeVariable", isSubtypeVar)
-	    ._("hasAddressSpace", addressSpace.has_value())
-	    ._("addressSpace", addressSpace.has_value() ? addressSpace.value().to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 String RefType::to_string() const {
 	return "ref:[" + String(isSubtypeVar ? "var " : "") + type->to_string() +
 	       (addressSpace.has_value() ? (", " + addressSpace.value().to_string()) : "") + "]";

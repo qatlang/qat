@@ -21,8 +21,4 @@ ir::Value* InlineLet::emit(EmitCtx* ctx) {
 	return res;
 }
 
-Json InlineLet::to_json() const {
-	return Json()._("nodeType", "inlineLet")._("expression", expression->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -47,8 +47,4 @@ ir::PrerunValue* PrerunNegative::emit(EmitCtx* ctx) {
 
 String PrerunNegative::to_string() const { return "-" + value->to_string(); }
 
-Json PrerunNegative::to_json() const {
-	return Json()._("nodeType", "prerunNegative")._("subExpression", value->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

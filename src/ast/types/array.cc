@@ -9,8 +9,7 @@ namespace qat::ast {
 
 #define ARRAY_LENGTH_BITWIDTH 64u
 
-void ArrayType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,
-                                    EmitCtx* ctx) {
+void ArrayType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	lengthExp->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	elementType->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 }
@@ -59,14 +58,6 @@ ir::Type* ArrayType::emit(EmitCtx* ctx) {
 }
 
 AstTypeKind ArrayType::type_kind() const { return AstTypeKind::ARRAY; }
-
-Json ArrayType::to_json() const {
-	return Json()
-	    ._("typeKind", "array")
-	    ._("subType", elementType->to_json())
-	    ._("length", lengthExp->to_json())
-	    ._("fileRange", fileRange);
-}
 
 String ArrayType::to_string() const { return "[" + lengthExp->to_string() + "]" + elementType->to_string(); }
 

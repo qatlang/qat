@@ -4508,9 +4508,6 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 		SHOW("			" << Identifier::fullName(_symbol.value().name).value)
 	}
 	SHOW("	CachedExpression : " << (_cachedExps.has_value() ? "true" : "false"))
-	if (_cachedExps.has_value()) {
-		SHOW("			" << ((_cachedExps.value())->to_json()["nodeType"].asString()))
-	}
 	SHOW("	FROM : " << from << " range: " << RangeAt(from)->to_string())
 	SHOW("	UPTO : " << (upto.has_value() ? "true" : "false")
 	                 << (upto.has_value() ? "\n		" + std::to_string(upto.value()) +

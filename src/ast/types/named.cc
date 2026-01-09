@@ -298,14 +298,6 @@ u32 NamedType::getRelative() const { return relative; }
 
 AstTypeKind NamedType::type_kind() const { return AstTypeKind::FLOAT; }
 
-Json NamedType::to_json() const {
-	Vec<JsonValue> nameJs;
-	for (auto const& nam : names) {
-		nameJs.push_back(JsonValue(nam));
-	}
-	return Json()._("typeKind", "named")._("names", nameJs)._("fileRange", fileRange);
-}
-
 String NamedType::to_string() const { return Identifier::fullName(names).value; }
 
 } // namespace qat::ast

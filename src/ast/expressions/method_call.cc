@@ -689,18 +689,4 @@ ir::Value* MethodCall::emit(EmitCtx* ctx) {
 	return usableFn->call(ctx->irCtx, argVals, localID, ctx->mod);
 }
 
-Json MethodCall::to_json() const {
-	Vec<JsonValue> argsJSON;
-	for (auto* arg : arguments) {
-		argsJSON.emplace_back(arg->to_json());
-	}
-	return Json()
-	    ._("nodeType", "memberFunctionCall")
-	    ._("instance", instance->to_json())
-	    ._("function", memberName)
-	    ._("arguments", argsJSON)
-	    ._("callNature", callNature == MethodCallNature::VAR ? "var" : "none")
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

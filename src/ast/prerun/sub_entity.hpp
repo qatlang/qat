@@ -30,8 +30,6 @@ class PrerunSubEntity final : public PrerunExpression {
 
 	useit NodeType nodeType() const final { return NodeType::PRERUN_SUB_ENTITY; }
 
-	useit Json to_json() const final;
-
 	useit String to_string() const final;
 };
 

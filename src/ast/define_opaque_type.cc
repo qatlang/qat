@@ -42,12 +42,4 @@ void DefineOpaqueType::do_phase(ir::EmitPhase, ir::Mod* parent, ir::Ctx* irCtx) 
 	                          emitCtx->get_visibility_info(visibSpec), irCtx->llctx, irMeta);
 }
 
-Json DefineOpaqueType::to_json() const {
-	return Json()
-	    ._("nodeType", "defineOpaqueType")
-	    ._("name", name)
-	    ._("visibility", visibSpec.has_value() ? visibSpec.value().to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -2,7 +2,6 @@
 #include "../../IR/types/integer.hpp"
 #include "../../IR/types/native_type.hpp"
 #include "../../IR/types/unsigned.hpp"
-#include "../../utils/json.hpp"
 
 #include <string>
 
@@ -140,19 +139,6 @@ String CustomIntegerLiteral::radixToString(u8 val) {
 		default:
 			return "0r" + std::to_string(val) + "_";
 	}
-}
-
-Json CustomIntegerLiteral::to_json() const {
-	return Json()
-	    ._("nodeType", "customIntegerLiteral")
-	    ._("isUnsignedHasValue", isUnsigned.has_value())
-	    ._("isUnsigned", isUnsigned.has_value() ? isUnsigned.value() : JsonValue())
-	    ._("hasRadix", radix.has_value())
-	    ._("radix", radix.has_value() ? radix.value() : JsonValue())
-	    ._("hasBitwidth", bitWidth.has_value())
-	    ._("bitWidth", bitWidth ? bitWidth.value() : JsonValue())
-	    ._("value", value)
-	    ._("fileRange", fileRange);
 }
 
 String CustomIntegerLiteral::to_string() const {

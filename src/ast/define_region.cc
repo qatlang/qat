@@ -38,13 +38,4 @@ void DefineRegion::do_phase(ir::EmitPhase, ir::Mod* mod, ir::Ctx* irCtx) {
 	(void)ir::Region::get(name, blockSizeResult, mod, ctx->get_visibility_info(visibSpec), irCtx, fileRange);
 }
 
-Json DefineRegion::to_json() const {
-	return Json()
-	    ._("nodeType", "defineRegion")
-	    ._("name", name)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

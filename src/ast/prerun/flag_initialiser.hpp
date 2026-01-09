@@ -32,8 +32,6 @@ class FlagInitialiser final : public PrerunExpression, public TypeInferrable {
 
 	useit NodeType nodeType() const final { return NodeType::FLAG_INITIALISER; }
 
-	useit Json to_json() const final;
-
 	useit String to_string() const final;
 };
 

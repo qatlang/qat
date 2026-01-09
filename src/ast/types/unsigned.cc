@@ -29,14 +29,6 @@ bool UnsignedType::isBitWidth(const u32 width) const { return bitWidth == width;
 
 AstTypeKind UnsignedType::type_kind() const { return AstTypeKind::UNSIGNED_INTEGER; }
 
-Json UnsignedType::to_json() const {
-	return Json()
-	    ._("typeKind", "unsignedInteger")
-	    ._("is_bool", is_bool)
-	    ._("bitWidth", bitWidth)
-	    ._("fileRange", fileRange);
-}
-
 String UnsignedType::to_string() const { return is_bool ? "bool" : ("u" + std::to_string(bitWidth)); }
 
 } // namespace qat::ast

@@ -23,18 +23,6 @@ void ImportGroup::perform_import() const {
 	}
 }
 
-Json ImportGroup::to_json() const {
-	Vec<JsonValue> entityName;
-	for (auto const& idn : entity) {
-		entityName.push_back(Json()._("value", idn.value)._("range", idn.range));
-	}
-	Vec<JsonValue> membersJson;
-	for (auto const& mem : members) {
-		membersJson.push_back(mem->to_json());
-	}
-	return Json()._("relative", relative)._("entity", entityName)._("members", membersJson)._("fileRange", fileRange);
-}
-
 void ImportEntities::create_entity(ir::Mod* currMod, ir::Ctx* irCtx) {
 	auto ctx    = EmitCtx::get(irCtx, currMod);
 	entityState = currMod->add_entity(None, ir::EntityType::importEntity, this, ir::EmitPhase::phase_1);
@@ -495,19 +483,6 @@ void ImportEntities::handle_imports(ir::Mod* currentMod, ir::Ctx* irCtx) const {
 		importHandler(ent, currentMod);
 	}
 	// FIXME - Order of declaration can cause issues
-}
-
-Json ImportEntities::to_json() const {
-	Vec<JsonValue> entitiesJson;
-	for (auto const& ent : entities) {
-		entitiesJson.emplace_back(ent->to_json());
-	}
-	return Json()
-	    ._("nodeType", "importEntities")
-	    ._("entities", entitiesJson)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
 }
 
 ImportEntities::~ImportEntities() {

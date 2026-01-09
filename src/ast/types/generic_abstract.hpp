@@ -41,11 +41,13 @@ class GenericAbstractType {
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                                 EmitCtx* ctx) = 0;
 
-	virtual void       emit(EmitCtx* ctx) const = 0;
-	useit virtual bool hasDefault() const       = 0;
-	useit virtual bool isSet() const            = 0;
-	virtual void       unset() const            = 0;
-	useit virtual Json to_json() const          = 0;
+	virtual void emit(EmitCtx* ctx) const = 0;
+
+	useit virtual bool hasDefault() const = 0;
+
+	useit virtual bool isSet() const = 0;
+
+	virtual void unset() const = 0;
 
 	useit ir::GenericArgument* toIRGenericType() const;
 

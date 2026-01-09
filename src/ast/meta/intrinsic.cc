@@ -592,21 +592,4 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json MetaIntrinsic::to_json() const {
-	Vec<JsonValue> genJSON;
-	for (auto arg : genArgs) {
-		genJSON.push_back(arg->to_json());
-	}
-	Vec<JsonValue> argsJSON;
-	for (auto arg : arguments) {
-		argsJSON.push_back(arg->to_json());
-	}
-	return Json()
-	    ._("nodeType", "metaIntrinsic")
-	    ._("intrinsicName", name->to_json())
-	    ._("genericArguments", genJSON)
-	    ._("arguments", argsJSON)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -42,13 +42,14 @@ class DefineMixType final : public IsEntity {
 	}
 
 	void create_opaque(ir::Mod* mod, ir::Ctx* irCtx);
+
 	void create_type(ir::Mod* mod, ir::Ctx* irCtx);
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
-	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
-	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit Json to_json() const final;
+	void update_entity_dependencies(ir::Mod* mod, ir::Ctx* irCtx) final;
+
+	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::DEFINE_MIX_TYPE; }
 };

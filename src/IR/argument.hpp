@@ -47,17 +47,6 @@ class Argument {
 	useit bool get_variability() const { return variability; }
 
 	useit u64 get_arg_index() const { return argIndex; }
-
-	useit Json to_json() const {
-		return Json()
-		    ._("name", name)
-		    ._("index", argIndex)
-		    ._("hasType", type != nullptr)
-		    ._("type", type ? type->get_id() : JsonValue())
-		    ._("isVar", variability)
-		    ._("kind",
-		       kind == ArgumentKind::MEMBER ? "member" : (kind == ArgumentKind::NORMAL ? "normal" : "variadic"));
-	}
 };
 
 } // namespace qat::ir

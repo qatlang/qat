@@ -37,20 +37,6 @@ class SubType final : public Type {
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::SUBTYPE; }
 
-	useit Json to_json() const final {
-		Vec<JsonValue> namesJSON;
-		for (auto& id : names) {
-			namesJSON.push_back(id);
-		}
-		return Json()
-		    ._("hasSkill", skill.has_value())
-		    ._("skillRange", skill.has_value() ? skill.value() : JsonValue())
-		    ._("names", namesJSON)
-		    ._("hasParentType", parentType != nullptr)
-		    ._("parentType", parentType ? parentType->to_json() : JsonValue())
-		    ._("fileRange", fileRange);
-	}
-
 	useit String to_string() const final {
 		String nameStr;
 		for (auto& id : names) {

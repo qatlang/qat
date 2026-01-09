@@ -1,7 +1,6 @@
 #ifndef QAT_IR_TYPES_FUNCTION_TYPE_HPP
 #define QAT_IR_TYPES_FUNCTION_TYPE_HPP
 
-#include "../../utils/json.hpp"
 #include "../../utils/qat_region.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
@@ -57,16 +56,6 @@ class ArgumentType {
 
 	useit bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
 
-	useit Json to_json() const {
-		return Json()
-		    ._("hasName", name.has_value())
-		    ._("name", name.has_value() ? name.value() : JsonValue())
-		    ._("hasType", type != nullptr)
-		    ._("type", type ? type->get_id() : JsonValue())
-		    ._("isVar", variability)
-		    ._("kind", kind == ArgumentKind::MEMBER ? "member" : "normal");
-	}
-
 	useit String to_string() const {
 		switch (kind) {
 			case ArgumentKind::NORMAL:
@@ -91,8 +80,10 @@ class ReturnType {
 		return std::construct_at(OwnNormal(ReturnType), _retTy, _isRetSelf);
 	}
 
-	useit Type*  get_type() const;
-	useit bool   is_return_self() const;
+	useit Type* get_type() const;
+
+	useit bool is_return_self() const;
+
 	useit String to_string() const;
 };
 

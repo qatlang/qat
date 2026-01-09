@@ -2,11 +2,11 @@
 #define QAT_IR_PRERUN_FUNCTION_HPP
 
 #include "../utils/identifier.hpp"
+#include "../utils/mentionable.hpp"
 #include "../utils/visibility.hpp"
 #include "./types/function.hpp"
 #include "./types/qat_type.hpp"
-#include "entity_overview.hpp"
-#include "value.hpp"
+#include "./value.hpp"
 
 namespace qat::ast {
 class PrerunSentence;
@@ -176,7 +176,7 @@ class PrerunCallState {
 	useit PrerunValue* get_arg_value_for(String const& name);
 };
 
-class PrerunFunction : public PrerunValue, public EntityOverview {
+class PrerunFunction : public PrerunValue, public Mentionable {
 	friend class PrerunCallState;
 	Identifier         name;
 	Type*              returnType;
@@ -197,8 +197,6 @@ class PrerunFunction : public PrerunValue, public EntityOverview {
 		return std::construct_at(OwnNormal(PrerunFunction), parent, std::move(name), returnTy, std::move(argTypes),
 		                         std::move(sentences), visibility, ctx);
 	}
-
-	void update_overview() final;
 
 	useit Identifier get_name() const { return name; }
 

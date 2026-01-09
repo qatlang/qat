@@ -3928,42 +3928,6 @@ fs::path Mod::get_resolved_output_path(const String& extension, Ctx* ctx) {
 	return out;
 }
 
-void Mod::export_json_from_ast(Ctx* ctx) {
-	if ((moduleType == ModuleType::file) || rootLib) {
-		auto*          cfg    = cli::Config::get();
-		auto           result = Json();
-		Vec<JsonValue> contents;
-		for (auto* node : nodes) {
-			contents.push_back(node->to_json());
-		}
-		result["contents"] = contents;
-		std::fstream jsonStream;
-		auto         jsonPath = (cfg->has_output_path() ? cfg->get_output_path() : basePath) / "AST" /
-		                filePath.lexically_relative(basePath)
-		                    .replace_filename(filePath.filename().string())
-		                    .replace_extension("json");
-		std::error_code errorCode;
-		fs::create_directories(jsonPath.parent_path(), errorCode);
-		if (not errorCode) {
-			jsonStream.open(jsonPath, std::ios_base::out);
-			if (jsonStream.is_open()) {
-				jsonStream << result;
-				jsonStream.close();
-			} else {
-				ctx->Error(
-				    "Output file could not be opened for writing the JSON representation",
-				    FileRange::from_path(std::construct_at(OwnNormal(String), get_parent_file()->filePath.string())));
-			}
-		} else {
-			ctx->Error(
-			    "Could not create parent directories for the JSON file for exporting AST",
-			    FileRange::from_path(std::construct_at(OwnNormal(String), get_parent_file()->filePath.string())));
-		}
-	} else {
-		SHOW("Module type not suitable for exporting AST")
-	}
-}
-
 llvm::Module* Mod::get_llvm_module() const { return llvmModule; }
 
 llvm::Function* Mod::link_intrinsic(IntrinsicID intr) {
@@ -4166,11 +4130,6 @@ String Mod::link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRa
 			return "";
 		}
 	}
-}
-
-Json Mod::to_json() const {
-	// FIXME - Change
-	return Json()._("name", name);
 }
 
 } // namespace qat::ir

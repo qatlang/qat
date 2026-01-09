@@ -303,8 +303,7 @@ String Config::filter_quotes(String value) {
 }
 
 Config::Config(u64 count, const char** args)
-    : exitAfter(false), verbose(false), saveDocs(false), showReport(false), exportAST(false), buildWorkflow(false),
-      runWorkflow(false) {
+    : exitAfter(false), verbose(false), saveDocs(false), showReport(false), buildWorkflow(false), runWorkflow(false) {
 	String verNum(VERSION_NUMBER);
 	versionTuple = llvm::VersionTuple(
 	    std::atoi(verNum.substr(0, verNum.find_first_of('.')).c_str()),
@@ -596,12 +595,8 @@ Config::Config(u64 count, const char** args)
 					cli::Error("Expected argument after '--linker' which would be the path to the linker to be used",
 					           None);
 				}
-			} else if (arg == "--export-ast") {
-				exportAST = true;
 			} else if (arg == "--stats") {
 				diagnostic = true;
-			} else if (arg == "--export-code-info") {
-				exportCodeInfo = true;
 			} else if (arg == "-o" || arg == "--output") {
 				if (hasNext()) {
 					String out(filter_quotes(getNext()));

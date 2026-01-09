@@ -22,8 +22,6 @@ class ConfirmRef : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx);
 
 	useit NodeType nodeType() const final { return NodeType::CONFIRM_REF; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

@@ -31,8 +31,6 @@ class Move final : public Expression, public LocalDeclCompatible, public InPlace
 	useit ir::Value* emit(EmitCtx* ctx) final;
 
 	useit NodeType nodeType() const final { return NodeType::MOVE_EXPRESSION; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

@@ -24,7 +24,6 @@ class ToConversion final : public Expression {
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx) override;
-	useit Json       to_json() const override;
 
 	useit NodeType nodeType() const override { return NodeType::TO_CONVERSION; };
 };

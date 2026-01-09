@@ -405,30 +405,4 @@ void FunctionPrototype::set_variant_name(const String& value) const { variantNam
 
 void FunctionPrototype::unset_variant_name() const { variantName = None; }
 
-Json FunctionPrototype::to_json() const {
-	Vec<JsonValue> args;
-	for (auto* arg : arguments) {
-		auto aJson = Json()._("name", arg->get_name())._("type", arg->get_type() ? arg->get_type()->to_json() : Json());
-		args.push_back(aJson);
-	}
-	Vec<JsonValue> sntcs;
-	if (definition.has_value()) {
-		for (auto* sentence : definition.value().first) {
-			sntcs.push_back(sentence->to_json());
-		}
-	}
-	return Json()
-	    ._("nodeType", "functionPrototype")
-	    ._("name", name)
-	    ._("hasReturnType", returnType.has_value())
-	    ._("returnType", returnType.has_value() ? returnType.value()->to_json() : JsonValue())
-	    ._("arguments", args)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("hasMetaInfo", metaInfo.has_value())
-	    ._("metaInfo", metaInfo.has_value() ? metaInfo.value().to_json() : JsonValue())
-	    ._("sentences", sntcs)
-	    ._("bodyRange", definition.has_value() ? definition.value().second : JsonValue());
-}
-
 } // namespace qat::ast

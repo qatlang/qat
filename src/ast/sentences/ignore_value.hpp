@@ -22,8 +22,6 @@ class IgnoreValue : public Sentence {
 	useit ir::Value* emit(EmitCtx* ctx);
 
 	useit NodeType nodeType() const final { return NodeType::IGNORE_VALUE; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

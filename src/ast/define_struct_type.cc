@@ -14,28 +14,6 @@
 
 namespace qat::ast {
 
-Json DefineStructType::Member::to_json() const {
-	return Json()
-	    ._("nodeType", "structTypeMember")
-	    ._("name", name)
-	    ._("type", type->to_json())
-	    ._("variability", variability)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
-Json DefineStructType::StaticMember::to_json() const {
-	return Json()
-	    ._("nodeType", "structTypeStaticMember")
-	    ._("name", name)
-	    ._("type", type->to_json())
-	    ._("variability", variability)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 bool DefineStructType::is_generic() const { return not generics.empty(); }
 
 void DefineStructType::setOpaque(ir::OpaqueType* oTy) const { opaquedTypes.push_back(oTy); }
@@ -476,24 +454,6 @@ void DefineStructType::do_emit(ir::StructType* resultTy, ir::Ctx* irCtx) {
 void DefineStructType::addMember(Member* mem) { members.push_back(mem); }
 
 void DefineStructType::addStaticMember(StaticMember* stm) { staticMembers.push_back(stm); }
-
-Json DefineStructType::to_json() const {
-	Vec<JsonValue> membersJsonValue;
-	Vec<JsonValue> staticMembersJsonValue;
-	for (auto* mem : members) {
-		membersJsonValue.emplace_back(mem->to_json());
-	}
-	for (auto* mem : staticMembers) {
-		staticMembersJsonValue.emplace_back(mem->to_json());
-	}
-	return Json()
-	    ._("nodeType", "defineStructType")
-	    ._("members", membersJsonValue)
-	    ._("staticMembers", staticMembersJsonValue)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
 
 DefineStructType::~DefineStructType() {
 	for (auto* mem : members) {

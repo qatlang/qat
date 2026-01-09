@@ -32,10 +32,4 @@ ir::Value* MetaTodo::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json MetaTodo::to_json() const {
-	return Json()
-	    ._("hasMessage", message.has_value())
-	    ._("message", message.has_value() ? message.value() : JsonValue());
-}
-
 } // namespace qat::ast

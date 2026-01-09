@@ -31,7 +31,6 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public I
 	}
 
 	useit ir::Value* emit(EmitCtx* ctx);
-	useit Json       to_json() const;
 
 	useit NodeType nodeType() const { return NodeType::TUPLE_VALUE; }
 };

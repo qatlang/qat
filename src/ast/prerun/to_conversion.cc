@@ -127,12 +127,4 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 
 String PrerunTo::to_string() const { return value->to_string() + " to " + targetType->to_string(); }
 
-Json PrerunTo::to_json() const {
-	return Json()
-	    ._("nodeType", "prerunToConversion")
-	    ._("value", value->to_json())
-	    ._("targetType", targetType->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -24,8 +24,6 @@ class InlineMatch final : public Expression, public TypeInferrable {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::INLINE_MATCH; }
-
-	useit Json to_json() const final;
 };
 
 } // namespace qat::ast

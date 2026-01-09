@@ -54,12 +54,4 @@ ir::Value* DestructorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	return nullptr;
 }
 
-Json DestructorDefinition::to_json() const {
-	Vec<JsonValue> sntsJson;
-	for (auto* snt : sentences) {
-		sntsJson.push_back(snt->to_json());
-	}
-	return Json()._("nodeType", "destructorDefinition")._("sentences", sntsJson)._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

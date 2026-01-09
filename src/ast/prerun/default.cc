@@ -70,12 +70,4 @@ ir::PrerunValue* PrerunDefault::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json PrerunDefault::to_json() const {
-	return Json()
-	    ._("nodeType", "prerunDefault")
-	    ._("hasType", theType.has_value())
-	    ._("type", theType.has_value() ? theType.value()->to_json() : Json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

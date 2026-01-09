@@ -43,19 +43,4 @@ ir::Value* SubEntity::emit(EmitCtx* ctx) {
 	}
 }
 
-Json SubEntity::to_json() const {
-	Vec<JsonValue> namesJSON;
-	for (auto const& id : names) {
-		namesJSON.push_back(id);
-	}
-	return Json()
-	    ._("nodeType", "subEntity")
-	    ._("hasSkill", skill.has_value())
-	    ._("skillRange", skill.has_value() ? skill.value() : JsonValue())
-	    ._("names", namesJSON)
-	    ._("hasParentType", (bool)parentType)
-	    ._("parentType", (JsonValue)parentType)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

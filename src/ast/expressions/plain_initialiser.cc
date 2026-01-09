@@ -331,12 +331,4 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json PlainInitialiser::to_json() const {
-	return Json()
-	    ._("nodeType", "plainInitialiser")
-	    ._("hasType", (bool)type)
-	    ._("type", type.to_json_value())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -1,8 +1,6 @@
 add_library(utils STATIC
 	file_range.cpp
 	identifier.cpp
-	json_parser.cpp
-	json.cpp
 	parse_boxes_identifier.cpp
 	profiler.cc
 	qat_region.cpp
@@ -18,4 +16,4 @@ target_compile_options(utils PRIVATE
 
 target_include_directories(utils SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include")
 
-target_link_libraries(utils PUBLIC Boost::filesystem)
+target_link_libraries(utils PUBLIC Boost::filesystem Boost::json)

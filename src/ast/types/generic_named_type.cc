@@ -269,18 +269,6 @@ ir::Type* GenericNamedType::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json GenericNamedType::to_json() const {
-	Vec<JsonValue> nameJs;
-	for (auto const& nam : names) {
-		nameJs.push_back(JsonValue(nam));
-	}
-	Vec<JsonValue> typs;
-	for (auto* typ : genericTypes) {
-		typs.push_back(typ->to_json());
-	}
-	return Json()._("typeKind", "genericNamed")._("names", nameJs)._("types", typs)._("fileRange", fileRange);
-}
-
 String GenericNamedType::to_string() const {
 	auto result = Identifier::fullName(names).value + ":[";
 	for (usize i = 0; i < genericTypes.size(); i++) {

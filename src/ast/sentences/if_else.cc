@@ -123,34 +123,4 @@ ir::Value* IfElse::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json IfElse::to_json() const {
-	Vec<JsonValue> _chain;
-	for (const auto& elem : chain) {
-		Vec<JsonValue> snts;
-		for (auto* snt : std::get<1>(elem)) {
-			snts.push_back(snt->to_json());
-		}
-		_chain.push_back(Json()
-		                     ._("expression", std::get<0>(elem)->to_json())
-		                     ._("sentences", snts)
-		                     ._("fileRange", std::get<2>(elem)));
-	}
-	Json           elseJson;
-	Vec<JsonValue> elseSnts;
-	if (elseCase.has_value()) {
-		for (auto* snt : elseCase.value().first) {
-			elseSnts.push_back(snt->to_json());
-		}
-		elseJson._("sentences", elseSnts);
-		elseJson._("fileRange", elseCase.value().second);
-	}
-
-	return Json()
-	    ._("nodeType", "ifElse")
-	    ._("chain", _chain)
-	    ._("hasElse", (elseCase.has_value()))
-	    ._("else", elseJson)
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -88,17 +88,6 @@ bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
 	return (kind == other.kind) && (typePtr == other.typePtr) && (moduleVal == other.moduleVal);
 }
 
-VisibilityInfo::operator Json() const {
-	return Json()
-	    ._("nature", Visibility::getValue(kind))
-	    ._("hasModule", moduleVal != nullptr)
-	    ._("moduleID", moduleVal ? moduleVal->get_id() : JsonValue())
-	    ._("hasType", typePtr != nullptr)
-	    ._("typeID", typePtr ? typePtr->get_id() : JsonValue());
-}
-
-VisibilityInfo::operator JsonValue() const { return (Json)(*this); }
-
 VisibilityInfo::VisibilityInfo(const VisibilityInfo& other)
     : kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
 

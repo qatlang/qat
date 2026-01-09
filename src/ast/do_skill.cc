@@ -282,8 +282,4 @@ void DoSkill::emit_members(ir::Ctx* irCtx) {
 	// TODO - Member function call tree analysis
 }
 
-Json DoSkill::to_json() const {
-	return Json()._("isDefault", isDefaultSkill)._("targetType", targetType->to_json())._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

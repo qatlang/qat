@@ -27,8 +27,6 @@ class Lib : public Node {
 
 	void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-	useit Json to_json() const final;
-
 	useit NodeType nodeType() const final { return NodeType::LIB; }
 };
 

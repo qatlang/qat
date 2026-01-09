@@ -231,12 +231,4 @@ ir::Value* MemberInit::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json MemberInit::to_json() const {
-	return Json()
-	    ._("nodeType", "memberInit")
-	    ._("memberName", memName)
-	    ._("value", value->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

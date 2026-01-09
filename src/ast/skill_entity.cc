@@ -58,18 +58,6 @@ String SkillEntity::to_string() const {
 	return result;
 }
 
-Json SkillEntity::to_json() const {
-	Vec<JsonValue> namesJSON;
-	for (auto& id : names) {
-		namesJSON.push_back(id);
-	}
-	Vec<JsonValue> genJSON;
-	for (auto* gen : generics) {
-		genJSON.push_back(gen->to_json());
-	}
-	return Json()._("relative", relative)._("names", namesJSON)._("generics", genJSON)._("range", range);
-}
-
 ir::Skill* SkillEntity::find_skill(EmitCtx* ctx) const {
 	auto mod = ctx->mod;
 	if (relative > 0) {
@@ -172,18 +160,6 @@ void DoneSkillEntity::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependT
 		ent->addDependency(
 		    ir::EntityDependency{mod->get_entity(impName.value), expect.value_or(ir::DependType::complete), phase});
 	}
-}
-
-Json DoneSkillEntity::to_json() const {
-	Vec<JsonValue> namesJSON;
-	for (auto& id : names) {
-		namesJSON.push_back(id);
-	}
-	Vec<JsonValue> genJSON;
-	for (auto* gen : generics) {
-		genJSON.push_back(gen->to_json());
-	}
-	return Json()._("relative", relative)._("names", namesJSON)._("generics", genJSON)._("range", range);
 }
 
 ir::DoneSkill* DoneSkillEntity::find_done_skill(EmitCtx* ctx) const {

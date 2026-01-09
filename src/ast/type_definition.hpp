@@ -58,8 +58,6 @@ class TypeDefinition : public IsEntity {
 
 	useit NodeType nodeType() const final { return NodeType::TYPE_DEFINITION; }
 
-	useit Json to_json() const final;
-
 	// FOR TYPE DEFINITIONS INSIDE TYPES & SKILLS
 
 	void update_dependencies_for_parent(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent,

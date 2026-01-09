@@ -20,8 +20,6 @@ class CharType final : public Type {
 
 	useit AstTypeKind type_kind() const final { return AstTypeKind::CHAR; }
 
-	useit Json to_json() const { return Json()._("typeKind", "char")._("fileRange", fileRange->to_json()); }
-
 	useit String to_string() const { return "char"; }
 };
 

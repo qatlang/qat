@@ -385,12 +385,4 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 	std::unreachable();
 }
 
-Json IndexAccess::to_json() const {
-	return Json()
-	    ._("nodeType", "memberIndexAccess")
-	    ._("instance", instance->to_json())
-	    ._("index", index->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

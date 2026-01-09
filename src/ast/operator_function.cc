@@ -155,26 +155,6 @@ void OperatorPrototype::define(MethodState& state, ir::Ctx* irCtx) {
 	SHOW("Created IR operator")
 }
 
-Json OperatorPrototype::to_json() const {
-	Vec<JsonValue> args;
-	for (auto* arg : arguments) {
-		auto aJson = Json()
-		                 ._("name", arg->get_name())
-		                 ._("type", arg->get_type() ? arg->get_type()->to_json() : Json())
-		                 ._("is_member_argument", arg->is_member_arg());
-		args.push_back(aJson);
-	}
-	return Json()
-	    ._("nodeType", "operatorPrototype")
-	    ._("isVariation", isVariationFn)
-	    ._("operator", operator_to_string(opr))
-	    ._("returnType", returnType->to_json())
-	    ._("arguments", args)
-	    ._("hasVisibility", visibSpec.has_value())
-	    ._("visibility", visibSpec.has_value() ? visibSpec->to_json() : JsonValue())
-	    ._("fileRange", fileRange);
-}
-
 void OperatorDefinition::define(MethodState& state, ir::Ctx* irCtx) { prototype->define(state, irCtx); }
 
 ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
@@ -214,18 +194,6 @@ ir::Value* OperatorDefinition::emit(MethodState& state, ir::Ctx* irCtx) {
 	ir::function_return_handler(irCtx, fnEmit, sentences.empty() ? fileRange : sentences.back()->fileRange);
 	SHOW("Sentences emitted")
 	return nullptr;
-}
-
-Json OperatorDefinition::to_json() const {
-	Vec<JsonValue> sntcs;
-	for (auto* sentence : sentences) {
-		sntcs.push_back(sentence->to_json());
-	}
-	return Json()
-	    ._("nodeType", "operatorDefinition")
-	    ._("prototype", prototype->to_json())
-	    ._("body", sntcs)
-	    ._("fileRange", fileRange);
 }
 
 } // namespace qat::ast

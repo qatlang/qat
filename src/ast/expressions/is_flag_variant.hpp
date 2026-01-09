@@ -32,15 +32,6 @@ class IsFlagVariant : public Expression {
 	useit ir::Value* emit(EmitCtx* emitCtx) final;
 
 	useit NodeType nodeType() const final { return NodeType::IS_FLAG_VARIANT; }
-
-	useit Json to_json() const final {
-		return Json()
-		    ._("nodeType", "isFlagVariant")
-		    ._("candidate", candidate->to_json())
-		    ._("flagVariantKind",
-		       kind == FlagVariantKind::NONE ? "none" : (kind == FlagVariantKind::DEFAULT ? "default" : "variants"))
-		    ._("fileRange", fileRange->to_json());
-	}
 };
 
 } // namespace qat::ast

@@ -50,14 +50,4 @@ ir::PrerunValue* NoneExpression::emit(EmitCtx* ctx) {
 
 String NoneExpression::to_string() const { return "none" + (type ? (":[" + type->to_string() + "]") : ""); }
 
-Json NoneExpression::to_json() const {
-	return Json()
-	    ._("nodeType", "none")
-	    ._("hasType", (type != nullptr))
-	    ._("isPacked", isPacked.has_value())
-	    ._("packRange", isPacked.has_value() ? isPacked.value() : JsonValue())
-	    ._("type", (type != nullptr ? type->to_json() : Json()))
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

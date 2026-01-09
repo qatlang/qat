@@ -817,13 +817,4 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 	return nullptr;
 }
 
-Json BinaryExpression::to_json() const {
-	return Json()
-	    ._("nodeType", "binaryExpression")
-	    ._("operator", operator_to_string(op))
-	    ._("lhs", lhs->to_json())
-	    ._("rhs", rhs->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

@@ -46,12 +46,4 @@ ir::Value* UseDeclaration::emit(EmitCtx* ctx) {
 	return currBlock->create_use_value(name.value, val->get_llvm(), val->get_ir_type(), ctx->irCtx, fileRange);
 }
 
-Json UseDeclaration::to_json() const {
-	return Json()
-	    ._("nodeType", "useDeclaration")
-	    ._("name", name)
-	    ._("value", value->to_json())
-	    ._("fileRange", fileRange);
-}
-
 } // namespace qat::ast

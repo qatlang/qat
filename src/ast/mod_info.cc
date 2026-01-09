@@ -17,6 +17,4 @@ void ModInfo::create_module(ir::Mod* mod, ir::Ctx* irCtx) const {
 	mod->metaInfo = irMeta;
 }
 
-Json ModInfo::to_json() const { return Json()._("fileRange", fileRange); }
-
 } // namespace qat::ast

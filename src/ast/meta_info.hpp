@@ -77,18 +77,6 @@ struct MetaInfo {
 		}
 		return ir::MetaInfo(resultVec, valuesRange, fileRange);
 	}
-
-	useit Json to_json() const {
-		Vec<JsonValue> kvJson;
-		for (auto& kv : keyValues) {
-			kvJson.push_back(Json()._("key", kv.first)._("value", kv.second->to_json()));
-		}
-		return Json()
-		    ._("keyValues", kvJson)
-		    ._("hasInline", inlineRange.has_value())
-		    ._("inlineRange", inlineRange.has_value() ? inlineRange.value() : JsonValue())
-		    ._("fileRange", fileRange);
-	}
 };
 
 } // namespace qat::ast

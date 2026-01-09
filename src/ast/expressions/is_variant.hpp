@@ -17,7 +17,7 @@ enum class IsVariantKind : u8 {
 	VARIABILITY,
 };
 
-useit inline String is_variant_kind_to_string(IsVariantKind kind) {
+inline String is_variant_kind_to_string(IsVariantKind kind) {
 	switch (kind) {
 		case IsVariantKind::POINTER_NULL:
 			return "null";
@@ -49,16 +49,16 @@ class IsVariant final : public Expression {
 	IsVariant(Expression* _expression, IsVariantKind _kind, Maybe<Identifier> _name, FileRangePtr _fileRange)
 	    : Expression(_fileRange), expression(_expression), kind(_kind), name(std::move(_name)) {}
 
-	useit static IsVariant* create(Expression* expression, IsVariantKind kind, Maybe<Identifier> name,
-	                               FileRangePtr fileRange) {
+	static IsVariant* create(Expression* expression, IsVariantKind kind, Maybe<Identifier> name,
+	                         FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(IsVariant), expression, kind, std::move(name), fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::IS_VARIANT; }
+	NodeType nodeType() const final { return NodeType::IS_VARIANT; }
 };
 
 } // namespace qat::ast

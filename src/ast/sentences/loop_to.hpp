@@ -15,8 +15,7 @@ class LoopTo final : public Sentence {
 	LoopTo(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), sentences(_snts), count(_count), tag(_tag) {}
 
-	useit static LoopTo* create(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag,
-	                            FileRangePtr _fileRange) {
+	static LoopTo* create(Expression* _count, Vec<Sentence*> _snts, Maybe<Identifier> _tag, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(LoopTo), _count, _snts, _tag, _fileRange);
 	}
 
@@ -27,10 +26,10 @@ class LoopTo final : public Sentence {
 		}
 	}
 
-	useit bool hasTag() const;
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	bool       hasTag() const;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::LOOP_N_TIMES; }
+	NodeType nodeType() const final { return NodeType::LOOP_N_TIMES; }
 };
 
 } // namespace qat::ast

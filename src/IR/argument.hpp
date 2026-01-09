@@ -19,21 +19,21 @@ class Argument {
 	    : name(std::move(_name)), type(_type), variability(_variability), argIndex(_arg_index), kind(_kind) {}
 
   public:
-	useit static Argument Create(const Identifier& name, Type* type, u64 arg_index) {
+	static Argument Create(const Identifier& name, Type* type, u64 arg_index) {
 		return {ArgumentKind::NORMAL, name, type, false, arg_index};
 	}
 
-	useit static Argument CreateMember(const Identifier& name, Type* type, u64 argIndex) {
+	static Argument CreateMember(const Identifier& name, Type* type, u64 argIndex) {
 		return {ArgumentKind::MEMBER, name, type, true, argIndex};
 	}
 
-	useit static Argument CreateVariable(const Identifier& name, Type* type, u64 arg_index) {
+	static Argument CreateVariable(const Identifier& name, Type* type, u64 arg_index) {
 		return {ArgumentKind::NORMAL, name, type, true, arg_index};
 	}
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit ArgumentType* to_arg_type() const {
+	ArgumentType* to_arg_type() const {
 		switch (kind) {
 			case ArgumentKind::NORMAL:
 				return ArgumentType::create_normal(type, name.value, variability);
@@ -42,11 +42,11 @@ class Argument {
 		}
 	}
 
-	useit Type* get_type() const { return type; }
+	Type* get_type() const { return type; }
 
-	useit bool get_variability() const { return variability; }
+	bool get_variability() const { return variability; }
 
-	useit u64 get_arg_index() const { return argIndex; }
+	u64 get_arg_index() const { return argIndex; }
 };
 
 } // namespace qat::ir

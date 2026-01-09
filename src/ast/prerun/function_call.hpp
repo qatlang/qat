@@ -13,8 +13,8 @@ class PrerunFunctionCall : public PrerunExpression {
 	PrerunFunctionCall(PrerunExpression* _funcExp, Vec<PrerunExpression*> _arguments, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), funcExp(_funcExp), arguments(std::move(_arguments)) {}
 
-	useit static PrerunFunctionCall* create(PrerunExpression* function, Vec<PrerunExpression*> arguments,
-	                                        FileRangePtr fileRange) {
+	static PrerunFunctionCall* create(PrerunExpression* function, Vec<PrerunExpression*> arguments,
+	                                  FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunFunctionCall), function, std::move(arguments), std::move(fileRange));
 	}
 
@@ -25,11 +25,11 @@ class PrerunFunctionCall : public PrerunExpression {
 		}
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_FUNCTION_CALL; }
+	NodeType nodeType() const final { return NodeType::PRERUN_FUNCTION_CALL; }
 
-	useit String to_string() const final {
+	String to_string() const final {
 		String result = funcExp->to_string() + "(";
 		for (usize i = 0; i < arguments.size(); i++) {
 			result += arguments.at(i)->to_string();

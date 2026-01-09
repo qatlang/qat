@@ -10,17 +10,17 @@ class CharType final : public Type {
   public:
 	explicit CharType(FileRangePtr _fileRange) : Type(_fileRange) {}
 
-	useit static CharType* create(FileRangePtr fileRange) { return std::construct_at(OwnNormal(CharType), fileRange); }
+	static CharType* create(FileRangePtr fileRange) { return std::construct_at(OwnNormal(CharType), fileRange); }
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx*) const final { return 21u; }
+	Maybe<usize> get_type_bitsize(EmitCtx*) const final { return 21u; }
 
-	useit ir::Type* emit(EmitCtx* ctx);
+	ir::Type* emit(EmitCtx* ctx);
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::CHAR; }
+	AstTypeKind type_kind() const final { return AstTypeKind::CHAR; }
 
-	useit String to_string() const { return "char"; }
+	String to_string() const { return "char"; }
 };
 
 } // namespace qat::ast

@@ -3,7 +3,7 @@
 
 namespace qat::ir {
 
-useit llvm::AtomicOrdering AtomicType::get_llvm_ordering(ir::Ctx* irCtx) const {
+llvm::AtomicOrdering AtomicType::get_llvm_ordering(ir::Ctx* irCtx) const {
 	if (ordering.has_value() || irCtx->atomicScopeOrdering.has_value()) {
 		switch (ordering.value_or(irCtx->atomicScopeOrdering.value().first)) {
 			case AtomicOrdering::ACQUIRE:

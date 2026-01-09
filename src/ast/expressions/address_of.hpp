@@ -11,7 +11,7 @@ class AddressOf final : public Expression {
   public:
 	AddressOf(Expression* _instance, FileRangePtr _fileRange) : Expression(_fileRange), instance(_instance) {}
 
-	useit static AddressOf* create(Expression* _instance, FileRangePtr _fileRange) {
+	static AddressOf* create(Expression* _instance, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(AddressOf), _instance, _fileRange);
 	}
 
@@ -19,9 +19,9 @@ class AddressOf final : public Expression {
 		UPDATE_DEPS(instance);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ADDRESS_OF; }
+	NodeType nodeType() const final { return NodeType::ADDRESS_OF; }
 };
 
 } // namespace qat::ast

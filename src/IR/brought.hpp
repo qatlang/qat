@@ -21,16 +21,16 @@ template <class T> class Brought {
 
 	Brought(T* _entity, const VisibilityInfo& _visibility) : entity(_entity), visibility(_visibility) {}
 
-	useit Identifier get_name() const { return name.value(); }
+	Identifier get_name() const { return name.value(); }
 
-	useit bool is_named() const { return name.has_value(); }
+	bool is_named() const { return name.has_value(); }
 
-	useit T* get() const { return entity; }
+	T* get() const { return entity; }
 
-	useit const VisibilityInfo& get_visibility() const { return visibility; }
+	const VisibilityInfo& get_visibility() const { return visibility; }
 };
 
-template <typename T> useit bool matchBroughtEntity(Brought<T> brought, String candName, Maybe<AccessInfo> reqInfo) {
+template <typename T> bool matchBroughtEntity(Brought<T> brought, String candName, Maybe<AccessInfo> reqInfo) {
 	if (brought.is_named()) {
 		return (brought.name.value().value == candName) && brought.visibility.is_accessible(reqInfo) &&
 		       brought.entity->get_visibility().is_accessible(reqInfo);

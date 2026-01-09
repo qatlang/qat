@@ -19,23 +19,21 @@ class TypeLike {
   public:
 	TypeLike() : kind(TypeLikeKind::TYPE), data(nullptr) {}
 
-	useit static TypeLike from_type(Type* type) { return TypeLike(TypeLikeKind::TYPE, (void*)type); }
+	static TypeLike from_type(Type* type) { return TypeLike(TypeLikeKind::TYPE, (void*)type); }
 
-	useit static TypeLike from_prerun(PrerunExpression* preExp) {
-		return TypeLike(TypeLikeKind::PRERUN, (void*)preExp);
-	}
+	static TypeLike from_prerun(PrerunExpression* preExp) { return TypeLike(TypeLikeKind::PRERUN, (void*)preExp); }
 
-	useit static TypeLike from_expression(Expression* exp) { return TypeLike(TypeLikeKind::EXPRESSION, (void*)exp); }
+	static TypeLike from_expression(Expression* exp) { return TypeLike(TypeLikeKind::EXPRESSION, (void*)exp); }
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
 
-	useit ir::Type* emit(EmitCtx* ctx) const;
+	ir::Type* emit(EmitCtx* ctx) const;
 
-	useit operator bool() const { return data != nullptr; }
+	operator bool() const { return data != nullptr; }
 
-	useit FileRangePtr get_range() const;
+	FileRangePtr get_range() const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

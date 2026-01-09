@@ -15,7 +15,7 @@ class Swap final : public Expression {
 	Swap(Expression* _candidate, Expression* _value, bool _isSelf, FileRangePtr _fileRange)
 	    : Expression(_fileRange), candidate(_candidate), value(_value), isSelf(_isSelf) {}
 
-	useit static Swap* create(Expression* candidate, Expression* value, bool isSelf, FileRangePtr fileRange) {
+	static Swap* create(Expression* candidate, Expression* value, bool isSelf, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Swap), candidate, value, isSelf, fileRange);
 	}
 
@@ -24,9 +24,9 @@ class Swap final : public Expression {
 		UPDATE_DEPS(value);
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::SWAP; }
+	NodeType nodeType() const final { return NodeType::SWAP; }
 };
 
 } // namespace qat::ast

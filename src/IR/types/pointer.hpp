@@ -25,42 +25,42 @@ class PtrOwner {
 	void*     owner;
 	OwnerKind ownerTy;
 
-	useit static PtrOwner of_heap();
-	useit static PtrOwner of_static();
-	useit static PtrOwner of_none();
-	useit static PtrOwner of_own(Function* fun);
-	useit static PtrOwner of_self(Type* type);
-	useit static PtrOwner of_region_type(Region* region);
-	useit static PtrOwner of_any_region();
-	useit static PtrOwner of_prerun();
+	static PtrOwner of_heap();
+	static PtrOwner of_static();
+	static PtrOwner of_none();
+	static PtrOwner of_own(Function* fun);
+	static PtrOwner of_self(Type* type);
+	static PtrOwner of_region_type(Region* region);
+	static PtrOwner of_any_region();
+	static PtrOwner of_prerun();
 
-	useit Type* owner_as_type() const { return (Type*)owner; }
+	Type* owner_as_type() const { return (Type*)owner; }
 
-	useit Region* owner_as_region() const { return ((Type*)owner)->as_region(); }
+	Region* owner_as_region() const { return ((Type*)owner)->as_region(); }
 
-	useit Function* owner_as_parent_function() const { return (Function*)owner; }
+	Function* owner_as_parent_function() const { return (Function*)owner; }
 
-	useit Type* owner_as_parent_type() const { return (Type*)owner; }
+	Type* owner_as_parent_type() const { return (Type*)owner; }
 
-	useit bool is_none() const { return ownerTy == OwnerKind::NONE; }
+	bool is_none() const { return ownerTy == OwnerKind::NONE; }
 
-	useit bool is_any_region() const { return ownerTy == OwnerKind::ANY_REGION; }
+	bool is_any_region() const { return ownerTy == OwnerKind::ANY_REGION; }
 
-	useit bool is_region_type() const { return ownerTy == OwnerKind::REGION_TYPE; }
+	bool is_region_type() const { return ownerTy == OwnerKind::REGION_TYPE; }
 
-	useit bool is_heap() const { return ownerTy == OwnerKind::HEAP; }
+	bool is_heap() const { return ownerTy == OwnerKind::HEAP; }
 
-	useit bool is_own() const { return ownerTy == OwnerKind::OWN; }
+	bool is_own() const { return ownerTy == OwnerKind::OWN; }
 
-	useit bool is_self() const { return ownerTy == OwnerKind::SELF; }
+	bool is_self() const { return ownerTy == OwnerKind::SELF; }
 
-	useit bool is_static() const { return ownerTy == OwnerKind::STATIC; }
+	bool is_static() const { return ownerTy == OwnerKind::STATIC; }
 
-	useit bool is_prerun() const { return ownerTy == OwnerKind::PRERUN; }
+	bool is_prerun() const { return ownerTy == OwnerKind::PRERUN; }
 
-	useit bool is_same(const PtrOwner& other) const;
+	bool is_same(const PtrOwner& other) const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 class PtrType : public Type {
@@ -78,34 +78,34 @@ class PtrType : public Type {
 	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, PtrOwner _owner, bool _hasMulti,
 	        Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx);
 
-	useit static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
-	                          Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
+	static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
+	                    Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
-	useit Type*    get_subtype() const;
-	useit PtrOwner get_owner() const;
+	Type*    get_subtype() const;
+	PtrOwner get_owner() const;
 
-	useit bool has_address_space() const { return addressSpace.has_value(); }
+	bool has_address_space() const { return addressSpace.has_value(); }
 
-	useit u32 usable_address_space(ir::Ctx* irCtx) const;
+	u32 usable_address_space(ir::Ctx* irCtx) const;
 
-	useit Maybe<AddressSpace> const& get_address_space() const;
+	Maybe<AddressSpace> const& get_address_space() const;
 
-	useit bool is_subtype_variable() const;
-	useit bool is_multi() const;
-	useit bool is_nullable() const;
-	useit bool is_non_nullable() const;
+	bool is_subtype_variable() const;
+	bool is_multi() const;
+	bool is_nullable() const;
+	bool is_non_nullable() const;
 
-	useit bool can_be_prerun() const final { return subType->is_function(); }
+	bool can_be_prerun() const final { return subType->is_function(); }
 
-	useit bool is_type_sized() const final;
-	useit bool has_prerun_default_value() const final;
-	useit bool has_simple_copy() const final;
-	useit bool has_simple_move() const final;
+	bool is_type_sized() const final;
+	bool has_prerun_default_value() const final;
+	bool has_simple_copy() const final;
+	bool has_simple_move() const final;
 
-	useit PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
+	PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 
-	useit TypeKind type_kind() const override;
-	useit String   to_string() const override;
+	TypeKind type_kind() const override;
+	String   to_string() const override;
 };
 
 } // namespace qat::ir

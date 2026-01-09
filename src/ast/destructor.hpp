@@ -26,9 +26,8 @@ class DestructorDefinition {
 	    : nameRange(_nameRange), sentences(_sentences), fileRange(_fileRange), defineChecker(_defineChecker),
 	      metaInfo(std::move(_metaInfo)) {}
 
-	useit static DestructorDefinition* create(FileRangePtr nameRange, PrerunExpression* _defineChecker,
-	                                          Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences,
-	                                          FileRangePtr fileRange) {
+	static DestructorDefinition* create(FileRangePtr nameRange, PrerunExpression* _defineChecker,
+	                                    Maybe<MetaInfo> metaInfo, Vec<Sentence*> _sentences, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DestructorDefinition), nameRange, _defineChecker, std::move(metaInfo),
 		                         std::move(_sentences), fileRange);
 	}
@@ -44,9 +43,9 @@ class DestructorDefinition {
 
 	void define(MethodState& state, ir::Ctx* irCtx);
 
-	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+	ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
+	NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

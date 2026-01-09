@@ -11,7 +11,7 @@ enum class ArgKind {
 	MEMBER,
 };
 
-useit inline String arg_kind_to_string(ArgKind kind) {
+inline String arg_kind_to_string(ArgKind kind) {
 	switch (kind) {
 		case ArgKind::NORMAL:
 			return "normal";
@@ -31,21 +31,21 @@ class Argument {
 	Argument(ArgKind _kind, Identifier _name, bool _isVar, Type* _type)
 	    : isVar(_isVar), name(_name), type(_type), kind(_kind) {}
 
-	useit static Argument* create_normal(Identifier name, bool isVar, Type* type) {
+	static Argument* create_normal(Identifier name, bool isVar, Type* type) {
 		return std::construct_at(OwnNormal(Argument), ArgKind::NORMAL, name, isVar, type);
 	}
 
-	useit static Argument* create_member(Identifier name, bool isVar, Type* type) {
+	static Argument* create_member(Identifier name, bool isVar, Type* type) {
 		return std::construct_at(OwnNormal(Argument), ArgKind::MEMBER, name, isVar, type);
 	}
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit bool is_variable() const { return isVar; }
+	bool is_variable() const { return isVar; }
 
-	useit Type* get_type() { return type; }
+	Type* get_type() { return type; }
 
-	useit bool is_member_arg() const { return kind == ArgKind::MEMBER; }
+	bool is_member_arg() const { return kind == ArgKind::MEMBER; }
 };
 
 } // namespace qat::ast

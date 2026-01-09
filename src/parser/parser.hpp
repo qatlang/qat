@@ -57,7 +57,7 @@ class Parser {
 
   public:
 	explicit Parser(ir::Ctx* irCtx, Vec<lexer::Token>& tokens);
-	useit static Parser* get(ir::Ctx* irCtx, Vec<lexer::Token>& tokens);
+	static Parser* get(ir::Ctx* irCtx, Vec<lexer::Token>& tokens);
 	~Parser();
 
 	static u64 timeInNanoseconds;
@@ -86,9 +86,9 @@ class Parser {
 
 	static void add_warning(const String& message, FileRangePtr fileRange);
 
-	useit bool is_previous(lexer::TokenType type, usize current);
+	bool is_previous(lexer::TokenType type, usize current);
 
-	useit bool is_next(lexer::TokenType type, usize current) {
+	bool is_next(lexer::TokenType type, usize current) {
 		if ((current + 1) < tokens.size()) {
 			return tokens.at(current + 1).type == type;
 		} else {
@@ -96,73 +96,70 @@ class Parser {
 		}
 	}
 
-	useit bool are_only_present_within(const Vec<lexer::TokenType>& kinds, usize from, usize upto);
+	bool are_only_present_within(const Vec<lexer::TokenType>& kinds, usize from, usize upto);
 
-	useit bool is_primary_within(lexer::TokenType candidate, usize from, usize upto);
+	bool is_primary_within(lexer::TokenType candidate, usize from, usize upto);
 
-	useit ast::ImportEntities* parse_import_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibKind,
-	                                                 usize from, usize upto);
+	ast::ImportEntities* parse_import_entities(ParserContext& ctx, Maybe<ast::VisibilitySpec> visibKind, usize from,
+	                                           usize upto);
 
-	useit ast::ImportPaths* parse_import_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
-	                                           FileRangePtr start);
+	ast::ImportPaths* parse_import_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
+	                                     FileRangePtr start);
 
-	useit Vec<fs::path>& get_imported_paths();
+	Vec<fs::path>& get_imported_paths();
 
-	useit Vec<fs::path>& get_member_paths();
+	Vec<fs::path>& get_member_paths();
 
 	void clear_member_paths();
 
-	useit EntityMetadata do_entity_metadata(ParserContext& parserCtx, usize from, String entityType,
-	                                        usize genericLength);
+	EntityMetadata do_entity_metadata(ParserContext& parserCtx, usize from, String entityType, usize genericLength);
 
-	useit ast::MetaInfo do_meta_info(usize from, usize upto, FileRangePtr fileRange);
+	ast::MetaInfo do_meta_info(usize from, usize upto, FileRangePtr fileRange);
 
-	useit Pair<ast::VisibilitySpec, usize> do_visibility_kind(usize from);
+	Pair<ast::VisibilitySpec, usize> do_visibility_kind(usize from);
 
-	useit Vec<ast::FillGeneric*> do_generic_fill(ParserContext& prevCtx, usize from, usize upto);
+	Vec<ast::FillGeneric*> do_generic_fill(ParserContext& prevCtx, usize from, usize upto);
 
-	useit Pair<ast::Type*, usize> do_type(ParserContext& prevCtx, usize from, Maybe<usize> upto,
-	                                      bool isPartOfExpression = false);
+	Pair<ast::Type*, usize> do_type(ParserContext& prevCtx, usize from, Maybe<usize> upto,
+	                                bool isPartOfExpression = false);
 
 	Pair<ast::DefineSkill*, usize> do_skill(Maybe<ast::VisibilitySpec> visibSpec, usize from);
 
-	useit Vec<ast::Node*> begin_parsing();
+	Vec<ast::Node*> begin_parsing();
 
-	useit Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = 0);
+	Vec<ast::Node*> parse(ParserContext prevCtx = ParserContext(), usize from = -1, usize upto = 0);
 
-	useit Pair<CacheSymbol, usize> do_symbol(ParserContext& prevCtx, usize start);
+	Pair<CacheSymbol, usize> do_symbol(ParserContext& prevCtx, usize start);
 
-	useit Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> do_function_parameters(ParserContext& prevCtx, usize from,
-	                                                                              usize upto);
+	Pair<Vec<ast::Argument*>, Maybe<ast::Variadics>> do_function_parameters(ParserContext& prevCtx, usize from,
+	                                                                        usize upto);
 
-	useit Pair<ast::PrerunExpression*, usize> do_prerun_expression(ParserContext& prevCtx, usize from,
-	                                                               Maybe<usize> upto, bool returnOnFirstExp = false);
+	Pair<ast::PrerunExpression*, usize> do_prerun_expression(ParserContext& prevCtx, usize from, Maybe<usize> upto,
+	                                                         bool returnOnFirstExp = false);
 
-	useit Pair<ast::Expression*, usize> do_expression(ParserContext& prevCtx, const Maybe<CacheSymbol>& symbol,
-	                                                  usize from, Maybe<usize> upto,
-	                                                  Maybe<ast::Expression*> cachedExpressions = None,
-	                                                  bool                    returnAtFirstExp  = false);
+	Pair<ast::Expression*, usize> do_expression(ParserContext& prevCtx, const Maybe<CacheSymbol>& symbol, usize from,
+	                                            Maybe<usize> upto, Maybe<ast::Expression*> cachedExpressions = None,
+	                                            bool returnAtFirstExp = false);
 
-	useit Vec<ast::Expression*> do_separated_expressions(ParserContext& prevCtx, usize from, usize upto);
+	Vec<ast::Expression*> do_separated_expressions(ParserContext& prevCtx, usize from, usize upto);
 
-	useit Vec<ast::PrerunExpression*> do_separated_prerun_expressions(ParserContext& prevCtx, usize from, usize upto);
+	Vec<ast::PrerunExpression*> do_separated_prerun_expressions(ParserContext& prevCtx, usize from, usize upto);
 
-	useit Vec<ast::Sentence*> do_sentences(ParserContext& prevCtx, usize from, usize upto);
+	Vec<ast::Sentence*> do_sentences(ParserContext& prevCtx, usize from, usize upto);
 
-	useit Pair<Vec<ast::PrerunSentence*>, usize> do_prerun_sentences(ParserContext& preCtx, usize from);
+	Pair<Vec<ast::PrerunSentence*>, usize> do_prerun_sentences(ParserContext& preCtx, usize from);
 
-	useit Maybe<usize> get_pair_end(lexer::TokenType startType, lexer::TokenType endType, usize current);
+	Maybe<usize> get_pair_end(lexer::TokenType startType, lexer::TokenType endType, usize current);
 
-	useit Maybe<usize> first_primary_position(lexer::TokenType candidate, usize from);
+	Maybe<usize> first_primary_position(lexer::TokenType candidate, usize from);
 
-	useit Vec<usize> primary_positions_within(lexer::TokenType candidate, usize from, usize upto);
+	Vec<usize> primary_positions_within(lexer::TokenType candidate, usize from, usize upto);
 
-	useit Vec<ast::GenericAbstractType*> do_generic_abstracts(ParserContext& prevCtx, usize from, usize upto);
+	Vec<ast::GenericAbstractType*> do_generic_abstracts(ParserContext& prevCtx, usize from, usize upto);
 
-	useit Vec<ast::Type*> do_separated_types(ParserContext& prevCtx, usize from, usize upto);
+	Vec<ast::Type*> do_separated_types(ParserContext& prevCtx, usize from, usize upto);
 
-	useit ast::PlainInitialiser* do_plain_initialiser(ParserContext& prevCtx, ast::TypeLike type, usize from,
-	                                                  usize upto);
+	ast::PlainInitialiser* do_plain_initialiser(ParserContext& prevCtx, ast::TypeLike type, usize from, usize upto);
 };
 
 } // namespace qat::parser

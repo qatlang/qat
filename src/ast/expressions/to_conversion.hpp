@@ -14,7 +14,7 @@ class ToConversion final : public Expression {
 	ToConversion(Expression* _source, Type* _destinationType, FileRangePtr _fileRange)
 	    : Expression(_fileRange), source(_source), destinationType(_destinationType) {}
 
-	useit static ToConversion* create(Expression* _source, Type* _destinationType, FileRangePtr _fileRange) {
+	static ToConversion* create(Expression* _source, Type* _destinationType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ToConversion), _source, _destinationType, _fileRange);
 	}
 
@@ -23,9 +23,9 @@ class ToConversion final : public Expression {
 		UPDATE_DEPS(destinationType);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) override;
+	ir::Value* emit(EmitCtx* ctx) override;
 
-	useit NodeType nodeType() const override { return NodeType::TO_CONVERSION; };
+	NodeType nodeType() const override { return NodeType::TO_CONVERSION; };
 };
 
 } // namespace qat::ast

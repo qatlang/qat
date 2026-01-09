@@ -22,8 +22,8 @@ class PrerunLoopTo final : public PrerunSentence {
 		}
 	}
 
-	useit static PrerunLoopTo* create(PrerunExpression* count, Maybe<Identifier> tag, Vec<PrerunSentence*> sentences,
-	                                  FileRangePtr fileRange) {
+	static PrerunLoopTo* create(PrerunExpression* count, Maybe<Identifier> tag, Vec<PrerunSentence*> sentences,
+	                            FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunLoopTo), count, std::move(tag), std::move(sentences), fileRange);
 	}
 

@@ -13,7 +13,7 @@ class GiveSentence final : public Sentence {
   public:
 	GiveSentence(Expression* _value, FileRangePtr _fileRange) : Sentence(_fileRange), value(_value) {}
 
-	useit static GiveSentence* create(Expression* _value, FileRangePtr _fileRange) {
+	static GiveSentence* create(Expression* _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(GiveSentence), _value, _fileRange);
 	}
 
@@ -23,9 +23,9 @@ class GiveSentence final : public Sentence {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) override;
+	ir::Value* emit(EmitCtx* ctx) override;
 
-	useit NodeType nodeType() const override { return NodeType::GIVE_SENTENCE; }
+	NodeType nodeType() const override { return NodeType::GIVE_SENTENCE; }
 };
 
 } // namespace qat::ast

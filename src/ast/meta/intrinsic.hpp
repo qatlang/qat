@@ -29,8 +29,8 @@ class MetaIntrinsic final : public Expression {
 	              FileRangePtr _fileRange)
 	    : Expression(_fileRange), name(_name), genArgs(std::move(_genArgs)), arguments(std::move(_arguments)) {}
 
-	useit static MetaIntrinsic* create(PrerunExpression* name, Vec<PrerunExpression*> genArgs,
-	                                   Vec<Expression*> arguments, FileRangePtr _fileRange) {
+	static MetaIntrinsic* create(PrerunExpression* name, Vec<PrerunExpression*> genArgs, Vec<Expression*> arguments,
+	                             FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(MetaIntrinsic), name, std::move(genArgs), std::move(arguments), _fileRange);
 	}
 
@@ -44,9 +44,9 @@ class MetaIntrinsic final : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::META_INTRINSIC; }
+	NodeType nodeType() const final { return NodeType::META_INTRINSIC; }
 };
 
 } // namespace qat::ast

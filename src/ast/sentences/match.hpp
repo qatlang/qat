@@ -19,13 +19,13 @@ class MatchValue {
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
 	                                 EmitCtx* ctx) = 0;
 
-	useit MixOrChoiceMatchValue* asMixOrChoice();
+	MixOrChoiceMatchValue* asMixOrChoice();
 
-	useit ExpressionMatchValue* asExp();
+	ExpressionMatchValue* asExp();
 
-	useit virtual FileRangePtr getMainRange() const = 0;
+	virtual FileRangePtr getMainRange() const = 0;
 
-	useit virtual MatchType getType() const = 0;
+	virtual MatchType getType() const = 0;
 };
 
 class MixOrChoiceMatchValue final : public MatchValue {
@@ -37,20 +37,20 @@ class MixOrChoiceMatchValue final : public MatchValue {
   public:
 	MixOrChoiceMatchValue(Identifier name, Maybe<Identifier> valueName, bool isVar);
 
-	useit static MixOrChoiceMatchValue* create(Identifier name, Maybe<Identifier> valueName, bool isVar) {
+	static MixOrChoiceMatchValue* create(Identifier name, Maybe<Identifier> valueName, bool isVar) {
 		return std::construct_at(OwnNormal(MixOrChoiceMatchValue), name, valueName, isVar);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit Identifier get_name() const;
-	useit bool       hasValueName() const;
-	useit Identifier getValueName() const;
-	useit bool       is_variable() const;
+	Identifier get_name() const;
+	bool       hasValueName() const;
+	Identifier getValueName() const;
+	bool       is_variable() const;
 
-	useit MatchType getType() const final { return MatchType::mixOrChoice; }
+	MatchType getType() const final { return MatchType::mixOrChoice; }
 
-	useit FileRangePtr getMainRange() const final { return name.range; }
+	FileRangePtr getMainRange() const final { return name.range; }
 };
 
 class ExpressionMatchValue final : public MatchValue {
@@ -60,7 +60,7 @@ class ExpressionMatchValue final : public MatchValue {
   public:
 	explicit ExpressionMatchValue(Expression* _exp) : exp(_exp) {}
 
-	useit static ExpressionMatchValue* create(Expression* exp) {
+	static ExpressionMatchValue* create(Expression* exp) {
 		return std::construct_at(OwnNormal(ExpressionMatchValue), exp);
 	}
 
@@ -68,11 +68,11 @@ class ExpressionMatchValue final : public MatchValue {
 		UPDATE_DEPS(exp);
 	}
 
-	useit Expression* getExpression() const;
+	Expression* getExpression() const;
 
-	useit MatchType getType() const final { return MatchType::Exp; }
+	MatchType getType() const final { return MatchType::Exp; }
 
-	useit FileRangePtr getMainRange() const final { return exp->fileRange; }
+	FileRangePtr getMainRange() const final { return exp->fileRange; }
 };
 
 struct CaseResult {
@@ -94,8 +94,8 @@ class Match final : public Sentence {
 	      Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _elseCase, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), candidate(_candidate), chain(_chain), elseCase(_elseCase) {}
 
-	useit static Match* create(Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
-	                           Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _elseCase, FileRangePtr _fileRange) {
+	static Match* create(Expression* _candidate, Vec<Pair<Vec<MatchValue*>, Vec<Sentence*>>> _chain,
+	                     Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _elseCase, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Match), _candidate, _chain, _elseCase, _fileRange);
 	}
 
@@ -116,13 +116,13 @@ class Match final : public Sentence {
 		}
 	}
 
-	useit bool hasConstResultForAllCases();
-	useit bool isFalseForAllCases();
-	useit bool isTrueForACase();
+	bool hasConstResultForAllCases();
+	bool isFalseForAllCases();
+	bool isTrueForACase();
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::MATCH; }
+	NodeType nodeType() const final { return NodeType::MATCH; }
 };
 
 } // namespace qat::ast

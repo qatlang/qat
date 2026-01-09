@@ -12,7 +12,7 @@ class PrerunBitwiseNot final : public PrerunExpression {
   public:
 	PrerunBitwiseNot(PrerunExpression* _value, FileRangePtr _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-	useit static PrerunBitwiseNot* create(PrerunExpression* _value, FileRangePtr _fileRange) {
+	static PrerunBitwiseNot* create(PrerunExpression* _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunBitwiseNot), _value, _fileRange);
 	}
 
@@ -20,11 +20,11 @@ class PrerunBitwiseNot final : public PrerunExpression {
 		UPDATE_DEPS(value);
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx);
+	ir::PrerunValue* emit(EmitCtx* ctx);
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_BITWISE_NOT; }
+	NodeType nodeType() const final { return NodeType::PRERUN_BITWISE_NOT; }
 };
 
 } // namespace qat::ast

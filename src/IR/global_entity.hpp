@@ -19,19 +19,19 @@ class PrerunGlobal : public PrerunValue, public Mentionable {
 	PrerunGlobal(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant, VisibilityInfo _visibility,
 	             FileRangePtr _fileRange);
 
-	useit static PrerunGlobal* create(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant,
-	                                  VisibilityInfo _visibility, FileRangePtr _fileRange) {
+	static PrerunGlobal* create(Mod* _parent, Identifier _name, Type* _type, llvm::Constant* _constant,
+	                            VisibilityInfo _visibility, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunGlobal), _parent, std::move(_name), _type, _constant, _visibility,
 		                         _fileRange);
 	}
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit ir::Mod* get_parent() const { return parent; }
+	ir::Mod* get_parent() const { return parent; }
 
-	useit VisibilityInfo const& get_visibility() const { return visibility; }
+	VisibilityInfo const& get_visibility() const { return visibility; }
 };
 
 class GlobalEntity : public Value, public Mentionable {
@@ -44,9 +44,9 @@ class GlobalEntity : public Value, public Mentionable {
 	GlobalEntity(Mod* _parent, Identifier _name, Type* _type, bool _is_variable, Maybe<llvm::Constant*> initialValue,
 	             llvm::Value* _value, const VisibilityInfo& _visibility);
 
-	useit static GlobalEntity* create(Mod* _parent, Identifier _name, Type* _type, bool _is_variable,
-	                                  Maybe<llvm::Constant*> initialValue, llvm::Value* _value,
-	                                  const VisibilityInfo& _visibility) {
+	static GlobalEntity* create(Mod* _parent, Identifier _name, Type* _type, bool _is_variable,
+	                            Maybe<llvm::Constant*> initialValue, llvm::Value* _value,
+	                            const VisibilityInfo& _visibility) {
 		return std::construct_at(OwnNormal(GlobalEntity), _parent, _name, _type, _is_variable, initialValue, _value,
 		                         _visibility);
 	}
@@ -57,12 +57,12 @@ class GlobalEntity : public Value, public Mentionable {
 		}
 	}
 
-	useit Identifier get_name() const;
-	useit String     get_full_name() const;
-	useit ir::Mod* get_module() const;
-	useit bool     has_initial_value() const;
-	useit llvm::Constant*       get_initial_value() const;
-	useit const VisibilityInfo& get_visibility() const;
+	Identifier            get_name() const;
+	String                get_full_name() const;
+	ir::Mod*              get_module() const;
+	bool                  has_initial_value() const;
+	llvm::Constant*       get_initial_value() const;
+	const VisibilityInfo& get_visibility() const;
 };
 
 } // namespace qat::ir

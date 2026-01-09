@@ -34,13 +34,13 @@ class AtomicOperations : public Expression {
 	    : Expression(_fileRange), ops(_ops), candidate(_candidate), ordering(_ordering),
 	      arguments(std::move(_arguments)) {}
 
-	useit static AtomicOperations* create(AtomicOps ops, Expression* candidate, Vec<PrerunExpression*> ordering,
-	                                      Vec<Expression*> arguments, FileRangePtr fileRange) {
+	static AtomicOperations* create(AtomicOps ops, Expression* candidate, Vec<PrerunExpression*> ordering,
+	                                Vec<Expression*> arguments, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(AtomicOperations), ops, candidate, ordering, std::move(arguments),
 		                         fileRange);
 	}
 
-	useit static llvm::AtomicOrdering parse_atomic_ordering(String const& str, FileRangePtr orderRange, EmitCtx* ctx) {
+	static llvm::AtomicOrdering parse_atomic_ordering(String const& str, FileRangePtr orderRange, EmitCtx* ctx) {
 		if (str == "unordered") {
 			return llvm::AtomicOrdering::Unordered;
 		} else if (str == "relaxed") {
@@ -59,7 +59,7 @@ class AtomicOperations : public Expression {
 		}
 	}
 
-	useit static String operation_to_string(AtomicOps operation) {
+	static String operation_to_string(AtomicOps operation) {
 		switch (operation) {
 			case AtomicOps::EXCHANGE:
 				return "exchange";
@@ -68,7 +68,7 @@ class AtomicOperations : public Expression {
 		}
 	}
 
-	useit static Maybe<AtomicOps> operation_from_string(String value) {
+	static Maybe<AtomicOps> operation_from_string(String value) {
 		if (value == "exchange") {
 			return AtomicOps::EXCHANGE;
 		} else if (value == "compare_exchange") {
@@ -87,9 +87,9 @@ class AtomicOperations : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ATOMIC_OPERATIONS; }
+	NodeType nodeType() const final { return NodeType::ATOMIC_OPERATIONS; }
 };
 
 } // namespace qat::ast

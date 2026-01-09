@@ -17,7 +17,7 @@ class IsExpression final : public Expression,
   public:
 	IsExpression(Expression* _subExpr, FileRangePtr _fileRange) : Expression(_fileRange), subExpr(_subExpr) {}
 
-	useit static IsExpression* create(Expression* subExpr, FileRangePtr fileRange) {
+	static IsExpression* create(Expression* subExpr, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(IsExpression), subExpr, fileRange);
 	}
 
@@ -29,9 +29,9 @@ class IsExpression final : public Expression,
 		UPDATE_DEPS(subExpr);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::IS; }
+	NodeType nodeType() const final { return NodeType::IS; }
 };
 
 } // namespace qat::ast

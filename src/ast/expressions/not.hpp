@@ -11,7 +11,7 @@ class LogicalNot final : public Expression {
   public:
 	LogicalNot(Expression* _exp, FileRangePtr _range) : Expression(_range), exp(_exp) {}
 
-	useit static LogicalNot* create(Expression* _exp, FileRangePtr _range) {
+	static LogicalNot* create(Expression* _exp, FileRangePtr _range) {
 		return std::construct_at(OwnNormal(LogicalNot), _exp, _range);
 	}
 
@@ -19,9 +19,9 @@ class LogicalNot final : public Expression {
 		UPDATE_DEPS(exp);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::NOT; }
+	NodeType nodeType() const final { return NodeType::NOT; }
 };
 
 } // namespace qat::ast

@@ -7,11 +7,11 @@
 
 namespace qat::ir {
 
-useit bool is_terminator_instruction(llvm::Value* value);
+bool is_terminator_instruction(llvm::Value* value);
 
-useit bool has_terminator_instruction(llvm::BasicBlock* basicblock);
+bool has_terminator_instruction(llvm::BasicBlock* basicblock);
 
-useit llvm::Instruction* add_branch(llvm::IRBuilder<>& builder, llvm::BasicBlock* dest);
+llvm::Instruction* add_branch(llvm::IRBuilder<>& builder, llvm::BasicBlock* dest);
 
 } // namespace qat::ir
 

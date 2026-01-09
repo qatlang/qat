@@ -42,42 +42,42 @@ class OpaqueType : public Type, public Mentionable {
 	           Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* _parent, Maybe<usize> _size, VisibilityInfo _visibility,
 	           llvm::LLVMContext& llctx, Maybe<MetaInfo> metaInfo);
 
-	useit static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<u64> genericID,
-	                             Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
-	                             VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
+	static OpaqueType* get(Identifier name, Vec<GenericArgument*> generics, Maybe<u64> genericID,
+	                       Maybe<OpaqueSubtypeKind> subtypeKind, ir::Mod* parent, Maybe<usize> size,
+	                       VisibilityInfo visibility, llvm::LLVMContext& llCtx, Maybe<MetaInfo> metaInfo);
 
-	useit String     get_full_name() const;
-	useit Identifier get_name() const;
-	useit ir::Mod*              get_module() const;
-	useit VisibilityInfo const& get_visibility() const;
-	useit bool                  is_generic() const;
-	useit Maybe<u64>       get_generic_id() const;
-	useit bool             has_generic_parameter(String const& name) const;
-	useit GenericArgument* get_generic_parameter(String const& name) const;
+	String                get_full_name() const;
+	Identifier            get_name() const;
+	ir::Mod*              get_module() const;
+	VisibilityInfo const& get_visibility() const;
+	bool                  is_generic() const;
+	Maybe<u64>            get_generic_id() const;
+	bool                  has_generic_parameter(String const& name) const;
+	GenericArgument*      get_generic_parameter(String const& name) const;
 
-	useit bool  is_subtype_struct() const;
-	useit bool  is_subtype_mix() const;
-	useit bool  is_subtype_unknown() const;
-	useit bool  has_subtype() const;
-	void        set_sub_type(ir::ExpandedType* _subTy);
-	useit Type* get_subtype() const;
-	useit bool  has_deduced_size() const;
-	useit usize get_deduced_size() const;
+	bool  is_subtype_struct() const;
+	bool  is_subtype_mix() const;
+	bool  is_subtype_unknown() const;
+	bool  has_subtype() const;
+	void  set_sub_type(ir::ExpandedType* _subTy);
+	Type* get_subtype() const;
+	bool  has_deduced_size() const;
+	usize get_deduced_size() const;
 
-	useit bool is_expanded() const final;
-	useit bool can_be_prerun() const final;
-	useit bool can_be_prerun_generic() const final;
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* preVal) const final;
-	useit bool          is_type_sized() const final;
-	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
-	useit bool        has_simple_copy() const final;
-	useit bool        has_simple_move() const final;
+	bool          is_expanded() const final;
+	bool          can_be_prerun() const final;
+	bool          can_be_prerun_generic() const final;
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* preVal) const final;
+	bool          is_type_sized() const final;
+	Maybe<bool>   equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	bool          has_simple_copy() const final;
+	bool          has_simple_move() const final;
 
-	useit bool is_copy_constructible() const final;
-	useit bool is_copy_assignable() const final;
-	useit bool is_move_constructible() const final;
-	useit bool is_move_assignable() const final;
-	useit bool is_destructible() const final;
+	bool is_copy_constructible() const final;
+	bool is_copy_assignable() const final;
+	bool is_move_constructible() const final;
+	bool is_move_assignable() const final;
+	bool is_destructible() const final;
 
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 	void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
@@ -85,8 +85,8 @@ class OpaqueType : public Type, public Mentionable {
 	void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-	useit TypeKind type_kind() const final;
-	useit String   to_string() const final;
+	TypeKind type_kind() const final;
+	String   to_string() const final;
 };
 
 } // namespace qat::ir

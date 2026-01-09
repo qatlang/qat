@@ -26,7 +26,7 @@ class MetaMath : public Expression {
 	MetaMath(Identifier _name, Vec<Expression*> _arguments, FileRangePtr _fileRange)
 	    : Expression(_fileRange), name(_name), arguments(std::move(_arguments)) {}
 
-	useit static MetaMath* create(Identifier name, Vec<Expression*> arguments, FileRangePtr fileRange) {
+	static MetaMath* create(Identifier name, Vec<Expression*> arguments, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MetaMath), std::move(name), std::move(arguments), fileRange);
 	}
 
@@ -37,9 +37,9 @@ class MetaMath : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::META_MATH; }
+	NodeType nodeType() const final { return NodeType::META_MATH; }
 };
 
 } // namespace qat::ast

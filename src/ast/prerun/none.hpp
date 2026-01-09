@@ -16,11 +16,11 @@ class NoneExpression final : public PrerunExpression, public TypeInferrable {
 	NoneExpression(Maybe<FileRangePtr> _isPacked, Type* _type, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), type(_type), isPacked(_isPacked) {}
 
-	useit static NoneExpression* create(Maybe<FileRangePtr> isPacked, Type* _type, FileRangePtr _fileRange) {
+	static NoneExpression* create(Maybe<FileRangePtr> isPacked, Type* _type, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(NoneExpression), isPacked, _type, _fileRange);
 	}
 
-	useit bool hasTypeSet() const { return type != nullptr; }
+	bool hasTypeSet() const { return type != nullptr; }
 
 	TYPE_INFERRABLE_FUNCTIONS
 
@@ -30,11 +30,11 @@ class NoneExpression final : public PrerunExpression, public TypeInferrable {
 		}
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::NONE; }
+	NodeType nodeType() const final { return NodeType::NONE; }
 };
 
 } // namespace qat::ast

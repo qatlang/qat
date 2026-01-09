@@ -11,7 +11,7 @@ class Dereference final : public Expression {
   public:
 	Dereference(Expression* _exp, FileRangePtr _fileRange) : Expression(_fileRange), exp(_exp) {}
 
-	useit static Dereference* create(Expression* _exp, FileRangePtr _fileRange) {
+	static Dereference* create(Expression* _exp, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Dereference), _exp, _fileRange);
 	}
 
@@ -19,9 +19,9 @@ class Dereference final : public Expression {
 		UPDATE_DEPS(exp);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::DEREFERENCE; }
+	NodeType nodeType() const final { return NodeType::DEREFERENCE; }
 };
 
 } // namespace qat::ast

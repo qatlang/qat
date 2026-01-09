@@ -11,7 +11,7 @@ class Negative final : public Expression, public TypeInferrable {
   public:
 	Negative(Expression* _value, FileRangePtr _fileRange) : Expression(_fileRange), value(_value) {}
 
-	useit static Negative* create(Expression* value, FileRangePtr fileRange) {
+	static Negative* create(Expression* value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Negative), value, fileRange);
 	}
 
@@ -21,9 +21,9 @@ class Negative final : public Expression, public TypeInferrable {
 		UPDATE_DEPS(value);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::NEGATIVE; }
+	NodeType nodeType() const final { return NodeType::NEGATIVE; }
 };
 
 } // namespace qat::ast

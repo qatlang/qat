@@ -17,17 +17,17 @@ class PrerunEntity final : public PrerunExpression {
 	PrerunEntity(u32 _relative, Vec<Identifier> _ids, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), relative(_relative), identifiers(_ids) {}
 
-	useit static PrerunEntity* create(u32 _relative, Vec<Identifier> _ids, FileRangePtr _fileRange) {
+	static PrerunEntity* create(u32 _relative, Vec<Identifier> _ids, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunEntity), _relative, _ids, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+	ir::PrerunValue* emit(EmitCtx* ctx) override;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const override { return NodeType::PRERUN_ENTITY; }
+	NodeType nodeType() const override { return NodeType::PRERUN_ENTITY; }
 };
 
 } // namespace qat::ast

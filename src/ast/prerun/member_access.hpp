@@ -13,7 +13,7 @@ class PrerunMemberAccess final : public PrerunExpression {
 	PrerunMemberAccess(PrerunExpression* _expr, Identifier _member, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), expr(_expr), memberName(_member) {}
 
-	useit static PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRangePtr _fileRange) {
+	static PrerunMemberAccess* create(PrerunExpression* _expr, Identifier _member, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunMemberAccess), _expr, _member, _fileRange);
 	}
 
@@ -21,11 +21,11 @@ class PrerunMemberAccess final : public PrerunExpression {
 		UPDATE_DEPS(expr);
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx);
+	ir::PrerunValue* emit(EmitCtx* ctx);
 
-	useit String to_string() const;
+	String to_string() const;
 
-	useit NodeType nodeType() const { return NodeType::PRERUN_MEMBER_ACCESS; }
+	NodeType nodeType() const { return NodeType::PRERUN_MEMBER_ACCESS; }
 };
 
 } // namespace qat::ast

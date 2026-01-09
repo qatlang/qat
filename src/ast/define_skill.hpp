@@ -24,7 +24,7 @@ enum class SkillMethodKind {
 	VARIATION,
 };
 
-useit inline ir::SkillMethodKind method_kind_to_ir(SkillMethodKind kind) {
+inline ir::SkillMethodKind method_kind_to_ir(SkillMethodKind kind) {
 	switch (kind) {
 		case SkillMethodKind::NORMAL:
 			return ir::SkillMethodKind::NORMAL;
@@ -35,7 +35,7 @@ useit inline ir::SkillMethodKind method_kind_to_ir(SkillMethodKind kind) {
 	}
 }
 
-useit inline String method_kind_to_string(SkillMethodKind kind) {
+inline String method_kind_to_string(SkillMethodKind kind) {
 	switch (kind) {
 		case SkillMethodKind::NORMAL:
 			return "normal";
@@ -80,17 +80,16 @@ class DefineSkill final : public IsEntity {
 	      typeDefinitions(std::move(_typeDefs)), methods(std::move(_methods)), generics(std::move(_generics)),
 	      defineChecker(_defineChecker), genericConstraint(_genericConstraint) {}
 
-	useit static DefineSkill* create(Identifier name, Vec<GenericAbstractType*> generics,
-	                                 Maybe<VisibilitySpec> visibSpec, PrerunExpression* polyQualifier,
-	                                 Vec<SkillTypeDefinition> typeDefs, Vec<SkillMethod> methods,
-	                                 PrerunExpression* defineChecker, PrerunExpression* genericConstraint,
-	                                 FileRangePtr fileRange) {
+	static DefineSkill* create(Identifier name, Vec<GenericAbstractType*> generics, Maybe<VisibilitySpec> visibSpec,
+	                           PrerunExpression* polyQualifier, Vec<SkillTypeDefinition> typeDefs,
+	                           Vec<SkillMethod> methods, PrerunExpression* defineChecker,
+	                           PrerunExpression* genericConstraint, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefineSkill), std::move(name), std::move(generics), visibSpec, polyQualifier,
 		                         std::move(typeDefs), std::move(methods), defineChecker, genericConstraint,
 		                         std::move(fileRange));
 	}
 
-	useit bool is_generic() const { return not generics.empty(); }
+	bool is_generic() const { return not generics.empty(); }
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
 
@@ -98,13 +97,13 @@ class DefineSkill final : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit ir::Skill* create_skill(Vec<ir::GenericToFill*> const& toFill, ir::Mod* parent, ir::Ctx* irCtx);
+	ir::Skill* create_skill(Vec<ir::GenericToFill*> const& toFill, ir::Mod* parent, ir::Ctx* irCtx);
 
 	void create_type_definitions(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irCtx);
 
 	void create_methods(ir::Skill* skill, ir::Mod* parent, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const final { return NodeType::DEFINE_SKILL; }
+	NodeType nodeType() const final { return NodeType::DEFINE_SKILL; }
 };
 
 } // namespace qat::ast

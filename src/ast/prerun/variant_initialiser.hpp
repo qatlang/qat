@@ -18,8 +18,8 @@ class PrerunVariantInitialiser final : public PrerunExpression, public TypeInfer
 	                         FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-	useit static PrerunVariantInitialiser* create(TypeLike type, Identifier subName,
-	                                              Maybe<PrerunExpression*> expression, FileRangePtr fileRange) {
+	static PrerunVariantInitialiser* create(TypeLike type, Identifier subName, Maybe<PrerunExpression*> expression,
+	                                        FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunVariantInitialiser), type, subName, expression, fileRange);
 	}
 
@@ -36,11 +36,11 @@ class PrerunVariantInitialiser final : public PrerunExpression, public TypeInfer
 		}
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_VARIANT_INITIALISER; }
+	NodeType nodeType() const final { return NodeType::PRERUN_VARIANT_INITIALISER; }
 };
 
 } // namespace qat::ast

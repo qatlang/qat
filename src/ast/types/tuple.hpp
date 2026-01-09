@@ -14,7 +14,7 @@ class TupleType final : public Type {
 	TupleType(Vec<Type*> _types, bool _isPacked, FileRangePtr _fileRange)
 	    : Type(_fileRange), types(_types), isPacked(_isPacked) {}
 
-	useit static TupleType* create(Vec<Type*> _types, bool _isPacked, FileRangePtr _fileRange) {
+	static TupleType* create(Vec<Type*> _types, bool _isPacked, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TupleType), _types, _isPacked, _fileRange);
 	}
 
@@ -23,11 +23,11 @@ class TupleType final : public Type {
 
 	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final;
+	AstTypeKind type_kind() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

@@ -15,17 +15,17 @@ class VectorType final : public Type {
 	VectorType(Type* _subType, PrerunExpression* _count, Maybe<FileRangePtr> _scalable, FileRangePtr _fileRange)
 	    : Type(_fileRange), subType(_subType), count(_count), scalable(_scalable) {}
 
-	useit static VectorType* create(Type* _subType, PrerunExpression* _count, Maybe<FileRangePtr> _scalable,
-	                                FileRangePtr _fileRange) {
+	static VectorType* create(Type* _subType, PrerunExpression* _count, Maybe<FileRangePtr> _scalable,
+	                          FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(VectorType), _subType, _count, _scalable, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx);
+	ir::Type* emit(EmitCtx* ctx);
 
 	AstTypeKind type_kind() const final { return AstTypeKind::VECTOR; }
 

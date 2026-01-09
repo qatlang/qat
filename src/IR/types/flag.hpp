@@ -36,52 +36,51 @@ class FlagType final : public Type, public Mentionable {
 	FlagType(Identifier _name, Mod* _parent, Vec<FlagVariant> _variants, Maybe<Vec<PrerunValue*>> _values,
 	         UnsignedType* _underlyingType, FileRangePtr _range, VisibilityInfo _visibility);
 
-	useit static FlagType* create(Identifier name, Mod* parent, Vec<FlagVariant> variants,
-	                              Maybe<Vec<PrerunValue*>> values, UnsignedType* underlyingType, FileRangePtr range,
-	                              VisibilityInfo visibility) {
+	static FlagType* create(Identifier name, Mod* parent, Vec<FlagVariant> variants, Maybe<Vec<PrerunValue*>> values,
+	                        UnsignedType* underlyingType, FileRangePtr range, VisibilityInfo visibility) {
 		return std::construct_at(OwnNormal(FlagType), std::move(name), parent, std::move(variants), std::move(values),
 		                         underlyingType, std::move(range), std::move(visibility));
 	}
 
-	useit Identifier const& get_name() const { return name; }
+	Identifier const& get_name() const { return name; }
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit Mod* get_module() const { return parent; }
+	Mod* get_module() const { return parent; }
 
-	useit VisibilityInfo const& get_visibility() const { return visibility; }
+	VisibilityInfo const& get_visibility() const { return visibility; }
 
-	useit bool can_be_prerun() const final { return true; }
+	bool can_be_prerun() const final { return true; }
 
-	useit bool can_be_prerun_generic() const final { return true; }
+	bool can_be_prerun_generic() const final { return true; }
 
-	useit bool has_simple_copy() const final { return true; }
+	bool has_simple_copy() const final { return true; }
 
-	useit bool has_simple_move() const final { return true; }
+	bool has_simple_move() const final { return true; }
 
-	useit bool has_prerun_default_value() const final { return true; }
+	bool has_prerun_default_value() const final { return true; }
 
-	useit PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
+	PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-	useit bool is_type_sized() const final { return true; }
+	bool is_type_sized() const final { return true; }
 
-	useit bool has_default_variants() const { return hasDefaultVariants; }
+	bool has_default_variants() const { return hasDefaultVariants; }
 
-	useit UnsignedType* get_underlying_type() const { return underlyingType; }
+	UnsignedType* get_underlying_type() const { return underlyingType; }
 
-	useit Maybe<usize> get_index_of(String name) const;
+	Maybe<usize> get_index_of(String name) const;
 
-	useit bool has_value_for(String name) const;
+	bool has_value_for(String name) const;
 
-	useit PrerunValue* get_value_for(String name) const;
+	PrerunValue* get_value_for(String name) const;
 
-	useit TypeKind type_kind() const final { return TypeKind::FLAG; }
+	TypeKind type_kind() const final { return TypeKind::FLAG; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ir

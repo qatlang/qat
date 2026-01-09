@@ -16,47 +16,47 @@ class InExpression : public TypeInferrable, public Expression {
 	InExpression(Expression* _candidate, InExpressionVariants _target, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), candidate(_candidate), target(std::move(_target)) {}
 
-	useit static InExpression* create_expression(Expression* candidate, Expression* target, FileRangePtr fileRange) {
+	static InExpression* create_expression(Expression* candidate, Expression* target, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<0>, target), std::move(fileRange));
 	}
 
-	useit static InExpression* create_heap(Expression* candidate, FileRangePtr fileRange) {
+	static InExpression* create_heap(Expression* candidate, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<1>, std::nullopt), std::move(fileRange));
 	}
 
-	useit static InExpression* create_region(Expression* candidate, Type* target, FileRangePtr fileRange) {
+	static InExpression* create_region(Expression* candidate, Type* target, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<2>, target), std::move(fileRange));
 	}
 
-	useit static InExpression* create_type(Expression* candidate, Type* target, FileRangePtr fileRange) {
+	static InExpression* create_type(Expression* candidate, Type* target, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InExpression), candidate,
 		                         InExpressionVariants(std::in_place_index<3>, target), std::move(fileRange));
 	}
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	useit bool is_target_expression() const { return target.index() == 0u; }
+	bool is_target_expression() const { return target.index() == 0u; }
 
-	useit bool is_target_heap() const { return target.index() == 1u; }
+	bool is_target_heap() const { return target.index() == 1u; }
 
-	useit bool is_target_region() const { return target.index() == 2u; }
+	bool is_target_region() const { return target.index() == 2u; }
 
-	useit bool is_target_type() const { return target.index() == 3u; }
+	bool is_target_type() const { return target.index() == 3u; }
 
-	useit Expression* target_as_expression() const { return std::get<0>(target); }
+	Expression* target_as_expression() const { return std::get<0>(target); }
 
-	useit Type* target_as_region() const { return std::get<2>(target); }
+	Type* target_as_region() const { return std::get<2>(target); }
 
-	useit Type* target_as_type() const { return std::get<3>(target); }
+	Type* target_as_type() const { return std::get<3>(target); }
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
 
 	ir::Value* emit(EmitCtx* ctx);
 
-	useit NodeType nodeType() const final { return NodeType::IN_EXPRESSION; }
+	NodeType nodeType() const final { return NodeType::IN_EXPRESSION; }
 };
 
 } // namespace qat::ast

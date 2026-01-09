@@ -13,7 +13,7 @@ class OrUseValue : public Expression {
 	OrUseValue(Expression* _expression, Expression* _candidate, FileRangePtr _fileRange)
 	    : Expression(_fileRange), expression(_expression), candidate(_candidate) {}
 
-	useit static OrUseValue* create(Expression* expression, Expression* candidate, FileRangePtr fileRange) {
+	static OrUseValue* create(Expression* expression, Expression* candidate, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(OrUseValue), expression, candidate, fileRange);
 	}
 
@@ -22,9 +22,9 @@ class OrUseValue : public Expression {
 		UPDATE_DEPS(candidate);
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::OR_USE_VALUE; }
+	NodeType nodeType() const final { return NodeType::OR_USE_VALUE; }
 };
 
 } // namespace qat::ast

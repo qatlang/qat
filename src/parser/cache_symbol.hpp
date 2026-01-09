@@ -23,10 +23,10 @@ class CacheSymbol {
 	FileRangePtr    fileRange;
 	usize           tokenIndex;
 
-	useit String to_string() const;
+	String to_string() const;
 
-	useit bool         hasRelative() const;
-	useit FileRangePtr extend_fileRange(FileRangePtr upto);
+	bool         hasRelative() const;
+	FileRangePtr extend_fileRange(FileRangePtr upto);
 };
 
 } // namespace qat::parser

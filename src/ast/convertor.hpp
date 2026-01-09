@@ -63,7 +63,7 @@ class ConvertorPrototype {
 
 	void define(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
+	NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
 };
 
 class ConvertorDefinition {
@@ -81,8 +81,8 @@ class ConvertorDefinition {
 		prototype->definitionRange = fileRange;
 	}
 
-	useit static ConvertorDefinition* create(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
-	                                         FileRangePtr _fileRange) {
+	static ConvertorDefinition* create(ConvertorPrototype* _prototype, Vec<Sentence*> _sentences,
+	                                   FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ConvertorDefinition), _prototype, _sentences, _fileRange);
 	}
 
@@ -94,9 +94,9 @@ class ConvertorDefinition {
 
 	void define(MethodState& state, ir::Ctx* irCtx);
 
-	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+	ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::FUNCTION_DEFINITION; }
+	NodeType nodeType() const { return NodeType::FUNCTION_DEFINITION; }
 };
 
 } // namespace qat::ast

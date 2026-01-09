@@ -43,48 +43,48 @@ class Value {
 
 	Value(llvm::Value* _llValue, ir::Type* _type, bool _isVariable);
 
-	useit static Value* get(llvm::Value* ll, ir::Type* type, bool isVar);
+	static Value* get(llvm::Value* ll, ir::Type* type, bool isVar);
 
 	virtual ~Value() = default;
 
-	useit virtual llvm::Value* get_llvm() const { return ll; }
+	virtual llvm::Value* get_llvm() const { return ll; }
 
-	useit virtual bool is_prerun_value() const { return false; }
+	virtual bool is_prerun_value() const { return false; }
 
-	useit virtual Value* call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod);
+	virtual Value* call(ir::Ctx* irCtx, const Vec<llvm::Value*>& args, Maybe<u64> localID, Mod* mod);
 
-	useit Type* get_ir_type() const { return type; }
+	Type* get_ir_type() const { return type; }
 
-	useit Maybe<u64> get_local_id() const { return localID; }
+	Maybe<u64> get_local_id() const { return localID; }
 
-	useit llvm::Constant* get_llvm_constant() const { return llvm::cast<llvm::Constant>(ll); }
+	llvm::Constant* get_llvm_constant() const { return llvm::cast<llvm::Constant>(ll); }
 
-	useit PrerunValue* as_prerun() const { return (PrerunValue*)this; }
+	PrerunValue* as_prerun() const { return (PrerunValue*)this; }
 
-	useit bool is_self_value() const { return isSelf; }
+	bool is_self_value() const { return isSelf; }
 
-	useit bool has_variability() const { return variable; }
+	bool has_variability() const { return variable; }
 
-	useit bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
+	bool is_llvm_constant() const { return llvm::dyn_cast<llvm::Constant>(ll); }
 
-	useit bool is_value() const { return not is_ref() && not is_prerun_value() && not is_ghost_ref(); }
+	bool is_value() const { return not is_ref() && not is_prerun_value() && not is_ghost_ref(); }
 
-	useit bool is_local_value() const { return localID.has_value(); }
+	bool is_local_value() const { return localID.has_value(); }
 
 	void set_confirmed_ref() { isConfirmedRef = true; }
 
 	// Not useful for prerun values
-	useit ir::Type* get_pass_type() const;
+	ir::Type* get_pass_type() const;
 
-	useit bool should_be_ref() const { return isConfirmedRef; }
+	bool should_be_ref() const { return isConfirmedRef; }
 
-	useit bool is_ref() const { return type->is_ref(); }
+	bool is_ref() const { return type->is_ref(); }
 
-	useit bool is_ptr() const { return type->is_ptr(); }
+	bool is_ptr() const { return type->is_ptr(); }
 
-	useit Maybe<AddressSpace> extract_address_space(ir::Ctx* irCtx) const;
+	Maybe<AddressSpace> extract_address_space(ir::Ctx* irCtx) const;
 
-	useit bool is_ghost_ref() const {
+	bool is_ghost_ref() const {
 		return ll && (((llvm::isa<llvm::AllocaInst>(ll) &&
 		                llvm::cast<llvm::AllocaInst>(ll)->getAllocatedType() == get_ir_type()->get_llvm_type()) ||
 		               (llvm::isa<llvm::GlobalVariable>(ll) &&
@@ -92,18 +92,18 @@ class Value {
 		              not is_prerun_value());
 	}
 
-	useit bool is_prerun_function() const;
+	bool is_prerun_function() const;
 
-	useit ir::PrerunFunction* as_prerun_function() const { return (ir::PrerunFunction*)ll; }
+	ir::PrerunFunction* as_prerun_function() const { return (ir::PrerunFunction*)ll; }
 
-	useit ir::Value* with_range(FileRangePtr rangeVal) {
+	ir::Value* with_range(FileRangePtr rangeVal) {
 		associatedRange = rangeVal;
 		return this;
 	}
 
-	useit bool has_associated_range() const { return associatedRange.has_value(); }
+	bool has_associated_range() const { return associatedRange.has_value(); }
 
-	useit FileRangePtr get_associated_range() const { return associatedRange.value(); }
+	FileRangePtr get_associated_range() const { return associatedRange.value(); }
 
 	void set_self() { isSelf = true; }
 
@@ -115,7 +115,7 @@ class Value {
 		}
 	}
 
-	useit Value* make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRangePtr fileRange);
+	Value* make_local(ast::EmitCtx* ctx, Maybe<String> name, FileRangePtr fileRange);
 
 	static void clear_all();
 };
@@ -124,21 +124,21 @@ class PrerunValue : public Value {
   public:
 	PrerunValue(llvm::Constant* _llConst, ir::Type* _type) : Value(_llConst, _type, true) {}
 
-	useit static PrerunValue* get(llvm::Constant* ll, ir::Type* type) {
+	static PrerunValue* get(llvm::Constant* ll, ir::Type* type) {
 		return std::construct_at(OwnNormal(PrerunValue), ll, type);
 	}
 
 	~PrerunValue() override = default;
 
-	useit llvm::Constant* get_llvm() const final { return (llvm::Constant*)(ll); }
+	llvm::Constant* get_llvm() const final { return (llvm::Constant*)(ll); }
 
 	virtual bool is_prerun_local() const { return false; };
 
-	useit PrerunLocal* as_prerun_local() { return reinterpret_cast<PrerunLocal*>(this); }
+	PrerunLocal* as_prerun_local() { return reinterpret_cast<PrerunLocal*>(this); }
 
 	bool is_equal_to(ir::Ctx* irCtx, PrerunValue* other);
 
-	useit bool is_prerun_value() const final { return true; }
+	bool is_prerun_value() const final { return true; }
 };
 
 } // namespace qat::ir

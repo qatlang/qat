@@ -14,7 +14,7 @@ class IntegerLiteral final : public PrerunExpression, public TypeInferrable {
 	IntegerLiteral(String _value, Maybe<Pair<u64, FileRangePtr>> _bits, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)), bits(_bits) {}
 
-	useit static IntegerLiteral* create(String _value, Maybe<Pair<u64, FileRangePtr>> _bits, FileRangePtr _fileRange) {
+	static IntegerLiteral* create(String _value, Maybe<Pair<u64, FileRangePtr>> _bits, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IntegerLiteral), _value, _bits, _fileRange);
 	}
 
@@ -22,11 +22,11 @@ class IntegerLiteral final : public PrerunExpression, public TypeInferrable {
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+	ir::PrerunValue* emit(EmitCtx* ctx) override;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::INTEGER_LITERAL; }
+	NodeType nodeType() const final { return NodeType::INTEGER_LITERAL; }
 };
 
 } // namespace qat::ast

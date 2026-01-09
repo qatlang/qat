@@ -60,7 +60,7 @@ struct MethodParentState {
 	    : allMethods(), convertors(), operators(), constructors(), defaultConstructor(parent), copyConstructor(parent),
 	      moveConstructor(parent), copyAssignment(parent), moveAssignment(parent), destructor(parent) {}
 
-	useit static MethodParentState* get(ir::MethodParent* parent) {
+	static MethodParentState* get(ir::MethodParent* parent) {
 		return std::construct_at(OwnNormal(MethodParentState), parent);
 	}
 };
@@ -124,25 +124,25 @@ class MemberParentLike {
 
 	void set_move_assignment(OperatorDefinition* mDef) { moveAssignment = mDef; }
 
-	useit bool has_destructor() const { return destructorDefinition != nullptr; }
+	bool has_destructor() const { return destructorDefinition != nullptr; }
 
-	useit bool has_default_constructor() const { return defaultConstructor != nullptr; }
+	bool has_default_constructor() const { return defaultConstructor != nullptr; }
 
-	useit bool has_copy_constructor() const { return copyConstructor != nullptr; }
+	bool has_copy_constructor() const { return copyConstructor != nullptr; }
 
-	useit bool has_move_constructor() const { return moveConstructor != nullptr; }
+	bool has_move_constructor() const { return moveConstructor != nullptr; }
 
-	useit bool has_copy_assignment() const { return copyAssignment != nullptr; }
+	bool has_copy_assignment() const { return copyAssignment != nullptr; }
 
-	useit bool has_move_assignment() const { return moveAssignment != nullptr; }
+	bool has_move_assignment() const { return moveAssignment != nullptr; }
 
-	useit virtual bool is_define_struct_type() const { return false; }
+	virtual bool is_define_struct_type() const { return false; }
 
-	useit virtual bool is_done_skill() const { return false; }
+	virtual bool is_done_skill() const { return false; }
 
-	useit virtual DefineStructType* as_define_struct_type() { return nullptr; }
+	virtual DefineStructType* as_define_struct_type() { return nullptr; }
 
-	useit virtual DoSkill* as_done_skill() { return nullptr; }
+	virtual DoSkill* as_done_skill() { return nullptr; }
 };
 
 } // namespace qat::ast

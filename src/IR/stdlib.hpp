@@ -15,10 +15,10 @@ class StdLib {
   public:
 	static ir::Mod* stdLib;
 
-	useit static bool is_std_lib_found();
+	static bool is_std_lib_found();
 
-	useit static bool            has_string_type();
-	useit static DefinitionType* get_string_type();
+	static bool            has_string_type();
+	static DefinitionType* get_string_type();
 };
 
 } // namespace qat::ir

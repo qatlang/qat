@@ -13,7 +13,7 @@ class AtomicMove : public Expression {
 	AtomicMove(Expression* _candidate, PrerunExpression* _ordering, FileRangePtr _fileRange)
 	    : Expression(_fileRange), candidate(_candidate), ordering(_ordering) {}
 
-	useit static AtomicMove* create(Expression* candidate, PrerunExpression* ordering, FileRangePtr fileRange) {
+	static AtomicMove* create(Expression* candidate, PrerunExpression* ordering, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(AtomicMove), candidate, ordering, fileRange);
 	}
 
@@ -24,9 +24,9 @@ class AtomicMove : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ATOMIC_MOVE; }
+	NodeType nodeType() const final { return NodeType::ATOMIC_MOVE; }
 };
 
 } // namespace qat::ast

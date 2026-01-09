@@ -13,7 +13,7 @@ class PrerunArrayLiteral final : public PrerunExpression, public TypeInferrable 
 	PrerunArrayLiteral(Vec<PrerunExpression*> _elements, Type* _elemTyHint, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), valuesExp(_elements), elemTyHint(_elemTyHint) {}
 
-	useit static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, Type* elemTyHint, FileRangePtr fileRange) {
+	static PrerunArrayLiteral* create(Vec<PrerunExpression*> elements, Type* elemTyHint, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunArrayLiteral), elements, elemTyHint, fileRange);
 	}
 
@@ -21,11 +21,11 @@ class PrerunArrayLiteral final : public PrerunExpression, public TypeInferrable 
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_ARRAY_LITERAL; }
+	NodeType nodeType() const final { return NodeType::PRERUN_ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

@@ -39,21 +39,21 @@ class VisibilityInfo {
 
 	VisibilityInfo(const VisibilityInfo& other);
 
-	useit static VisibilityInfo type(ir::Type* type) { return VisibilityInfo(VisibilityKind::type, type); }
+	static VisibilityInfo type(ir::Type* type) { return VisibilityInfo(VisibilityKind::type, type); }
 
-	useit static VisibilityInfo pub() { return {VisibilityKind::pub, (ir::Mod*)nullptr}; }
+	static VisibilityInfo pub() { return {VisibilityKind::pub, (ir::Mod*)nullptr}; }
 
-	useit static VisibilityInfo lib(ir::Mod* mod) { return {VisibilityKind::lib, mod}; }
+	static VisibilityInfo lib(ir::Mod* mod) { return {VisibilityKind::lib, mod}; }
 
-	useit static VisibilityInfo file(ir::Mod* mod) { return {VisibilityKind::file, mod}; }
+	static VisibilityInfo file(ir::Mod* mod) { return {VisibilityKind::file, mod}; }
 
-	useit static VisibilityInfo folder(ir::Mod* mod) { return {VisibilityKind::folder, mod}; }
+	static VisibilityInfo folder(ir::Mod* mod) { return {VisibilityKind::folder, mod}; }
 
-	useit static VisibilityInfo skill(ir::Type* type) { return VisibilityInfo(VisibilityKind::skill, type); }
+	static VisibilityInfo skill(ir::Type* type) { return VisibilityInfo(VisibilityKind::skill, type); }
 
-	useit bool is_accessible(Maybe<AccessInfo> reqInfo) const;
+	bool is_accessible(Maybe<AccessInfo> reqInfo) const;
 
-	useit bool operator==(const VisibilityInfo& other) const;
+	bool operator==(const VisibilityInfo& other) const;
 };
 
 class AccessInfo {
@@ -67,19 +67,19 @@ class AccessInfo {
   public:
 	AccessInfo(ir::Mod* _lib, Maybe<ir::Type*> _type, Maybe<ir::DoneSkill*> _skill);
 
-	useit static AccessInfo get_privileged();
+	static AccessInfo get_privileged();
 
-	useit bool has_type() const { return type.has_value(); }
+	bool has_type() const { return type.has_value(); }
 
-	useit bool has_skill() const { return skill.has_value(); }
+	bool has_skill() const { return skill.has_value(); }
 
-	useit bool is_privileged_access() const;
+	bool is_privileged_access() const;
 
-	useit ir::Mod* get_module() const { return module; }
+	ir::Mod* get_module() const { return module; }
 
-	useit ir::Type* get_type() const { return type.value(); }
+	ir::Type* get_type() const { return type.value(); }
 
-	useit ir::DoneSkill* get_skill() const { return skill.value(); }
+	ir::DoneSkill* get_skill() const { return skill.value(); }
 };
 
 class Visibility {
@@ -87,11 +87,11 @@ class Visibility {
 	static const Map<VisibilityKind, String> kindValueMap;
 	static const Map<String, VisibilityKind> valueKindMap;
 
-	useit static String getValue(VisibilityKind kind);
+	static String getValue(VisibilityKind kind);
 
-	useit static VisibilityKind getKind(const String& value);
+	static VisibilityKind getKind(const String& value);
 
-	useit static bool is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
+	static bool is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
 };
 
 } // namespace qat

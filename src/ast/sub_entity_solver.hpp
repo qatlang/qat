@@ -27,15 +27,15 @@ struct SubEntityParent {
 	void*               data;
 	FileRangePtr        range;
 
-	useit static SubEntityParent of_type(ir::Type* type, FileRangePtr range) {
+	static SubEntityParent of_type(ir::Type* type, FileRangePtr range) {
 		return SubEntityParent{.kind = SubEntityParentKind::TYPE, .data = type, .range = range};
 	}
 
-	useit static SubEntityParent of_skill(ir::Skill* skill, FileRangePtr range) {
+	static SubEntityParent of_skill(ir::Skill* skill, FileRangePtr range) {
 		return SubEntityParent{.kind = SubEntityParentKind::SKILL, .data = skill, .range = range};
 	}
 
-	useit static SubEntityParent of_done_skill(ir::DoneSkill* doneSkill, FileRangePtr range) {
+	static SubEntityParent of_done_skill(ir::DoneSkill* doneSkill, FileRangePtr range) {
 		return SubEntityParent{.kind = SubEntityParentKind::DONE_SKILL, .data = doneSkill, .range = range};
 	}
 };
@@ -44,14 +44,14 @@ struct SubEntityResult {
 	bool  isType;
 	void* data;
 
-	useit static SubEntityResult get_expression(ir::Value* value) {
+	static SubEntityResult get_expression(ir::Value* value) {
 		return SubEntityResult{
 		    .isType = false,
 		    .data   = (void*)value,
 		};
 	}
 
-	useit static SubEntityResult get_type(ir::Type* type) {
+	static SubEntityResult get_type(ir::Type* type) {
 		return SubEntityResult{
 		    .isType = true,
 		    .data   = (void*)type,

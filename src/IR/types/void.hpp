@@ -12,20 +12,20 @@ class VoidType : public Type {
   public:
 	explicit VoidType(llvm::LLVMContext& llctx);
 
-	useit static VoidType* get(llvm::LLVMContext& llctx) {
+	static VoidType* get(llvm::LLVMContext& llctx) {
 		if (voidType) {
 			return voidType;
 		}
 		return std::construct_at(OwnNormal(VoidType), llctx);
 	}
 
-	useit bool has_simple_copy() const final { return true; }
+	bool has_simple_copy() const final { return true; }
 
-	useit bool has_simple_move() const final { return true; }
+	bool has_simple_move() const final { return true; }
 
-	useit TypeKind type_kind() const final { return TypeKind::VOID; }
+	TypeKind type_kind() const final { return TypeKind::VOID; }
 
-	useit String to_string() const final { return "void"; }
+	String to_string() const final { return "void"; }
 };
 
 } // namespace qat::ir

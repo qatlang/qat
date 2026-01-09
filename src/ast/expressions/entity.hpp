@@ -27,9 +27,9 @@ class Entity final : public Expression {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* ctx);
+	ir::Value* emit(EmitCtx* ctx);
 
-	useit NodeType nodeType() const final { return NodeType::ENTITY; }
+	NodeType nodeType() const final { return NodeType::ENTITY; }
 };
 
 } // namespace qat::ast

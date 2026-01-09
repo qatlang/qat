@@ -14,21 +14,21 @@ class StringLiteral final : public PrerunExpression {
 	StringLiteral(String _value, FileRangePtr _fileRange)
 	    : PrerunExpression(std::move(_fileRange)), value(std::move(_value)) {}
 
-	useit static StringLiteral* create(String _value, FileRangePtr _fileRange) {
+	static StringLiteral* create(String _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(StringLiteral), _value, _fileRange);
 	}
 
 	void addValue(const String& val, FileRangePtr fRange);
 
-	useit String get_value() const;
+	String get_value() const;
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+	ir::PrerunValue* emit(EmitCtx* ctx) override;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const override { return NodeType::STRING_LITERAL; }
+	NodeType nodeType() const override { return NodeType::STRING_LITERAL; }
 };
 
 } // namespace qat::ast

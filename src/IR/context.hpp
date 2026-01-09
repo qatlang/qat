@@ -109,7 +109,7 @@ class Ctx {
 
 	Vec<ir::Mod*> modulesWithErrors;
 
-	useit bool module_has_errors(ir::Mod* cand) {
+	bool module_has_errors(ir::Mod* cand) {
 		for (auto* mod : modulesWithErrors) {
 			if (mod->get_id() == cand->get_id()) {
 				return true;
@@ -162,12 +162,12 @@ class Ctx {
 	mutable Maybe<u64>               qatCompileTimeInNanoseconds;
 	mutable Maybe<u64>               clangAndLinkTimeInNanoseconds;
 
-	useit bool has_active_generic() const { return not allActiveGenerics.empty(); }
+	bool has_active_generic() const { return not allActiveGenerics.empty(); }
 
-	useit GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
+	GenericEntityMarker& get_active_generic() const { return allActiveGenerics.back(); }
 
-	useit bool             has_generic_parameter_in_entity(String const& name) const;
-	useit GenericArgument* get_generic_parameter_from_entity(String const& name) const;
+	bool             has_generic_parameter_in_entity(String const& name) const;
+	GenericArgument* get_generic_parameter_from_entity(String const& name) const;
 
 	void add_active_generic(GenericEntityMarker marker, bool main) {
 		if (allActiveGenerics.size() == 1024) {
@@ -188,7 +188,7 @@ class Ctx {
 		allActiveGenerics.pop_back();
 	}
 
-	useit String join_active_generic_names(bool highlight) const {
+	String join_active_generic_names(bool highlight) const {
 		String result;
 		for (usize i = 0; i < allActiveGenerics.size(); i++) {
 			result.append(highlight ? color(allActiveGenerics.at(i).name) : allActiveGenerics.at(i).name);
@@ -199,13 +199,13 @@ class Ctx {
 		return result;
 	}
 
-	useit String get_global_string_name() const {
+	String get_global_string_name() const {
 		auto res = "qat'text'" + std::to_string(stringCount);
 		stringCount++;
 		return res;
 	}
 
-	useit llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
+	llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
 
 	void add_exe_path(fs::path path);
 	void add_binary_size(usize size);

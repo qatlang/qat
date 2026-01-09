@@ -18,15 +18,15 @@ class SelfType final : public Type {
   public:
 	SelfType(bool _isJustType, FileRangePtr _fileRange) : Type(_fileRange), isJustType(_isJustType) {}
 
-	useit static SelfType* create(bool _isJustType, FileRangePtr _fileRange) {
+	static SelfType* create(bool _isJustType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(SelfType), _isJustType, _fileRange);
 	}
 
-	useit ir::Type* emit(EmitCtx* ctx);
+	ir::Type* emit(EmitCtx* ctx);
 
-	useit String to_string() const;
+	String to_string() const;
 
-	useit AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
+	AstTypeKind type_kind() const { return AstTypeKind::SELF_TYPE; }
 };
 
 } // namespace qat::ast

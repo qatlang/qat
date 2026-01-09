@@ -12,7 +12,7 @@ class PrerunContinue : public PrerunSentence {
 	PrerunContinue(Maybe<Identifier> _tag, FileRangePtr _fileRange)
 	    : PrerunSentence(std::move(_fileRange)), tag(std::move(_tag)) {}
 
-	useit static PrerunContinue* create(Maybe<Identifier> tag, FileRangePtr fileRange) {
+	static PrerunContinue* create(Maybe<Identifier> tag, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunContinue), std::move(tag), std::move(fileRange));
 	}
 

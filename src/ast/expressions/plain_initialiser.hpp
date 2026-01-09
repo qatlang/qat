@@ -23,8 +23,8 @@ class PlainInitialiser final : public Expression,
 	                 FileRangePtr _fileRange)
 	    : Expression(_fileRange), type(_type), fields(_fields), fieldValues(_fieldValues) {}
 
-	useit static PlainInitialiser* create(TypeLike _type, Vec<Pair<String, FileRangePtr>> _fields,
-	                                      Vec<Expression*> _fieldValues, FileRangePtr _fileRange) {
+	static PlainInitialiser* create(TypeLike _type, Vec<Pair<String, FileRangePtr>> _fields,
+	                                Vec<Expression*> _fieldValues, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PlainInitialiser), _type, _fields, _fieldValues, _fileRange);
 	}
 
@@ -41,9 +41,9 @@ class PlainInitialiser final : public Expression,
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::PLAIN_INITIALISER; }
+	NodeType nodeType() const final { return NodeType::PLAIN_INITIALISER; }
 };
 
 } // namespace qat::ast

@@ -17,19 +17,19 @@ class GenericNamedType final : public Type {
 	GenericNamedType(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes, FileRangePtr _fileRange)
 	    : Type(_fileRange), relative(_relative), names(_names), genericTypes(_genericTypes) {}
 
-	useit static GenericNamedType* create(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes,
-	                                      FileRangePtr _fileRange) {
+	static GenericNamedType* create(u32 _relative, Vec<Identifier> _names, Vec<FillGeneric*> _genericTypes,
+	                                FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(GenericNamedType), _relative, _names, _genericTypes, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::GENERIC_NAMED; }
+	AstTypeKind type_kind() const final { return AstTypeKind::GENERIC_NAMED; }
 };
 
 Maybe<ir::Type*> handle_generic_named_type(ir::Mod* mod, ir::Block* curr, Identifier entityName, Vec<Identifier> names,

@@ -9,17 +9,15 @@ class TextType final : public Type {
   public:
 	explicit TextType(FileRangePtr _fileRange) : Type(_fileRange) {}
 
-	useit static TextType* create(FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(TextType), _fileRange);
-	}
+	static TextType* create(FileRangePtr _fileRange) { return std::construct_at(OwnNormal(TextType), _fileRange); }
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final;
+	AstTypeKind type_kind() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

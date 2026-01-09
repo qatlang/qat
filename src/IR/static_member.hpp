@@ -21,22 +21,22 @@ class StaticMember final : public Value, public Mentionable {
 	StaticMember(StructType* _parent, Identifier name, Type* _type, bool _is_variable, Value* _initial,
 	             const VisibilityInfo& _visibility);
 
-	useit static StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable,
-	                               Value* _initial, const VisibilityInfo& _visibility) {
+	static StaticMember* get(StructType* _parent, Identifier name, Type* _type, bool _is_variable, Value* _initial,
+	                         const VisibilityInfo& _visibility) {
 		return std::construct_at(OwnNormal(StaticMember), _parent, name, _type, _is_variable, _initial, _visibility);
 	}
 
-	useit StructType* get_parent_type();
+	StructType* get_parent_type();
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit const VisibilityInfo& get_visibility() const;
+	const VisibilityInfo& get_visibility() const;
 
-	useit bool has_initial() const;
+	bool has_initial() const;
 
-	useit Value* get_initial() const { return initial; }
+	Value* get_initial() const { return initial; }
 
 	~StaticMember() final = default;
 };

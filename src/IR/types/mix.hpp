@@ -38,40 +38,40 @@ class MixType : public ExpandedType {
 	        Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx, bool addNoneVariant,
 	        bool isPacked, const VisibilityInfo& visibility, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo);
 
-	useit static MixType* create(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics,
-	                             Mod* parent, Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal,
-	                             ir::Ctx* irCtx, bool addNoneVariant, bool isPacked, const VisibilityInfo& visibility,
-	                             FileRangePtr fileRange, Maybe<MetaInfo> metaInfo) {
+	static MixType* create(Identifier name, ir::OpaqueType* opaquedTy, Vec<GenericArgument*> _generics, Mod* parent,
+	                       Vec<Pair<Identifier, Maybe<Type*>>> subtypes, Maybe<usize> defaultVal, ir::Ctx* irCtx,
+	                       bool addNoneVariant, bool isPacked, const VisibilityInfo& visibility, FileRangePtr fileRange,
+	                       Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(MixType), std::move(name), opaquedTy, std::move(_generics), parent,
 		                         std::move(subtypes), defaultVal, irCtx, addNoneVariant, isPacked, visibility,
 		                         fileRange, std::move(metaInfo));
 	}
 
-	useit usize get_index_of(const String& name) const;
+	usize get_index_of(const String& name) const;
 
-	useit bool has_none_variant() const { return hasNoneVariant; }
+	bool has_none_variant() const { return hasNoneVariant; }
 
-	useit Pair<bool, bool> has_variant_with_name(const String& sname) const;
-	useit Type*            get_variant_with_name(const String& sname) const;
+	Pair<bool, bool> has_variant_with_name(const String& sname) const;
+	Type*            get_variant_with_name(const String& sname) const;
 
-	useit bool  has_default_variant() const;
-	useit usize get_default_index() const;
+	bool  has_default_variant() const;
+	usize get_default_index() const;
 
-	useit usize get_variant_count() const;
-	useit usize get_variant_index(String const& name) const;
+	usize get_variant_count() const;
+	usize get_variant_index(String const& name) const;
 
-	useit Type* get_variant_type_at(usize index) const;
+	Type* get_variant_type_at(usize index) const;
 
-	useit bool         is_packed() const;
-	useit usize        get_tag_bitwidth() const;
-	useit u64          get_data_bitwidth() const;
-	useit FileRangePtr get_file_range() const;
-	useit String       to_string() const final;
-	useit TypeKind     type_kind() const final;
-	useit LinkNames    get_link_names() const final;
-	useit bool         is_type_sized() const final;
+	bool         is_packed() const;
+	usize        get_tag_bitwidth() const;
+	u64          get_data_bitwidth() const;
+	FileRangePtr get_file_range() const;
+	String       to_string() const final;
+	TypeKind     type_kind() const final;
+	LinkNames    get_link_names() const final;
+	bool         is_type_sized() const final;
 
-	useit bool can_be_prerun() const final {
+	bool can_be_prerun() const final {
 		for (auto sub : subtypes) {
 			if (sub.second.has_value() && not sub.second.value()->can_be_prerun()) {
 				return false;
@@ -80,13 +80,13 @@ class MixType : public ExpandedType {
 		return true;
 	}
 
-	useit bool has_simple_copy() const final;
-	useit bool has_simple_move() const final;
-	useit bool is_copy_constructible() const final;
-	useit bool is_copy_assignable() const final;
-	useit bool is_move_constructible() const final;
-	useit bool is_move_assignable() const final;
-	useit bool is_destructible() const final;
+	bool has_simple_copy() const final;
+	bool has_simple_move() const final;
+	bool is_copy_constructible() const final;
+	bool is_copy_assignable() const final;
+	bool is_move_constructible() const final;
+	bool is_move_assignable() const final;
+	bool is_destructible() const final;
 
 	void get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;

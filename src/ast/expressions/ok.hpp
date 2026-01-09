@@ -18,8 +18,8 @@ class OkExpression final : public Expression,
 	             Maybe<Pair<Type*, Type*>> _providedType, FileRangePtr _fileRange)
 	    : Expression(_fileRange), subExpr(_subExpr), isPacked(_isPacked), providedType(_providedType) {};
 
-	useit static OkExpression* create(Expression* subExpr, Maybe<Pair<FileRangePtr, PrerunExpression*>> isPacked,
-	                                  Maybe<Pair<Type*, Type*>> providedType, FileRangePtr fileRange) {
+	static OkExpression* create(Expression* subExpr, Maybe<Pair<FileRangePtr, PrerunExpression*>> isPacked,
+	                            Maybe<Pair<Type*, Type*>> providedType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(OkExpression), subExpr, isPacked, providedType, fileRange);
 	}
 
@@ -29,9 +29,9 @@ class OkExpression final : public Expression,
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::OK; }
+	NodeType nodeType() const final { return NodeType::OK; }
 };
 
 } // namespace qat::ast

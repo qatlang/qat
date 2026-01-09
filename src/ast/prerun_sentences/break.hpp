@@ -12,7 +12,7 @@ class PrerunBreak final : public PrerunSentence {
 	PrerunBreak(Maybe<Identifier> _tag, FileRangePtr _fileRange)
 	    : PrerunSentence(std::move(_fileRange)), tag(std::move(_tag)) {}
 
-	useit static PrerunBreak* create(Maybe<Identifier> tag, FileRangePtr fileRange) {
+	static PrerunBreak* create(Maybe<Identifier> tag, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunBreak), std::move(tag), std::move(fileRange));
 	}
 

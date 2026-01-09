@@ -13,7 +13,7 @@ class InlineMatch final : public Expression, public TypeInferrable {
 	InlineMatch(Expression* _expression, Vec<Expression*> _values, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), expression(_expression), values(std::move(_values)) {}
 
-	useit static InlineMatch* create(Expression* expression, Vec<Expression*> values, FileRangePtr fileRange) {
+	static InlineMatch* create(Expression* expression, Vec<Expression*> values, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InlineMatch), expression, std::move(values), std::move(fileRange));
 	}
 
@@ -21,9 +21,9 @@ class InlineMatch final : public Expression, public TypeInferrable {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::INLINE_MATCH; }
+	NodeType nodeType() const final { return NodeType::INLINE_MATCH; }
 };
 
 } // namespace qat::ast

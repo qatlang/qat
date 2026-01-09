@@ -77,48 +77,46 @@ class Type : public Uniq {
 
 	static void clear_all();
 
-	useit bool has_default_implementations() const { return not defaultImplementations.empty(); }
+	bool has_default_implementations() const { return not defaultImplementations.empty(); }
 
-	useit Vec<DoneSkill*> const& get_default_implementations() const { return defaultImplementations; }
+	Vec<DoneSkill*> const& get_default_implementations() const { return defaultImplementations; }
 
-	useit bool has_unnamed_implementation_for(Skill* skill) const { return unnamedImplementations.contains(skill); }
+	bool has_unnamed_implementation_for(Skill* skill) const { return unnamedImplementations.contains(skill); }
 
-	useit DoneSkill* get_unnamed_implementation_for(Skill* skill) const { return unnamedImplementations.at(skill); }
+	DoneSkill* get_unnamed_implementation_for(Skill* skill) const { return unnamedImplementations.at(skill); }
 
-	useit bool has_named_implementation_for(Skill* skill) const { return namedImplementations.contains(skill); }
+	bool has_named_implementation_for(Skill* skill) const { return namedImplementations.contains(skill); }
 
-	useit auto get_named_implementations_for(Skill* skill) const { return namedImplementations.equal_range(skill); }
+	auto get_named_implementations_for(Skill* skill) const { return namedImplementations.equal_range(skill); }
 
-	useit bool has_skills_for_method_name(String const& mName) const { return methodToSkillsMapping.contains(mName); }
+	bool has_skills_for_method_name(String const& mName) const { return methodToSkillsMapping.contains(mName); }
 
-	useit auto get_skills_for_method_name(String const& mName) const {
-		return methodToSkillsMapping.equal_range(mName);
-	}
+	auto get_skills_for_method_name(String const& mName) const { return methodToSkillsMapping.equal_range(mName); }
 
-	useit virtual bool          can_be_prerun_generic() const;
-	useit virtual Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const;
-	useit virtual bool          is_type_sized() const;
-	useit virtual Maybe<bool>   equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const;
-	useit String                get_name_for_linking() const;
+	virtual bool          can_be_prerun_generic() const;
+	virtual Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const;
+	virtual bool          is_type_sized() const;
+	virtual Maybe<bool>   equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const;
+	String                get_name_for_linking() const;
 
-	useit static Vec<Region*> allRegions();
+	static Vec<Region*> allRegions();
 
-	useit bool is_same(Type const* other) const;
-	useit bool is_compatible_with(Type const* candidate) const;
+	bool is_same(Type const* other) const;
+	bool is_compatible_with(Type const* candidate) const;
 
-	useit virtual bool  is_expanded() const;
-	useit ExpandedType* as_expanded() const;
+	virtual bool  is_expanded() const;
+	ExpandedType* as_expanded() const;
 
-	useit virtual bool can_be_prerun() const;
-	useit virtual bool has_prerun_default_value() const;
-	useit virtual bool is_default_constructible() const;
-	useit virtual bool is_copy_constructible() const;
-	useit virtual bool is_copy_assignable() const;
-	useit virtual bool is_move_constructible() const;
-	useit virtual bool is_move_assignable() const;
-	useit virtual bool is_destructible() const;
-	useit virtual bool has_simple_copy() const;
-	useit virtual bool has_simple_move() const;
+	virtual bool can_be_prerun() const;
+	virtual bool has_prerun_default_value() const;
+	virtual bool is_default_constructible() const;
+	virtual bool is_copy_constructible() const;
+	virtual bool is_copy_assignable() const;
+	virtual bool is_move_constructible() const;
+	virtual bool is_move_assignable() const;
+	virtual bool is_destructible() const;
+	virtual bool has_simple_copy() const;
+	virtual bool has_simple_move() const;
 
 	virtual ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx);
 
@@ -129,106 +127,106 @@ class Type : public Uniq {
 	virtual void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun);
 	virtual void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun);
 
-	useit bool        is_opaque() const;
-	useit OpaqueType* as_opaque() const;
+	bool        is_opaque() const;
+	OpaqueType* as_opaque() const;
 
-	useit bool            is_type_definition() const;
-	useit DefinitionType* as_type_definition() const;
+	bool            is_type_definition() const;
+	DefinitionType* as_type_definition() const;
 
-	useit bool        is_atomic() const;
-	useit AtomicType* as_atomic() const;
+	bool        is_atomic() const;
+	AtomicType* as_atomic() const;
 
-	useit bool         is_integer() const;
-	useit IntegerType* as_integer() const;
+	bool         is_integer() const;
+	IntegerType* as_integer() const;
 
-	useit bool          is_unsigned() const;
-	useit UnsignedType* as_unsigned() const;
+	bool          is_unsigned() const;
+	UnsignedType* as_unsigned() const;
 
-	useit bool is_underlying_type_integer() const;
-	useit bool is_underlying_type_unsigned() const;
-	useit bool is_underlying_type_float() const;
+	bool is_underlying_type_integer() const;
+	bool is_underlying_type_unsigned() const;
+	bool is_underlying_type_float() const;
 
-	useit IntegerType*  get_underlying_integer_type() const;
-	useit UnsignedType* get_underlying_unsigned_type() const;
+	IntegerType*  get_underlying_integer_type() const;
+	UnsignedType* get_underlying_unsigned_type() const;
 
-	useit bool          is_bool() const;
-	useit UnsignedType* as_bool() const;
+	bool          is_bool() const;
+	UnsignedType* as_bool() const;
 
-	useit bool       is_float() const;
-	useit FloatType* as_float() const;
+	bool       is_float() const;
+	FloatType* as_float() const;
 
-	useit bool      is_char() const;
-	useit CharType* as_char() const;
+	bool      is_char() const;
+	CharType* as_char() const;
 
-	useit bool     is_ref() const;
-	useit RefType* as_ref() const;
+	bool     is_ref() const;
+	RefType* as_ref() const;
 
-	useit bool       is_poly() const;
-	useit Polymorph* as_poly() const;
+	bool       is_poly() const;
+	Polymorph* as_poly() const;
 
-	useit bool     is_ptr() const;
-	useit PtrType* as_ptr() const;
+	bool     is_ptr() const;
+	PtrType* as_ptr() const;
 
-	useit bool       is_slice() const;
-	useit SliceType* as_slice() const;
+	bool       is_slice() const;
+	SliceType* as_slice() const;
 
-	useit bool       is_array() const;
-	useit ArrayType* as_array() const;
+	bool       is_array() const;
+	ArrayType* as_array() const;
 
-	useit bool       is_tuple() const;
-	useit TupleType* as_tuple() const;
+	bool       is_tuple() const;
+	TupleType* as_tuple() const;
 
-	useit bool          is_function() const;
-	useit FunctionType* as_function() const;
+	bool          is_function() const;
+	FunctionType* as_function() const;
 
-	useit bool        is_struct() const;
-	useit StructType* as_struct() const;
+	bool        is_struct() const;
+	StructType* as_struct() const;
 
-	useit bool     is_mix() const;
-	useit MixType* as_mix() const;
+	bool     is_mix() const;
+	MixType* as_mix() const;
 
-	useit bool        is_toggle() const;
-	useit ToggleType* as_toggle() const;
+	bool        is_toggle() const;
+	ToggleType* as_toggle() const;
 
-	useit bool        is_choice() const;
-	useit ChoiceType* as_choice() const;
+	bool        is_choice() const;
+	ChoiceType* as_choice() const;
 
-	useit bool      is_text() const;
-	useit TextType* as_text() const;
+	bool      is_text() const;
+	TextType* as_text() const;
 
-	useit bool        is_future() const;
-	useit FutureType* as_future() const;
+	bool        is_future() const;
+	FutureType* as_future() const;
 
-	useit bool       is_maybe() const;
-	useit MaybeType* as_maybe() const;
+	bool       is_maybe() const;
+	MaybeType* as_maybe() const;
 
-	useit bool    is_region() const;
-	useit Region* as_region() const;
+	bool    is_region() const;
+	Region* as_region() const;
 
-	useit bool is_void() const;
+	bool is_void() const;
 
-	useit bool       is_typed() const;
-	useit TypedType* as_typed() const;
+	bool       is_typed() const;
+	TypedType* as_typed() const;
 
-	useit bool        is_native_type() const;
-	useit NativeType* as_native_type() const;
+	bool        is_native_type() const;
+	NativeType* as_native_type() const;
 
-	useit bool        is_result() const;
-	useit ResultType* as_result() const;
+	bool        is_result() const;
+	ResultType* as_result() const;
 
-	useit bool       is_error() const;
-	useit ErrorType* as_error() const;
+	bool       is_error() const;
+	ErrorType* as_error() const;
 
-	useit bool        is_vector() const;
-	useit VectorType* as_vector() const;
+	bool        is_vector() const;
+	VectorType* as_vector() const;
 
-	useit bool      is_flag() const;
-	useit FlagType* as_flag() const;
+	bool      is_flag() const;
+	FlagType* as_flag() const;
 
-	useit virtual TypeKind type_kind() const = 0;
-	useit virtual String   to_string() const = 0;
+	virtual TypeKind type_kind() const = 0;
+	virtual String   to_string() const = 0;
 
-	useit llvm::Type* get_llvm_type() const { return llvmType; }
+	llvm::Type* get_llvm_type() const { return llvmType; }
 };
 
 } // namespace qat::ir

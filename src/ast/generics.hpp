@@ -21,21 +21,21 @@ class FillGeneric {
 
 	explicit FillGeneric(PrerunExpression* expression) : data(expression), kind(FillGenericKind::prerun) {}
 
-	useit static FillGeneric* create(Type* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
+	static FillGeneric* create(Type* _type) { return std::construct_at(OwnNormal(FillGeneric), _type); }
 
-	useit static FillGeneric* create(PrerunExpression* _exp) { return std::construct_at(OwnNormal(FillGeneric), _exp); }
+	static FillGeneric* create(PrerunExpression* _exp) { return std::construct_at(OwnNormal(FillGeneric), _exp); }
 
-	useit bool is_type() const;
-	useit bool is_prerun() const;
+	bool is_type() const;
+	bool is_prerun() const;
 
-	useit Type*             as_type() const;
-	useit PrerunExpression* as_prerun() const;
+	Type*             as_type() const;
+	PrerunExpression* as_prerun() const;
 
-	useit FileRangePtr get_range() const;
+	FileRangePtr get_range() const;
 
-	useit ir::GenericToFill* toFill(EmitCtx* ctx) const;
+	ir::GenericToFill* toFill(EmitCtx* ctx) const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

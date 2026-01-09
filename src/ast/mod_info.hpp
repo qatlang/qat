@@ -19,13 +19,13 @@ class ModInfo : public Node {
   public:
 	ModInfo(MetaInfo _metaInfo, FileRangePtr _fileRange) : Node(_fileRange), metaInfo(_metaInfo) {}
 
-	useit static ModInfo* create(MetaInfo _metaInfo, FileRangePtr _fileRange) {
+	static ModInfo* create(MetaInfo _metaInfo, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ModInfo), _metaInfo, _fileRange);
 	}
 
 	void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-	useit NodeType nodeType() const final { return NodeType::MODULE_INFO; }
+	NodeType nodeType() const final { return NodeType::MODULE_INFO; }
 };
 
 } // namespace qat::ast

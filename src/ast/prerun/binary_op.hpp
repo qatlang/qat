@@ -15,8 +15,8 @@ class PrerunBinaryOperator final : public PrerunExpression {
 	PrerunBinaryOperator(PrerunExpression* _lhs, OperatorKind _opr, PrerunExpression* _rhs, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), lhs(_lhs), opr(_opr), rhs(_rhs) {}
 
-	useit static PrerunBinaryOperator* create(PrerunExpression* _lhs, OperatorKind _opr, PrerunExpression* _rhs,
-	                                          FileRangePtr _fileRange) {
+	static PrerunBinaryOperator* create(PrerunExpression* _lhs, OperatorKind _opr, PrerunExpression* _rhs,
+	                                    FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunBinaryOperator), _lhs, _opr, _rhs, _fileRange);
 	}
 
@@ -25,11 +25,11 @@ class PrerunBinaryOperator final : public PrerunExpression {
 		UPDATE_DEPS(rhs);
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx);
+	ir::PrerunValue* emit(EmitCtx* ctx);
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_BINARY_OP; }
+	NodeType nodeType() const final { return NodeType::PRERUN_BINARY_OP; }
 };
 
 } // namespace qat::ast

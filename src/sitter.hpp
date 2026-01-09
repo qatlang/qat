@@ -24,8 +24,8 @@ class QatSitter {
 
   public:
 	QatSitter();
-	useit static QatSitter* get();
-	static QatSitter*       instance;
+	static QatSitter* get();
+	static QatSitter* instance;
 
 	void initialise();
 	void destroy();
@@ -33,9 +33,9 @@ class QatSitter {
 	void handle_path(const fs::path& path, ir::Ctx* irCtx);
 	void display_stats();
 
-	useit static bool is_name_valid(const String& name);
+	static bool is_name_valid(const String& name);
 
-	useit static Maybe<Pair<String, fs::path>> detect_lib_file(const fs::path& path);
+	static Maybe<Pair<String, fs::path>> detect_lib_file(const fs::path& path);
 
 	~QatSitter();
 };

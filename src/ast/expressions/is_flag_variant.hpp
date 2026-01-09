@@ -20,8 +20,8 @@ class IsFlagVariant : public Expression {
 	IsFlagVariant(Expression* _candidate, FlagVariantKind _kind, Vec<Identifier> _variants, FileRangePtr _fileRange)
 	    : Expression(_fileRange), candidate(_candidate), kind(_kind), variants(std::move(_variants)) {}
 
-	useit static IsFlagVariant* create(Expression* candidate, FlagVariantKind kind, Vec<Identifier> variants,
-	                                   FileRangePtr fileRange) {
+	static IsFlagVariant* create(Expression* candidate, FlagVariantKind kind, Vec<Identifier> variants,
+	                             FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(IsFlagVariant), candidate, kind, std::move(variants), fileRange);
 	}
 
@@ -29,9 +29,9 @@ class IsFlagVariant : public Expression {
 		UPDATE_DEPS(candidate);
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::IS_FLAG_VARIANT; }
+	NodeType nodeType() const final { return NodeType::IS_FLAG_VARIANT; }
 };
 
 } // namespace qat::ast

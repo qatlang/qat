@@ -16,7 +16,7 @@ struct Variadics {
 	Type*        type;
 	FileRangePtr range;
 
-	useit String to_string() const {
+	String to_string() const {
 		switch (kind) {
 			case VariadicKind::NORMAL:
 				return "variadic";
@@ -27,7 +27,7 @@ struct Variadics {
 		}
 	}
 
-	useit ir::Variadics to_ir(EmitCtx* irCtx) const;
+	ir::Variadics to_ir(EmitCtx* irCtx) const;
 };
 
 } // namespace qat::ast

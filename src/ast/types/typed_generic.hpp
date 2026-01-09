@@ -17,17 +17,17 @@ class TypedGenericAbstract final : public GenericAbstractType {
 	TypedGenericAbstract(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy, FileRangePtr _fileRange)
 	    : GenericAbstractType(_index, _name, GenericKind::typedGeneric, _fileRange), defaultTypeAST(_defaultTy) {}
 
-	useit static TypedGenericAbstract* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
-	                                          FileRangePtr _fileRange) {
+	static TypedGenericAbstract* create(usize _index, Identifier _name, Maybe<ast::Type*> _defaultTy,
+	                                    FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TypedGenericAbstract), _index, std::move(_name), _defaultTy,
 		                         std::move(_fileRange));
 	}
 
-	useit bool hasDefault() const final;
+	bool hasDefault() const final;
 
-	useit ast::Type* getDefaultAST() const { return defaultTypeAST.value(); }
+	ast::Type* getDefaultAST() const { return defaultTypeAST.value(); }
 
-	useit ir::Type* getDefault() const;
+	ir::Type* getDefault() const;
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
 		if (defaultTypeAST.has_value()) {
@@ -37,12 +37,12 @@ class TypedGenericAbstract final : public GenericAbstractType {
 
 	void emit(EmitCtx* ctx) const final;
 
-	useit ir::Type* get_type() const;
-	useit ir::TypedGeneric* toIR() const;
+	ir::Type*         get_type() const;
+	ir::TypedGeneric* toIR() const;
 
-	useit bool isSet() const final;
-	void       setType(ir::Type* typ) const;
-	void       unset() const final;
+	bool isSet() const final;
+	void setType(ir::Type* typ) const;
+	void unset() const final;
 
 	~TypedGenericAbstract() final;
 };

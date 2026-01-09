@@ -23,8 +23,8 @@ class EndPointer : public Expression {
 	EndPointer(Expression* _candidate, EndPointerKind _kind, Vec<Expression*> _args, FileRangePtr _fileRange)
 	    : Expression(_fileRange), candidate(_candidate), args(std::move(_args)), kind(_kind) {}
 
-	useit static EndPointer* create(Expression* candidate, EndPointerKind kind, Vec<Expression*> args,
-	                                FileRangePtr fileRange) {
+	static EndPointer* create(Expression* candidate, EndPointerKind kind, Vec<Expression*> args,
+	                          FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(EndPointer), candidate, kind, std::move(args), fileRange);
 	}
 
@@ -32,7 +32,7 @@ class EndPointer : public Expression {
 		UPDATE_DEPS(candidate);
 	}
 
-	useit String kind_to_string() const {
+	String kind_to_string() const {
 		switch (kind) {
 			case EndPointerKind::PTR:
 				return "pointer";
@@ -47,9 +47,9 @@ class EndPointer : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::END_POINTER; }
+	NodeType nodeType() const final { return NodeType::END_POINTER; }
 };
 
 } // namespace qat::ast

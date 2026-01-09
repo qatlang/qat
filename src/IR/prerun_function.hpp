@@ -28,15 +28,15 @@ class PrerunLocal final : public PrerunValue {
 	PrerunLocal(Identifier _name, Type* _type, bool _isVar, llvm::Constant* _initialVal)
 	    : PrerunValue(_initialVal, _type), name(_name), isVar(_isVar) {}
 
-	useit static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, llvm::Constant* _initialVal) {
+	static PrerunLocal* get(Identifier _name, Type* _type, bool _isVar, llvm::Constant* _initialVal) {
 		return std::construct_at(OwnNormal(PrerunLocal), _name, _type, _isVar, _initialVal);
 	}
 
 	bool is_prerun_local() const final { return true; }
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit bool is_variable() const { return isVar; }
+	bool is_variable() const { return isVar; }
 
 	void change_value(llvm::Constant* other) { ll = other; }
 };
@@ -52,11 +52,11 @@ class PreBlock {
   public:
 	PreBlock(PrerunCallState* _callState, PreBlock* _parent);
 
-	useit static PreBlock* create(PrerunCallState* callState, PreBlock* parent = nullptr) {
+	static PreBlock* create(PrerunCallState* callState, PreBlock* parent = nullptr) {
 		return std::construct_at(OwnNormal(PreBlock), callState, parent);
 	}
 
-	useit static PreBlock* create_next_to(PreBlock* previous) {
+	static PreBlock* create_next_to(PreBlock* previous) {
 		auto res = std::construct_at(OwnNormal(PreBlock), previous->callState, previous->parent);
 		res->set_previous(previous);
 		return res;
@@ -73,13 +73,13 @@ class PreBlock {
 
 	void make_active();
 
-	useit bool has_previous() const { return previous != nullptr; }
+	bool has_previous() const { return previous != nullptr; }
 
-	useit bool has_next() const { return next != nullptr; }
+	bool has_next() const { return next != nullptr; }
 
-	useit bool has_parent() const { return parent != nullptr; }
+	bool has_parent() const { return parent != nullptr; }
 
-	useit bool has_local(String const& name) {
+	bool has_local(String const& name) {
 		for (auto loc : locals) {
 			if (loc->get_name().value == name) {
 				return true;
@@ -100,9 +100,9 @@ class PreBlock {
 		return false;
 	}
 
-	useit PrerunCallState* get_call_state() const { return callState; }
+	PrerunCallState* get_call_state() const { return callState; }
 
-	useit PrerunLocal* get_local(String const& name) {
+	PrerunLocal* get_local(String const& name) {
 		for (auto loc : locals) {
 			if (loc->get_name().value == name) {
 				return loc;
@@ -130,7 +130,7 @@ struct PreLoopInfo {
 	PreLoopKind       kind;
 	Maybe<Identifier> tag;
 
-	useit String kind_to_string() const {
+	String kind_to_string() const {
 		switch (kind) {
 			case PreLoopKind::TO:
 				return "loop to";
@@ -164,16 +164,16 @@ class PrerunCallState {
 
 	~PrerunCallState() { std::destroy_at(rootBlock); }
 
-	useit static PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
+	static PrerunCallState* get(PrerunFunction* fun, Vec<PrerunValue*> argVals) {
 		return std::construct_at(OwnNormal(PrerunCallState), fun, argVals);
 	}
 
-	useit PreBlock* get_block() const { return activeBlock; }
+	PreBlock* get_block() const { return activeBlock; }
 
-	useit PrerunFunction* get_function() const { return function; }
+	PrerunFunction* get_function() const { return function; }
 
-	useit bool         has_arg_with_name(String const& name);
-	useit PrerunValue* get_arg_value_for(String const& name);
+	bool         has_arg_with_name(String const& name);
+	PrerunValue* get_arg_value_for(String const& name);
 };
 
 class PrerunFunction : public PrerunValue, public Mentionable {
@@ -191,24 +191,24 @@ class PrerunFunction : public PrerunValue, public Mentionable {
 	               Pair<Vec<ast::PrerunSentence*>, FileRangePtr> _sentences, VisibilityInfo visib,
 	               llvm::LLVMContext& ctx);
 
-	useit static PrerunFunction* create(Mod* parent, Identifier name, Type* returnTy, Vec<ArgumentType*> argTypes,
-	                                    Pair<Vec<ast::PrerunSentence*>, FileRangePtr> sentences,
-	                                    VisibilityInfo visibility, llvm::LLVMContext& ctx) {
+	static PrerunFunction* create(Mod* parent, Identifier name, Type* returnTy, Vec<ArgumentType*> argTypes,
+	                              Pair<Vec<ast::PrerunSentence*>, FileRangePtr> sentences, VisibilityInfo visibility,
+	                              llvm::LLVMContext& ctx) {
 		return std::construct_at(OwnNormal(PrerunFunction), parent, std::move(name), returnTy, std::move(argTypes),
 		                         std::move(sentences), visibility, ctx);
 	}
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit Type* get_return_type() const { return returnType; }
+	Type* get_return_type() const { return returnType; }
 
-	useit ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
+	ArgumentType* get_argument_type_at(usize index) { return argTypes[index]; }
 
-	useit Mod* get_module() const { return parent; }
+	Mod* get_module() const { return parent; }
 
-	useit VisibilityInfo const& get_visibility() const { return visibility; }
+	VisibilityInfo const& get_visibility() const { return visibility; }
 
 	PrerunValue* call_prerun(Vec<PrerunValue*> arguments, Ctx* irCtx, FileRangePtr fileRange);
 };

@@ -9,7 +9,7 @@
 
 namespace qat::utils {
 
-useit inline bool is_integer(StringView value) {
+inline bool is_integer(StringView value) {
 	for (auto ch : value) {
 		if ((ch < 48) || (ch > 57)) {
 			return false;
@@ -18,7 +18,7 @@ useit inline bool is_integer(StringView value) {
 	return true;
 }
 
-useit inline String number_to_position(u64 number) {
+inline String number_to_position(u64 number) {
 	if (((number % 100) >= 11) && ((number % 100) <= 20)) {
 		return std::to_string(number) + "th";
 	}
@@ -34,7 +34,7 @@ useit inline String number_to_position(u64 number) {
 	}
 }
 
-useit inline Vec<String> split_string(const String& value, const String& slice) {
+inline Vec<String> split_string(const String& value, const String& slice) {
 	Vec<String> result;
 	usize       index = 0;
 	while (index < value.length()) {
@@ -52,14 +52,14 @@ useit inline Vec<String> split_string(const String& value, const String& slice) 
 	return result;
 }
 
-useit inline u64 random_number() {
+inline u64 random_number() {
 	std::random_device                                          dev;
 	std::mt19937_64                                             rng(dev());
 	std::uniform_int_distribution<std::mt19937_64::result_type> dist(1, UINT_FAST64_MAX);
 	return dist(rng);
 }
 
-useit inline Maybe<Pair<std::array<u8, 4>, u8>> unicode_scalar_to_utf8(u32 scalar) {
+inline Maybe<Pair<std::array<u8, 4>, u8>> unicode_scalar_to_utf8(u32 scalar) {
 	std::array<u8, 4> bytes = {0, 0, 0, 0};
 	if (scalar >= 0x0000 && scalar <= 0x007F) {
 		bytes[0] = (u8)scalar;
@@ -84,7 +84,7 @@ useit inline Maybe<Pair<std::array<u8, 4>, u8>> unicode_scalar_to_utf8(u32 scala
 	}
 }
 
-useit inline Maybe<u32> utf8_to_unicode_scalar(std::array<u8, 4> bytes) {
+inline Maybe<u32> utf8_to_unicode_scalar(std::array<u8, 4> bytes) {
 	u32 value = 0;
 	if ((bytes[0] & 0x80) == 0) {
 		value = bytes[0];
@@ -101,13 +101,13 @@ useit inline Maybe<u32> utf8_to_unicode_scalar(std::array<u8, 4> bytes) {
 	return value;
 }
 
-useit bool is_invisible_unicode(u32 scalar);
+bool is_invisible_unicode(u32 scalar);
 
-useit String to_hex_with_prefix(u32 value, Maybe<u8> width);
+String to_hex_with_prefix(u32 value, Maybe<u8> width);
 
-useit String to_hex(u32 value, Maybe<u8> width);
+String to_hex(u32 value, Maybe<u8> width);
 
-useit inline Maybe<u8> get_utf8_byte_length(u8 byte) {
+inline Maybe<u8> get_utf8_byte_length(u8 byte) {
 	if ((byte & 0x80) == 0) {
 		return 1;
 	} else if ((byte & 0xE0) == 0xC0) {
@@ -121,15 +121,15 @@ useit inline Maybe<u8> get_utf8_byte_length(u8 byte) {
 	}
 }
 
-useit inline bool is_follow_byte_utf8(u8 byte) { return (byte & 0xC0) == 0x80; }
+inline bool is_follow_byte_utf8(u8 byte) { return (byte & 0xC0) == 0x80; }
 
-useit bool is_unicode_scalar_letter(u32 scalar);
+bool is_unicode_scalar_letter(u32 scalar);
 
-useit bool is_unicode_scalar_digit(u32 scalar);
+bool is_unicode_scalar_digit(u32 scalar);
 
-useit usize count_unicode_characters(String const& value);
+usize count_unicode_characters(String const& value);
 
-useit bool bytewise_comparison(String const& first, String const& second);
+bool bytewise_comparison(String const& first, String const& second);
 
 } // namespace qat::utils
 

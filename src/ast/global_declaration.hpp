@@ -25,9 +25,9 @@ class GlobalDeclaration : public IsEntity {
 	    : IsEntity(_fileRange), name(_name), type(_type), value(_value), is_variable(_isVariable),
 	      visibSpec(_visibSpec), metaInfo(_metaInfo) {}
 
-	useit static GlobalDeclaration* create(Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isVariable,
-	                                       Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
-	                                       FileRangePtr _fileRange) {
+	static GlobalDeclaration* create(Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isVariable,
+	                                 Maybe<VisibilitySpec> _visibSpec, Maybe<MetaInfo> _metaInfo,
+	                                 FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(GlobalDeclaration), _name, _type, _value, _isVariable, _visibSpec, _metaInfo,
 		                         _fileRange);
 	}
@@ -40,7 +40,7 @@ class GlobalDeclaration : public IsEntity {
 
 	void define(ir::Mod* mod, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
+	NodeType nodeType() const final { return NodeType::GLOBAL_DECLARATION; }
 };
 
 } // namespace qat::ast

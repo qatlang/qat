@@ -21,7 +21,7 @@ class ConstructorCall final : public Expression,
 	ConstructorCall(TypeLike _type, Vec<Expression*> _args, FileRangePtr _fileRange)
 	    : Expression(_fileRange), type(_type), args(_args) {}
 
-	useit static ConstructorCall* create(TypeLike _type, Vec<Expression*> _args, FileRangePtr _fileRange) {
+	static ConstructorCall* create(TypeLike _type, Vec<Expression*> _args, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ConstructorCall), _type, _args, _fileRange);
 	}
 
@@ -36,9 +36,9 @@ class ConstructorCall final : public Expression,
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
+	NodeType nodeType() const final { return NodeType::CONSTRUCTOR_CALL; }
 };
 
 } // namespace qat::ast

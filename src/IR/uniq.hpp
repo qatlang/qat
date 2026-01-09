@@ -12,10 +12,12 @@ class Uniq {
 
   public:
 	explicit Uniq(u64 idVal) : id(idVal) {}
+
 	Uniq() : id(utils::unique_id()) {}
 
-	useit u64  get_id() const { return id; }
-	useit bool isID(const u64& val) const { return (val == id); }
+	u64 get_id() const { return id; }
+
+	bool isID(const u64& val) const { return (val == id); }
 };
 
 } // namespace qat::ir

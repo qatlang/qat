@@ -27,13 +27,13 @@ class Type {
 
 	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 
-	useit virtual Maybe<usize> get_type_bitsize(EmitCtx*) const { return None; }
+	virtual Maybe<usize> get_type_bitsize(EmitCtx*) const { return None; }
 
-	useit virtual ir::Type* emit(EmitCtx* ctx) = 0;
+	virtual ir::Type* emit(EmitCtx* ctx) = 0;
 
-	useit virtual AstTypeKind type_kind() const = 0;
+	virtual AstTypeKind type_kind() const = 0;
 
-	useit virtual String to_string() const = 0;
+	virtual String to_string() const = 0;
 
 	virtual void destroy() {}
 

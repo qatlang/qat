@@ -17,7 +17,7 @@ class Default final : public Expression, public LocalDeclCompatible, public InPl
 	Default(ast::Type* _providedType, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), providedType(_providedType) {}
 
-	useit static Default* create(ast::Type* _providedType, FileRangePtr _fileRange) {
+	static Default* create(ast::Type* _providedType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Default), _providedType, _fileRange);
 	}
 
@@ -31,9 +31,9 @@ class Default final : public Expression, public LocalDeclCompatible, public InPl
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::DEFAULT; }
+	NodeType nodeType() const final { return NodeType::DEFAULT; }
 };
 
 } // namespace qat::ast

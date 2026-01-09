@@ -16,7 +16,7 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public I
   public:
 	TupleValue(Vec<Expression*> _members, FileRangePtr _fileRange) : Expression(_fileRange), members(_members) {}
 
-	useit static TupleValue* create(Vec<Expression*> _members, FileRangePtr _fileRange) {
+	static TupleValue* create(Vec<Expression*> _members, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TupleValue), _members, _fileRange);
 	}
 
@@ -30,9 +30,9 @@ class TupleValue final : public Expression, public LocalDeclCompatible, public I
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx);
+	ir::Value* emit(EmitCtx* ctx);
 
-	useit NodeType nodeType() const { return NodeType::TUPLE_VALUE; }
+	NodeType nodeType() const { return NodeType::TUPLE_VALUE; }
 };
 
 } // namespace qat::ast

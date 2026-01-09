@@ -18,20 +18,20 @@ class ArrayType final : public Type {
 	ArrayType(Type* _element_type, PrerunExpression* _length, FileRangePtr _fileRange)
 	    : Type(_fileRange), elementType(_element_type), lengthExp(_length) {}
 
-	useit static ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRangePtr _fileRange) {
+	static ArrayType* create(Type* _element_type, PrerunExpression* _length, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ArrayType), _element_type, _length, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const;
+	AstTypeKind type_kind() const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

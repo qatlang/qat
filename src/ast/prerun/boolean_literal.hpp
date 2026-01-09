@@ -11,17 +11,17 @@ class BooleanLiteral final : public PrerunExpression {
   public:
 	BooleanLiteral(bool _value, FileRangePtr _fileRange) : PrerunExpression(std::move(_fileRange)), value(_value) {}
 
-	useit static BooleanLiteral* create(bool _value, FileRangePtr _fileRange) {
+	static BooleanLiteral* create(bool _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(BooleanLiteral), _value, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::BOOLEAN_LITERAL; }
+	NodeType nodeType() const final { return NodeType::BOOLEAN_LITERAL; }
 };
 
 } // namespace qat::ast

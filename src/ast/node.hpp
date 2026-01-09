@@ -15,7 +15,7 @@ struct VisibilitySpec {
 	VisibilityKind kind;
 	FileRangePtr   range;
 
-	useit String to_string() const {
+	String to_string() const {
 		switch (kind) {
 			case VisibilityKind::type:
 				return "pub:type";
@@ -39,12 +39,12 @@ class Commentable {
   public:
 	Maybe<Pair<String, FileRangePtr>> commentValue;
 
-	useit bool hasCommentValue() const { return commentValue.has_value(); }
+	bool hasCommentValue() const { return commentValue.has_value(); }
 };
 
 #define COMMENTABLE_FUNCTIONS                                                                                          \
-	useit bool         isCommentable() const final { return true; }                                                    \
-	useit Commentable* asCommentable() final { return (Commentable*)this; }
+	bool         isCommentable() const final { return true; }                                                          \
+	Commentable* asCommentable() final { return (Commentable*)this; }
 
 #define UPDATE_DEPS(x)               x->update_dependencies(phase, ir::DependType::complete, ent, ctx)
 #define UPDATE_DEPS_CUSTOM(x, depTy) x->update_dependencies(phase, ir::DependType::depTy, ent, ctx)
@@ -62,19 +62,19 @@ class Node {
 	explicit Node(FileRangePtr _fileRange);
 	virtual ~Node() = default;
 
-	useit virtual bool isCommentable() const { return false; }
+	virtual bool isCommentable() const { return false; }
 
-	useit virtual Commentable* asCommentable() { return nullptr; }
+	virtual Commentable* asCommentable() { return nullptr; }
 
-	useit virtual bool isPrerunNode() const { return false; }
+	virtual bool isPrerunNode() const { return false; }
 
 	virtual void create_module(ir::Mod*, ir::Ctx*) const {}
 
 	virtual void handle_filesystem_imports(ir::Mod*, ir::Ctx*) const {}
 
-	useit virtual bool is_entity() const { return false; }
+	virtual bool is_entity() const { return false; }
 
-	useit virtual NodeType nodeType() const = 0;
+	virtual NodeType nodeType() const = 0;
 
 	static void clear_all();
 };
@@ -87,7 +87,7 @@ class IsEntity : public Node {
 
 	virtual ~IsEntity() = default;
 
-	useit bool is_entity() const final { return true; }
+	bool is_entity() const final { return true; }
 
 	virtual void create_entity(ir::Mod* parent, ir::Ctx* irCtx) = 0;
 

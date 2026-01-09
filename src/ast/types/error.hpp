@@ -13,7 +13,7 @@ class ErrorType final : public Type {
 	ErrorType(bool _hasNoneVariant, Type* _subType, FileRangePtr _fileRange)
 	    : Type(_fileRange), hasNoneVariant(_hasNoneVariant), subType(_subType) {}
 
-	useit static ErrorType* create(bool hasNoneVariant, Type* subType, FileRangePtr fileRange) {
+	static ErrorType* create(bool hasNoneVariant, Type* subType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ErrorType), hasNoneVariant, subType, fileRange);
 	}
 
@@ -22,15 +22,13 @@ class ErrorType final : public Type {
 		subType->update_dependencies(phase, dep, state, ctx);
 	}
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final { return subType->get_type_bitsize(ctx); }
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final { return subType->get_type_bitsize(ctx); }
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::ERROR; }
+	AstTypeKind type_kind() const final { return AstTypeKind::ERROR; }
 
-	useit String to_string() const final {
-		return (hasNoneVariant ? "error:[" : "error![") + subType->to_string() + "]";
-	}
+	String to_string() const final { return (hasNoneVariant ? "error:[" : "error![") + subType->to_string() + "]"; }
 };
 
 } // namespace qat::ast

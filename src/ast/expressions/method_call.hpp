@@ -36,19 +36,18 @@ class MethodCall final : public Expression {
 	      arguments(std::move(_arguments)), callNature(_callNature), disambiguity(_disambiguity),
 	      doneSkill(std::move(_doneSkill)) {}
 
-	useit static MethodCall* create(Expression* instance, bool isExpSelf, Identifier memberName,
-	                                Vec<Expression*> arguments, MethodCallNature callNature,
-	                                MethodDisambiguity disambiguity, Maybe<Identifier> doneSkill,
-	                                FileRangePtr fileRange) {
+	static MethodCall* create(Expression* instance, bool isExpSelf, Identifier memberName, Vec<Expression*> arguments,
+	                          MethodCallNature callNature, MethodDisambiguity disambiguity, Maybe<Identifier> doneSkill,
+	                          FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MethodCall), instance, isExpSelf, std::move(memberName),
 		                         std::move(arguments), callNature, disambiguity, std::move(doneSkill), fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::MEMBER_FUNCTION_CALL; }
+	NodeType nodeType() const final { return NodeType::MEMBER_FUNCTION_CALL; }
 };
 
 enum class MethodHolderKind : u8 {
@@ -69,11 +68,11 @@ struct MethodQuery {
 	MethodHolderKind kind;
 	void*            holder;
 
-	useit String kind_to_string(ir::Ctx* irCtx) const;
+	String kind_to_string(ir::Ctx* irCtx) const;
 
-	useit String to_disambiguity(ir::Ctx* irCtx, bool isSelfCall, String const& name) const;
+	String to_disambiguity(ir::Ctx* irCtx, bool isSelfCall, String const& name) const;
 
-	useit String to_location(ir::Ctx* irCtx, String const& name) const;
+	String to_location(ir::Ctx* irCtx, String const& name) const;
 };
 
 } // namespace qat::ast

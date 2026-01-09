@@ -50,9 +50,9 @@ enum class OperatorKind {
 	ASSIGNED_OR,
 };
 
-useit usize get_precedence_of(OperatorKind Operator);
+usize get_precedence_of(OperatorKind Operator);
 
-useit inline bool is_unary_operator(OperatorKind opr) {
+inline bool is_unary_operator(OperatorKind opr) {
 	switch (opr) {
 		case OperatorKind::MINUS:
 		case OperatorKind::BITWISE_NOT:
@@ -64,7 +64,7 @@ useit inline bool is_unary_operator(OperatorKind opr) {
 	}
 }
 
-useit inline bool expect_same_operand_types(OperatorKind opr) {
+inline bool expect_same_operand_types(OperatorKind opr) {
 	switch (opr) {
 		case OperatorKind::ADDITION:
 		case OperatorKind::SUBTRACT:
@@ -112,9 +112,9 @@ useit inline bool expect_same_operand_types(OperatorKind opr) {
 	}
 }
 
-useit String operator_to_string(OperatorKind opr);
+String operator_to_string(OperatorKind opr);
 
-useit OperatorKind operator_from_string(const String& str);
+OperatorKind operator_from_string(const String& str);
 
 } // namespace qat::ast
 

@@ -11,7 +11,7 @@ class PrerunNegative final : public PrerunExpression, public TypeInferrable {
   public:
 	PrerunNegative(PrerunExpression* _value, FileRangePtr _fileRange) : PrerunExpression(_fileRange), value(_value) {}
 
-	useit static PrerunNegative* create(PrerunExpression* value, FileRangePtr fileRange) {
+	static PrerunNegative* create(PrerunExpression* value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunNegative), value, fileRange);
 	}
 
@@ -23,9 +23,9 @@ class PrerunNegative final : public PrerunExpression, public TypeInferrable {
 
 	ir::PrerunValue* emit(EmitCtx* ctx);
 
-	useit String to_string() const;
+	String to_string() const;
 
-	useit NodeType nodeType() const { return NodeType::PRERUN_NEGATIVE; }
+	NodeType nodeType() const { return NodeType::PRERUN_NEGATIVE; }
 };
 
 } // namespace qat::ast

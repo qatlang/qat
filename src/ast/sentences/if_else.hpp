@@ -20,8 +20,8 @@ class IfElse final : public Sentence {
 	       Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _else, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), chain(_chain), elseCase(_else) {}
 
-	useit static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRangePtr>> _chain,
-	                            Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _else, FileRangePtr _fileRange) {
+	static IfElse* create(Vec<std::tuple<Expression*, Vec<Sentence*>, FileRangePtr>> _chain,
+	                      Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _else, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IfElse), _chain, _else, _fileRange);
 	}
 
@@ -39,15 +39,15 @@ class IfElse final : public Sentence {
 		}
 	}
 
-	useit Pair<bool, usize> trueKnownValueBefore(usize ind) const;
+	Pair<bool, usize> trueKnownValueBefore(usize ind) const;
 
-	useit bool getKnownValue(usize ind) const;
+	bool getKnownValue(usize ind) const;
 
-	useit bool hasValueAt(usize ind) const;
+	bool hasValueAt(usize ind) const;
 
-	useit bool isFalseTill(usize ind) const;
+	bool isFalseTill(usize ind) const;
 
-	useit bool hasAnyKnownValue() const {
+	bool hasAnyKnownValue() const {
 		for (const auto& val : knownVals) {
 			if (val.has_value()) {
 				return true;
@@ -56,9 +56,9 @@ class IfElse final : public Sentence {
 		return false;
 	};
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::IF_ELSE_IF; }
+	NodeType nodeType() const final { return NodeType::IF_ELSE_IF; }
 };
 
 } // namespace qat::ast

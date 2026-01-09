@@ -17,15 +17,15 @@ class SliceType : public Type {
   public:
 	SliceType(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace, ir::Ctx* ctx);
 
-	useit static SliceType* get(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace, ir::Ctx* ctx);
+	static SliceType* get(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace, ir::Ctx* ctx);
 
-	useit Type* get_subtype() const { return subType; }
+	Type* get_subtype() const { return subType; }
 
-	useit bool has_var() const { return isVar; }
+	bool has_var() const { return isVar; }
 
-	useit TypeKind type_kind() const { return TypeKind::SLICE; }
+	TypeKind type_kind() const { return TypeKind::SLICE; }
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ir

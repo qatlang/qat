@@ -19,31 +19,31 @@ class NativeType final : public Type {
 	    : Type(_fileRange), nativeKind(_cTypeKind), isNonNullable(_isNonNullable), varRange(_varRange),
 	      addressSpace(std::move(_addressSpace)) {}
 
-	useit static NativeType* create_bytestring(bool isNonNullable, Maybe<FileRangePtr> varRange,
-	                                           Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+	static NativeType* create_bytestring(bool isNonNullable, Maybe<FileRangePtr> varRange,
+	                                     Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(NativeType), ir::NativeTypeKind::ByteString, isNonNullable, varRange,
 		                         std::move(addressSpace), fileRange);
 	}
 
-	useit static NativeType* create_ptrdiff(bool isUnsigned, Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+	static NativeType* create_ptrdiff(bool isUnsigned, Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(NativeType),
 		                         isUnsigned ? ir::NativeTypeKind::UPtrDiff : ir::NativeTypeKind::PtrDiff, false, None,
 		                         std::move(addressSpace), fileRange);
 	}
 
-	useit static NativeType* create(ir::NativeTypeKind cTypeKind, FileRangePtr fileRange) {
+	static NativeType* create(ir::NativeTypeKind cTypeKind, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(NativeType), cTypeKind, false, None, None, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final;
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::NATIVE_TYPE; }
+	AstTypeKind type_kind() const final { return AstTypeKind::NATIVE_TYPE; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

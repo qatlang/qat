@@ -14,17 +14,17 @@ class PrerunTo final : public PrerunExpression {
 	PrerunTo(PrerunExpression* _value, Type* _targetType, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), value(_value), targetType(_targetType) {}
 
-	useit static PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRangePtr _fileRange) {
+	static PrerunTo* create(PrerunExpression* _value, Type* _targetType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunTo), _value, _targetType, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx);
+	ir::PrerunValue* emit(EmitCtx* ctx);
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_TO_CONVERSION; }
+	NodeType nodeType() const final { return NodeType::PRERUN_TO_CONVERSION; }
 };
 
 } // namespace qat::ast

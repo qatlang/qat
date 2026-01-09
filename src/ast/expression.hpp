@@ -8,23 +8,23 @@
 namespace qat::ast {
 
 #define LOCAL_DECL_COMPATIBLE_FUNCTIONS                                                                                \
-	useit bool                 isLocalDeclCompatible() const final { return true; }                                    \
-	useit LocalDeclCompatible* asLocalDeclCompatible() final { return (LocalDeclCompatible*)this; }
+	bool                 isLocalDeclCompatible() const final { return true; }                                          \
+	LocalDeclCompatible* asLocalDeclCompatible() final { return (LocalDeclCompatible*)this; }
 
 #define IN_PLACE_CREATABLE_FUNCTIONS                                                                                   \
-	useit bool              isInPlaceCreatable() const final { return true; }                                          \
-	useit InPlaceCreatable* asInPlaceCreatable() final { return (InPlaceCreatable*)this; }
+	bool              isInPlaceCreatable() const final { return true; }                                                \
+	InPlaceCreatable* asInPlaceCreatable() final { return (InPlaceCreatable*)this; }
 
 #define TYPE_INFERRABLE_FUNCTIONS                                                                                      \
-	useit bool            has_type_inferrance() const final { return true; }                                           \
-	useit TypeInferrable* as_type_inferrable() final { return (TypeInferrable*)this; }
+	bool            has_type_inferrance() const final { return true; }                                                 \
+	TypeInferrable* as_type_inferrable() final { return (TypeInferrable*)this; }
 
 class LocalDeclCompatible {
   public:
 	Maybe<Identifier> irName;
 	bool              isVar = false;
 
-	useit bool isLocalDecl() const { return irName.has_value(); }
+	bool isLocalDecl() const { return irName.has_value(); }
 };
 
 class InPlaceCreatable {
@@ -32,13 +32,13 @@ class InPlaceCreatable {
 	ir::Value* createIn           = nullptr;
 	bool       ignoreCreateInType = false;
 
-	useit bool type_check_create_in(ir::Type* _type) const {
+	bool type_check_create_in(ir::Type* _type) const {
 		return ignoreCreateInType ||
 		       (createIn->is_ghost_ref() ? createIn->get_ir_type()->is_same(_type)
 		                                 : createIn->get_ir_type()->as_ref()->get_subtype()->is_same(_type));
 	}
 
-	useit ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type, FileRangePtr rangeVal) {
+	ir::Value* get_creation_result(ir::Ctx* irCtx, ir::Type* type, FileRangePtr rangeVal) {
 		auto created = createIn;
 		unsetCreateIn();
 		if (created->is_ref()) {
@@ -53,7 +53,7 @@ class InPlaceCreatable {
 		}
 	}
 
-	useit bool canCreateIn() const { return createIn != nullptr; }
+	bool canCreateIn() const { return createIn != nullptr; }
 
 	void setCreateIn(ir::Value* _createIn) { createIn = _createIn; }
 
@@ -72,7 +72,7 @@ class TypeInferrable {
   public:
 	ir::Type* inferredType = nullptr;
 
-	useit bool is_type_inferred() const { return inferredType != nullptr; }
+	bool is_type_inferred() const { return inferredType != nullptr; }
 
 	void check_inferred_type(ir::Type* provided, EmitCtx* ctx, FileRangePtr fileRange) const {
 		if (inferredType && not inferredType->is_same(provided)) {
@@ -93,24 +93,24 @@ class Expression : public Node {
 
 	~Expression() override = default;
 
-	useit virtual bool isLocalDeclCompatible() const { return false; }
+	virtual bool isLocalDeclCompatible() const { return false; }
 
-	useit virtual LocalDeclCompatible* asLocalDeclCompatible() { return nullptr; }
+	virtual LocalDeclCompatible* asLocalDeclCompatible() { return nullptr; }
 
-	useit virtual bool isInPlaceCreatable() const { return false; }
+	virtual bool isInPlaceCreatable() const { return false; }
 
-	useit virtual InPlaceCreatable* asInPlaceCreatable() { return nullptr; }
+	virtual InPlaceCreatable* asInPlaceCreatable() { return nullptr; }
 
-	useit virtual bool has_type_inferrance() const { return false; }
+	virtual bool has_type_inferrance() const { return false; }
 
-	useit virtual TypeInferrable* as_type_inferrable() { return nullptr; }
+	virtual TypeInferrable* as_type_inferrable() { return nullptr; }
 
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
 	                                 EmitCtx* ctx) = 0;
 
-	useit virtual ir::Value* emit(EmitCtx* emitCtx) = 0;
+	virtual ir::Value* emit(EmitCtx* emitCtx) = 0;
 
-	useit NodeType nodeType() const override = 0;
+	NodeType nodeType() const override = 0;
 };
 
 class PrerunExpression : public Expression {
@@ -119,11 +119,11 @@ class PrerunExpression : public Expression {
 
 	~PrerunExpression() override = default;
 
-	useit ir::PrerunValue* emit(EmitCtx* emitCtx) override = 0;
+	ir::PrerunValue* emit(EmitCtx* emitCtx) override = 0;
 
-	useit virtual NodeType nodeType() const = 0;
+	virtual NodeType nodeType() const = 0;
 
-	useit virtual String to_string() const = 0;
+	virtual String to_string() const = 0;
 };
 
 } // namespace qat::ast

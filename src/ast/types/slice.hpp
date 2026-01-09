@@ -18,8 +18,7 @@ class SliceType final : public Type {
 	SliceType(bool _isVar, Type* _subType, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Type(_fileRange), isVar(_isVar), subType(_subType), addressSpace(std::move(_addressSpace)) {}
 
-	useit static SliceType* create(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace,
-	                               FileRangePtr fileRange) {
+	static SliceType* create(bool isVar, Type* subType, Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(SliceType), isVar, subType, std::move(addressSpace), fileRange);
 	}
 
@@ -30,7 +29,7 @@ class SliceType final : public Type {
 		}
 	}
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const {
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const {
 		if (addressSpace.has_value() && addressSpace.value().value) {
 			return None;
 		}
@@ -39,11 +38,11 @@ class SliceType final : public Type {
 		                             : ctx->irCtx->dataLayout.getProgramAddressSpace()));
 	}
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const { return AstTypeKind::SLICE; }
+	AstTypeKind type_kind() const { return AstTypeKind::SLICE; }
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

@@ -14,7 +14,7 @@ class Cast final : public Expression {
 	Cast(Expression* _mainExp, Type* _dest, FileRangePtr _fileRange)
 	    : Expression(_fileRange), instance(_mainExp), destination(_dest) {}
 
-	useit static Cast* create(Expression* mainExp, Type* value, FileRangePtr fileRange) {
+	static Cast* create(Expression* mainExp, Type* value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Cast), mainExp, value, fileRange);
 	}
 
@@ -22,9 +22,9 @@ class Cast final : public Expression {
 		UPDATE_DEPS(destination);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::CAST; }
+	NodeType nodeType() const final { return NodeType::CAST; }
 };
 
 } // namespace qat::ast

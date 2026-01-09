@@ -23,9 +23,9 @@ class DefinePrerunFunction : public IsEntity {
 	      arguments(std::move(_arguments)), sentences(std::move(_sentences)), visibSpec(_visibSpec),
 	      defineChecker(_defineChecker) {}
 
-	useit static DefinePrerunFunction* create(Identifier name, Type* returnType, Vec<Argument*> arguments,
-	                                          PrerunExpression* defineChecker, Vec<PrerunSentence*> sentences,
-	                                          Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
+	static DefinePrerunFunction* create(Identifier name, Type* returnType, Vec<Argument*> arguments,
+	                                    PrerunExpression* defineChecker, Vec<PrerunSentence*> sentences,
+	                                    Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefinePrerunFunction), std::move(name), returnType, std::move(arguments),
 		                         defineChecker, std::move(sentences), visibSpec, std::move(fileRange));
 	}
@@ -38,7 +38,7 @@ class DefinePrerunFunction : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::DEFINE_PRERUN_FUNCTION; }
+	NodeType nodeType() const final { return NodeType::DEFINE_PRERUN_FUNCTION; }
 };
 
 } // namespace qat::ast

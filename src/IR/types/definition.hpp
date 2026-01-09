@@ -27,15 +27,15 @@ struct TypeDefParent {
 	TypeDefParentKind kind;
 	void*             data;
 
-	useit static TypeDefParent from_skill(Skill* skill) {
+	static TypeDefParent from_skill(Skill* skill) {
 		return TypeDefParent{.kind = TypeDefParentKind::SKILL, .data = skill};
 	}
 
-	useit static TypeDefParent from_method_parent(MethodParent* parent) {
+	static TypeDefParent from_method_parent(MethodParent* parent) {
 		return TypeDefParent{.kind = TypeDefParentKind::METHOD_PARENT, .data = parent};
 	}
 
-	useit String get_full_name() const {
+	String get_full_name() const {
 		if (kind == TypeDefParentKind::SKILL) {
 			return ((ir::Skill*)data)->get_full_name();
 		} else {
@@ -48,13 +48,13 @@ struct TypeDefParent {
 		}
 	}
 
-	useit bool is_skill() const { return kind == TypeDefParentKind::SKILL; }
+	bool is_skill() const { return kind == TypeDefParentKind::SKILL; }
 
-	useit bool is_method_parent() const { return kind == TypeDefParentKind::METHOD_PARENT; }
+	bool is_method_parent() const { return kind == TypeDefParentKind::METHOD_PARENT; }
 
-	useit Skill* as_skill() const { return (Skill*)data; }
+	Skill* as_skill() const { return (Skill*)data; }
 
-	useit MethodParent* as_method_parent() const { return (MethodParent*)data; }
+	MethodParent* as_method_parent() const { return (MethodParent*)data; }
 };
 
 class DefinitionType : public ExpandedType {
@@ -65,51 +65,51 @@ class DefinitionType : public ExpandedType {
 	DefinitionType(Identifier _name, Type* _actualType, Vec<GenericArgument*> _generics,
 	               Maybe<TypeDefParent> _methodParent, Mod* mod, const VisibilityInfo& _visibInfo);
 
-	useit static DefinitionType* create(Identifier name, Type* actualType, Vec<GenericArgument*> generics,
-	                                    Maybe<TypeDefParent> methodParent, Mod* mod, const VisibilityInfo& visibInfo) {
+	static DefinitionType* create(Identifier name, Type* actualType, Vec<GenericArgument*> generics,
+	                              Maybe<TypeDefParent> methodParent, Mod* mod, const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(DefinitionType), std::move(name), actualType, std::move(generics),
 		                         methodParent, mod, visibInfo);
 	}
 
 	void setSubType(Type* _subType);
 
-	useit bool has_custom_parent() const { return parentEntity.has_value(); }
+	bool has_custom_parent() const { return parentEntity.has_value(); }
 
-	useit TypeDefParent const& get_custom_parent() const { return parentEntity.value(); }
+	TypeDefParent const& get_custom_parent() const { return parentEntity.value(); }
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit Mod* get_module();
+	Mod* get_module();
 
-	useit Type* get_subtype();
+	Type* get_subtype();
 
-	useit Type* get_non_definition_subtype();
+	Type* get_non_definition_subtype();
 
-	useit TypeKind type_kind() const final;
+	TypeKind type_kind() const final;
 
-	useit LinkNames get_link_names() const final;
+	LinkNames get_link_names() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit bool is_expanded() const final;
+	bool is_expanded() const final;
 
-	useit bool is_type_sized() const final;
+	bool is_type_sized() const final;
 
-	useit bool has_simple_copy() const final;
+	bool has_simple_copy() const final;
 
-	useit bool has_simple_move() const final;
+	bool has_simple_move() const final;
 
-	useit bool is_copy_constructible() const final;
+	bool is_copy_constructible() const final;
 
-	useit bool is_copy_assignable() const final;
+	bool is_copy_assignable() const final;
 
-	useit bool is_move_constructible() const final;
+	bool is_move_constructible() const final;
 
-	useit bool is_move_assignable() const final;
+	bool is_move_assignable() const final;
 
-	useit bool is_destructible() const final;
+	bool is_destructible() const final;
 
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 
@@ -121,15 +121,15 @@ class DefinitionType : public ExpandedType {
 
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-	useit bool can_be_prerun() const final { return subType->can_be_prerun(); }
+	bool can_be_prerun() const final { return subType->can_be_prerun(); }
 
-	useit bool can_be_prerun_generic() const final { return subType->can_be_prerun_generic(); }
+	bool can_be_prerun_generic() const final { return subType->can_be_prerun_generic(); }
 
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* constant) const final;
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* constant) const final;
 
-	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-	useit VisibilityInfo get_visibility() const;
+	VisibilityInfo get_visibility() const;
 };
 
 class GenericDefinitionType : public Uniq, public Mentionable {
@@ -149,10 +149,10 @@ class GenericDefinitionType : public Uniq, public Mentionable {
 	                      Maybe<ast::PrerunExpression*> constraint, ast::TypeDefinition* defineStructType, Mod* parent,
 	                      const VisibilityInfo& visibInfo);
 
-	useit static GenericDefinitionType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                                           Maybe<ast::PrerunExpression*> constraint,
-	                                           ast::TypeDefinition* defineStructType, Mod* parent,
-	                                           const VisibilityInfo& visibInfo) {
+	static GenericDefinitionType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
+	                                     Maybe<ast::PrerunExpression*> constraint,
+	                                     ast::TypeDefinition* defineStructType, Mod* parent,
+	                                     const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericDefinitionType), std::move(name), std::move(generics), constraint,
 		                         defineStructType, parent, visibInfo);
 	}
@@ -163,21 +163,21 @@ class GenericDefinitionType : public Uniq, public Mentionable {
 		}
 	}
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit usize get_generic_count() const;
+	usize get_generic_count() const;
 
-	useit bool all_generics_have_defaults() const;
+	bool all_generics_have_defaults() const;
 
-	useit usize get_variant_count() const;
+	usize get_variant_count() const;
 
-	useit Mod* get_module() const;
+	Mod* get_module() const;
 
-	useit DefinitionType* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
+	DefinitionType* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
-	useit ast::GenericAbstractType* get_generic_at(usize index) const;
+	ast::GenericAbstractType* get_generic_at(usize index) const;
 
-	useit VisibilityInfo const& get_visibility() const;
+	VisibilityInfo const& get_visibility() const;
 };
 
 } // namespace qat::ir

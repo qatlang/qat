@@ -19,8 +19,8 @@ class LoopIn : public Sentence {
 	    : Sentence(std::move(_fileRange)), candidate(_candidate), sentences(std::move(_sentences)),
 	      itemName(std::move(_itemName)), indexName(std::move(_indexName)) {}
 
-	useit static LoopIn* create(Expression* candidate, Vec<Sentence*> sentences, Identifier itemName,
-	                            Maybe<Identifier> indexName, FileRangePtr fileRange) {
+	static LoopIn* create(Expression* candidate, Vec<Sentence*> sentences, Identifier itemName,
+	                      Maybe<Identifier> indexName, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(LoopIn), candidate, std::move(sentences), std::move(itemName),
 		                         std::move(indexName), std::move(fileRange));
 	}
@@ -32,9 +32,9 @@ class LoopIn : public Sentence {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const { return NodeType::LOOP_OVER; }
+	NodeType nodeType() const { return NodeType::LOOP_OVER; }
 };
 
 } // namespace qat::ast

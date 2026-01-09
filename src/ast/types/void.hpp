@@ -9,15 +9,13 @@ class VoidType final : public Type {
   public:
 	explicit VoidType(FileRangePtr _fileRange) : Type(_fileRange) {}
 
-	useit static VoidType* create(FileRangePtr _fileRange) {
-		return std::construct_at(OwnNormal(VoidType), _fileRange);
-	}
+	static VoidType* create(FileRangePtr _fileRange) { return std::construct_at(OwnNormal(VoidType), _fileRange); }
 
-	useit ir::Type* emit(EmitCtx* ctx);
+	ir::Type* emit(EmitCtx* ctx);
 
-	useit AstTypeKind type_kind() const;
+	AstTypeKind type_kind() const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

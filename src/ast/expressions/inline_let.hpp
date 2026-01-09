@@ -12,15 +12,15 @@ class InlineLet final : public Expression {
 	InlineLet(Expression* _expression, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), expression(_expression) {}
 
-	useit static InlineLet* create(Expression* expr, FileRangePtr fileRange) {
+	static InlineLet* create(Expression* expr, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(InlineLet), expr, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::INLINE_LET; }
+	NodeType nodeType() const final { return NodeType::INLINE_LET; }
 };
 
 } // namespace qat::ast

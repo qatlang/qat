@@ -30,44 +30,44 @@ struct PtrOwner {
 	ast::Type*   candidate = nullptr;
 	FileRangePtr range;
 
-	useit static PtrOwner of_own(FileRangePtr range) {
+	static PtrOwner of_own(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::OWN, .candidate = nullptr, .range = range};
 	}
 
-	useit static PtrOwner of_heap(FileRangePtr range) {
+	static PtrOwner of_heap(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::HEAP, .candidate = nullptr, .range = range};
 	}
 
-	useit static PtrOwner of_static(FileRangePtr range) {
+	static PtrOwner of_static(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::STATIC, .candidate = nullptr, .range = range};
 	}
 
-	useit static PtrOwner of_any_region(FileRangePtr range) {
+	static PtrOwner of_any_region(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::REGION_TYPE, .candidate = nullptr, .range = range};
 	}
 
-	useit static PtrOwner of_region_type(ast::Type* region, FileRangePtr range) {
+	static PtrOwner of_region_type(ast::Type* region, FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::REGION_TYPE, .candidate = region, .range = range};
 	}
 
-	useit static PtrOwner of_self_instance(FileRangePtr range) {
+	static PtrOwner of_self_instance(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::SELF_INSTANCE, .candidate = nullptr, .range = range};
 	}
 
-	useit static PtrOwner of_none(FileRangePtr range) {
+	static PtrOwner of_none(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::NONE, .candidate = nullptr, .range = range};
 	}
 
-	useit static PtrOwner of_prerun(FileRangePtr range) {
+	static PtrOwner of_prerun(FileRangePtr range) {
 		return PtrOwner{.kind = OwnerKind::PRERUN, .candidate = nullptr, .range = range};
 	}
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
-useit ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange);
+ir::PtrOwner get_ptr_owner(EmitCtx* ctx, PtrOwner owner, FileRangePtr fileRange);
 
-useit String ptr_owner_to_string(OwnerKind ownType);
+String ptr_owner_to_string(OwnerKind ownType);
 
 } // namespace qat::ast
 

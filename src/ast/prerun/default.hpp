@@ -13,7 +13,7 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
   public:
 	PrerunDefault(Maybe<ast::Type*> _type, FileRangePtr range) : PrerunExpression(range), theType(_type) {}
 
-	useit static PrerunDefault* create(Maybe<ast::Type*> _type, FileRangePtr _range) {
+	static PrerunDefault* create(Maybe<ast::Type*> _type, FileRangePtr _range) {
 		return std::construct_at(OwnNormal(PrerunDefault), _type, _range);
 	}
 
@@ -27,11 +27,11 @@ class PrerunDefault final : public PrerunExpression, public TypeInferrable {
 		}
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_DEFAULT; }
+	NodeType nodeType() const final { return NodeType::PRERUN_DEFAULT; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

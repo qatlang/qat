@@ -31,18 +31,18 @@ class GenericToFill {
 
   public:
 	GenericToFill(void* _data, GenericKind _kind, FileRangePtr _range);
-	useit static GenericToFill* GetPrerun(ir::PrerunValue* constVal, FileRangePtr range);
-	useit static GenericToFill* GetType(ir::Type* type, FileRangePtr range);
+	static GenericToFill* GetPrerun(ir::PrerunValue* constVal, FileRangePtr range);
+	static GenericToFill* GetType(ir::Type* type, FileRangePtr range);
 
-	useit bool is_prerun() const;
-	useit ir::PrerunValue* as_prerun() const;
+	bool             is_prerun() const;
+	ir::PrerunValue* as_prerun() const;
 
-	useit bool is_type() const;
-	useit ir::Type* as_type() const;
+	bool      is_type() const;
+	ir::Type* as_type() const;
 
-	useit FileRangePtr get_range() const;
+	FileRangePtr get_range() const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 class GenericArgument {
@@ -54,21 +54,21 @@ class GenericArgument {
 	GenericArgument(Identifier name, GenericKind kind, FileRangePtr range);
 
   public:
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit FileRangePtr get_range() const;
+	FileRangePtr get_range() const;
 
-	useit bool is_same(const String& name) const;
+	bool is_same(const String& name) const;
 
-	useit bool          is_typed() const;
-	useit TypedGeneric* as_typed() const;
+	bool          is_typed() const;
+	TypedGeneric* as_typed() const;
 
-	useit bool           is_prerun() const;
-	useit PrerunGeneric* as_prerun() const;
+	bool           is_prerun() const;
+	PrerunGeneric* as_prerun() const;
 
-	useit bool is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const;
+	bool is_equal_to(ir::Ctx* irCtx, GenericToFill* fill) const;
 
-	useit String to_string() const;
+	String to_string() const;
 
 	virtual ~GenericArgument() = default;
 };
@@ -78,9 +78,9 @@ class TypedGeneric : public GenericArgument {
 
   public:
 	TypedGeneric(Identifier name, ir::Type* type, FileRangePtr range);
-	useit static TypedGeneric* get(Identifier name, ir::Type* type, FileRangePtr range);
+	static TypedGeneric* get(Identifier name, ir::Type* type, FileRangePtr range);
 
-	useit ir::Type* get_type() const;
+	ir::Type* get_type() const;
 };
 
 class PrerunGeneric : public GenericArgument {
@@ -88,11 +88,11 @@ class PrerunGeneric : public GenericArgument {
 
   public:
 	PrerunGeneric(Identifier name, ir::PrerunValue* constant, FileRangePtr range);
-	useit static PrerunGeneric* get(Identifier name, ir::PrerunValue* type, FileRangePtr range);
+	static PrerunGeneric* get(Identifier name, ir::PrerunValue* type, FileRangePtr range);
 
-	useit ir::PrerunValue* get_expression() const;
+	ir::PrerunValue* get_expression() const;
 
-	useit ir::Type* get_type() const;
+	ir::Type* get_type() const;
 };
 
 } // namespace qat::ir

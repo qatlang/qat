@@ -10,7 +10,7 @@ ir::PrerunValue* ErrorType::get_prerun_default_value(ir::Ctx*) {
 	return ir::PrerunValue::get(llvm::Constant::getNullValue(llvmType), this);
 }
 
-useit Maybe<String> ErrorType::to_prerun_generic_string(ir::PrerunValue* val) const {
+Maybe<String> ErrorType::to_prerun_generic_string(ir::PrerunValue* val) const {
 	if (has_simple_move() && val->get_llvm_constant()->isNullValue()) {
 		return "error::none";
 	} else {
@@ -33,7 +33,7 @@ void ErrorType::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir:
 	}
 }
 
-useit Maybe<bool> ErrorType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
+Maybe<bool> ErrorType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const {
 	return subType->equality_of(irCtx, ir::PrerunValue::get(first->get_llvm_constant(), subType),
 	                            ir::PrerunValue::get(second->get_llvm_constant(), subType));
 }

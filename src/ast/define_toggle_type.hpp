@@ -36,16 +36,16 @@ class DefineToggleType : public IsEntity {
 	      variants(std::move(_variants)), defineChecker(_defineChecker), genericConstraint(_genericConstraint),
 	      metaInfo(std::move(_metaInfo)), visibSpec(std::move(_visibSpec)) {}
 
-	useit static DefineToggleType* create(Identifier name, Vec<GenericAbstractType*> generics,
-	                                      Vec<Pair<Vec<Identifier>, Type*>> variants, PrerunExpression* defineChecker,
-	                                      PrerunExpression* genericConstraint, Maybe<MetaInfo> metaInfo,
-	                                      Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
+	static DefineToggleType* create(Identifier name, Vec<GenericAbstractType*> generics,
+	                                Vec<Pair<Vec<Identifier>, Type*>> variants, PrerunExpression* defineChecker,
+	                                PrerunExpression* genericConstraint, Maybe<MetaInfo> metaInfo,
+	                                Maybe<VisibilitySpec> visibSpec, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DefineToggleType), std::move(name), std::move(generics), std::move(variants),
 		                         defineChecker, genericConstraint, std::move(metaInfo), std::move(visibSpec),
 		                         std::move(fileRange));
 	}
 
-	useit bool is_generic() const { return not generics.empty(); }
+	bool is_generic() const { return not generics.empty(); }
 
 	void create_opaque(Vec<ir::GenericToFill*> const& genericsToFill, ir::Mod* mod, ir::Ctx* irCtx);
 
@@ -55,7 +55,7 @@ class DefineToggleType : public IsEntity {
 
 	void unset_opaque() { opaquedTypes.pop_back(); }
 
-	useit ir::ToggleType* create_type(Vec<ir::GenericToFill*> const& genericsToFill, ir::Mod* mod, ir::Ctx* irCtx);
+	ir::ToggleType* create_type(Vec<ir::GenericToFill*> const& genericsToFill, ir::Mod* mod, ir::Ctx* irCtx);
 
 	void create_entity(ir::Mod* parent, ir::Ctx* irCtx) final;
 
@@ -63,7 +63,7 @@ class DefineToggleType : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::DEFINE_TOGGLE_TYPE; }
+	NodeType nodeType() const final { return NodeType::DEFINE_TOGGLE_TYPE; }
 };
 
 } // namespace qat::ast

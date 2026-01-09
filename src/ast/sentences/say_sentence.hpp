@@ -17,7 +17,7 @@ class SayLike final : public Sentence {
 	SayLike(SayType _sayTy, Vec<Expression*> _expressions, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), expressions(_expressions), sayType(_sayTy) {}
 
-	useit static SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRangePtr _fileRange) {
+	static SayLike* create(SayType _sayTy, Vec<Expression*> _expressions, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(SayLike), _sayTy, _expressions, _fileRange);
 	}
 
@@ -27,9 +27,9 @@ class SayLike final : public Sentence {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::SAY_LIKE; }
+	NodeType nodeType() const final { return NodeType::SAY_LIKE; }
 };
 
 } // namespace qat::ast

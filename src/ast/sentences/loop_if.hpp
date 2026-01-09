@@ -18,8 +18,8 @@ class LoopIf final : public Sentence {
 	       FileRangePtr _fileRange)
 	    : Sentence(_fileRange), condition(_condition), sentences(_sentences), tag(_tag), isDoAndLoop(_isDoAndLoop) {}
 
-	useit static LoopIf* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences,
-	                            Maybe<Identifier> _tag, FileRangePtr _fileRange) {
+	static LoopIf* create(bool _isDoAndLoop, Expression* _condition, Vec<Sentence*> _sentences, Maybe<Identifier> _tag,
+	                      FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(LoopIf), _isDoAndLoop, _condition, _sentences, _tag, _fileRange);
 	}
 
@@ -30,9 +30,9 @@ class LoopIf final : public Sentence {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::LOOP_WHILE; }
+	NodeType nodeType() const final { return NodeType::LOOP_WHILE; }
 };
 
 } // namespace qat::ast

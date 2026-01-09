@@ -19,7 +19,7 @@ class ErrorType final : public Type {
 		allErrorTypes.push_back(this);
 	}
 
-	useit static ErrorType* get(bool hasNoneVariant, Type* subType) {
+	static ErrorType* get(bool hasNoneVariant, Type* subType) {
 		for (auto typ : allErrorTypes) {
 			if ((typ->hasNoneVariant == hasNoneVariant) && typ->get_subtype()->is_same(subType)) {
 				return typ;
@@ -28,39 +28,39 @@ class ErrorType final : public Type {
 		return std::construct_at(OwnNormal(ErrorType), hasNoneVariant, subType);
 	}
 
-	useit Type* get_subtype() const { return subType; }
+	Type* get_subtype() const { return subType; }
 
-	useit bool has_none_variant() const { return hasNoneVariant; }
+	bool has_none_variant() const { return hasNoneVariant; }
 
-	useit bool can_be_prerun() const final { return subType->can_be_prerun(); }
+	bool can_be_prerun() const final { return subType->can_be_prerun(); }
 
-	useit bool has_prerun_default_value() const final { return has_simple_move(); }
+	bool has_prerun_default_value() const final { return has_simple_move(); }
 
-	useit bool is_default_constructible() const final { return hasNoneVariant or subType->is_default_constructible(); }
+	bool is_default_constructible() const final { return hasNoneVariant or subType->is_default_constructible(); }
 
-	useit bool is_copy_constructible() const final { return subType->is_copy_constructible(); }
+	bool is_copy_constructible() const final { return subType->is_copy_constructible(); }
 
-	useit bool is_copy_assignable() const { return subType->is_copy_assignable(); }
+	bool is_copy_assignable() const { return subType->is_copy_assignable(); }
 
-	useit bool is_move_constructible() const { return subType->is_move_constructible(); }
+	bool is_move_constructible() const { return subType->is_move_constructible(); }
 
-	useit bool is_move_assignable() const { return subType->is_move_assignable(); }
+	bool is_move_assignable() const { return subType->is_move_assignable(); }
 
-	useit bool is_destructible() const { return subType->is_destructible(); }
+	bool is_destructible() const { return subType->is_destructible(); }
 
-	useit ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
+	ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 
-	useit bool has_simple_copy() const final { return subType->has_simple_copy(); }
+	bool has_simple_copy() const final { return subType->has_simple_copy(); }
 
-	useit bool has_simple_move() const final { return subType->has_simple_move(); }
+	bool has_simple_move() const final { return subType->has_simple_move(); }
 
-	useit bool can_be_prerun_generic() const { return subType->can_be_prerun_generic(); }
+	bool can_be_prerun_generic() const { return subType->can_be_prerun_generic(); }
 
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-	useit bool is_type_sized() const final { return true; }
+	bool is_type_sized() const final { return true; }
 
-	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
 	void default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
@@ -84,11 +84,9 @@ class ErrorType final : public Type {
 		return subType->destroy_value(irCtx, instance, fun);
 	}
 
-	useit TypeKind type_kind() const final { return TypeKind::ERROR; }
+	TypeKind type_kind() const final { return TypeKind::ERROR; }
 
-	useit String to_string() const final {
-		return (hasNoneVariant ? "error:[" : "error![") + subType->to_string() + "]";
-	}
+	String to_string() const final { return (hasNoneVariant ? "error:[" : "error![") + subType->to_string() + "]"; }
 };
 
 } // namespace qat::ir

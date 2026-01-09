@@ -12,7 +12,7 @@ class Await final : public Expression {
   public:
 	Await(Expression* _exp, FileRangePtr _fileRange) : Expression(_fileRange), exp(_exp) {}
 
-	useit static Await* create(Expression* exp, FileRangePtr fileRange) {
+	static Await* create(Expression* exp, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Await), exp, fileRange);
 	}
 
@@ -20,9 +20,9 @@ class Await final : public Expression {
 		UPDATE_DEPS(exp);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::AWAIT; }
+	NodeType nodeType() const final { return NodeType::AWAIT; }
 };
 
 } // namespace qat::ast

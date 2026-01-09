@@ -30,25 +30,25 @@ class Region : public Type, public Mentionable {
 	static Region* get(Identifier name, usize blockSize, Mod* parent, const VisibilityInfo& visibInfo, ir::Ctx* irCtx,
 	                   FileRangePtr fileRange);
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit usize get_block_size() const { return blockSize; }
+	usize get_block_size() const { return blockSize; }
 
-	useit ir::Mod* get_module() const;
+	ir::Mod* get_module() const;
 
-	useit ir::Value* ownData(ir::Type* _type, Maybe<llvm::Value*> count, ir::Ctx* irCtx);
+	ir::Value* ownData(ir::Type* _type, Maybe<llvm::Value*> count, ir::Ctx* irCtx);
 
 	void destroyObjects(ir::Ctx* irCtx);
 
-	useit bool is_accessible(const AccessInfo& reqInfo) const;
+	bool is_accessible(const AccessInfo& reqInfo) const;
 
-	useit const VisibilityInfo& get_visibility() const;
+	const VisibilityInfo& get_visibility() const;
 
-	useit TypeKind type_kind() const final { return TypeKind::REGION; }
+	TypeKind type_kind() const final { return TypeKind::REGION; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ir

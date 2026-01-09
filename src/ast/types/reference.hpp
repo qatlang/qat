@@ -17,21 +17,20 @@ class RefType final : public Type {
 	    : Type(std::move(_fileRange)), type(_type), isSubtypeVar(_isSubtypeVar),
 	      addressSpace(std::move(_addressSpace)) {}
 
-	useit static RefType* create(Type* type, bool isSubtypeVar, Maybe<AddressSpace> addressSpace,
-	                             FileRangePtr fileRange) {
+	static RefType* create(Type* type, bool isSubtypeVar, Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(RefType), type, isSubtypeVar, std::move(addressSpace), std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final;
+	AstTypeKind type_kind() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

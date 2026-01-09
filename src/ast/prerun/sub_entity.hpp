@@ -18,19 +18,19 @@ class PrerunSubEntity final : public PrerunExpression {
 	    : PrerunExpression(std::move(_fileRange)), skill(std::move(_skill)), doneSkill(std::move(_doneSkill)),
 	      names(std::move(_names)), parentType(_parentType) {}
 
-	useit static PrerunSubEntity* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill,
-	                                     Vec<Identifier> names, TypeLike parentType, FileRangePtr fileRange) {
+	static PrerunSubEntity* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill, Vec<Identifier> names,
+	                               TypeLike parentType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunSubEntity), std::move(skill), std::move(doneSkill), std::move(names),
 		                         parentType, std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::PrerunValue* emit(EmitCtx* emitCtx) final;
+	ir::PrerunValue* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_SUB_ENTITY; }
+	NodeType nodeType() const final { return NodeType::PRERUN_SUB_ENTITY; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

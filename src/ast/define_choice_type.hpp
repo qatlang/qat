@@ -25,10 +25,9 @@ class DefineChoiceType : public IsEntity {
 	    : IsEntity(_fileRange), name(_name), fields(_fields), visibSpec(_visibSpec), defaultVal(_defaultVal),
 	      providedIntegerTy(_providedTy) {}
 
-	useit static DefineChoiceType* create(Identifier                                                _name,
-	                                      Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> _fields,
-	                                      Maybe<ast::Type*> _providedTy, Maybe<usize> _defaultVal,
-	                                      Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
+	static DefineChoiceType* create(Identifier _name, Vec<Pair<Vec<Identifier>, Maybe<ast::PrerunExpression*>>> _fields,
+	                                Maybe<ast::Type*> _providedTy, Maybe<usize> _defaultVal,
+	                                Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(DefineChoiceType), _name, _fields, _providedTy, _defaultVal, _visibSpec,
 		                         _fileRange);
 	}
@@ -39,7 +38,7 @@ class DefineChoiceType : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::DEFINE_CHOICE_TYPE; }
+	NodeType nodeType() const final { return NodeType::DEFINE_CHOICE_TYPE; }
 };
 
 } // namespace qat::ast

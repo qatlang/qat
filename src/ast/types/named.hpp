@@ -16,24 +16,24 @@ class NamedType final : public Type {
 	NamedType(u32 _relative, Vec<Identifier> _names, FileRangePtr _fileRange)
 	    : Type(_fileRange), relative(_relative), names(_names) {}
 
-	useit static NamedType* create(u32 _relative, Vec<Identifier> _names, FileRangePtr _fileRange) {
+	static NamedType* create(u32 _relative, Vec<Identifier> _names, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(NamedType), _relative, _names, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx*) const final { return typeSize; }
+	Maybe<usize> get_type_bitsize(EmitCtx*) const final { return typeSize; }
 
-	useit String get_name() const;
+	String get_name() const;
 
-	useit u32 getRelative() const;
+	u32 getRelative() const;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final;
+	AstTypeKind type_kind() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

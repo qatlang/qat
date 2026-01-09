@@ -13,15 +13,15 @@ class IgnoreValue : public Sentence {
   public:
 	IgnoreValue(Expression* _candidate, FileRangePtr _fileRange) : Sentence(_fileRange), candidate(_candidate) {}
 
-	useit static IgnoreValue* create(Expression* candidate, FileRangePtr fileRange) {
+	static IgnoreValue* create(Expression* candidate, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(IgnoreValue), candidate, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
 
-	useit ir::Value* emit(EmitCtx* ctx);
+	ir::Value* emit(EmitCtx* ctx);
 
-	useit NodeType nodeType() const final { return NodeType::IGNORE_VALUE; }
+	NodeType nodeType() const final { return NodeType::IGNORE_VALUE; }
 };
 
 } // namespace qat::ast

@@ -28,8 +28,8 @@ class StructField final : public Uniq, public Mentionable {
 	    : name(std::move(_name)), type(_type), defaultValue(_defVal), visibility(_visibility),
 	      variability(_variability) {}
 
-	useit static StructField* create(Identifier name, Type* type, bool variability, Maybe<ast::Expression*> defaultVal,
-	                                 const VisibilityInfo& visibility) {
+	static StructField* create(Identifier name, Type* type, bool variability, Maybe<ast::Expression*> defaultVal,
+	                           const VisibilityInfo& visibility) {
 		return std::construct_at(OwnNormal(StructField), name, type, variability, defaultVal, visibility);
 	}
 
@@ -56,55 +56,54 @@ class StructType final : public ExpandedType {
 	           Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
 	           Maybe<MetaInfo> metaInfo, bool isPacked);
 
-	useit static StructType* create(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics,
-	                                ir::OpaqueType* _opaqued, Vec<StructField*> _members,
-	                                const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
-	                                Maybe<MetaInfo> metaInfo, bool isPacked) {
+	static StructType* create(Mod* mod, Identifier _name, Vec<GenericArgument*> _generics, ir::OpaqueType* _opaqued,
+	                          Vec<StructField*> _members, const VisibilityInfo& _visibility, llvm::LLVMContext& llctx,
+	                          Maybe<MetaInfo> metaInfo, bool isPacked) {
 		return std::construct_at(OwnNormal(StructType), mod, std::move(_name), std::move(_generics), _opaqued,
 		                         std::move(_members), _visibility, llctx, std::move(metaInfo), isPacked);
 	}
 
 	~StructType() final;
 
-	useit Maybe<usize> get_index_of(const String& member) const;
+	Maybe<usize> get_index_of(const String& member) const;
 
-	useit bool has_field_with_name(const String& member) const;
+	bool has_field_with_name(const String& member) const;
 
-	useit StructField* get_field_with_name(const String& name) const;
+	StructField* get_field_with_name(const String& name) const;
 
-	useit u64 get_field_count() const;
+	u64 get_field_count() const;
 
-	useit StructField* get_field_at(u64 index);
+	StructField* get_field_at(u64 index);
 
-	useit usize get_field_index(String const& name) const;
+	usize get_field_index(String const& name) const;
 
-	useit String get_field_name_at(u64 index) const;
+	String get_field_name_at(u64 index) const;
 
-	useit Type* get_type_of_field(const String& member) const;
+	Type* get_type_of_field(const String& member) const;
 
-	useit Vec<StructField*>& get_members();
+	Vec<StructField*>& get_members();
 
-	useit bool has_static_field(String const& name) const;
+	bool has_static_field(String const& name) const;
 
-	useit StaticMember* get_static_field(String const& name) const;
+	StaticMember* get_static_field(String const& name) const;
 
-	useit bool is_type_sized() const final;
+	bool is_type_sized() const final;
 
-	useit bool has_simple_copy() const final;
+	bool has_simple_copy() const final;
 
-	useit bool has_simple_move() const final;
+	bool has_simple_move() const final;
 
-	useit bool is_copy_constructible() const final;
+	bool is_copy_constructible() const final;
 
-	useit bool is_copy_assignable() const final;
+	bool is_copy_assignable() const final;
 
-	useit bool is_move_constructible() const final;
+	bool is_move_constructible() const final;
 
-	useit bool is_move_assignable() const final;
+	bool is_move_assignable() const final;
 
-	useit bool is_destructible() const final;
+	bool is_destructible() const final;
 
-	useit bool can_be_prerun() const final {
+	bool can_be_prerun() const final {
 		for (auto* mem : members) {
 			if (not mem->type->can_be_prerun()) {
 				return false;
@@ -113,7 +112,7 @@ class StructType final : public ExpandedType {
 		return true;
 	}
 
-	useit bool can_be_prerun_generic() const final {
+	bool can_be_prerun_generic() const final {
 		for (auto* mem : members) {
 			if (not mem->type->can_be_prerun_generic()) {
 				return false;
@@ -122,7 +121,7 @@ class StructType final : public ExpandedType {
 		return true;
 	}
 
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final {
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* value) const final {
 		if (can_be_prerun_generic()) {
 			auto   valConst = value->get_llvm_constant();
 			String result(get_full_name());
@@ -153,11 +152,11 @@ class StructType final : public ExpandedType {
 
 	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
-	useit LinkNames get_link_names() const final;
+	LinkNames get_link_names() const final;
 
-	useit TypeKind type_kind() const override;
+	TypeKind type_kind() const override;
 
-	useit String to_string() const override;
+	String to_string() const override;
 
 	void add_static_member(const Identifier& name, Type* type, bool variability, Value* initial,
 	                       const VisibilityInfo& visibility, llvm::LLVMContext& llctx);
@@ -183,9 +182,9 @@ class GenericStructType : public Uniq, public Mentionable {
 	GenericStructType(Identifier name, Vec<ast::GenericAbstractType*> generics, ast::PrerunExpression* _constraint,
 	                  ast::DefineStructType* defineStructType, Mod* parent, VisibilityInfo const& visibInfo);
 
-	useit static GenericStructType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
-	                                       ast::PrerunExpression* _constraint, ast::DefineStructType* defineStructType,
-	                                       Mod* parent, const VisibilityInfo& visibInfo) {
+	static GenericStructType* create(Identifier name, Vec<ast::GenericAbstractType*> generics,
+	                                 ast::PrerunExpression* _constraint, ast::DefineStructType* defineStructType,
+	                                 Mod* parent, const VisibilityInfo& visibInfo) {
 		return std::construct_at(OwnNormal(GenericStructType), std::move(name), std::move(generics), _constraint,
 		                         defineStructType, parent, visibInfo);
 	}
@@ -199,21 +198,21 @@ class GenericStructType : public Uniq, public Mentionable {
 		}
 	}
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit usize get_parameter_count() const;
+	usize get_parameter_count() const;
 
-	useit bool all_parameters_have_default() const;
+	bool all_parameters_have_default() const;
 
-	useit usize getVariantCount() const;
+	usize getVariantCount() const;
 
-	useit Mod* get_module() const;
+	Mod* get_module() const;
 
-	useit Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
+	Type* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
-	useit ast::GenericAbstractType* getGenericAt(usize index) const;
+	ast::GenericAbstractType* getGenericAt(usize index) const;
 
-	useit VisibilityInfo get_visibility() const;
+	VisibilityInfo get_visibility() const;
 };
 
 } // namespace qat::ir

@@ -40,34 +40,34 @@ class ChoiceType : public Type, public Mentionable {
 	           Maybe<usize> defaultVal, const VisibilityInfo& visibility, ir::Ctx* irCtx, FileRangePtr fileRange,
 	           Maybe<MetaInfo> metaInfo);
 
-	useit static ChoiceType* create(Identifier name, Mod* parent, bool hasNoneVariant, Vec<Vec<Identifier>> fields,
-	                                Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType,
-	                                bool areValuesUnsigned, Maybe<usize> defaultVal, const VisibilityInfo& visibility,
-	                                ir::Ctx* irCtx, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo) {
+	static ChoiceType* create(Identifier name, Mod* parent, bool hasNoneVariant, Vec<Vec<Identifier>> fields,
+	                          Maybe<Vec<llvm::ConstantInt*>> values, Maybe<ir::Type*> providedType,
+	                          bool areValuesUnsigned, Maybe<usize> defaultVal, const VisibilityInfo& visibility,
+	                          ir::Ctx* irCtx, FileRangePtr fileRange, Maybe<MetaInfo> metaInfo) {
 		return std::construct_at(OwnNormal(ChoiceType), std::move(name), parent, hasNoneVariant, std::move(fields),
 		                         std::move(values), providedType, areValuesUnsigned, defaultVal, visibility, irCtx,
 		                         fileRange, std::move(metaInfo));
 	}
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit Mod* get_module() const;
+	Mod* get_module() const;
 
-	useit bool has_custom_value() const;
+	bool has_custom_value() const;
 
-	useit bool has_provided_type() const;
+	bool has_provided_type() const;
 
-	useit bool has_negative_values() const;
+	bool has_negative_values() const;
 
-	useit bool has_none_variant() const { return hasNoneVariant; }
+	bool has_none_variant() const { return hasNoneVariant; }
 
-	useit bool has_default() const;
+	bool has_default() const;
 
-	useit bool has_field(const String& name) const;
+	bool has_field(const String& name) const;
 
-	useit Vec<Identifier> const& get_variant_names(String const& name) const {
+	Vec<Identifier> const& get_variant_names(String const& name) const {
 		for (auto const& it : fields) {
 			for (auto& vName : it) {
 				if (vName.value == name) {
@@ -78,21 +78,21 @@ class ChoiceType : public Type, public Mentionable {
 		std::unreachable();
 	}
 
-	useit llvm::ConstantInt* get_value_for(const String& name) const;
+	llvm::ConstantInt* get_value_for(const String& name) const;
 
-	useit llvm::ConstantInt* get_value_at(usize index) const;
+	llvm::ConstantInt* get_value_at(usize index) const;
 
-	useit usize get_variant_count() const { return fields.size(); }
+	usize get_variant_count() const { return fields.size(); }
 
-	useit llvm::ConstantInt* get_default() const;
+	llvm::ConstantInt* get_default() const;
 
-	useit ir::Type* get_provided_type() const;
+	ir::Type* get_provided_type() const;
 
-	useit ir::Type* get_underlying_type() const;
+	ir::Type* get_underlying_type() const;
 
-	useit TypeKind type_kind() const final { return TypeKind::CHOICE; }
+	TypeKind type_kind() const final { return TypeKind::CHOICE; }
 
-	useit const VisibilityInfo& get_visibility() const;
+	const VisibilityInfo& get_visibility() const;
 
 	void find_bitwidth_normal() const;
 
@@ -100,21 +100,21 @@ class ChoiceType : public Type, public Mentionable {
 
 	void get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 
-	useit bool is_type_sized() const final;
+	bool is_type_sized() const final;
 
-	useit bool has_simple_copy() const final { return true; }
+	bool has_simple_copy() const final { return true; }
 
-	useit bool has_simple_move() const final { return true; }
+	bool has_simple_move() const final { return true; }
 
-	useit bool can_be_prerun() const final { return true; }
+	bool can_be_prerun() const final { return true; }
 
-	useit bool can_be_prerun_generic() const final { return true; }
+	bool can_be_prerun_generic() const final { return true; }
 
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ir

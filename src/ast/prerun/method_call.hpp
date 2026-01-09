@@ -15,8 +15,8 @@ class PrerunMemberFnCall final : public PrerunExpression {
 	                   FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), instance(_instance), memberName(_memberName), arguments(_arguments) {}
 
-	useit static PrerunMemberFnCall* create(PrerunExpression* instance, Identifier memberName,
-	                                        Vec<PrerunExpression*> arguments, FileRangePtr fileRange) {
+	static PrerunMemberFnCall* create(PrerunExpression* instance, Identifier memberName,
+	                                  Vec<PrerunExpression*> arguments, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunMemberFnCall), instance, memberName, arguments, fileRange);
 	}
 
@@ -27,17 +27,17 @@ class PrerunMemberFnCall final : public PrerunExpression {
 		}
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_METHOD_CALL; }
+	NodeType nodeType() const final { return NodeType::PRERUN_METHOD_CALL; }
 };
 
-useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expression*> const& arguments,
-                                                  Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange);
-useit ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<PrerunExpression*> const& arguments,
-                                                  Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange);
+ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expression*> const& arguments,
+                                            Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange);
+ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<PrerunExpression*> const& arguments,
+                                            Identifier memberName, EmitCtx* ctx, FileRangePtr fileRange);
 
 } // namespace qat::ast
 

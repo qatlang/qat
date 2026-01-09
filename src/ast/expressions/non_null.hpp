@@ -11,7 +11,7 @@ class NonNull : public Expression {
   public:
 	NonNull(Expression* _candidate, FileRangePtr _fileRange) : Expression(_fileRange), candidate(_candidate) {}
 
-	useit static NonNull* create(Expression* candidate, FileRangePtr fileRange) {
+	static NonNull* create(Expression* candidate, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(NonNull), candidate, fileRange);
 	}
 
@@ -19,9 +19,9 @@ class NonNull : public Expression {
 		UPDATE_DEPS(candidate);
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::NON_NULL; }
+	NodeType nodeType() const final { return NodeType::NON_NULL; }
 };
 
 }; // namespace qat::ast

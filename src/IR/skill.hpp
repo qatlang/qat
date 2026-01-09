@@ -31,11 +31,11 @@ struct TypeInSkill {
 	ast::Type* astType;
 	Type*      irType;
 
-	useit static TypeInSkill get(ast::Type* astType, Type* irType) {
+	static TypeInSkill get(ast::Type* astType, Type* irType) {
 		return TypeInSkill{.astType = astType, .irType = irType};
 	}
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 struct SkillArg {
@@ -45,7 +45,7 @@ struct SkillArg {
 
 	SkillArg(TypeInSkill _type, Identifier _name, bool _isVar) : type(_type), name(_name), isVar(_isVar) {}
 
-	useit static SkillArg* create(TypeInSkill type, Identifier name, bool isVar) {
+	static SkillArg* create(TypeInSkill type, Identifier name, bool isVar) {
 		return std::construct_at(OwnNormal(SkillArg), type, std::move(name), isVar);
 	}
 };
@@ -61,7 +61,7 @@ struct SkillVariadics {
 	VariadicsKind      kind;
 	Maybe<TypeInSkill> type;
 
-	useit String to_string() const {
+	String to_string() const {
 		switch (kind) {
 			case VariadicsKind::NORMAL:
 				return "variadic";
@@ -89,32 +89,32 @@ class SkillMethod {
 	SkillMethod(SkillMethodKind fnTy, Skill* parent, Identifier name, TypeInSkill returnType, Vec<SkillArg*> arguments,
 	            Maybe<SkillVariadics> variadics);
 
-	useit static SkillMethod* create_static_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
-	                                               Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics);
-	useit static SkillMethod* create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
-	                                        Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics);
+	static SkillMethod* create_static_method(Skill* _parent, Identifier _name, TypeInSkill _returnType,
+	                                         Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics);
+	static SkillMethod* create_method(Skill* _parent, Identifier _name, bool _isVar, TypeInSkill _returnType,
+	                                  Vec<SkillArg*> _arguments, Maybe<SkillVariadics> variadics);
 
-	useit usize get_method_index() const { return index; }
+	usize get_method_index() const { return index; }
 
-	useit Skill* get_parent_skill() const { return parent; }
+	Skill* get_parent_skill() const { return parent; }
 
-	useit SkillMethodKind get_method_kind() const { return methodKind; }
+	SkillMethodKind get_method_kind() const { return methodKind; }
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit TypeInSkill const& get_given_type() const { return returnType; }
+	TypeInSkill const& get_given_type() const { return returnType; }
 
-	useit Vec<SkillArg*>& get_args() { return arguments; }
+	Vec<SkillArg*>& get_args() { return arguments; }
 
-	useit usize get_arg_count() const { return arguments.size(); }
+	usize get_arg_count() const { return arguments.size(); }
 
-	useit SkillArg* get_arg_at(usize index) { return arguments.at(index); }
+	SkillArg* get_arg_at(usize index) { return arguments.at(index); }
 
-	useit bool is_variadic() const { return variadics.has_value(); }
+	bool is_variadic() const { return variadics.has_value(); }
 
-	useit SkillVariadics get_variadics() const { return variadics.value(); }
+	SkillVariadics get_variadics() const { return variadics.value(); }
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 class Skill : public Uniq, public Mentionable {
@@ -134,31 +134,31 @@ class Skill : public Uniq, public Mentionable {
   public:
 	Skill(Identifier _name, bool _canBePoly, Vec<GenericArgument*> _generics, Mod* _parent, VisibilityInfo _visibInfo);
 
-	useit static Skill* create(Identifier name, bool canBePoly, Vec<GenericArgument*> generics, Mod* parent,
-	                           VisibilityInfo visibInfo) {
+	static Skill* create(Identifier name, bool canBePoly, Vec<GenericArgument*> generics, Mod* parent,
+	                     VisibilityInfo visibInfo) {
 		return std::construct_at(OwnNormal(Skill), std::move(name), canBePoly, std::move(generics), parent,
 		                         std::move(visibInfo));
 	}
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit Identifier get_name() const;
+	Identifier get_name() const;
 
-	useit bool can_be_polymorph() const { return canBePolymorph; }
+	bool can_be_polymorph() const { return canBePolymorph; }
 
-	useit Mod* get_module() const;
+	Mod* get_module() const;
 
-	useit VisibilityInfo const& get_visibility() const;
+	VisibilityInfo const& get_visibility() const;
 
-	useit bool has_definition(String const& name) const;
+	bool has_definition(String const& name) const;
 
-	useit DefinitionType* get_definition(String const& name) const;
+	DefinitionType* get_definition(String const& name) const;
 
-	useit bool has_any_prototype(String const& name) const;
+	bool has_any_prototype(String const& name) const;
 
-	useit bool has_prototype(String const& name, SkillMethodKind kind) const;
+	bool has_prototype(String const& name, SkillMethodKind kind) const;
 
-	useit SkillMethod* get_prototype(String const& name, SkillMethodKind kind) const;
+	SkillMethod* get_prototype(String const& name, SkillMethodKind kind) const;
 
 	LinkNames get_link_names() const;
 };
@@ -180,30 +180,30 @@ class GenericSkill : public Uniq, public Mentionable {
 	GenericSkill(Identifier _name, Mod* _parent, Vec<ast::GenericAbstractType*> _generics,
 	             ast::DefineSkill* _defineSkill, ast::PrerunExpression* _constraint, VisibilityInfo _visibInfo);
 
-	useit static GenericSkill* create(Identifier name, Mod* parent, Vec<ast::GenericAbstractType*> generics,
-	                                  ast::DefineSkill* defineSkill, ast::PrerunExpression* constraint,
-	                                  VisibilityInfo visibInfo) {
+	static GenericSkill* create(Identifier name, Mod* parent, Vec<ast::GenericAbstractType*> generics,
+	                            ast::DefineSkill* defineSkill, ast::PrerunExpression* constraint,
+	                            VisibilityInfo visibInfo) {
 		return std::construct_at(OwnNormal(GenericSkill), std::move(name), parent, std::move(generics), defineSkill,
 		                         constraint, std::move(visibInfo));
 	}
 
-	useit Identifier get_name() const { return name; }
+	Identifier get_name() const { return name; }
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit usize get_type_count() const { return generics.size(); }
+	usize get_type_count() const { return generics.size(); }
 
-	useit bool all_types_have_defaults() const;
+	bool all_types_have_defaults() const;
 
-	useit usize get_variant_count() const { return variants.size(); }
+	usize get_variant_count() const { return variants.size(); }
 
-	useit Mod* get_module() const { return parent; }
+	Mod* get_module() const { return parent; }
 
-	useit Skill* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
+	Skill* fill_generics(Vec<ir::GenericToFill*>& types, ir::Ctx* irCtx, FileRangePtr range);
 
-	useit ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
+	ast::GenericAbstractType* get_generic_at(usize index) const { return generics.at(index); }
 
-	useit VisibilityInfo const& get_visibility() const { return visibInfo; }
+	VisibilityInfo const& get_visibility() const { return visibInfo; }
 };
 
 class DoneSkill : public Uniq, public Mentionable {
@@ -244,22 +244,22 @@ class DoneSkill : public Uniq, public Mentionable {
 	DoneSkill(Maybe<Identifier> _name, Mod* _parentMod, Maybe<Skill*> _skill, FileRangePtr _fileRange,
 	          Type* _candidateType, FileRangePtr _typeRange);
 
-	useit static DoneSkill* create_extension(Mod* parent, FileRangePtr fileRange, Type* candidateType,
-	                                         FileRangePtr typeRange);
-	useit static DoneSkill* create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRangePtr fileRange,
-	                                      Type* candidateType, FileRangePtr typeRange);
+	static DoneSkill* create_extension(Mod* parent, FileRangePtr fileRange, Type* candidateType,
+	                                   FileRangePtr typeRange);
+	static DoneSkill* create_normal(Maybe<Identifier> name, Mod* parent, Skill* skill, FileRangePtr fileRange,
+	                                Type* candidateType, FileRangePtr typeRange);
 
-	useit bool has_name() const { return name.has_value(); }
+	bool has_name() const { return name.has_value(); }
 
-	useit Identifier const& get_name() const { return name.value(); }
+	Identifier const& get_name() const { return name.value(); }
 
-	useit bool has_definition(String const& name) const;
+	bool has_definition(String const& name) const;
 
-	useit DefinitionType* get_definition(String const& name) const;
+	DefinitionType* get_definition(String const& name) const;
 
-	useit bool is_generic() const { return not generics.empty(); }
+	bool is_generic() const { return not generics.empty(); }
 
-	useit bool has_generic_parameter(String const& name) {
+	bool has_generic_parameter(String const& name) {
 		for (auto gen : generics) {
 			if (gen->get_name().value == name) {
 				return true;
@@ -268,7 +268,7 @@ class DoneSkill : public Uniq, public Mentionable {
 		return false;
 	}
 
-	useit GenericArgument* get_generic_parameter(String const& name) {
+	GenericArgument* get_generic_parameter(String const& name) {
 		for (auto gen : generics) {
 			if (gen->get_name().value == name) {
 				return gen;
@@ -277,54 +277,54 @@ class DoneSkill : public Uniq, public Mentionable {
 		return nullptr;
 	}
 
-	useit llvm::GlobalVariable* get_method_table(ir::Ctx* irCtx);
+	llvm::GlobalVariable* get_method_table(ir::Ctx* irCtx);
 
-	useit bool has_default_constructor() const;
-	useit bool has_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
-	useit bool has_to_convertor(ir::Type* type) const;
-	useit bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& types) const;
-	useit bool has_static_method(String const& name) const;
-	useit bool has_normal_method(String const& name) const;
-	useit bool has_valued_method(String const& name) const;
-	useit bool has_variation_method(String const& name) const;
-	useit bool has_copy_constructor() const;
-	useit bool has_move_constructor() const;
-	useit bool has_copy_assignment() const;
-	useit bool has_move_assignment() const;
-	useit bool has_destructor() const;
-	useit bool has_unary_operator(String const& name) const;
-	useit bool has_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
-	useit bool has_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+	bool has_default_constructor() const;
+	bool has_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
+	bool has_to_convertor(ir::Type* type) const;
+	bool has_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& types) const;
+	bool has_static_method(String const& name) const;
+	bool has_normal_method(String const& name) const;
+	bool has_valued_method(String const& name) const;
+	bool has_variation_method(String const& name) const;
+	bool has_copy_constructor() const;
+	bool has_move_constructor() const;
+	bool has_copy_assignment() const;
+	bool has_move_assignment() const;
+	bool has_destructor() const;
+	bool has_unary_operator(String const& name) const;
+	bool has_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+	bool has_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
 
-	useit ir::Method* get_default_constructor() const;
-	useit ir::Method* get_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
-	useit ir::Method* get_to_convertor(ir::Type* type) const;
-	useit ir::Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const;
-	useit ir::Method* get_static_method(String const& name) const;
-	useit ir::Method* get_normal_method(String const& name) const;
-	useit ir::Method* get_valued_method(String const& name) const;
-	useit ir::Method* get_variation_method(String const& name) const;
-	useit ir::Method* get_copy_constructor() const;
-	useit ir::Method* get_move_constructor() const;
-	useit ir::Method* get_copy_assignment() const;
-	useit ir::Method* get_move_assignment() const;
-	useit ir::Method* get_destructor() const;
-	useit ir::Method* get_unary_operator(String const& name) const;
-	useit ir::Method* get_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
-	useit ir::Method* get_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+	ir::Method* get_default_constructor() const;
+	ir::Method* get_from_convertor(Maybe<bool> isValueVar, ir::Type* type) const;
+	ir::Method* get_to_convertor(ir::Type* type) const;
+	ir::Method* get_constructor_with_types(Vec<Pair<Maybe<bool>, ir::Type*>> const& argTypes) const;
+	ir::Method* get_static_method(String const& name) const;
+	ir::Method* get_normal_method(String const& name) const;
+	ir::Method* get_valued_method(String const& name) const;
+	ir::Method* get_variation_method(String const& name) const;
+	ir::Method* get_copy_constructor() const;
+	ir::Method* get_move_constructor() const;
+	ir::Method* get_copy_assignment() const;
+	ir::Method* get_move_assignment() const;
+	ir::Method* get_destructor() const;
+	ir::Method* get_unary_operator(String const& name) const;
+	ir::Method* get_normal_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
+	ir::Method* get_variation_binary_operator(String const& name, Pair<Maybe<bool>, ir::Type*> argType) const;
 
-	useit String get_full_name() const;
+	String get_full_name() const;
 
-	useit bool           is_type_extension() const;
-	useit bool           is_normal_skill() const;
-	useit Skill*         get_skill() const;
-	useit FileRangePtr   get_type_range() const;
-	useit FileRangePtr   get_file_range() const;
-	useit Type*          get_candidate_type() const;
-	useit Mod*           get_module() const;
-	useit VisibilityInfo get_visibility() const;
-	useit LinkNames      get_link_names() const;
-	useit String         to_string() const;
+	bool           is_type_extension() const;
+	bool           is_normal_skill() const;
+	Skill*         get_skill() const;
+	FileRangePtr   get_type_range() const;
+	FileRangePtr   get_file_range() const;
+	Type*          get_candidate_type() const;
+	Mod*           get_module() const;
+	VisibilityInfo get_visibility() const;
+	LinkNames      get_link_names() const;
+	String         to_string() const;
 };
 
 } // namespace qat::ir

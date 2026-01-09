@@ -15,7 +15,7 @@ class MemberAccess final : public Expression {
 	MemberAccess(Expression* _instance, bool _isExpSelf, Identifier _name, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), instance(_instance), isExpSelf(_isExpSelf), name(std::move(_name)) {}
 
-	useit static MemberAccess* create(Expression* instance, bool isExpSelf, Identifier name, FileRangePtr fileRange) {
+	static MemberAccess* create(Expression* instance, bool isExpSelf, Identifier name, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MemberAccess), instance, isExpSelf, name, fileRange);
 	}
 
@@ -36,9 +36,9 @@ class MemberAccess final : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) override;
+	ir::Value* emit(EmitCtx* ctx) override;
 
-	useit NodeType nodeType() const override { return NodeType::MEMBER_ACCESS; }
+	NodeType nodeType() const override { return NodeType::MEMBER_ACCESS; }
 };
 
 } // namespace qat::ast

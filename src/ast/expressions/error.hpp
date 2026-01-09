@@ -16,8 +16,8 @@ class ErrorExpression : public Expression, public LocalDeclCompatible, public In
 	                Maybe<Pair<Type*, Type*>> _providedType, FileRangePtr _fileRange)
 	    : Expression(_fileRange), errorValue(_value), isPacked(_isPacked), providedType(_providedType) {}
 
-	useit static ErrorExpression* create(Expression* value, Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> isPacked,
-	                                     Maybe<Pair<Type*, Type*>> providedType, FileRangePtr fileRange) {
+	static ErrorExpression* create(Expression* value, Maybe<Pair<FileRangePtr, ast::PrerunExpression*>> isPacked,
+	                               Maybe<Pair<Type*, Type*>> providedType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ErrorExpression), value, isPacked, providedType, fileRange);
 	}
 
@@ -27,9 +27,9 @@ class ErrorExpression : public Expression, public LocalDeclCompatible, public In
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ERROR_EXPRESSION; }
+	NodeType nodeType() const final { return NodeType::ERROR_EXPRESSION; }
 };
 
 } // namespace qat::ast

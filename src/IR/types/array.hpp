@@ -17,43 +17,43 @@ class ArrayType : public Type {
 
   public:
 	ArrayType(Type* _element_type, u64 _length, llvm::LLVMContext& llctx);
-	useit static ArrayType* get(Type* elementType, u64 length, llvm::LLVMContext& llctx);
+	static ArrayType* get(Type* elementType, u64 length, llvm::LLVMContext& llctx);
 
-	useit Type* get_element_type();
+	Type* get_element_type();
 
-	useit u64 get_length() const;
+	u64 get_length() const;
 
-	useit TypeKind type_kind() const final;
+	TypeKind type_kind() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit bool can_be_prerun() const final { return elementType->can_be_prerun(); }
+	bool can_be_prerun() const final { return elementType->can_be_prerun(); }
 
-	useit bool can_be_prerun_generic() const final { return elementType->can_be_prerun_generic(); }
+	bool can_be_prerun_generic() const final { return elementType->can_be_prerun_generic(); }
 
-	useit Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
+	Maybe<String> to_prerun_generic_string(ir::PrerunValue* val) const final;
 
-	useit Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
+	Maybe<bool> equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::PrerunValue* second) const final;
 
-	useit bool is_type_sized() const final;
+	bool is_type_sized() const final;
 
-	useit bool has_simple_copy() const final { return elementType->has_simple_copy(); }
+	bool has_simple_copy() const final { return elementType->has_simple_copy(); }
 
-	useit bool has_simple_move() const final { return elementType->has_simple_move(); }
+	bool has_simple_move() const final { return elementType->has_simple_move(); }
 
-	useit bool has_prerun_default_value() const final { return elementType->has_prerun_default_value(); }
+	bool has_prerun_default_value() const final { return elementType->has_prerun_default_value(); }
 
-	useit bool is_copy_constructible() const final;
+	bool is_copy_constructible() const final;
 
-	useit bool is_move_constructible() const final;
+	bool is_move_constructible() const final;
 
-	useit bool is_copy_assignable() const final;
+	bool is_copy_assignable() const final;
 
-	useit bool is_move_assignable() const final;
+	bool is_move_assignable() const final;
 
-	useit bool is_destructible() const final;
+	bool is_destructible() const final;
 
-	useit ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
+	ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 

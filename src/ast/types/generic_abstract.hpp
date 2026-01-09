@@ -27,29 +27,29 @@ class GenericAbstractType {
 	}
 
   public:
-	useit usize        getIndex() const;
-	useit Identifier   get_name() const;
-	useit FileRangePtr get_range() const;
+	usize        getIndex() const;
+	Identifier   get_name() const;
+	FileRangePtr get_range() const;
 
-	useit GenericKind get_kind() const { return kind; }
+	GenericKind get_kind() const { return kind; }
 
-	useit bool                   is_typed() const;
-	useit TypedGenericAbstract*  as_typed() const;
-	useit bool                   is_prerun() const;
-	useit PrerunGenericAbstract* as_prerun() const;
+	bool                   is_typed() const;
+	TypedGenericAbstract*  as_typed() const;
+	bool                   is_prerun() const;
+	PrerunGenericAbstract* as_prerun() const;
 
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                                 EmitCtx* ctx) = 0;
 
 	virtual void emit(EmitCtx* ctx) const = 0;
 
-	useit virtual bool hasDefault() const = 0;
+	virtual bool hasDefault() const = 0;
 
-	useit virtual bool isSet() const = 0;
+	virtual bool isSet() const = 0;
 
 	virtual void unset() const = 0;
 
-	useit ir::GenericArgument* toIRGenericType() const;
+	ir::GenericArgument* toIRGenericType() const;
 
 	virtual ~GenericAbstractType() = default;
 };

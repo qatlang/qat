@@ -17,7 +17,7 @@ class Move final : public Expression, public LocalDeclCompatible, public InPlace
   public:
 	Move(Expression* _exp, FileRangePtr _fileRange) : Expression(std::move(_fileRange)), exp(_exp) {}
 
-	useit static Move* create(Expression* _exp, FileRangePtr _fileRange) {
+	static Move* create(Expression* _exp, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Move), _exp, _fileRange);
 	}
 
@@ -28,9 +28,9 @@ class Move final : public Expression, public LocalDeclCompatible, public InPlace
 		UPDATE_DEPS(exp);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::MOVE_EXPRESSION; }
+	NodeType nodeType() const final { return NodeType::MOVE_EXPRESSION; }
 };
 
 } // namespace qat::ast

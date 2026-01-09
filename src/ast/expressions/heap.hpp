@@ -15,7 +15,7 @@ class HeapGet final : public Expression {
 	HeapGet(Type* _type, Expression* _count, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), type(_type), count(_count) {}
 
-	useit static HeapGet* create(Type* _type, Expression* _count, FileRangePtr _fileRange) {
+	static HeapGet* create(Type* _type, Expression* _count, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(HeapGet), _type, _count, _fileRange);
 	}
 
@@ -26,9 +26,9 @@ class HeapGet final : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::HEAP_GET; }
+	NodeType nodeType() const final { return NodeType::HEAP_GET; }
 };
 
 class HeapPut final : public Expression {
@@ -38,7 +38,7 @@ class HeapPut final : public Expression {
   public:
 	HeapPut(Expression* pointer, FileRangePtr _fileRange) : Expression(std::move(_fileRange)), ptr(pointer) {}
 
-	useit static HeapPut* create(Expression* _pointer, FileRangePtr _fileRange) {
+	static HeapPut* create(Expression* _pointer, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(HeapPut), _pointer, _fileRange);
 	}
 
@@ -46,9 +46,9 @@ class HeapPut final : public Expression {
 		UPDATE_DEPS(ptr);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::HEAP_PUT; }
+	NodeType nodeType() const final { return NodeType::HEAP_PUT; }
 };
 
 class HeapGrow final : public Expression {
@@ -62,7 +62,7 @@ class HeapGrow final : public Expression {
 	HeapGrow(Type* _type, Expression* _ptr, Expression* _count, FileRangePtr _fileRange)
 	    : Expression(_fileRange), type(_type), ptr(_ptr), count(_count) {}
 
-	useit static HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRangePtr fileRange) {
+	static HeapGrow* create(Type* type, Expression* ptr, Expression* count, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(HeapGrow), type, ptr, count, fileRange);
 	}
 
@@ -72,9 +72,9 @@ class HeapGrow final : public Expression {
 		UPDATE_DEPS(count);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::HEAP_GROW; }
+	NodeType nodeType() const final { return NodeType::HEAP_GROW; }
 };
 
 } // namespace qat::ast

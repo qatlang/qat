@@ -25,8 +25,7 @@ class ImportGroup {
 	ImportGroup(u32 _relative, Vec<Identifier> _entity, Maybe<Identifier> _alias, FileRangePtr _fileRange)
 	    : relative(_relative), entity(std::move(_entity)), alias(std::move(_alias)), fileRange(std::move(_fileRange)) {}
 
-	useit static ImportGroup* create(u32 relative, Vec<Identifier> parent, Maybe<Identifier> alias,
-	                                 FileRangePtr range) {
+	static ImportGroup* create(u32 relative, Vec<Identifier> parent, Maybe<Identifier> alias, FileRangePtr range) {
 		return std::construct_at(OwnNormal(ImportGroup), relative, std::move(parent), std::move(alias),
 		                         std::move(range));
 	}
@@ -37,9 +36,9 @@ class ImportGroup {
 
 	void perform_import() const;
 
-	useit bool has_members() const;
+	bool has_members() const;
 
-	useit bool is_all_imported() const;
+	bool is_all_imported() const;
 };
 
 class ImportEntities final : public IsEntity {
@@ -52,8 +51,8 @@ class ImportEntities final : public IsEntity {
 	ImportEntities(Vec<ImportGroup*> _entities, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
 	    : IsEntity(_fileRange), entities(_entities), visibSpec(_visibSpec) {}
 
-	useit static ImportEntities* create(Vec<ImportGroup*> _entities, Maybe<VisibilitySpec> _visibSpec,
-	                                    FileRangePtr _fileRange) {
+	static ImportEntities* create(Vec<ImportGroup*> _entities, Maybe<VisibilitySpec> _visibSpec,
+	                              FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ImportEntities), _entities, _visibSpec, _fileRange);
 	}
 
@@ -65,7 +64,7 @@ class ImportEntities final : public IsEntity {
 
 	void handle_imports(ir::Mod* mod, ir::Ctx* irCtx) const;
 
-	useit NodeType nodeType() const final { return NodeType::IMPORT_ENTITIES; }
+	NodeType nodeType() const final { return NodeType::IMPORT_ENTITIES; }
 
 	~ImportEntities() final;
 };

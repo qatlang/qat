@@ -14,7 +14,7 @@ class PrerunChoiceInitialiser : public TypeInferrable, public PrerunExpression {
 	PrerunChoiceInitialiser(TypeLike _type, Identifier _variant, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), type(_type), variant(std::move(_variant)) {}
 
-	useit static PrerunChoiceInitialiser* create(TypeLike type, Identifier variant, FileRangePtr fileRange) {
+	static PrerunChoiceInitialiser* create(TypeLike type, Identifier variant, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunChoiceInitialiser), type, std::move(variant), fileRange);
 	}
 
@@ -24,11 +24,11 @@ class PrerunChoiceInitialiser : public TypeInferrable, public PrerunExpression {
 		type.update_dependencies(phase, ir::DependType::complete, ent, ctx);
 	}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_CHOICE_INITIALISER; }
+	NodeType nodeType() const final { return NodeType::PRERUN_CHOICE_INITIALISER; }
 
-	useit String to_string() const final { return type.to_string() + "::" + variant.value; }
+	String to_string() const final { return type.to_string() + "::" + variant.value; }
 };
 
 } // namespace qat::ast

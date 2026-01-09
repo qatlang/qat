@@ -13,7 +13,7 @@ class AtomicCopy : public Expression {
 	AtomicCopy(Expression* _candidate, PrerunExpression* _ordering, FileRangePtr _fileRange)
 	    : Expression(_fileRange), candidate(_candidate), ordering(_ordering) {}
 
-	useit static AtomicCopy* create(Expression* candidate, PrerunExpression* ordering, FileRangePtr fileRange) {
+	static AtomicCopy* create(Expression* candidate, PrerunExpression* ordering, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(AtomicCopy), candidate, ordering, fileRange);
 	}
 
@@ -24,9 +24,9 @@ class AtomicCopy : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ATOMIC_COPY; }
+	NodeType nodeType() const final { return NodeType::ATOMIC_COPY; }
 };
 
 } // namespace qat::ast

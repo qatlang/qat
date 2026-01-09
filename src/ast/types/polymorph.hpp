@@ -26,8 +26,8 @@ class PolymorphType final : public Type {
 	    : Type(_range), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
 	      addressSpace(std::move(_addressSpace)) {}
 
-	useit static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<PtrOwner> owner,
-	                                   Maybe<AddressSpace> addressSpace, FileRangePtr range) {
+	static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<PtrOwner> owner,
+	                             Maybe<AddressSpace> addressSpace, FileRangePtr range) {
 		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), std::move(owner),
 		                         std::move(addressSpace), std::move(range));
 	}
@@ -44,13 +44,13 @@ class PolymorphType final : public Type {
 		}
 	}
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx);
+	ir::Type* emit(EmitCtx* ctx);
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::POLYMORPH; }
+	AstTypeKind type_kind() const final { return AstTypeKind::POLYMORPH; }
 
-	useit String to_string() const final {
+	String to_string() const final {
 		String skillStr;
 		for (usize i = 0; i < skills.size(); i++) {
 			skillStr += skills[i].to_string();

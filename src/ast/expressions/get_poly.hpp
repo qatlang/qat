@@ -18,29 +18,29 @@ class PolySkillSpec {
 	PolySkillSpec(std::variant<SkillEntity, DoneSkillEntity> _spec, FileRangePtr _range)
 	    : spec(std::move(_spec)), range(std::move(_range)) {}
 
-	useit static PolySkillSpec from_skill(SkillEntity skill, FileRangePtr range) {
+	static PolySkillSpec from_skill(SkillEntity skill, FileRangePtr range) {
 		return PolySkillSpec(std::variant<SkillEntity, DoneSkillEntity>{std::in_place_index<0>, skill},
 		                     std::move(range));
 	}
 
-	useit static PolySkillSpec from_implementation(DoneSkillEntity done, FileRangePtr range) {
+	static PolySkillSpec from_implementation(DoneSkillEntity done, FileRangePtr range) {
 		return PolySkillSpec(std::variant<SkillEntity, DoneSkillEntity>(std::in_place_index<1>, done),
 		                     std::move(range));
 	}
 
-	useit bool is_skill() const { return spec.index() == 0u; }
+	bool is_skill() const { return spec.index() == 0u; }
 
-	useit bool is_done_skill() const { return spec.index() == 1u; }
+	bool is_done_skill() const { return spec.index() == 1u; }
 
-	useit SkillEntity const& as_skill() const { return std::get<0>(spec); }
+	SkillEntity const& as_skill() const { return std::get<0>(spec); }
 
-	useit SkillEntity& as_skill() { return std::get<0>(spec); }
+	SkillEntity& as_skill() { return std::get<0>(spec); }
 
-	useit DoneSkillEntity const& as_done_skill() const { return std::get<1>(spec); }
+	DoneSkillEntity const& as_done_skill() const { return std::get<1>(spec); }
 
-	useit DoneSkillEntity& as_done_skill() { return std::get<1>(spec); }
+	DoneSkillEntity& as_done_skill() { return std::get<1>(spec); }
 
-	useit FileRangePtr get_range() const { return range; }
+	FileRangePtr get_range() const { return range; }
 };
 
 class GetPolymorph final : public Expression {
@@ -58,9 +58,9 @@ class GetPolymorph final : public Expression {
 	    : Expression(std::move(_fileRange)), value(_value), isVar(_isVar), isTypeRange(std::move(_isTypeRange)),
 	      skills(std::move(_skills)), owner(std::move(_owner)), addressSpace(std::move(_addressSpace)) {}
 
-	useit static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRangePtr> isTypeRange,
-	                                  Vec<PolySkillSpec> skills, Maybe<PtrOwner> owner,
-	                                  Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+	static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRangePtr> isTypeRange,
+	                            Vec<PolySkillSpec> skills, Maybe<PtrOwner> owner, Maybe<AddressSpace> addressSpace,
+	                            FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(GetPolymorph), value, isVar, std::move(isTypeRange), std::move(skills),
 		                         std::move(owner), std::move(addressSpace), std::move(fileRange));
 	}
@@ -81,9 +81,9 @@ class GetPolymorph final : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::GET_POLYMORPH; }
+	NodeType nodeType() const final { return NodeType::GET_POLYMORPH; }
 };
 
 } // namespace qat::ast

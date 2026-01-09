@@ -15,9 +15,9 @@ struct SkillEntity {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx);
 
-	useit ir::Skill* find_skill(EmitCtx* ctx) const;
+	ir::Skill* find_skill(EmitCtx* ctx) const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 struct DoneSkillEntity {
@@ -28,9 +28,9 @@ struct DoneSkillEntity {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent, EmitCtx* ctx);
 
-	useit ir::DoneSkill* find_done_skill(EmitCtx* ctx) const;
+	ir::DoneSkill* find_done_skill(EmitCtx* ctx) const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

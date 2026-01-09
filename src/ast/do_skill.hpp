@@ -23,8 +23,8 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 	    : IsEntity(_fileRange), isDefaultSkill(_isDef), skillName(_skillName),
 	      implementationName(std::move(_implementationName)), targetType(_targetType) {}
 
-	useit static DoSkill* create(bool isDef, Maybe<SkillEntity> skillName, Maybe<Identifier> implementationName,
-	                             ast::Type* targetType, FileRangePtr fileRange) {
+	static DoSkill* create(bool isDef, Maybe<SkillEntity> skillName, Maybe<Identifier> implementationName,
+	                       ast::Type* targetType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(DoSkill), isDef, std::move(skillName), std::move(implementationName),
 		                         targetType, fileRange);
 	}
@@ -38,9 +38,9 @@ class DoSkill final : public IsEntity, public MemberParentLike {
 	void define_members(ir::Ctx* irCtx);
 	void emit_members(ir::Ctx* irCtx);
 
-	useit bool is_done_skill() const final { return true; }
+	bool is_done_skill() const final { return true; }
 
-	useit DoSkill* as_done_skill() final { return this; }
+	DoSkill* as_done_skill() final { return this; }
 
 	NodeType nodeType() const final { return NodeType::DO_SKILL; }
 };

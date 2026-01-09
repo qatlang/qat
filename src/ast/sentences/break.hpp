@@ -11,15 +11,15 @@ class Break final : public Sentence {
   public:
 	Break(Maybe<Identifier> _tag, FileRangePtr _fileRange) : Sentence(_fileRange), tag(_tag) {}
 
-	useit static Break* create(Maybe<Identifier> _tag, FileRangePtr _fileRange) {
+	static Break* create(Maybe<Identifier> _tag, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Break), _tag, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::BREAK; }
+	NodeType nodeType() const final { return NodeType::BREAK; }
 };
 
 } // namespace qat::ast

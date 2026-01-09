@@ -47,7 +47,7 @@ class Lexer {
   public:
 	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
 
-	useit static Lexer* get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
+	static Lexer* get(ir::Ctx* irCtx) { return new Lexer(irCtx); }
 
 	~Lexer() = default;
 
@@ -69,34 +69,34 @@ class Lexer {
 
 	void change_file(fs::path newFile);
 
-	useit static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
+	static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
 
 	void tokeniser();
 
 	inline void advance_cursor() { cursor++; }
 
-	useit inline bool has_previous() const { return cursor > 0; }
+	inline bool has_previous() const { return cursor > 0; }
 
-	useit inline char previous() const { return content[cursor - 1]; }
+	inline char previous() const { return content[cursor - 1]; }
 
-	useit inline char get() const { return content[cursor]; }
+	inline char get() const { return content[cursor]; }
 
-	useit inline bool has_file_ended() { return cursor == content.size(); }
+	inline bool has_file_ended() { return cursor == content.size(); }
 
-	useit static bool is_char_hex(char byte) {
+	static bool is_char_hex(char byte) {
 		return (byte >= '0' && byte <= '9') || (byte >= 'a' && byte <= 'z') || (byte >= 'A' && byte <= 'Z');
 	}
 
-	useit static bool is_invisible_ascii_char(char byte) {
+	static bool is_invisible_ascii_char(char byte) {
 		return (byte >= 0 && byte <= 13) || (byte == 27) || (byte == 127);
 	}
 
-	useit static bool ascii_char_has_standard_escape(char byte) {
+	static bool ascii_char_has_standard_escape(char byte) {
 		return byte == '\n' || byte == '\t' || byte == '\f' || byte == '\a' || byte == '\b' || byte == '\v' ||
 		       byte == '\0' || byte == '\r';
 	}
 
-	useit static String get_ascii_standard_escape(char byte) {
+	static String get_ascii_standard_escape(char byte) {
 		switch (byte) {
 			case '\n':
 				return "\\n";
@@ -118,11 +118,11 @@ class Lexer {
 		std::unreachable();
 	}
 
-	useit FileRangePtr get_position(u64 length);
+	FileRangePtr get_position(u64 length);
 
-	useit FileRange* get_position_var(u64 length);
+	FileRange* get_position_var(u64 length);
 
-	useit FileRangePtr create_range(FilePos start, FilePos end);
+	FileRangePtr create_range(FilePos start, FilePos end);
 };
 
 } // namespace qat::lexer

@@ -12,7 +12,7 @@ class PrerunTupleValue final : public PrerunExpression, public TypeInferrable {
 	PrerunTupleValue(Vec<PrerunExpression*> _members, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), members(_members) {}
 
-	useit static PrerunTupleValue* create(Vec<PrerunExpression*> _members, FileRangePtr _fileRange) {
+	static PrerunTupleValue* create(Vec<PrerunExpression*> _members, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunTupleValue), _members, _fileRange);
 	}
 
@@ -20,11 +20,11 @@ class PrerunTupleValue final : public PrerunExpression, public TypeInferrable {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_TUPLE_VALUE; }
+	NodeType nodeType() const final { return NodeType::PRERUN_TUPLE_VALUE; }
 };
 
 } // namespace qat::ast

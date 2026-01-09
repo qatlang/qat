@@ -36,7 +36,7 @@ struct LoopInfo {
 
 	void set_secondary_name(Identifier other) { secondaryName = std::move(other); }
 
-	useit bool isTimes() const { return type == LoopType::TO_COUNT; }
+	bool isTimes() const { return type == LoopType::TO_COUNT; }
 };
 
 enum class BreakableType {
@@ -83,9 +83,7 @@ struct EmitCtx {
 	    : irCtx(_irCtx), mod(_mod), skill(nullptr), memberParent(nullptr), parentOpaque(nullptr), fn(nullptr),
 	      prerunCallState(nullptr) {}
 
-	useit static EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) {
-		return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod);
-	}
+	static EmitCtx* get(ir::Ctx* _irCtx, ir::Mod* _mod) { return std::construct_at(OwnNormal(EmitCtx), _irCtx, _mod); }
 
 	EmitCtx* with_skill(ir::Skill* _skill) {
 		skill = _skill;
@@ -118,39 +116,39 @@ struct EmitCtx {
 		return this;
 	}
 
-	useit AccessInfo get_access_info() const;
+	AccessInfo get_access_info() const;
 
-	useit bool has_member_parent() const { return memberParent != nullptr; }
+	bool has_member_parent() const { return memberParent != nullptr; }
 
-	useit ir::MethodParent* get_member_parent() const { return memberParent; }
+	ir::MethodParent* get_member_parent() const { return memberParent; }
 
-	useit bool has_fn() const { return fn != nullptr; }
+	bool has_fn() const { return fn != nullptr; }
 
-	useit ir::Function* get_fn() const { return fn; }
+	ir::Function* get_fn() const { return fn; }
 
-	useit bool has_pre_call_state() const { return prerunCallState != nullptr; }
+	bool has_pre_call_state() const { return prerunCallState != nullptr; }
 
-	useit ir::PrerunCallState* get_pre_call_state() const { return prerunCallState; }
+	ir::PrerunCallState* get_pre_call_state() const { return prerunCallState; }
 
-	useit bool has_opaque_parent() const { return parentOpaque != nullptr; }
+	bool has_opaque_parent() const { return parentOpaque != nullptr; }
 
-	useit ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
+	ir::OpaqueType* get_opaque_parent() const { return parentOpaque; }
 
-	useit Maybe<ir::AddressSpace> get_address_space_from_opaque() {
+	Maybe<ir::AddressSpace> get_address_space_from_opaque() {
 		// FIXME - Address space fix
 		return None;
 	}
 
-	useit bool has_skill() const { return skill != nullptr; }
+	bool has_skill() const { return skill != nullptr; }
 
-	useit ir::Skill* get_skill() const { return skill; }
+	ir::Skill* get_skill() const { return skill; }
 
-	useit bool has_generics() const { return not generics.empty(); }
+	bool has_generics() const { return not generics.empty(); }
 
-	useit bool                 has_generic_with_name(String const& name) const;
-	useit GenericAbstractType* get_generic_with_name(String const& name) const;
+	bool                 has_generic_with_name(String const& name) const;
+	GenericAbstractType* get_generic_with_name(String const& name) const;
 
-	useit String color(String const& message) const;
+	String color(String const& message) const;
 
 	void genericNameCheck(String const& name, FileRangePtr range);
 

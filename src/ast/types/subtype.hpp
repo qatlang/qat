@@ -24,8 +24,8 @@ class SubType final : public Type {
 	    : Type(std::move(_fileRange)), skill(std::move(_skill)), doneSkill(std::move(_doneSkill)),
 	      names(std::move(_names)), parentType(_parentType) {}
 
-	useit static SubType* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill, Vec<Identifier> names,
-	                             Type* parent, FileRangePtr fileRange) {
+	static SubType* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill, Vec<Identifier> names,
+	                       Type* parent, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(SubType), std::move(skill), std::move(doneSkill), std::move(names), parent,
 		                         fileRange);
 	}
@@ -33,11 +33,11 @@ class SubType final : public Type {
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::SUBTYPE; }
+	AstTypeKind type_kind() const final { return AstTypeKind::SUBTYPE; }
 
-	useit String to_string() const final {
+	String to_string() const final {
 		String nameStr;
 		for (auto& id : names) {
 			nameStr += ":" + id.value;

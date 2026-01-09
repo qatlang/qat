@@ -22,15 +22,15 @@ class ArgumentType {
 	ArgumentType(ArgumentKind _kind, Maybe<String> _name, Type* _type, bool _isVar)
 	    : name(std::move(_name)), type(_type), variability(_isVar), kind(_kind) {}
 
-	useit static ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
+	static ArgumentType* create_normal(Type* type, Maybe<String> name, bool isVar) {
 		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::NORMAL, std::move(name), type, isVar);
 	}
 
-	useit static ArgumentType* create_member(String name, Type* type = nullptr) {
+	static ArgumentType* create_member(String name, Type* type = nullptr) {
 		return std::construct_at(OwnNormal(ArgumentType), ArgumentKind::MEMBER, name, type, false);
 	}
 
-	useit bool is_same_as(ArgumentType* other) {
+	bool is_same_as(ArgumentType* other) {
 		if (kind != other->kind) {
 			return false;
 		}
@@ -44,19 +44,19 @@ class ArgumentType {
 		}
 	}
 
-	useit bool has_name() const { return name.has_value(); }
+	bool has_name() const { return name.has_value(); }
 
-	useit String get_name() const { return name.value_or(""); }
+	String get_name() const { return name.value_or(""); }
 
-	useit Type* get_type() const { return type; }
+	Type* get_type() const { return type; }
 
-	useit ArgumentKind get_kind() const { return kind; }
+	ArgumentKind get_kind() const { return kind; }
 
-	useit bool is_variable() const { return variability; }
+	bool is_variable() const { return variability; }
 
-	useit bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
+	bool is_member_argument() const { return kind == ArgumentKind::MEMBER; }
 
-	useit String to_string() const {
+	String to_string() const {
 		switch (kind) {
 			case ArgumentKind::NORMAL:
 				return (variability ? "var " : "") + (name.has_value() ? (name.value() + " :: ") : "") +
@@ -74,17 +74,17 @@ class ReturnType {
   public:
 	ReturnType(Type* _retTy, bool _isReturnSelfRef);
 
-	useit static ReturnType* get(Type* _retTy) { return std::construct_at(OwnNormal(ReturnType), _retTy, false); }
+	static ReturnType* get(Type* _retTy) { return std::construct_at(OwnNormal(ReturnType), _retTy, false); }
 
-	useit static ReturnType* get(Type* _retTy, bool _isRetSelf) {
+	static ReturnType* get(Type* _retTy, bool _isRetSelf) {
 		return std::construct_at(OwnNormal(ReturnType), _retTy, _isRetSelf);
 	}
 
-	useit Type* get_type() const;
+	Type* get_type() const;
 
-	useit bool is_return_self() const;
+	bool is_return_self() const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 enum class VariadicsKind {
@@ -97,7 +97,7 @@ struct Variadics {
 	VariadicsKind kind;
 	ir::Type*     type = nullptr;
 
-	useit String to_string() const {
+	String to_string() const {
 		switch (kind) {
 			case VariadicsKind::NORMAL:
 				return "variadic";
@@ -117,28 +117,28 @@ class FunctionType final : public Type {
   public:
 	FunctionType(ReturnType* retType, Vec<ArgumentType*> argTypes, Maybe<Variadics> variadics, llvm::LLVMContext& ctx);
 
-	useit static FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, Maybe<Variadics> variadics,
-	                                  llvm::LLVMContext& llCtx) {
+	static FunctionType* create(ReturnType* retTy, Vec<ArgumentType*> argTys, Maybe<Variadics> variadics,
+	                            llvm::LLVMContext& llCtx) {
 		return std::construct_at(OwnNormal(FunctionType), retTy, std::move(argTys), variadics, llCtx);
 	}
 
 	~FunctionType() final;
 
-	useit ReturnType* get_return_type() const { return returnType; }
+	ReturnType* get_return_type() const { return returnType; }
 
-	useit ArgumentType* get_argument_type_at(u64 index) const { return argTypes[index]; }
+	ArgumentType* get_argument_type_at(u64 index) const { return argTypes[index]; }
 
-	useit Vec<ArgumentType*> const& get_argument_types() const { return argTypes; }
+	Vec<ArgumentType*> const& get_argument_types() const { return argTypes; }
 
-	useit u64 get_argument_count() const { return argTypes.size(); }
+	u64 get_argument_count() const { return argTypes.size(); }
 
-	useit bool is_variadic() const { return variadics.has_value(); }
+	bool is_variadic() const { return variadics.has_value(); }
 
-	useit Variadics get_variadics() const { return variadics.value(); }
+	Variadics get_variadics() const { return variadics.value(); }
 
-	useit TypeKind type_kind() const final { return TypeKind::FUNCTION; }
+	TypeKind type_kind() const final { return TypeKind::FUNCTION; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ir

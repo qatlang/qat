@@ -12,7 +12,7 @@ class PrerunGive final : public PrerunSentence {
   public:
 	PrerunGive(Maybe<PrerunExpression*> _value, FileRangePtr _fileRange) : PrerunSentence(_fileRange), value(_value) {}
 
-	useit static PrerunGive* create(Maybe<PrerunExpression*> value, FileRangePtr fileRange) {
+	static PrerunGive* create(Maybe<PrerunExpression*> value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunGive), value, fileRange);
 	}
 

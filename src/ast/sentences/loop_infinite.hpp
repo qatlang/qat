@@ -14,7 +14,7 @@ class LoopInfinite final : public Sentence {
 	LoopInfinite(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), sentences(_sentences), tag(_tag) {}
 
-	useit static LoopInfinite* create(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRangePtr _fileRange) {
+	static LoopInfinite* create(Vec<Sentence*> _sentences, Maybe<Identifier> _tag, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(LoopInfinite), _sentences, _tag, _fileRange);
 	}
 
@@ -24,9 +24,9 @@ class LoopInfinite final : public Sentence {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::LOOP_NORMAL; }
+	NodeType nodeType() const final { return NodeType::LOOP_NORMAL; }
 };
 
 } // namespace qat::ast

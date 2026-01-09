@@ -12,19 +12,19 @@ class FloatType final : public Type {
   public:
 	FloatType(ir::FloatTypeKind _kind, FileRangePtr _fileRange) : Type(_fileRange), kind(_kind) {}
 
-	useit static FloatType* create(ir::FloatTypeKind _kind, FileRangePtr _fileRange) {
+	static FloatType* create(ir::FloatTypeKind _kind, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(FloatType), _kind, _fileRange);
 	}
 
-	useit static String kindToString(ir::FloatTypeKind kind);
+	static String kindToString(ir::FloatTypeKind kind);
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx);
+	ir::Type* emit(EmitCtx* ctx);
 
-	useit AstTypeKind type_kind() const;
+	AstTypeKind type_kind() const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

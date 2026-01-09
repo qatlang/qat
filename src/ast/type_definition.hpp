@@ -31,9 +31,9 @@ class TypeDefinition : public IsEntity {
 	    : IsEntity(_fileRange), name(_name), subType(_subType), checker(_checker), constraint(_constraint),
 	      visibSpec(_visibSpec), generics(_generics) {}
 
-	useit static TypeDefinition* create(Identifier _name, PrerunExpression* _checker,
-	                                    Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _constraint,
-	                                    Type* _subType, FileRangePtr _fileRange, Maybe<VisibilitySpec> _visibSpec) {
+	static TypeDefinition* create(Identifier _name, PrerunExpression* _checker,
+	                              Vec<ast::GenericAbstractType*> _generics, PrerunExpression* _constraint,
+	                              Type* _subType, FileRangePtr _fileRange, Maybe<VisibilitySpec> _visibSpec) {
 		return std::construct_at(OwnNormal(TypeDefinition), _name, _checker, _generics, _constraint, _subType,
 		                         _fileRange, _visibSpec);
 	}
@@ -52,11 +52,11 @@ class TypeDefinition : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit bool is_generic() const;
+	bool is_generic() const;
 
-	useit ir::DefinitionType* getDefinition() const;
+	ir::DefinitionType* getDefinition() const;
 
-	useit NodeType nodeType() const final { return NodeType::TYPE_DEFINITION; }
+	NodeType nodeType() const final { return NodeType::TYPE_DEFINITION; }
 
 	// FOR TYPE DEFINITIONS INSIDE TYPES & SKILLS
 

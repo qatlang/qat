@@ -36,7 +36,7 @@ inline String method_type_to_string(MethodType ty) {
 	}
 }
 
-useit inline ir::SkillMethodKind get_skill_method_kind_for(MethodType type) {
+inline ir::SkillMethodKind get_skill_method_kind_for(MethodType type) {
 	switch (type) {
 		case MethodType::Static:
 			return ir::SkillMethodKind::STATIC;
@@ -122,7 +122,7 @@ class MethodPrototype {
 
 	void define(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
+	NodeType nodeType() const { return NodeType::MEMBER_PROTOTYPE; }
 
 	~MethodPrototype();
 };
@@ -140,8 +140,7 @@ class MethodDefinition {
 	MethodDefinition(MethodPrototype* _prototype, Vec<Sentence*> _sentences, FileRangePtr _fileRange)
 	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-	useit static MethodDefinition* create(MethodPrototype* _prototype, Vec<Sentence*> _sentences,
-	                                      FileRangePtr _fileRange) {
+	static MethodDefinition* create(MethodPrototype* _prototype, Vec<Sentence*> _sentences, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(MethodDefinition), _prototype, _sentences, _fileRange);
 	}
 
@@ -153,9 +152,9 @@ class MethodDefinition {
 
 	void define(MethodState& state, ir::Ctx* irCtx);
 
-	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+	ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
+	NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

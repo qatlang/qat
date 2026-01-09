@@ -24,8 +24,8 @@ class DefineFlagType final : public IsEntity {
 	    : IsEntity(std::move(_range)), name(std::move(_name)), variants(std::move(_variants)),
 	      providedType(_providedType), visibSpec(_visibSpec) {}
 
-	useit static DefineFlagType* create(Identifier name, Vec<FlagVariant> variants, Type* providedType,
-	                                    Maybe<VisibilitySpec> visibSpec, FileRangePtr range) {
+	static DefineFlagType* create(Identifier name, Vec<FlagVariant> variants, Type* providedType,
+	                              Maybe<VisibilitySpec> visibSpec, FileRangePtr range) {
 		return std::construct_at(OwnNormal(DefineFlagType), std::move(name), std::move(variants), providedType,
 		                         std::move(visibSpec), std::move(range));
 	}
@@ -36,7 +36,7 @@ class DefineFlagType final : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* parent, ir::Ctx* irCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::DEFINE_FLAG_TYPE; }
+	NodeType nodeType() const final { return NodeType::DEFINE_FLAG_TYPE; }
 };
 
 } // namespace qat::ast

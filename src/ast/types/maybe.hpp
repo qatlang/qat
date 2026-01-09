@@ -14,20 +14,20 @@ class MaybeType final : public Type {
 	MaybeType(bool _isPacked, Type* _subType, FileRangePtr _fileRange)
 	    : Type(_fileRange), subTyp(_subType), isPacked(_isPacked) {}
 
-	useit static MaybeType* create(bool _isPacked, Type* _subType, FileRangePtr _fileRange) {
+	static MaybeType* create(bool _isPacked, Type* _subType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(MaybeType), _isPacked, _subType, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::MAYBE; }
+	AstTypeKind type_kind() const final { return AstTypeKind::MAYBE; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

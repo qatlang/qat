@@ -21,8 +21,8 @@ class VariantInitialiser final : public Expression,
 	VariantInitialiser(TypeLike _type, Identifier _subName, Expression* _expression, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), type(_type), subName(std::move(_subName)), expression(_expression) {}
 
-	useit static VariantInitialiser* create(TypeLike type, Identifier subName, Expression* expression,
-	                                        FileRangePtr fileRange) {
+	static VariantInitialiser* create(TypeLike type, Identifier subName, Expression* expression,
+	                                  FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(VariantInitialiser), type, subName, expression, fileRange);
 	}
 
@@ -37,9 +37,9 @@ class VariantInitialiser final : public Expression,
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::VARIANT_INITIALISER; }
+	NodeType nodeType() const final { return NodeType::VARIANT_INITIALISER; }
 };
 
 } // namespace qat::ast

@@ -18,9 +18,9 @@ struct MetaInfo {
 
 	void set_parent_as_function() const { isParentFunction = true; }
 
-	useit bool has_inline_range() const { return inlineRange.has_value(); }
+	bool has_inline_range() const { return inlineRange.has_value(); }
 
-	useit ir::MetaInfo toIR(EmitCtx* ctx) const {
+	ir::MetaInfo toIR(EmitCtx* ctx) const {
 		std::set<String>                        keys;
 		Vec<Pair<Identifier, ir::PrerunValue*>> resultVec;
 		Vec<FileRangePtr>                       valuesRange;

@@ -13,7 +13,7 @@ class NullPointer final : public PrerunExpression, public TypeInferrable {
 	NullPointer(Maybe<ast::Type*> _providedType, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), providedType(_providedType) {}
 
-	useit static NullPointer* create(Maybe<ast::Type*> _providedType, FileRangePtr _fileRange) {
+	static NullPointer* create(Maybe<ast::Type*> _providedType, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(NullPointer), _providedType, _fileRange);
 	}
 
@@ -25,11 +25,11 @@ class NullPointer final : public PrerunExpression, public TypeInferrable {
 
 	TYPE_INFERRABLE_FUNCTIONS
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const final { return NodeType::NULL_POINTER; }
+	NodeType nodeType() const final { return NodeType::NULL_POINTER; }
 };
 
 } // namespace qat::ast

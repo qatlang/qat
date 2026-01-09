@@ -14,7 +14,7 @@ class IndexAccess final : public Expression {
 	IndexAccess(Expression* _instance, Expression* _index, FileRangePtr _fileRange)
 	    : Expression(_fileRange), instance(_instance), index(_index) {}
 
-	useit static IndexAccess* create(Expression* _instance, Expression* _index, FileRangePtr _fileRange) {
+	static IndexAccess* create(Expression* _instance, Expression* _index, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IndexAccess), _instance, _index, _fileRange);
 	}
 
@@ -23,9 +23,9 @@ class IndexAccess final : public Expression {
 		UPDATE_DEPS(index);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::INDEX_ACCESS; }
+	NodeType nodeType() const final { return NodeType::INDEX_ACCESS; }
 };
 
 } // namespace qat::ast

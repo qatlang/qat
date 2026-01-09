@@ -17,9 +17,9 @@ class PrerunIfElse final : public PrerunSentence {
 	    : PrerunSentence(std::move(_fileRange)), ifBlock(std::move(_ifBlock)), elseIfChain(std::move(_elseIfChain)),
 	      elseBlock(std::move(_elseBlock)) {}
 
-	useit static PrerunIfElse* create(Pair<PrerunExpression*, Vec<PrerunSentence*>>      ifBlock,
-	                                  Vec<Pair<PrerunExpression*, Vec<PrerunSentence*>>> elseIfChain,
-	                                  Maybe<Vec<PrerunSentence*>> elseBlock, FileRangePtr fileRange) {
+	static PrerunIfElse* create(Pair<PrerunExpression*, Vec<PrerunSentence*>>      ifBlock,
+	                            Vec<Pair<PrerunExpression*, Vec<PrerunSentence*>>> elseIfChain,
+	                            Maybe<Vec<PrerunSentence*>> elseBlock, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunIfElse), std::move(ifBlock), std::move(elseIfChain),
 		                         std::move(elseBlock), std::move(fileRange));
 	}

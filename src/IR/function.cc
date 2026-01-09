@@ -382,7 +382,7 @@ Mod* GenericFunction::get_module() const { return parent; }
 
 ast::GenericAbstractType* GenericFunction::getGenericAt(usize index) const { return generics.at(index); }
 
-useit bool GenericFunction::all_generics_have_default() const {
+bool GenericFunction::all_generics_have_default() const {
 	for (auto* gen : generics) {
 		if (not gen->hasDefault()) {
 			return false;

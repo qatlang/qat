@@ -18,17 +18,17 @@ class SubEntity final : public Expression {
 	    : Expression(std::move(_fileRange)), skill(std::move(_skill)), doneSkill(std::move(_doneSkill)),
 	      names(std::move(_names)), parentType(_parentType) {}
 
-	useit static SubEntity* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill, Vec<Identifier> names,
-	                               TypeLike parentType, FileRangePtr fileRange) {
+	static SubEntity* create(Maybe<FileRangePtr> skill, Maybe<FileRangePtr> doneSkill, Vec<Identifier> names,
+	                         TypeLike parentType, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(SubEntity), std::move(skill), std::move(doneSkill), std::move(names),
 		                         parentType, std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* emitCtx) final;
+	ir::Value* emit(EmitCtx* emitCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::SUB_ENTITY; }
+	NodeType nodeType() const final { return NodeType::SUB_ENTITY; }
 };
 
 } // namespace qat::ast

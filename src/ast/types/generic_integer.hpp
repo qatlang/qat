@@ -16,24 +16,23 @@ class GenericIntegerType : public Type {
 	                   FileRangePtr _fileRange)
 	    : Type(_fileRange), bitValue(_bitValue), isUnsigned(_isUnsigned), isUnsignedExp(_isUnsignedExp) {}
 
-	useit static GenericIntegerType* create_specific(PrerunExpression* bitValue, bool isUnsigned,
-	                                                 FileRangePtr fileRange) {
+	static GenericIntegerType* create_specific(PrerunExpression* bitValue, bool isUnsigned, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(GenericIntegerType), bitValue, isUnsigned, nullptr, fileRange);
 	}
 
-	useit static GenericIntegerType* create(PrerunExpression* bitValue, PrerunExpression* isUnsigned,
-	                                        FileRangePtr fileRange) {
+	static GenericIntegerType* create(PrerunExpression* bitValue, PrerunExpression* isUnsigned,
+	                                  FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(GenericIntegerType), bitValue, None, isUnsigned, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> expect, ir::EntityState* ent,
 	                         EmitCtx* ctx) final;
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit AstTypeKind type_kind() const final { return AstTypeKind::GENERIC_INTEGER; }
+	AstTypeKind type_kind() const final { return AstTypeKind::GENERIC_INTEGER; }
 };
 
 } // namespace qat::ast

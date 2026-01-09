@@ -20,14 +20,14 @@ class Lib : public Node {
 	Lib(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec, FileRangePtr _file_range)
 	    : Node(_file_range), name(_name), members(_members), visibSpec(_visibSpec) {}
 
-	useit static Lib* create(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec,
-	                         FileRangePtr _file_range) {
+	static Lib* create(Identifier _name, Vec<Node*> _members, Maybe<VisibilitySpec> _visibSpec,
+	                   FileRangePtr _file_range) {
 		return std::construct_at(OwnNormal(Lib), _name, _members, _visibSpec, _file_range);
 	}
 
 	void create_module(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-	useit NodeType nodeType() const final { return NodeType::LIB; }
+	NodeType nodeType() const final { return NodeType::LIB; }
 };
 
 } // namespace qat::ast

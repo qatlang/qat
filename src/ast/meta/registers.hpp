@@ -14,16 +14,16 @@ class MetaRegisterRead : public Expression {
 	MetaRegisterRead(bool _isVolatile, PrerunExpression* _regName, PrerunExpression* _regType, FileRangePtr _fileRange)
 	    : Expression(_fileRange), isVolatile(_isVolatile), registerName(_regName), registerType(_regType) {}
 
-	useit static MetaRegisterRead* create(bool isVolatile, PrerunExpression* registerName,
-	                                      PrerunExpression* registerType, FileRangePtr fileRange) {
+	static MetaRegisterRead* create(bool isVolatile, PrerunExpression* registerName, PrerunExpression* registerType,
+	                                FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MetaRegisterRead), isVolatile, registerName, registerType, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::META_REGISTER_READ; }
+	NodeType nodeType() const final { return NodeType::META_REGISTER_READ; }
 };
 
 class MetaRegisterWrite : public Expression {
@@ -35,8 +35,8 @@ class MetaRegisterWrite : public Expression {
 	MetaRegisterWrite(PrerunExpression* _name, PrerunExpression* _type, Expression* _value, FileRangePtr _fileRange)
 	    : Expression(_fileRange), registerName(_name), registerType(_type), value(_value) {}
 
-	useit static MetaRegisterWrite* create(PrerunExpression* registerName, PrerunExpression* registerType,
-	                                       Expression* value, FileRangePtr fileRange) {
+	static MetaRegisterWrite* create(PrerunExpression* registerName, PrerunExpression* registerType, Expression* value,
+	                                 FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MetaRegisterWrite), registerName, registerType, value, fileRange);
 	}
 
@@ -45,9 +45,9 @@ class MetaRegisterWrite : public Expression {
 		value->update_dependencies(phase, dep, state, ctx);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::META_REGISTER_WRITE; }
+	NodeType nodeType() const final { return NodeType::META_REGISTER_WRITE; }
 };
 
 } // namespace qat::ast

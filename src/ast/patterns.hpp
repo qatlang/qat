@@ -46,7 +46,7 @@ enum class PatternType {
 	ELLIPSIS,
 };
 
-useit inline bool pattern_supports_chaining(PatternType type) {
+inline bool pattern_supports_chaining(PatternType type) {
 	switch (type) {
 		case PatternType::BOOLEAN:
 		case PatternType::CHOICE:
@@ -82,7 +82,7 @@ struct PatternFill {
 
 	PatternFill(ir::Type* _type) : fillType(PatternFillType::NONE), type(_type) {}
 
-	useit static PatternFill* create_for_type(EmitCtx* ctx, ir::Type* type);
+	static PatternFill* create_for_type(EmitCtx* ctx, ir::Type* type);
 };
 
 struct ConditionSlot {
@@ -102,13 +102,13 @@ struct MatchArm {
 		conditions.push_back(ConditionSlot{.conditions = {}});
 	}
 
-	useit ConditionSlot& get_slot() { return conditions.back(); }
+	ConditionSlot& get_slot() { return conditions.back(); }
 
-	useit ir::Block* get_condition_block() const { return (ir::Block*)conditionBlock; }
+	ir::Block* get_condition_block() const { return (ir::Block*)conditionBlock; }
 
-	useit ir::PreBlock* as_prerun_block() const { return (ir::PreBlock*)bodyBlock; }
+	ir::PreBlock* as_prerun_block() const { return (ir::PreBlock*)bodyBlock; }
 
-	useit ir::Block* as_block() const { return (ir::Block*)bodyBlock; }
+	ir::Block* as_block() const { return (ir::Block*)bodyBlock; }
 };
 
 struct Pattern {
@@ -123,7 +123,7 @@ struct Pattern {
 
 	virtual void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const = 0;
 
-	useit virtual String to_string() const = 0;
+	virtual String to_string() const = 0;
 };
 
 enum class BindingType {
@@ -137,7 +137,7 @@ struct PatternBinding {
 	Identifier   name;
 	FileRangePtr range;
 
-	useit static PatternBinding create(BindingType bindType, Identifier name, FileRangePtr range) {
+	static PatternBinding create(BindingType bindType, Identifier name, FileRangePtr range) {
 		return PatternBinding{
 		    .bindType = bindType,
 		    .name     = std::move(name),
@@ -145,13 +145,13 @@ struct PatternBinding {
 		};
 	}
 
-	useit bool is_normal() const { return bindType == BindingType::NORMAL; }
+	bool is_normal() const { return bindType == BindingType::NORMAL; }
 
-	useit bool is_var() const { return bindType == BindingType::VARIATION; }
+	bool is_var() const { return bindType == BindingType::VARIATION; }
 
-	useit bool is_valued() const { return bindType == BindingType::VALUED; }
+	bool is_valued() const { return bindType == BindingType::VALUED; }
 
-	useit String to_string() const { return String(is_var() ? "var " : (is_valued() ? "use " : "")) + name.value; }
+	String to_string() const { return String(is_var() ? "var " : (is_valued() ? "use " : "")) + name.value; }
 };
 
 struct PatternChild {
@@ -161,21 +161,21 @@ struct PatternChild {
 
 	PatternChild(PatternBinding _binding) : child(std::in_place_index<1>, std::move(_binding)) {}
 
-	useit bool is_pattern() const { return child.index() == 0; }
+	bool is_pattern() const { return child.index() == 0; }
 
-	useit Pattern* as_pattern() const { return std::get<0>(child); }
+	Pattern* as_pattern() const { return std::get<0>(child); }
 
-	useit bool is_binding() const { return child.index() == 1; }
+	bool is_binding() const { return child.index() == 1; }
 
-	useit PatternBinding const& as_binding() const { return std::get<1>(child); }
+	PatternBinding const& as_binding() const { return std::get<1>(child); }
 
-	useit FileRangePtr get_range() { return is_pattern() ? as_pattern()->range : as_binding().range; }
+	FileRangePtr get_range() { return is_pattern() ? as_pattern()->range : as_binding().range; }
 
 	void check(PatternFill* fill, bool isPartOfChain, MatchArm& arm, EmitCtx* ctx) const;
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const;
 
-	useit String to_string() const {
+	String to_string() const {
 		if (is_pattern()) {
 			return as_pattern()->to_string();
 		} else {
@@ -197,8 +197,8 @@ struct PatternArray final : public Pattern {
 		patternIndices.reserve(patterns.size());
 	}
 
-	useit static PatternArray* create(Vec<PatternChild> patterns, Maybe<Pair<usize, FileRangePtr>> ellipsis,
-	                                  FileRangePtr fileRange) {
+	static PatternArray* create(Vec<PatternChild> patterns, Maybe<Pair<usize, FileRangePtr>> ellipsis,
+	                            FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternArray), std::move(patterns), std::move(ellipsis),
 		                         std::move(fileRange));
 	}
@@ -207,7 +207,7 @@ struct PatternArray final : public Pattern {
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 struct PatternChoice final : public Pattern {
@@ -217,7 +217,7 @@ struct PatternChoice final : public Pattern {
 	PatternChoice(Identifier _name, FileRangePtr _fileRange)
 	    : Pattern(PatternType::CHOICE, std::move(_fileRange)), name(std::move(_name)) {}
 
-	useit static PatternChoice* create(Identifier name, FileRangePtr fileRange) {
+	static PatternChoice* create(Identifier name, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternChoice), std::move(name), std::move(fileRange));
 	}
 
@@ -225,7 +225,7 @@ struct PatternChoice final : public Pattern {
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
-	useit String to_string() const final { return "::" + name.value; }
+	String to_string() const final { return "::" + name.value; }
 };
 
 struct PatternMix final : public Pattern {
@@ -236,7 +236,7 @@ struct PatternMix final : public Pattern {
 	PatternMix(Identifier _name, PatternChild _child, FileRangePtr _fileRange)
 	    : Pattern(PatternType::MIX, std::move(_fileRange)), name(std::move(_name)), child(std::move(_child)) {}
 
-	useit static PatternMix* create(Identifier name, PatternChild child, FileRangePtr fileRange) {
+	static PatternMix* create(Identifier name, PatternChild child, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternMix), std::move(name), std::move(child), std::move(fileRange));
 	}
 
@@ -244,7 +244,7 @@ struct PatternMix final : public Pattern {
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
-	useit String to_string() const final {
+	String to_string() const final {
 		return "::" + name.value + "(" + (child.has_value() ? child->to_string() : "") + ")";
 	}
 };
@@ -258,7 +258,7 @@ struct PatternChain final : public Pattern {
 
 	~PatternChain() {}
 
-	useit static PatternChain* create(Vec<Pattern> patterns, FileRangePtr range) {
+	static PatternChain* create(Vec<Pattern> patterns, FileRangePtr range) {
 		return std::construct_at(OwnNormal(PatternChain), std::move(patterns), std::move(range));
 	}
 
@@ -266,7 +266,7 @@ struct PatternChain final : public Pattern {
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
-	useit String to_string() const final {
+	String to_string() const final {
 		String res;
 		for (usize i = 0; i < patterns.size(); i++) {
 			res += patterns[i].to_string();
@@ -292,7 +292,7 @@ struct PatternFlag final : public Pattern {
 	PatternFlag(Vec<Identifier> _names, FlagPatternKind _flagKind, FileRangePtr _fileRange)
 	    : Pattern(PatternType::FLAG, std::move(_fileRange)), names(std::move(_names)), flagKind(_flagKind) {}
 
-	useit static PatternFlag* create(Vec<Identifier> names, FlagPatternKind flagKind, FileRangePtr fileRange) {
+	static PatternFlag* create(Vec<Identifier> names, FlagPatternKind flagKind, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PatternFlag), std::move(names), flagKind, std::move(fileRange));
 	}
 
@@ -300,7 +300,7 @@ struct PatternFlag final : public Pattern {
 
 	void match(PatternFill* fill, ir::Value* value, MatchArm& arm, EmitCtx* ctx) const final;
 
-	useit String to_string() const final {
+	String to_string() const final {
 		switch (flagKind) {
 			case FlagPatternKind::DEFAULT: {
 				return "::{ default }";
@@ -327,7 +327,7 @@ struct PatternRest final : public Pattern {
   public:
 	PatternRest(FileRangePtr _fileRange) : Pattern(PatternType::ELLIPSIS, std::move(_fileRange)) {}
 
-	useit static PatternRest* create(FileRangePtr range) {
+	static PatternRest* create(FileRangePtr range) {
 		return std::construct_at(OwnNormal(PatternRest), std::move(range));
 	}
 
@@ -335,7 +335,7 @@ struct PatternRest final : public Pattern {
 
 	void match(PatternFill*, ir::Value*, MatchArm&, EmitCtx*) const final {}
 
-	useit String to_string() const final { return "..."; }
+	String to_string() const final { return "..."; }
 };
 
 } // namespace qat::ast

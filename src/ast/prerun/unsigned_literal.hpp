@@ -15,7 +15,7 @@ class UnsignedLiteral final : public PrerunExpression, public TypeInferrable {
 	UnsignedLiteral(String _value, Maybe<Pair<u64, FileRangePtr>> _bits, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), value(_value), bits(_bits) {}
 
-	useit static UnsignedLiteral* create(String _value, Maybe<Pair<u64, FileRangePtr>> bits, FileRangePtr _fileRange) {
+	static UnsignedLiteral* create(String _value, Maybe<Pair<u64, FileRangePtr>> bits, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(UnsignedLiteral), _value, bits, _fileRange);
 	}
 
@@ -23,11 +23,11 @@ class UnsignedLiteral final : public PrerunExpression, public TypeInferrable {
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+	ir::PrerunValue* emit(EmitCtx* ctx) override;
 
-	useit String to_string() const final;
+	String to_string() const final;
 
-	useit NodeType nodeType() const override { return NodeType::UNSIGNED_LITERAL; }
+	NodeType nodeType() const override { return NodeType::UNSIGNED_LITERAL; }
 };
 
 } // namespace qat::ast

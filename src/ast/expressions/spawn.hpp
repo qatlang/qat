@@ -12,13 +12,13 @@ class Spawn : public Expression {
   public:
 	Spawn(Vec<Sentence*> _sentences, FileRangePtr _fileRange) : Expression(_fileRange), sentences(_sentences) {}
 
-	useit static Spawn* create(Vec<Sentence*> sentences, FileRangePtr fileRange) {
+	static Spawn* create(Vec<Sentence*> sentences, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(Spawn), sentences, fileRange);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::SPAWN; }
+	NodeType nodeType() const final { return NodeType::SPAWN; }
 };
 
 } // namespace qat::ast

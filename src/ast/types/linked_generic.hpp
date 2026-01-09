@@ -11,15 +11,15 @@ class LinkedGeneric final : public Type {
   public:
 	LinkedGeneric(ast::GenericAbstractType* _genAbs, FileRangePtr _range) : Type(_range), genAbs(_genAbs) {}
 
-	useit static LinkedGeneric* create(ast::GenericAbstractType* _genAbs, FileRangePtr _range) {
+	static LinkedGeneric* create(ast::GenericAbstractType* _genAbs, FileRangePtr _range) {
 		return std::construct_at(OwnNormal(LinkedGeneric), _genAbs, _range);
 	}
 
-	useit ir::Type* emit(EmitCtx* ctx) final;
+	ir::Type* emit(EmitCtx* ctx) final;
 
-	useit AstTypeKind type_kind() const final;
+	AstTypeKind type_kind() const final;
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

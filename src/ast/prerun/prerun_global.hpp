@@ -17,8 +17,8 @@ class PrerunGlobal final : public IsEntity {
 	             FileRangePtr _fileRange)
 	    : IsEntity(_fileRange), name(_name), type(_type), value(_value), visibSpec(_visibSpec) {}
 
-	useit static PrerunGlobal* create(Identifier _name, Maybe<Type*> _type, PrerunExpression* _value,
-	                                  Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
+	static PrerunGlobal* create(Identifier _name, Maybe<Type*> _type, PrerunExpression* _value,
+	                            Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(PrerunGlobal), _name, _type, _value, _visibSpec, _fileRange);
 	}
 
@@ -30,7 +30,7 @@ class PrerunGlobal final : public IsEntity {
 
 	void define(ir::Mod* mod, ir::Ctx* irCtx) const;
 
-	useit NodeType nodeType() const final { return NodeType::PRERUN_GLOBAL; }
+	NodeType nodeType() const final { return NodeType::PRERUN_GLOBAL; }
 };
 
 } // namespace qat::ast

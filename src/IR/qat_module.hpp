@@ -72,7 +72,7 @@ enum class InternalDependency {
 	panicHandler,
 };
 
-useit inline String internal_dependency_to_string(InternalDependency unit) {
+inline String internal_dependency_to_string(InternalDependency unit) {
 	switch (unit) {
 		case InternalDependency::printf:
 			return "printf";
@@ -99,7 +99,7 @@ useit inline String internal_dependency_to_string(InternalDependency unit) {
 	}
 }
 
-useit inline Maybe<InternalDependency> internal_dependency_from_string(String value) {
+inline Maybe<InternalDependency> internal_dependency_from_string(String value) {
 	if (value == "printf") {
 		return InternalDependency::printf;
 	} else if (value == "malloc") {
@@ -146,43 +146,42 @@ class LibToLink {
 	LibToLinkType                     type;
 	FileRangePtr                      fileRange;
 
-	useit static LibToLink fromName(Identifier _name, FileRangePtr _fileRange) {
+	static LibToLink fromName(Identifier _name, FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::namedLib, _fileRange);
 		result.name = _name;
 		return result;
 	}
 
-	useit static LibToLink fromPath(Pair<String, FileRangePtr> _path, FileRangePtr _fileRange) {
+	static LibToLink fromPath(Pair<String, FileRangePtr> _path, FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::libPath, _fileRange);
 		result.path = _path;
 		return result;
 	}
 
-	useit static LibToLink fromStaticAndShared(Pair<String, FileRangePtr> _staticPath,
-	                                           Pair<String, FileRangePtr> _sharedPath, FileRangePtr _fileRange) {
+	static LibToLink fromStaticAndShared(Pair<String, FileRangePtr> _staticPath, Pair<String, FileRangePtr> _sharedPath,
+	                                     FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::staticAndSharedPaths, _fileRange);
 		result.path       = _staticPath;
 		result.sharedPath = _sharedPath;
 		return result;
 	}
 
-	useit static LibToLink fromNameWithPath(Identifier _name, Pair<String, FileRangePtr> _path,
-	                                        FileRangePtr _fileRange) {
+	static LibToLink fromNameWithPath(Identifier _name, Pair<String, FileRangePtr> _path, FileRangePtr _fileRange) {
 		LibToLink result(LibToLinkType::nameWithLookupPath, _fileRange);
 		result.name = _name;
 		result.path = _path;
 		return result;
 	}
 
-	useit bool isName() { return type == LibToLinkType::namedLib; }
+	bool isName() { return type == LibToLinkType::namedLib; }
 
-	useit bool isLibPath() { return type == LibToLinkType::libPath; }
+	bool isLibPath() { return type == LibToLinkType::libPath; }
 
-	useit bool isStaticAndSharedPaths() { return type == LibToLinkType::staticAndSharedPaths; }
+	bool isStaticAndSharedPaths() { return type == LibToLinkType::staticAndSharedPaths; }
 
-	useit bool isNameWithLookupPath() { return type == LibToLinkType::nameWithLookupPath; }
+	bool isNameWithLookupPath() { return type == LibToLinkType::nameWithLookupPath; }
 
-	useit bool operator==(LibToLink const& other) {
+	bool operator==(LibToLink const& other) {
 		if (type == other.type) {
 			switch (type) {
 				case LibToLinkType::namedLib: {
@@ -347,8 +346,8 @@ struct EntityState {
 	            EmitPhase _maxPhase)
 	    : name(_name), type(_type), status(_status), astNode(_astEntity), maxPhase(_maxPhase) {}
 
-	useit static EntityState* create(Maybe<Identifier> name, EntityType type, EntityStatus status,
-	                                 ast::IsEntity* astEntity, EmitPhase maxPhase) {
+	static EntityState* create(Maybe<Identifier> name, EntityType type, EntityStatus status, ast::IsEntity* astEntity,
+	                           EmitPhase maxPhase) {
 		return std::construct_at(OwnNormal(EntityState), std::move(name), type, status, astEntity, maxPhase);
 	}
 
@@ -370,7 +369,7 @@ struct EntityState {
 
 	void updateStatus(EntityStatus _status) { status = _status; }
 
-	useit bool has_child(String const& child) const {
+	bool has_child(String const& child) const {
 		for (auto& ch : children) {
 			if (ch.second == child) {
 				return true;
@@ -379,7 +378,7 @@ struct EntityState {
 		return false;
 	}
 
-	useit Pair<EntityChildType, String> get_child(String const& name) {
+	Pair<EntityChildType, String> get_child(String const& name) {
 		for (auto& ch : children) {
 			if (ch.second == name) {
 				return ch;
@@ -390,16 +389,14 @@ struct EntityState {
 
 	void add_child(Pair<EntityChildType, String> child) { children.insert(child); }
 
-	useit bool are_all_phases_complete() const {
-		return currentPhase.has_value() && (currentPhase.value() == maxPhase);
-	}
+	bool are_all_phases_complete() const { return currentPhase.has_value() && (currentPhase.value() == maxPhase); }
 
 	void complete_manually() {
 		status       = EntityStatus::complete;
 		currentPhase = maxPhase;
 	}
 
-	useit bool is_ready_for_next_phase() const {
+	bool is_ready_for_next_phase() const {
 		auto nextPhase = get_next_phase(currentPhase);
 		if (nextPhase.has_value()) {
 			bool isAllDepsComplete = true;
@@ -484,11 +481,11 @@ class Mod final : public Uniq, public Mentionable {
 
 	static void clear_all();
 
-	useit static bool has_file_module(const fs::path& fPath);
-	useit static bool has_folder_module(const fs::path& fPath);
+	static bool has_file_module(const fs::path& fPath);
+	static bool has_folder_module(const fs::path& fPath);
 
-	useit static Mod* get_file_module(const fs::path& fPath);
-	useit static Mod* get_folder_module(const fs::path& fPath);
+	static Mod* get_file_module(const fs::path& fPath);
+	static Mod* get_folder_module(const fs::path& fPath);
 
   private:
 	Identifier        name;
@@ -605,33 +602,33 @@ class Mod final : public Uniq, public Mentionable {
 	                       const VisibilityInfo& visib_info, ir::Ctx* irCtx);
 	void closeSubmodule();
 
-	useit bool should_be_named() const;
+	bool should_be_named() const;
 
 	static std::map<InternalDependency, Function*> providedFunctions;
 
   public:
 	~Mod();
 
-	useit static Mod* create(const Identifier& name, const fs::path& filepath, const fs::path& basePath,
-	                         ModuleType type, const VisibilityInfo& visib_info, ir::Ctx* irCtx);
-	useit static Mod* create_submodule(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
-	                                   ModuleType type, const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
-	useit static Mod* create_file_mod(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name,
-	                                  Vec<ast::Node*>, VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
-	useit static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
-	                                  Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
+	static Mod* create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
+	                   const VisibilityInfo& visib_info, ir::Ctx* irCtx);
+	static Mod* create_submodule(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name, ModuleType type,
+	                             const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
+	static Mod* create_file_mod(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name, Vec<ast::Node*>,
+	                            VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
+	static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
+	                            Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
-	useit static bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
+	static bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
 
 	static void add_provided_function(InternalDependency unit, Function* fnVal) { providedFunctions[unit] = fnVal; }
 
-	useit static Function* get_provided_function(InternalDependency unit) { return providedFunctions[unit]; }
+	static Function* get_provided_function(InternalDependency unit) { return providedFunctions[unit]; }
 
 	static bool triple_is_equivalent(llvm::Triple const& first, llvm::Triple const& second);
 
 	static Vec<Function*> collect_mod_initialisers();
 
-	useit bool has_entity_with_name(String const& name) {
+	bool has_entity_with_name(String const& name) {
 		for (auto ent : entityEntries) {
 			if (ent->name.has_value() && ent->name->value == name) {
 				return true;
@@ -654,12 +651,12 @@ class Mod final : public Uniq, public Mentionable {
 		return false;
 	}
 
-	useit EntityState* add_entity(Maybe<Identifier> name, EntityType type, ast::IsEntity* node, EmitPhase maxPhase) {
+	EntityState* add_entity(Maybe<Identifier> name, EntityType type, ast::IsEntity* node, EmitPhase maxPhase) {
 		entityEntries.push_back(EntityState::create(name, type, EntityStatus::none, node, maxPhase));
 		return entityEntries.back();
 	}
 
-	useit EntityState* get_entity(String const& name) {
+	EntityState* get_entity(String const& name) {
 		for (auto ent : entityEntries) {
 			if (ent->name.has_value() && ent->name->value == name) {
 				return ent;
@@ -684,65 +681,64 @@ class Mod final : public Uniq, public Mentionable {
 
 	void entity_name_check(ir::Ctx* irCtx, Identifier name, ir::EntityType entTy);
 
-	useit ModuleType get_mod_type() const;
-	useit String     get_full_name() const;
-	useit String     get_referrable_name() const;
-	useit String     get_writable_name() const;
-	useit String     get_name() const;
-	useit Identifier get_identifier() const;
-	useit String     get_fullname_with_child(const String& name) const;
-	useit Mod*       get_active();
-	useit Mod*       get_parent_file();
+	ModuleType get_mod_type() const;
+	String     get_full_name() const;
+	String     get_referrable_name() const;
+	String     get_writable_name() const;
+	String     get_name() const;
+	Identifier get_identifier() const;
+	String     get_fullname_with_child(const String& name) const;
+	Mod*       get_active();
+	Mod*       get_parent_file();
 
-	useit String get_file_path() const { return filePath.string(); }
+	String get_file_path() const { return filePath.string(); }
 
-	void               set_file_range(FileRangePtr fileRange);
-	useit FileRangePtr get_file_range() const;
+	void         set_file_range(FileRangePtr fileRange);
+	FileRangePtr get_file_range() const;
 
-	useit Function* get_mod_initialiser(ir::Ctx* irCtx);
-	useit bool      should_call_initialiser() const;
-	void            add_non_const_global_counter();
+	Function* get_mod_initialiser(ir::Ctx* irCtx);
+	bool      should_call_initialiser() const;
+	void      add_non_const_global_counter();
 
-	useit LinkNames get_link_names() const;
+	LinkNames get_link_names() const;
 
-	useit bool is_parent_mod_of(Mod* other) const;
-	useit bool has_parent_lib() const;
-	useit Mod* get_closest_parent_lib();
+	bool is_parent_mod_of(Mod* other) const;
+	bool has_parent_lib() const;
+	Mod* get_closest_parent_lib();
 
-	useit bool has_meta_info_key(String key) const;
-	useit bool has_meta_info_key_in_parent(String key) const;
-	useit bool is_in_foreign_mod_of_type(String id) const;
-	useit Maybe<ir::PrerunValue*> get_meta_info_for_key(String key) const;
-	useit Maybe<ir::PrerunValue*> get_meta_info_from_parent(String key) const;
-	useit Maybe<String> get_relevant_foreign_id() const;
+	bool                    has_meta_info_key(String key) const;
+	bool                    has_meta_info_key_in_parent(String key) const;
+	bool                    is_in_foreign_mod_of_type(String id) const;
+	Maybe<ir::PrerunValue*> get_meta_info_for_key(String key) const;
+	Maybe<ir::PrerunValue*> get_meta_info_from_parent(String key) const;
+	Maybe<String>           get_relevant_foreign_id() const;
 
-	useit bool has_nth_parent(u32 n) const;
-	useit Mod* get_nth_parent(u32 n);
+	bool has_nth_parent(u32 n) const;
+	Mod* get_nth_parent(u32 n);
 
-	useit const VisibilityInfo& get_visibility() const;
+	const VisibilityInfo& get_visibility() const;
 
-	useit Function* create_function(Identifier const& name, bool isInline, Type* returnType, Vec<Argument> args,
-	                                Maybe<Variadics> variadics, FileRangePtr fileRange,
-	                                VisibilityInfo const& visibility, Maybe<llvm::GlobalValue::LinkageTypes> linkage,
-	                                ir::Ctx* irCtx);
+	Function* create_function(Identifier const& name, bool isInline, Type* returnType, Vec<Argument> args,
+	                          Maybe<Variadics> variadics, FileRangePtr fileRange, VisibilityInfo const& visibility,
+	                          Maybe<llvm::GlobalValue::LinkageTypes> linkage, ir::Ctx* irCtx);
 
-	useit bool is_submodule() const { return parent != nullptr; }
+	bool is_submodule() const { return parent != nullptr; }
 
-	useit bool has_submodules() const { return not submodules.empty(); }
+	bool has_submodules() const { return not submodules.empty(); }
 
 	void add_dependency(ir::Mod* dep);
 
-	useit bool has_integer_bitwidth(u64 bits) const {
+	bool has_integer_bitwidth(u64 bits) const {
 		return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
 		       integerBitwidths.contains(bits);
 	}
 
-	useit bool has_unsigned_bitwidth(u64 bits) const {
+	bool has_unsigned_bitwidth(u64 bits) const {
 		return (bits == 1 || bits == 8 || bits == 16 || bits == 32 || bits == 64 || bits == 128) ||
 		       unsignedBitwidths.contains(bits);
 	}
 
-	useit bool has_float_kind(FloatTypeKind kind) const {
+	bool has_float_kind(FloatTypeKind kind) const {
 		return (kind == FloatTypeKind::_32 || kind == FloatTypeKind::_64) || floatKinds.contains(kind);
 	}
 
@@ -752,24 +748,24 @@ class Mod final : public Uniq, public Mentionable {
 
 	void add_float_kind(FloatTypeKind kind) { floatKinds.insert(kind); }
 
-	useit bool has_main_function() const { return hasMain; }
+	bool has_main_function() const { return hasMain; }
 
 	void set_has_main_function() { hasMain = true; }
 
-	useit std::set<String> get_all_object_files() const;
+	std::set<String> get_all_object_files() const;
 
-	useit std::set<String> get_all_linkable_libs() const;
+	std::set<String> get_all_linkable_libs() const;
 
 	void add_filesystem_import_mention(ir::Mod* otherMod, FileRangePtr fileRange);
 
-	useit Vec<Pair<Mod*, FileRangePtr>> const& get_fs_bring_mentions() const;
+	Vec<Pair<Mod*, FileRangePtr>> const& get_fs_bring_mentions() const;
 
 	// LIB
 
-	useit bool has_lib(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_lib(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_lib_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit Mod*               get_lib(const String& name, const AccessInfo& reqInfo);
+	bool               has_lib(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_lib(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_lib_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	Mod*               get_lib(const String& name, const AccessInfo& reqInfo);
 
 	void open_lib_for_creation(const Identifier& name, const String& filename, const VisibilityInfo& visib_info,
 	                           ir::Ctx* irCtx);
@@ -777,146 +773,146 @@ class Mod final : public Uniq, public Mentionable {
 
 	// FUNCTION
 
-	useit bool      has_function(const String& name, AccessInfo reqInfo) const;
-	useit bool      has_imported_function(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Function* get_function(const String& name, const AccessInfo& reqInfo);
-	useit Pair<bool, String> has_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_function(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_function(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Function*          get_function(const String& name, const AccessInfo& reqInfo);
+	Pair<bool, String> has_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// PRERUN FUNCTION
 
-	useit bool            has_prerun_function(String const& name, AccessInfo reqInfo) const;
-	useit bool            has_imported_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
-	useit PrerunFunction* get_prerun_function(String const& name, const AccessInfo& reqInfo);
-	useit Pair<bool, String> has_prerun_function_in_imports(String const& name, AccessInfo const& reqInfo) const;
+	bool               has_prerun_function(String const& name, AccessInfo reqInfo) const;
+	bool               has_imported_prerun_function(String const& name, Maybe<AccessInfo> reqInfo) const;
+	PrerunFunction*    get_prerun_function(String const& name, const AccessInfo& reqInfo);
+	Pair<bool, String> has_prerun_function_in_imports(String const& name, AccessInfo const& reqInfo) const;
 
 	// GENERIC FUNCTIONS
 
-	useit bool             has_generic_function(const String& name, AccessInfo reqInfo) const;
-	useit bool             has_imported_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit GenericFunction* get_generic_function(const String& name, const AccessInfo& reqInfo);
-	useit Pair<bool, String> has_generic_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_generic_function(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_generic_function(const String& name, Maybe<AccessInfo> reqInfo) const;
+	GenericFunction*   get_generic_function(const String& name, const AccessInfo& reqInfo);
+	Pair<bool, String> has_generic_function_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// REGION
 
-	useit bool has_region(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_region(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_region_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit Region*            get_region(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_region(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_region(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_region_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	Region*            get_region(const String& name, const AccessInfo& reqInfo) const;
 
 	// OPAQUE TYPES
 
-	useit bool has_opaque_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_opaque_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit OpaqueType*        get_opaque_type(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_opaque_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_opaque_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_opaque_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	OpaqueType*        get_opaque_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// STRUCT TYPE
 
-	useit bool has_struct_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit StructType*        get_struct_type(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_struct_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	StructType*        get_struct_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// MIX TYPE
 
-	useit bool has_mix_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_mix_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit MixType*           get_mix_type(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_mix_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_mix_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_mix_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	MixType*           get_mix_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// TOGGLE TYPE
 
-	useit bool has_toggle_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit ToggleType*        get_toggle_type(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_toggle_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	ToggleType*        get_toggle_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// CHOICE TYPE
 
-	useit bool has_choice_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit ChoiceType*        get_choice_type(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_choice_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_choice_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_choice_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	ChoiceType*        get_choice_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// FLAG TYPE
 
-	useit bool has_flag_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_flag_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_flag_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit FlagType*          get_flag_type(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_flag_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_brought_flag_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_flag_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	FlagType*          get_flag_type(const String& name, const AccessInfo& reqInfo) const;
 
 	// GENERIC STRUCT TYPE
 
-	useit bool has_generic_struct_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_generic_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit GenericStructType* get_generic_struct_type(const String& name, const AccessInfo& reqInfo);
+	bool               has_generic_struct_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_generic_struct_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_generic_struct_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	GenericStructType* get_generic_struct_type(const String& name, const AccessInfo& reqInfo);
 
 	// GENERIC TOGGLE TYPE
 
-	useit bool has_generic_toggle_type(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_generic_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit GenericToggleType* get_generic_toggle_type(const String& name, const AccessInfo& reqInfo);
+	bool               has_generic_toggle_type(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_generic_toggle_type(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_generic_toggle_type_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	GenericToggleType* get_generic_toggle_type(const String& name, const AccessInfo& reqInfo);
 
 	// GENERIC TYPEDEFS
 
-	useit bool has_generic_type_def(const String& name, AccessInfo reqInfo) const;
-	useit bool has_brought_generic_type_def(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String>     has_generic_type_def_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit GenericDefinitionType* get_generic_type_def(const String& name, const AccessInfo& reqInfo);
+	bool                   has_generic_type_def(const String& name, AccessInfo reqInfo) const;
+	bool                   has_brought_generic_type_def(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String>     has_generic_type_def_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	GenericDefinitionType* get_generic_type_def(const String& name, const AccessInfo& reqInfo);
 
 	// TYPEDEFS
 
-	useit bool has_type_definition(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_type_definition_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit DefinitionType*    get_type_def(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_type_definition(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_type_definition(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_type_definition_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	DefinitionType*    get_type_def(const String& name, const AccessInfo& reqInfo) const;
 
 	// GLOBAL
 
-	useit bool has_global(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_global(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit GlobalEntity*      get_global(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_global(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_global(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	GlobalEntity*      get_global(const String& name, const AccessInfo& reqInfo) const;
 
 	// PRERUN GLOBAL
 
-	useit bool has_prerun_global(const String& name, AccessInfo reqInfo) const;
-	useit bool has_imported_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_prerun_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
-	useit PrerunGlobal*      get_prerun_global(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_prerun_global(const String& name, AccessInfo reqInfo) const;
+	bool               has_imported_prerun_global(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_prerun_global_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	PrerunGlobal*      get_prerun_global(const String& name, const AccessInfo& reqInfo) const;
 
 	// SKILLS
 
-	useit bool has_skill(String const& name, AccessInfo reqInfo) const;
-	useit bool has_brought_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
-	useit Skill*             get_skill(String const& name, AccessInfo const& reqInfo) const;
+	bool               has_skill(String const& name, AccessInfo reqInfo) const;
+	bool               has_brought_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
+	Skill*             get_skill(String const& name, AccessInfo const& reqInfo) const;
 
-	useit Vec<Skill*> const& get_skills_in_module() const { return skills; }
+	Vec<Skill*> const& get_skills_in_module() const { return skills; }
 
-	useit Vec<Brought<Skill>> const& get_all_brought_skills() const { return broughtSkills; }
+	Vec<Brought<Skill>> const& get_all_brought_skills() const { return broughtSkills; }
 
 	// GENERIC SKILLS
 
-	useit bool has_generic_skill(String const& name, AccessInfo reqInfo) const;
-	useit bool has_brought_generic_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
-	useit Pair<bool, String> has_generic_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
-	useit GenericSkill*      get_generic_skill(String const& name, AccessInfo const& reqInfo) const;
+	bool               has_generic_skill(String const& name, AccessInfo reqInfo) const;
+	bool               has_brought_generic_skill(String const& name, Maybe<AccessInfo> reqInfo) const;
+	Pair<bool, String> has_generic_skill_in_imports(String const& name, AccessInfo const& reqInfo) const;
+	GenericSkill*      get_generic_skill(String const& name, AccessInfo const& reqInfo) const;
 
 	// NAMED IMPLEMENTATIONS
 
-	useit bool has_named_implementation(String const& name, AccessInfo const& access) const;
-	useit bool has_brought_named_implementation(String const& name, Maybe<AccessInfo> access) const;
-	useit Pair<bool, String> has_named_implementation_in_imports(String const& name, AccessInfo const& access) const;
-	useit DoneSkill*         get_named_implementation(String const& name, AccessInfo const& access) const;
+	bool               has_named_implementation(String const& name, AccessInfo const& access) const;
+	bool               has_brought_named_implementation(String const& name, Maybe<AccessInfo> access) const;
+	Pair<bool, String> has_named_implementation_in_imports(String const& name, AccessInfo const& access) const;
+	DoneSkill*         get_named_implementation(String const& name, AccessInfo const& access) const;
 
 	// IMPORT
 
-	useit bool has_imported_mod(const String& name, Maybe<AccessInfo> reqInfo) const;
-	useit Mod* get_imported_mod(const String& name, const AccessInfo& reqInfo) const;
-	useit Pair<bool, String> has_brought_mod_in_imports(const String& name, const AccessInfo& reqInfo) const;
+	bool               has_imported_mod(const String& name, Maybe<AccessInfo> reqInfo) const;
+	Mod*               get_imported_mod(const String& name, const AccessInfo& reqInfo) const;
+	Pair<bool, String> has_brought_mod_in_imports(const String& name, const AccessInfo& reqInfo) const;
 
 	// BRING ENTITIES
 
@@ -944,14 +940,14 @@ class Mod final : public Uniq, public Mentionable {
 
 	void set_matrix_intrinsic_used() { isMatrixIntrinsicsUsed = true; }
 
-	useit fs::path get_resolved_output_path(const String& extension, Ctx* irCtx);
-	useit llvm::Module* get_llvm_module() const;
-	useit Maybe<fs::path> find_static_library_path(String libName) const;
+	fs::path        get_resolved_output_path(const String& extension, Ctx* irCtx);
+	llvm::Module*   get_llvm_module() const;
+	Maybe<fs::path> find_static_library_path(String libName) const;
 
-	useit bool find_clang_path(Ctx* irCtx);
-	useit bool find_windows_sdk_paths(Ctx* irCtx);
-	useit bool find_windows_toolchain_libs(Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath,
-	                                       bool findUCRTLibPath, bool findUMLibPath);
+	bool find_clang_path(Ctx* irCtx);
+	bool find_windows_sdk_paths(Ctx* irCtx);
+	bool find_windows_toolchain_libs(Ctx* irCtx, bool findMSVCLibPath, bool findATLMFCLibPath, bool findUCRTLibPath,
+	                                 bool findUMLibPath);
 
 	static void find_native_library_paths();
 
@@ -968,9 +964,9 @@ class Mod final : public Uniq, public Mentionable {
 	/// This returns the name of the linked function or symbol
 	/// Even known units like printf can have a different name for the underlying function, especially in freehosting
 	/// environments
-	useit String link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRangePtr fileRange);
+	String link_internal_dependency(InternalDependency nval, Ctx* irCtx, FileRangePtr fileRange);
 
-	useit llvm::Function* link_intrinsic(IntrinsicID intr);
+	llvm::Function* link_intrinsic(IntrinsicID intr);
 };
 
 } // namespace qat::ir

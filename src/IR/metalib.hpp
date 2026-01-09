@@ -15,7 +15,7 @@ class MetaLib {
 
 	static void create(Ctx* irCtx);
 
-	useit static ChoiceType* get_intrinsic_id(Ctx* irCtx);
+	static ChoiceType* get_intrinsic_id(Ctx* irCtx);
 };
 
 } // namespace qat::ir

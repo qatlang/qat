@@ -20,7 +20,7 @@ class TypeWrap final : public PrerunExpression {
 	TypeWrap(ast::Type* _theType, bool _isExplicit, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), theType(_theType), isExplicit(_isExplicit) {}
 
-	useit static TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRangePtr _fileRange) {
+	static TypeWrap* create(ast::Type* _theType, bool _isExplicit, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(TypeWrap), _theType, _isExplicit, _fileRange);
 	}
 

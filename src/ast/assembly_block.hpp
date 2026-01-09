@@ -15,8 +15,7 @@ class AssemblyBlock final : public IsEntity {
 		SHOW("Created ast::AssemblyBlock");
 	}
 
-	useit static AssemblyBlock* create(PrerunExpression* content, PrerunExpression* defineChecker,
-	                                   FileRangePtr fileRange) {
+	static AssemblyBlock* create(PrerunExpression* content, PrerunExpression* defineChecker, FileRangePtr fileRange) {
 		SHOW("Calling construct_at")
 		return std::construct_at(OwnNormal(AssemblyBlock), content, defineChecker, fileRange);
 	}
@@ -27,7 +26,7 @@ class AssemblyBlock final : public IsEntity {
 
 	void do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCtx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ASSEMBLY_BLOCK; }
+	NodeType nodeType() const final { return NodeType::ASSEMBLY_BLOCK; }
 };
 
 } // namespace qat::ast

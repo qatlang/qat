@@ -27,8 +27,8 @@ template <typename T> class GenericVariant {
 		genericTypes.clear();
 	}
 
-	useit bool check(ir::Ctx* irCtx, std::function<void(String const&, FileRangePtr)> errorFn,
-	                 Vec<GenericToFill*> dest) const {
+	bool check(ir::Ctx* irCtx, std::function<void(String const&, FileRangePtr)> errorFn,
+	           Vec<GenericToFill*> dest) const {
 		if (genericTypes.size() != dest.size()) {
 			return false;
 		} else {
@@ -94,7 +94,7 @@ template <typename T> class GenericVariant {
 		}
 	}
 
-	useit T* get() { return entity; }
+	T* get() { return entity; }
 };
 
 } // namespace qat::ir

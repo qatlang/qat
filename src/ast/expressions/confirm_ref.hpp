@@ -13,15 +13,15 @@ class ConfirmRef : public Expression {
 	ConfirmRef(Expression* _subExpr, bool _isVar, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), subExpr(_subExpr), isVar(_isVar) {}
 
-	useit static ConfirmRef* create(Expression* subExpr, bool isVar, FileRangePtr fileRange) {
+	static ConfirmRef* create(Expression* subExpr, bool isVar, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ConfirmRef), subExpr, isVar, std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx);
 
-	useit ir::Value* emit(EmitCtx* emitCtx);
+	ir::Value* emit(EmitCtx* emitCtx);
 
-	useit NodeType nodeType() const final { return NodeType::CONFIRM_REF; }
+	NodeType nodeType() const final { return NodeType::CONFIRM_REF; }
 };
 
 } // namespace qat::ast

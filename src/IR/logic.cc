@@ -620,8 +620,8 @@ bool Logic::compare_prerun_text(llvm::Constant* lhsBuff, llvm::Constant* lhsCoun
 	}
 }
 
-useit ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Value* rhsEmit, FileRangePtr lhsRange,
-                                     FileRangePtr rhsRange, FileRangePtr fileRange, ast::EmitCtx* ctx) {
+ir::Value* Logic::compare_text(bool isEquality, ir::Value* lhsEmit, ir::Value* rhsEmit, FileRangePtr lhsRange,
+                               FileRangePtr rhsRange, FileRangePtr fileRange, ast::EmitCtx* ctx) {
 	llvm::Value *lhsBuff, *lhsCount, *rhsBuff, *rhsCount;
 	bool         isConstantLHS = false, isConstantRHS = false;
 	auto*        int64Type  = llvm::Type::getInt64Ty(ctx->irCtx->llctx);

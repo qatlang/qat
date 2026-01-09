@@ -20,7 +20,7 @@ class ArrayLiteral final : public Expression,
 	ArrayLiteral(Vec<Expression*> _values, Type* _elemTyHint, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), values(std::move(_values)), elemTyHint(_elemTyHint) {}
 
-	useit static ArrayLiteral* create(Vec<Expression*> values, Type* elemTyHint, FileRangePtr fileRange) {
+	static ArrayLiteral* create(Vec<Expression*> values, Type* elemTyHint, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(ArrayLiteral), values, elemTyHint, fileRange);
 	}
 
@@ -30,9 +30,9 @@ class ArrayLiteral final : public Expression,
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::ARRAY_LITERAL; }
+	NodeType nodeType() const final { return NodeType::ARRAY_LITERAL; }
 };
 
 } // namespace qat::ast

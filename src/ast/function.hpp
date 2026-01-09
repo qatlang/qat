@@ -42,18 +42,18 @@ class FunctionPrototype final : public IsEntity {
 	      visibSpec(_visibSpec), defineChecker(_checker), genericConstraint(_genericConstraint),
 	      definition(_definition), generics(_generics) {}
 
-	useit static FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, Maybe<Type*> _returnType,
-	                                       PrerunExpression* _checker, PrerunExpression* _genericConstraint,
-	                                       Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
-	                                       FileRangePtr _fileRange, Vec<GenericAbstractType*> _generics,
-	                                       Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _definition) {
+	static FunctionPrototype* create(Identifier _name, Vec<Argument*> _arguments, Maybe<Type*> _returnType,
+	                                 PrerunExpression* _checker, PrerunExpression* _genericConstraint,
+	                                 Maybe<MetaInfo> _metaInfo, Maybe<VisibilitySpec> _visibSpec,
+	                                 FileRangePtr _fileRange, Vec<GenericAbstractType*> _generics,
+	                                 Maybe<Pair<Vec<Sentence*>, FileRangePtr>> _definition) {
 		return std::construct_at(OwnNormal(FunctionPrototype), _name, _arguments, _returnType, _checker,
 		                         _genericConstraint, _metaInfo, _visibSpec, _fileRange, _generics, _definition);
 	}
 
-	useit bool is_generic() const;
+	bool is_generic() const;
 
-	useit Vec<GenericAbstractType*> get_generics() const;
+	Vec<GenericAbstractType*> get_generics() const;
 
 	void set_variant_name(const String& value) const;
 
@@ -69,7 +69,7 @@ class FunctionPrototype final : public IsEntity {
 
 	void emit_definition(ir::Mod* mod, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const final { return NodeType::FUNCTION_PROTOTYPE; }
+	NodeType nodeType() const final { return NodeType::FUNCTION_PROTOTYPE; }
 
 	~FunctionPrototype() final;
 };

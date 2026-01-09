@@ -9,15 +9,15 @@ class SelfInstance final : public Expression {
   public:
 	explicit SelfInstance(FileRangePtr _fileRange) : Expression(_fileRange) {}
 
-	useit static SelfInstance* create(FileRangePtr _fileRange) {
+	static SelfInstance* create(FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(SelfInstance), _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::Value* emit(EmitCtx* ctx) override;
+	ir::Value* emit(EmitCtx* ctx) override;
 
-	useit NodeType nodeType() const override { return NodeType::SELF; }
+	NodeType nodeType() const override { return NodeType::SELF; }
 };
 
 } // namespace qat::ast

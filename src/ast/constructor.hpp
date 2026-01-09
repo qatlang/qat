@@ -86,7 +86,7 @@ class ConstructorPrototype {
 
 	void define(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
+	NodeType nodeType() const { return NodeType::CONVERTOR_PROTOTYPE; }
 
 	~ConstructorPrototype();
 };
@@ -103,8 +103,8 @@ class ConstructorDefinition {
 	ConstructorDefinition(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences, FileRangePtr _fileRange)
 	    : sentences(_sentences), prototype(_prototype), fileRange(_fileRange) {}
 
-	useit static ConstructorDefinition* create(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
-	                                           FileRangePtr _fileRange) {
+	static ConstructorDefinition* create(ConstructorPrototype* _prototype, Vec<Sentence*> _sentences,
+	                                     FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ConstructorDefinition), _prototype, _sentences, _fileRange);
 	}
 
@@ -114,10 +114,10 @@ class ConstructorDefinition {
 		}
 	}
 
-	void  define(MethodState& state, ir::Ctx* irCtx);
-	useit ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
+	void       define(MethodState& state, ir::Ctx* irCtx);
+	ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 
-	useit NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
+	NodeType nodeType() const { return NodeType::MEMBER_DEFINITION; }
 };
 
 } // namespace qat::ast

@@ -22,8 +22,8 @@ class LocalDeclaration final : public Sentence {
 	    : Sentence(_fileRange), variability(isVar), name(_name), type(_type), value(_value),
 	      isBlankValue(_isBlankValue) {}
 
-	useit static LocalDeclaration* create(bool isVar, Identifier name, Type* type, Maybe<Expression*> value,
-	                                      bool isBlankValue, FileRangePtr fileRange) {
+	static LocalDeclaration* create(bool isVar, Identifier name, Type* type, Maybe<Expression*> value,
+	                                bool isBlankValue, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(LocalDeclaration), isVar, name, type, value, isBlankValue, fileRange);
 	}
 
@@ -36,9 +36,9 @@ class LocalDeclaration final : public Sentence {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::LOCAL_DECLARATION; }
+	NodeType nodeType() const final { return NodeType::LOCAL_DECLARATION; }
 };
 
 } // namespace qat::ast

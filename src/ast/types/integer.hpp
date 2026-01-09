@@ -17,11 +17,11 @@ class IntegerType final : public Type {
   public:
 	IntegerType(u32 _bitWidth, FileRangePtr _fileRange) : Type(_fileRange), bitWidth(_bitWidth) {}
 
-	useit static IntegerType* create(u32 _bitWidth, FileRangePtr _fileRange) {
+	static IntegerType* create(u32 _bitWidth, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(IntegerType), _bitWidth, _fileRange);
 	}
 
-	useit Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
+	Maybe<usize> get_type_bitsize(EmitCtx* ctx) const final;
 
 	ir::Type* emit(EmitCtx* ctx);
 

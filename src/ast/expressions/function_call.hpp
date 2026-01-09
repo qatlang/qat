@@ -14,7 +14,7 @@ class FunctionCall final : public Expression {
 	FunctionCall(Expression* _fnExpr, Vec<Expression*> _arguments, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), fnExpr(_fnExpr), values(_arguments) {}
 
-	useit static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRangePtr _fileRange) {
+	static FunctionCall* create(Expression* _fnExpr, Vec<Expression*> _arguments, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(FunctionCall), _fnExpr, _arguments, _fileRange);
 	}
 
@@ -25,9 +25,9 @@ class FunctionCall final : public Expression {
 		}
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::FUNCTION_CALL; }
+	NodeType nodeType() const final { return NodeType::FUNCTION_CALL; }
 };
 
 } // namespace qat::ast

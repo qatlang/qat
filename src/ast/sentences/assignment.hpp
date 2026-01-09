@@ -17,7 +17,7 @@ class Assignment final : public Sentence {
 	Assignment(Expression* _lhs, Expression* _value, FileRangePtr _fileRange)
 	    : Sentence(_fileRange), lhs(_lhs), value(_value) {}
 
-	useit static Assignment* create(Expression* _lhs, Expression* _value, FileRangePtr _fileRange) {
+	static Assignment* create(Expression* _lhs, Expression* _value, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Assignment), _lhs, _value, _fileRange);
 	}
 
@@ -26,9 +26,9 @@ class Assignment final : public Sentence {
 		UPDATE_DEPS(value);
 	}
 
-	useit ir::Value* emit(EmitCtx* ctx);
+	ir::Value* emit(EmitCtx* ctx);
 
-	useit NodeType nodeType() const { return NodeType::ASSIGNMENT; }
+	NodeType nodeType() const { return NodeType::ASSIGNMENT; }
 };
 
 } // namespace qat::ast

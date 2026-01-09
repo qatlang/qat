@@ -15,15 +15,15 @@ class UseDeclaration final : public Sentence {
 	UseDeclaration(Identifier _name, Type* _type, Expression* _value, FileRangePtr _fileRange)
 	    : Sentence(std::move(_fileRange)), name(std::move(_name)), type(_type), value(_value) {}
 
-	useit static UseDeclaration* create(Identifier name, Type* type, Expression* value, FileRangePtr fileRange) {
+	static UseDeclaration* create(Identifier name, Type* type, Expression* value, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(UseDeclaration), std::move(name), type, value, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::USE_DECLARATION; }
+	NodeType nodeType() const final { return NodeType::USE_DECLARATION; }
 };
 
 } // namespace qat::ast

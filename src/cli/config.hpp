@@ -61,13 +61,13 @@ class Config {
   public:
 	Config(u64 count, const char** args);
 
-	useit static Config* initialise(u64 count, const char** args);
+	static Config* initialise(u64 count, const char** args);
 
-	useit inline static Config const* get() { return Config::instance; }
+	inline static Config const* get() { return Config::instance; }
 
-	useit inline static bool has_instance() { return Config::instance != nullptr; }
+	inline static bool has_instance() { return Config::instance != nullptr; }
 
-	useit static String filter_quotes(String value);
+	static String filter_quotes(String value);
 
 	void find_corelib_and_toolchain();
 
@@ -75,89 +75,89 @@ class Config {
 
 	/** Behaviour specific functions */
 
-	useit bool is_workflow_build() const { return buildWorkflow; }
+	bool is_workflow_build() const { return buildWorkflow; }
 
-	useit bool is_workflow_run() const { return runWorkflow; }
+	bool is_workflow_run() const { return runWorkflow; }
 
-	useit bool is_workflow_analyse() const { return analyseWorkflow; }
+	bool is_workflow_analyse() const { return analyseWorkflow; }
 
-	useit bool is_workflow_bundle() const { return bundleWorkflow; }
+	bool is_workflow_bundle() const { return bundleWorkflow; }
 
-	useit bool should_show_report() const { return showReport; }
+	bool should_show_report() const { return showReport; }
 
-	useit bool is_verbose() const { return verbose; }
+	bool is_verbose() const { return verbose; }
 
-	useit bool should_save_docs() const { return saveDocs; }
+	bool should_save_docs() const { return saveDocs; }
 
-	useit bool has_output_path() const { return outputPath.has_value(); }
+	bool has_output_path() const { return outputPath.has_value(); }
 
-	useit bool clear_llvm() const { return clearLLVMFiles; }
+	bool clear_llvm() const { return clearLLVMFiles; }
 
-	useit bool has_target_triple() const { return targetTriple.has_value(); }
+	bool has_target_triple() const { return targetTriple.has_value(); }
 
-	useit bool has_cpu_name() const { return cpuName.has_value(); }
+	bool has_cpu_name() const { return cpuName.has_value(); }
 
-	useit bool has_cpu_features() const { return cpuFeatures.has_value(); }
+	bool has_cpu_features() const { return cpuFeatures.has_value(); }
 
-	useit bool has_std_lib_path() const { return coreLibPath.has_value(); }
+	bool has_std_lib_path() const { return coreLibPath.has_value(); }
 
-	useit bool has_toolchain_path() const { return toolchainPath.has_value(); }
+	bool has_toolchain_path() const { return toolchainPath.has_value(); }
 
-	useit bool is_freestanding() const { return isFreestanding; }
+	bool is_freestanding() const { return isFreestanding; }
 
-	useit bool is_no_corelib_enabled() const { return isNoCoreLib || isFreestanding; }
+	bool is_no_corelib_enabled() const { return isNoCoreLib || isFreestanding; }
 
-	useit ColorMode color_mode() const { return colorMode; }
+	ColorMode color_mode() const { return colorMode; }
 
-	useit bool is_no_color_mode() const { return colorMode == ColorMode::none; }
+	bool is_no_color_mode() const { return colorMode == ColorMode::none; }
 
-	useit bool is_build_mode_debug() const { return buildMode == BuildMode::debug; }
+	bool is_build_mode_debug() const { return buildMode == BuildMode::debug; }
 
-	useit bool is_build_mode_release() const { return buildMode == BuildMode::release; }
+	bool is_build_mode_release() const { return buildMode == BuildMode::release; }
 
-	useit bool should_have_debug_info() const {
+	bool should_have_debug_info() const {
 		return (buildMode == BuildMode::releaseWithDebugInfo) || (buildMode == BuildMode::debug);
 	}
 
-	useit bool has_panic_strategy() const { return panicStrategy != PanicStrategy::none; }
+	bool has_panic_strategy() const { return panicStrategy != PanicStrategy::none; }
 
-	useit PanicStrategy get_panic_strategy() const { return panicStrategy; }
+	PanicStrategy get_panic_strategy() const { return panicStrategy; }
 
-	useit bool has_sysroot() const { return sysRoot.has_value(); }
+	bool has_sysroot() const { return sysRoot.has_value(); }
 
-	useit bool has_clang_path() const { return clangPath.has_value(); }
+	bool has_clang_path() const { return clangPath.has_value(); }
 
-	useit bool has_linker_path() const { return linkerPath.has_value(); }
+	bool has_linker_path() const { return linkerPath.has_value(); }
 
-	useit bool should_build_static() const { return buildShared.has_value() ? buildStatic.has_value() : true; }
+	bool should_build_static() const { return buildShared.has_value() ? buildStatic.has_value() : true; }
 
-	useit bool should_build_shared() const { return buildShared.value_or(false); }
+	bool should_build_shared() const { return buildShared.value_or(false); }
 
-	useit bool should_exit() const { return exitAfter; }
+	bool should_exit() const { return exitAfter; }
 
-	useit bool should_do_diagnostics() const { return diagnostic; }
+	bool should_do_diagnostics() const { return diagnostic; }
 
-	useit String get_target_triple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
+	String get_target_triple() const { return targetTriple.value_or(LLVM_HOST_TRIPLE); }
 
-	useit String get_cpu_name() const { return cpuName.value(); }
+	String get_cpu_name() const { return cpuName.value(); }
 
-	useit String get_cpu_features() const { return cpuFeatures.value(); }
+	String get_cpu_features() const { return cpuFeatures.value(); }
 
-	useit String get_sysroot() const { return sysRoot.value(); }
+	String get_sysroot() const { return sysRoot.value(); }
 
-	useit String get_clang_path() const { return clangPath.value(); }
+	String get_clang_path() const { return clangPath.value(); }
 
-	useit String get_linker_path() const { return linkerPath.value(); }
+	String get_linker_path() const { return linkerPath.value(); }
 
-	useit fs::path get_std_lib_path() const { return coreLibPath.value(); }
+	fs::path get_std_lib_path() const { return coreLibPath.value(); }
 
-	useit fs::path get_toolchain_path() const { return toolchainPath.value(); }
+	fs::path get_toolchain_path() const { return toolchainPath.value(); }
 
-	useit fs::path get_output_path() const { return outputPath.value_or(fs::current_path()); }
+	fs::path get_output_path() const { return outputPath.value_or(fs::current_path()); }
 
-	useit Vec<fs::path> get_paths() const { return paths; }
+	Vec<fs::path> get_paths() const { return paths; }
 
-	useit const llvm::VersionTuple& get_version_tuple() const { return versionTuple; }
+	const llvm::VersionTuple& get_version_tuple() const { return versionTuple; }
 
 	~Config() = default;
 };

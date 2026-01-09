@@ -12,7 +12,7 @@ class PrerunMetaTodo : public PrerunSentence {
   public:
 	PrerunMetaTodo(Maybe<String> _message, FileRangePtr _fileRange) : PrerunSentence(_fileRange), message(_message) {}
 
-	useit static PrerunMetaTodo* create(Maybe<String> message, FileRangePtr fileRange) {
+	static PrerunMetaTodo* create(Maybe<String> message, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PrerunMetaTodo), message, fileRange);
 	}
 
@@ -25,15 +25,15 @@ class MetaTodo : public Sentence {
   public:
 	MetaTodo(Maybe<String> _message, FileRangePtr _fileRange) : Sentence(_fileRange), message(_message) {}
 
-	useit static MetaTodo* create(Maybe<String> message, FileRangePtr fileRange) {
+	static MetaTodo* create(Maybe<String> message, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(MetaTodo), message, fileRange);
 	}
 
 	virtual void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) {}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::META_TODO; }
+	NodeType nodeType() const final { return NodeType::META_TODO; }
 };
 
 } // namespace qat::ast

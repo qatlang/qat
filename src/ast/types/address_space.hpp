@@ -16,9 +16,9 @@ struct AddressSpace {
 	PrerunExpression* value;
 	FileRangePtr      fileRange;
 
-	useit ir::AddressSpace to_ir(EmitCtx* ctx) const;
+	ir::AddressSpace to_ir(EmitCtx* ctx) const;
 
-	useit String to_string() const;
+	String to_string() const;
 };
 
 } // namespace qat::ast

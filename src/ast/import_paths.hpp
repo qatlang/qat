@@ -16,14 +16,14 @@ class ImportPaths final : public Node {
 	            Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange)
 	    : Node(_fileRange), isMember(_isMember), paths(_paths), visibSpec(_visibSpec), names(_names) {}
 
-	useit static ImportPaths* create(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
-	                                 Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
+	static ImportPaths* create(bool _isMember, Vec<StringLiteral*> _paths, Vec<Maybe<StringLiteral*>> _names,
+	                           Maybe<VisibilitySpec> _visibSpec, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(ImportPaths), _isMember, _paths, _names, _visibSpec, _fileRange);
 	}
 
 	void handle_filesystem_imports(ir::Mod* mod, ir::Ctx* irCtx) const final;
 
-	useit NodeType nodeType() const final { return NodeType::IMPORT_PATHS; }
+	NodeType nodeType() const final { return NodeType::IMPORT_PATHS; }
 };
 
 } // namespace qat::ast

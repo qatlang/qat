@@ -58,10 +58,10 @@ class LinkNames {
 	LinkNames();
 	LinkNames(Vec<LinkNameUnit> _units, Maybe<String> _foreignID, ir::Mod* _mod);
 
-	void            setLinkAlias(Maybe<String> _linkAlias);
-	void            addUnit(LinkNameUnit unit, Maybe<String> foreignID);
-	useit LinkNames newWith(LinkNameUnit unit, Maybe<String> foreignID);
-	useit String    toName() const;
+	void      setLinkAlias(Maybe<String> _linkAlias);
+	void      addUnit(LinkNameUnit unit, Maybe<String> foreignID);
+	LinkNames newWith(LinkNameUnit unit, Maybe<String> foreignID);
+	String    toName() const;
 };
 
 class LinkNameUnit {

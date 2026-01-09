@@ -18,8 +18,8 @@ class FlagInitialiser final : public PrerunExpression, public TypeInferrable {
 	    : PrerunExpression(std::move(_range)), type(_type), specialRange(_specialRange),
 	      isSpecialDefault(_isSpecialDefault), variants(_variants) {}
 
-	useit static FlagInitialiser* create(TypeLike type, Maybe<FileRangePtr> specialRange, bool isSpecialDefault,
-	                                     Vec<Identifier> variants, FileRangePtr range) {
+	static FlagInitialiser* create(TypeLike type, Maybe<FileRangePtr> specialRange, bool isSpecialDefault,
+	                               Vec<Identifier> variants, FileRangePtr range) {
 		return std::construct_at(OwnNormal(FlagInitialiser), type, std::move(specialRange), isSpecialDefault,
 		                         std::move(variants), std::move(range));
 	}
@@ -28,11 +28,11 @@ class FlagInitialiser final : public PrerunExpression, public TypeInferrable {
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent, EmitCtx* ctx) final;
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) final;
+	ir::PrerunValue* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::FLAG_INITIALISER; }
+	NodeType nodeType() const final { return NodeType::FLAG_INITIALISER; }
 
-	useit String to_string() const final;
+	String to_string() const final;
 };
 
 } // namespace qat::ast

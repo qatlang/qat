@@ -11,15 +11,15 @@ class Continue final : public Sentence {
   public:
 	Continue(Maybe<Identifier> _tag, FileRangePtr _fileRange) : Sentence(_fileRange), tag(_tag) {}
 
-	useit static Continue* create(Maybe<Identifier> _tag, FileRangePtr _fileRange) {
+	static Continue* create(Maybe<Identifier> _tag, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(Continue), _tag, _fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::Value* emit(EmitCtx* ctx) final;
+	ir::Value* emit(EmitCtx* ctx) final;
 
-	useit NodeType nodeType() const final { return NodeType::CONTINUE; }
+	NodeType nodeType() const final { return NodeType::CONTINUE; }
 };
 
 } // namespace qat::ast

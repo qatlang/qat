@@ -13,7 +13,7 @@ class CustomFloatLiteral final : public PrerunExpression, public TypeInferrable 
 	CustomFloatLiteral(String _value, String _kind, FileRangePtr _fileRange)
 	    : PrerunExpression(_fileRange), value(_value), kind(_kind) {}
 
-	useit static CustomFloatLiteral* create(String _value, String _kind, FileRangePtr _fileRange) {
+	static CustomFloatLiteral* create(String _value, String _kind, FileRangePtr _fileRange) {
 		return std::construct_at(OwnNormal(CustomFloatLiteral), _value, _kind, _fileRange);
 	}
 
@@ -21,11 +21,11 @@ class CustomFloatLiteral final : public PrerunExpression, public TypeInferrable 
 
 	void update_dependencies(ir::EmitPhase, Maybe<ir::DependType>, ir::EntityState*, EmitCtx*) final {}
 
-	useit ir::PrerunValue* emit(EmitCtx* ctx) override;
+	ir::PrerunValue* emit(EmitCtx* ctx) override;
 
-	useit String to_string() const override;
+	String to_string() const override;
 
-	useit NodeType nodeType() const override { return NodeType::CUSTOM_FLOAT_LITERAL; }
+	NodeType nodeType() const override { return NodeType::CUSTOM_FLOAT_LITERAL; }
 };
 
 } // namespace qat::ast

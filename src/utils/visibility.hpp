@@ -1,8 +1,9 @@
 #ifndef QAT_UTILS_VISIBILITY_HPP
 #define QAT_UTILS_VISIBILITY_HPP
 
-#include "./helpers.hpp"
-#include "./macros.hpp"
+#include <helpers/hashmap.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
 
 namespace qat {
 
@@ -84,14 +85,14 @@ class AccessInfo {
 
 class Visibility {
   public:
-	static const Map<VisibilityKind, String> kindValueMap;
-	static const Map<String, VisibilityKind> valueKindMap;
+	static const HashMap<VisibilityKind, String> kindValueMap;
+	static const HashMap<String, VisibilityKind> valueKindMap;
 
 	static String getValue(VisibilityKind kind);
 
-	static VisibilityKind getKind(const String& value);
+	static VisibilityKind getKind(String const& value);
 
-	static bool is_accessible(const VisibilityInfo& visibility, Maybe<AccessInfo> reqInfo);
+	static bool is_accessible(VisibilityInfo const& visibility, Maybe<AccessInfo> reqInfo);
 };
 
 } // namespace qat

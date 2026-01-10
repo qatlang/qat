@@ -1,7 +1,6 @@
 add_library(utils STATIC
 	file_range.cpp
 	identifier.cpp
-	parse_boxes_identifier.cpp
 	profiler.cc
 	qat_region.cpp
 	run_command.cc
@@ -14,6 +13,6 @@ target_compile_options(utils PRIVATE
   -Wall
   -Wunused)
 
-target_include_directories(utils SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include")
+target_include_directories(utils SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_libraries(utils PUBLIC Boost::filesystem Boost::json)

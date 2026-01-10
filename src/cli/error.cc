@@ -7,8 +7,8 @@ namespace qat::cli {
 
 #define OnColorMode(col) (noColors ? "" : col)
 
-void Error(const String& message, Maybe<fs::path> path) { Logger::get()->fatalError(message, path); }
+void Error(const String& message, Maybe<FilePath> path) { Logger::get()->fatalError(message, path); }
 
-void Warning(const String& message, Maybe<fs::path> path) { Logger::get()->warn(message, path); }
+void Warning(const String& message, Maybe<FilePath> path) { Logger::get()->warn(message, path); }
 
 } // namespace qat::cli

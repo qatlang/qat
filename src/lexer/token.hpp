@@ -2,9 +2,10 @@
 #define QAT_LEXER_TOKEN_HPP
 
 #include "../utils/file_range.hpp"
-#include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
 #include "./token_type.hpp"
+
+#include <helpers/string.hpp>
 
 namespace qat::lexer {
 

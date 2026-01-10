@@ -290,7 +290,7 @@ VisibilityInfo EmitCtx::get_visibility_info(Maybe<ast::VisibilitySpec> spec) {
 				return VisibilityInfo::file(mod->get_parent_file());
 			}
 			case VisibilityKind::folder: {
-				auto folderPath = fs::canonical(fs::path(mod->get_file_path()).parent_path());
+				auto folderPath = fs::canonical(FilePath(mod->get_file_path()).parent_path());
 				if (not mod->has_folder_module(folderPath)) {
 					Error("Could not find folder module with path: " + color(folderPath.string()), spec->range);
 				}

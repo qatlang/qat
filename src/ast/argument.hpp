@@ -1,7 +1,6 @@
 #ifndef QAT_AST_ARGUMENT_HPP
 #define QAT_AST_ARGUMENT_HPP
 
-#include "../utils/macros.hpp"
 #include "./types/qat_type.hpp"
 
 namespace qat::ast {

@@ -2,9 +2,9 @@
 #define QAT_AST_TYPES_ADDRESS_SPACE_HPP
 
 #include "../../IR/types/address_space.hpp"
-#include "../../utils/helpers.hpp"
 #include "../../utils/identifier.hpp"
-#include "../../utils/macros.hpp"
+
+#include <helpers/string.hpp>
 
 namespace qat::ast {
 

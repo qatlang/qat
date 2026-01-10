@@ -2,7 +2,9 @@
 
 #include <chrono>
 #include <experimental/simd>
+#if ENABLE_PROFILER
 #include <fstream>
+#endif
 
 namespace qat {
 
@@ -20,8 +22,8 @@ ProfileScope::~ProfileScope() {
 	}
 }
 
-std::unordered_map<String, Pair<usize, usize>> Profiler::timings          = {};
-std::array<String, 3>                          Profiler::prefixExclusions = {"qat::lexer::", "qat::parser::", "qat::"};
+HashMap<String, Pair<usize, usize>> Profiler::timings          = {};
+Array<String, 3>                    Profiler::prefixExclusions = {"qat::lexer::", "qat::parser::", "qat::"};
 
 void Profiler::write_to_file(String filePath) {
 #if ENABLE_PROFILER

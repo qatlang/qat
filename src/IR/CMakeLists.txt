@@ -21,7 +21,7 @@ target_compile_options(IR PRIVATE
   -Wall
   -Wunused)
 
-target_include_directories(IR SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}")
+target_include_directories(IR SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 add_subdirectory(types/)
 

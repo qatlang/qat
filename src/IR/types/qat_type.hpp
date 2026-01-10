@@ -1,11 +1,13 @@
 #ifndef QAT_IR_TYPES_TYPE_HPP
 #define QAT_IR_TYPES_TYPE_HPP
 
-#include "../../utils/macros.hpp"
 #include "../uniq.hpp"
 #include "./type_kind.hpp"
 
-#include <unordered_map>
+#include <helpers/hashmap.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 
 namespace llvm {
 class Type;
@@ -64,10 +66,10 @@ class Type : public Uniq {
 	String      linkingName;
 	llvm::Type* llvmType;
 
-	Vec<DoneSkill*>                             defaultImplementations;
-	std::unordered_map<Skill*, DoneSkill*>      unnamedImplementations;
-	std::unordered_multimap<Skill*, DoneSkill*> namedImplementations;
-	std::unordered_multimap<String, Skill*>     methodToSkillsMapping;
+	Vec<DoneSkill*>                  defaultImplementations;
+	HashMap<Skill*, DoneSkill*>      unnamedImplementations;
+	HashMultiMap<Skill*, DoneSkill*> namedImplementations;
+	HashMultiMap<String, Skill*>     methodToSkillsMapping;
 
 	TypeInfo* typeInfo = nullptr;
 

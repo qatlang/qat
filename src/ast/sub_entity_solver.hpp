@@ -1,9 +1,9 @@
 #ifndef QAT_AST_SUB_ENTITY_SOLVER_HPP
 #define QAT_AST_SUB_ENTITY_SOLVER_HPP
 
-#include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
-#include "../utils/macros.hpp"
+
+#include <helpers/vec.hpp>
 
 namespace qat::ir {
 class Value;

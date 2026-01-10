@@ -11,6 +11,6 @@ target_compile_options(ASTMeta PRIVATE
 
 target_link_directories(ASTMeta PUBLIC ../../cli)
 
-target_include_directories(ASTMeta SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(ASTMeta SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_libraries(ASTMeta cli)

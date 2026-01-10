@@ -36,7 +36,7 @@ target_compile_options(ASTTypes PRIVATE
   -Wall
   -Wunused)
 
-target_include_directories(ASTTypes SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(ASTTypes SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_directories(ASTTypes PUBLIC ../../utils)
 

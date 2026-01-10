@@ -161,7 +161,7 @@ void DefineToggleType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 		if (metaIR->has_key(ir::MetaInfo::packedKey)) {
 			auto packVal = metaIR->get_value_for(ir::MetaInfo::packedKey);
 			if (not packVal->get_ir_type()->is_bool()) {
-				irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
+				irCtx->Error("The key " + irCtx->color(String(ir::MetaInfo::packedKey)) + " expects a value of type " +
 				                 irCtx->color("bool"),
 				             metaInfo.value().fileRange);
 			}

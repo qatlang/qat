@@ -6,11 +6,11 @@
 
 namespace qat {
 
-Maybe<Unique<Logger>> Logger::instance = None;
+Maybe<Own<Logger>> Logger::instance = None;
 
 Logger::Logger() {}
 
-Unique<Logger> const& Logger::get() {
+Own<Logger> const& Logger::get() {
 	if (not instance.has_value()) {
 		instance = std::make_unique<Logger>();
 	}

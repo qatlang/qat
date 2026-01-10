@@ -8,7 +8,7 @@ target_compile_options(parser PRIVATE
   -Wall
   -Wunused)
 
-target_include_directories(parser SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(parser SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_directories(parser
 	PUBLIC ../ast

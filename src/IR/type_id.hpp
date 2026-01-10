@@ -1,10 +1,9 @@
 #ifndef QAT_IR_TYPE_ID_HPP
 #define QAT_IR_TYPE_ID_HPP
 
-#include "../utils/macros.hpp"
 #include "../utils/qat_region.hpp"
 
-#include <unordered_map>
+#include <helpers/hashmap.hpp>
 
 namespace llvm {
 class Constant;
@@ -35,7 +34,7 @@ struct ModTypeInfo {
 };
 
 struct TypeInfo {
-	static std::unordered_map<llvm::Constant*, TypeInfo*> idMapping;
+	static HashMap<llvm::Constant*, TypeInfo*> idMapping;
 
 	static Mod* builtinModule;
 

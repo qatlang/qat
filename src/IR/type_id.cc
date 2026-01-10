@@ -14,7 +14,7 @@
 
 namespace qat::ir {
 
-std::unordered_map<llvm::Constant*, TypeInfo*> TypeInfo::idMapping{};
+HashMap<llvm::Constant*, TypeInfo*> TypeInfo::idMapping{};
 
 llvm::StructType* TypeInfo::typeInfoType = nullptr;
 

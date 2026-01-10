@@ -1,8 +1,9 @@
 #ifndef QAT_UTILS_LAUNCH_PROCESS_HPP
 #define QAT_UTILS_LAUNCH_PROCESS_HPP
 
-#include "helpers.hpp"
-#include "macros.hpp"
+#include <helpers/pair.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat {
 

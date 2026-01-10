@@ -1,8 +1,8 @@
 #ifndef QAT_IR_OPERATOR_HPP
 #define QAT_IR_OPERATOR_HPP
 
-#include "../../utils/helpers.hpp"
-#include "../../utils/macros.hpp"
+#include <helpers/integers.hpp>
+#include <helpers/string.hpp>
 
 namespace qat::ast {
 

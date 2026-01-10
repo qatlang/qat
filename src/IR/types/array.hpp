@@ -1,9 +1,11 @@
 #ifndef QAT_IR_TYPES_ARRAY_HPP
 #define QAT_IR_TYPES_ARRAY_HPP
 
-#include "../../utils/helpers.hpp"
 #include "./qat_type.hpp"
 
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
 #include <llvm/IR/LLVMContext.h>
 
 namespace qat::ir {

@@ -10,8 +10,8 @@
 #include "./qat_type.hpp"
 #include "expanded_type.hpp"
 
+#include <helpers/deque.hpp>
 #include <llvm/IR/LLVMContext.h>
-#include <string>
 #include <utility>
 
 namespace qat::ast {

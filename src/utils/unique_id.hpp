@@ -1,7 +1,8 @@
 #ifndef QAT_UTILS_UNIQUE_ID_HPP
 #define QAT_UTILS_UNIQUE_ID_HPP
 
-#include "./helpers.hpp"
+#include <helpers/integers.hpp>
+#include <helpers/string.hpp>
 
 namespace qat::utils {
 

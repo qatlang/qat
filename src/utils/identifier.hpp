@@ -1,8 +1,10 @@
 #ifndef QAT_UTILS_IDENTIFIER_HPP
 #define QAT_UTILS_IDENTIFIER_HPP
 
-#include "./helpers.hpp"
 #include "file_range.hpp"
+
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat {
 

@@ -6,14 +6,16 @@
 #include "../ast/types/variadics.hpp"
 #include "../lexer/token.hpp"
 #include "../lexer/token_type.hpp"
-#include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
 
 #include <chrono>
-#include <map>
-#include <optional>
+#include <helpers/files.hpp>
+#include <helpers/hashmap.hpp>
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ast {
 
@@ -42,12 +44,12 @@ struct EntityMetadata {
 
 class Parser {
   private:
-	Vec<lexer::Token>&            tokens;
-	Vec<fs::path>                 importedPaths;
-	Vec<fs::path>                 memberPaths;
-	std::map<usize, lexer::Token> comments;
-	ParserContext                 g_ctx;
-	ir::Ctx*                      irCtx;
+	Vec<lexer::Token>&           tokens;
+	Vec<FilePath>                importedPaths;
+	Vec<FilePath>                memberPaths;
+	HashMap<usize, lexer::Token> comments;
+	ParserContext                g_ctx;
+	ir::Ctx*                     irCtx;
 
 	// Filter all comments from the original token sequence and set a new
 	// sequence that maps comments to the relevant AST members
@@ -106,9 +108,9 @@ class Parser {
 	ast::ImportPaths* parse_import_paths(bool isMember, usize from, usize upto, Maybe<ast::VisibilitySpec> spec,
 	                                     FileRangePtr start);
 
-	Vec<fs::path>& get_imported_paths();
+	Vec<FilePath>& get_imported_paths();
 
-	Vec<fs::path>& get_member_paths();
+	Vec<FilePath>& get_member_paths();
 
 	void clear_member_paths();
 

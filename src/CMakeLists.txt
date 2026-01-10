@@ -155,7 +155,7 @@ add_subdirectory(lexer/)
 add_subdirectory(parser/)
 add_subdirectory(IR/)
 
-target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include")
+target_include_directories(${PROJECT_NAME} SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${Boost_INCLUDE_DIRS}" "${LIBS_DIR}/icu4c/include" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_directories(${PROJECT_NAME}
 	PUBLIC ast/ lexer/ parser/ utils/ cli/ IR/
@@ -163,7 +163,7 @@ target_link_directories(${PROJECT_NAME}
 )
 
 if(is_os_macos AND CMAKE_CROSSCOMPILING)
-	target_include_directories(${PROJECT_NAME} ${CMAKE_SYSROOT}/usr/include)
+	target_include_directories(${PROJECT_NAME} ${CMAKE_SYSROOT}/usr/include "${CMAKE_SOURCE_DIR}/../include")
 	target_link_directories(${PROJECT_NAME} ${CMAKE_SYSROOT}/usr/lib)
 endif()
 

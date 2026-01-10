@@ -1,9 +1,12 @@
 #ifndef QAT_AST_SKILL_ENTITY_HPP
 #define QAT_AST_SKILL_ENTITY_HPP
 
-#include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
 #include "./generics.hpp"
+
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ast {
 

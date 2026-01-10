@@ -1,8 +1,11 @@
 #ifndef QAT_AST_PRERUN_CUSTOM_INTEGER_LITERAL_HPP
 #define QAT_AST_PRERUN_CUSTOM_INTEGER_LITERAL_HPP
 
-#include "../../utils/helpers.hpp"
 #include "../expression.hpp"
+
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
 
 namespace qat::ast {
 

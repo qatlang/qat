@@ -16,7 +16,6 @@
 #include "./utils/visibility.hpp"
 
 #include <chrono>
-#include <filesystem>
 #include <llvm/ADT/StringMap.h>
 #include <llvm/MC/TargetRegistry.h>
 #include <llvm/Support/TargetSelect.h>
@@ -24,6 +23,7 @@
 #include <llvm/TargetParser/Host.h>
 
 #if OS_IS_WINDOWS
+#include "../utils/macros.hpp"
 #if RUNTIME_IS_MINGW
 #include <sdkddkver.h>
 #include <windows.h>
@@ -328,23 +328,23 @@ void QatSitter::initialise() {
 	SHOW("Sitter reached completion")
 }
 
-void QatSitter::remove_entity_with_path(const fs::path& path) {
+void QatSitter::remove_entity_with_path(FilePath const& path) {
 	for (auto item = fileEntities.begin(); item != fileEntities.end(); item++) {
 		if (((*item)->get_mod_type() == ir::ModuleType::file || (*item)->get_mod_type() == ir::ModuleType::folder) &&
-		    fs::equivalent(fs::path((*item)->get_file_path()), path)) {
+		    fs::equivalent(FilePath((*item)->get_file_path()), path)) {
 			fileEntities.erase(item);
 			return;
 		}
 	}
 }
 
-Maybe<Pair<String, fs::path>> QatSitter::detect_lib_file(const fs::path& path) {
+Maybe<Pair<String, FilePath>> QatSitter::detect_lib_file(FilePath const& path) {
 	if (fs::is_directory(path)) {
 		for (const auto& item : fs::directory_iterator(path)) {
 			if (fs::is_regular_file(item)) {
 				auto name = item.path().filename().string();
 				if (name.ends_with(".lib.qat")) {
-					return Pair<String, fs::path>(name.substr(0, name.length() - 8),
+					return Pair<String, FilePath>(name.substr(0, name.length() - 8),
 					                              item); // NOLINT(readability-magic-numbers)
 				}
 			}
@@ -353,23 +353,23 @@ Maybe<Pair<String, fs::path>> QatSitter::detect_lib_file(const fs::path& path) {
 		auto name = path.filename().string();
 		if (name.ends_with(".lib.qat")) {
 			SHOW("lib file detected: " << name.substr(0, name.length() - 8))
-			return Pair<String, fs::path>(name.substr(0, name.length() - 8), path); // NOLINT(readability-magic-numbers)
+			return Pair<String, FilePath>(name.substr(0, name.length() - 8), path); // NOLINT(readability-magic-numbers)
 		}
 	}
 	return None;
 }
 
-bool QatSitter::is_name_valid(const String& name) {
+bool QatSitter::is_name_valid(String const& name) {
 	auto lexRes = lexer::Lexer::word_to_token(name, nullptr);
 	return (lexRes.has_value() && lexRes.value().type == lexer::TokenType::identifier);
 }
 
-void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
-	Vec<fs::path>                                  broughtPaths;
-	Vec<fs::path>                                  memberPaths;
+void QatSitter::handle_path(FilePath const& mainPath, ir::Ctx* irCtx) {
+	Vec<FilePath>                                  broughtPaths;
+	Vec<FilePath>                                  memberPaths;
 	auto*                                          cfg                    = cli::Config::get();
-	std::function<void(ir::Mod*, const fs::path&)> recursiveModuleCreator = [&](ir::Mod*        parentMod,
-	                                                                            const fs::path& path) {
+	std::function<void(ir::Mod*, FilePath const&)> recursiveModuleCreator = [&](ir::Mod*        parentMod,
+	                                                                            FilePath const& path) {
 		for (auto const& item : fs::directory_iterator(path)) {
 			if (fs::is_directory(item) && not fs::equivalent(item, cfg->get_output_path()) &&
 			    not ir::Mod::has_folder_module(item)) {
@@ -397,7 +397,7 @@ void QatSitter::handle_path(const fs::path& mainPath, ir::Ctx* irCtx) {
 					               FileRange::from_path(std::construct_at(OwnNormal(String), libCheckRes->second))),
 					    std::move(parseRes), VisibilityInfo::pub(), irCtx));
 				} else {
-					auto dirQatChecker = [](const fs::directory_entry& entry) {
+					auto dirQatChecker = [](fs::directory_entry const& entry) {
 						bool foundQatFile = false;
 						for (auto const& dirItem : fs::directory_iterator(entry)) {
 							if (dirItem.is_regular_file() && dirItem.path().extension() == ".qat") {

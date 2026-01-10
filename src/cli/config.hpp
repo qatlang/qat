@@ -1,9 +1,11 @@
 #ifndef QAT_CLI_CONFIG_HPP
 #define QAT_CLI_CONFIG_HPP
 
-#include "../utils/helpers.hpp"
-#include "../utils/macros.hpp"
-
+#include <helpers/files.hpp>
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 #include <llvm/Support/VersionTuple.h>
 
 namespace qat::cli {
@@ -18,16 +20,16 @@ class Config {
   private:
 	static Config* instance;
 
-	fs::path qatDirPath;
+	FilePath qatDirPath;
 	String   buildCommit;
 	String   invokePath;
 
-	Maybe<fs::path> coreLibPath;
-	Maybe<fs::path> toolchainPath;
+	Maybe<FilePath> coreLibPath;
+	Maybe<FilePath> toolchainPath;
 
-	Maybe<fs::path> outputPath;
+	Maybe<FilePath> outputPath;
 
-	Vec<fs::path> paths;
+	Vec<FilePath> paths;
 	Maybe<String> targetTriple;
 	Maybe<String> clangPath;
 	Maybe<String> linkerPath;
@@ -149,13 +151,13 @@ class Config {
 
 	String get_linker_path() const { return linkerPath.value(); }
 
-	fs::path get_std_lib_path() const { return coreLibPath.value(); }
+	FilePath get_std_lib_path() const { return coreLibPath.value(); }
 
-	fs::path get_toolchain_path() const { return toolchainPath.value(); }
+	FilePath get_toolchain_path() const { return toolchainPath.value(); }
 
-	fs::path get_output_path() const { return outputPath.value_or(fs::current_path()); }
+	FilePath get_output_path() const { return outputPath.value_or(fs::current_path()); }
 
-	Vec<fs::path> get_paths() const { return paths; }
+	Vec<FilePath> get_paths() const { return paths; }
 
 	const llvm::VersionTuple& get_version_tuple() const { return versionTuple; }
 

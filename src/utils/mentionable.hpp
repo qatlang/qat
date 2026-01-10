@@ -2,7 +2,9 @@
 #define QAT_UTILS_MENTIONABLE_HPP
 
 #include "./file_range.hpp"
-#include "./helpers.hpp"
+
+#include <helpers/pair.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat {
 

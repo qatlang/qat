@@ -12,7 +12,7 @@ target_compile_options(ASTPrerunSentences PRIVATE
   -Wall
   -Wunused)
 
-target_include_directories(ASTPrerunSentences SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(ASTPrerunSentences SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_directories(ASTPrerunSentences PUBLIC ../../utils)
 

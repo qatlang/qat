@@ -6,6 +6,7 @@
 #include "../utils/identifier.hpp"
 #include "../utils/qat_region.hpp"
 
+#include <helpers/deque.hpp>
 #include <variant>
 
 namespace llvm {

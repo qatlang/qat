@@ -24,8 +24,9 @@
 #include "./types/void.hpp"
 #include "./value.hpp"
 
-#include <filesystem>
 #include <fstream>
+#include <helpers/array.hpp>
+#include <helpers/files.hpp>
 #include <lld/Common/Driver.h>
 #include <llvm/ADT/ArrayRef.h>
 #include <llvm/Analysis/CGSCCPassManager.h>
@@ -50,6 +51,7 @@
 #include <system_error>
 
 #if OS_IS_WINDOWS
+#include "../utils/macros.hpp"
 #if RUNTIME_IS_MINGW
 #include <sdkddkver.h>
 #include <windows.h>
@@ -63,15 +65,15 @@
 
 namespace qat::ir {
 
-std::map<InternalDependency, Function*> Mod::providedFunctions = {};
+HashMap<InternalDependency, Function*> Mod::providedFunctions = {};
 
 Vec<Mod*>       Mod::allModules{};
-Vec<fs::path>   Mod::usableNativeLibPaths{};
+Vec<FilePath>   Mod::usableNativeLibPaths{};
 Maybe<String>   Mod::usableClangPath      = None;
-Maybe<fs::path> Mod::windowsMSVCLibPath   = None;
-Maybe<fs::path> Mod::windowsATLMFCLibPath = None;
-Maybe<fs::path> Mod::windowsUCRTLibPath   = None;
-Maybe<fs::path> Mod::windowsUMLibPath     = None;
+Maybe<FilePath> Mod::windowsMSVCLibPath   = None;
+Maybe<FilePath> Mod::windowsATLMFCLibPath = None;
+Maybe<FilePath> Mod::windowsUCRTLibPath   = None;
+Maybe<FilePath> Mod::windowsUMLibPath     = None;
 
 void EntityState::do_next_phase(Mod* mod, Ctx* ctx) {
 	SHOW("EntityState::do_next_phase " << (name.has_value() ? name.value().value : ""))
@@ -103,7 +105,7 @@ void Mod::clear_all() {
 	}
 }
 
-bool Mod::has_file_module(const fs::path& fPath) {
+bool Mod::has_file_module(const FilePath& fPath) {
 	for (auto* mod : allModules) {
 		if ((mod->moduleType == ModuleType::file) || mod->rootLib) {
 			if (fs::equivalent(mod->filePath, fPath)) {
@@ -114,7 +116,7 @@ bool Mod::has_file_module(const fs::path& fPath) {
 	return false;
 }
 
-bool Mod::has_folder_module(const fs::path& fPath) {
+bool Mod::has_folder_module(const FilePath& fPath) {
 	for (auto* mod : allModules) {
 		if (mod->moduleType == ModuleType::folder) {
 			if (fs::equivalent(mod->filePath, fPath)) {
@@ -125,7 +127,7 @@ bool Mod::has_folder_module(const fs::path& fPath) {
 	return false;
 }
 
-Mod* Mod::get_file_module(const fs::path& fPath) {
+Mod* Mod::get_file_module(const FilePath& fPath) {
 	for (auto* mod : allModules) {
 		if ((mod->moduleType == ModuleType::file) || mod->rootLib) {
 			if (fs::equivalent(mod->filePath, fPath)) {
@@ -136,7 +138,7 @@ Mod* Mod::get_file_module(const fs::path& fPath) {
 	return nullptr;
 }
 
-Mod* Mod::get_folder_module(const fs::path& fPath) {
+Mod* Mod::get_folder_module(const FilePath& fPath) {
 	for (auto* mod : allModules) {
 		if (mod->moduleType == ModuleType::folder) {
 			if (fs::equivalent(mod->filePath, fPath)) {
@@ -147,7 +149,7 @@ Mod* Mod::get_folder_module(const fs::path& fPath) {
 	return nullptr;
 }
 
-Mod::Mod(Identifier _name, fs::path _filepath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
+Mod::Mod(Identifier _name, FilePath _filepath, FilePath _basePath, ModuleType _type, const VisibilityInfo& _visibility,
          Ctx* ctx)
     : name(std::move(_name)), moduleType(_type), filePath(std::move(_filepath)), basePath(std::move(_basePath)),
       visibility(_visibility) {
@@ -196,7 +198,7 @@ void Mod::entity_name_check(Ctx* ctx, Identifier name, ir::EntityType entTy) {
 	}
 }
 
-Mod* Mod::create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
+Mod* Mod::create(const Identifier& name, const FilePath& filepath, const FilePath& basePath, ModuleType type,
                  const VisibilityInfo& visib_info, Ctx* ctx) {
 	auto mod = std::construct_at(OwnNormal(Mod), name, filepath, basePath, type, visib_info, ctx);
 	SHOW("Created module " << mod)
@@ -341,7 +343,7 @@ bool Mod::triple_is_equivalent(const llvm::Triple& first, const llvm::Triple& se
 	}
 }
 
-Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Identifier sname, ModuleType type,
+Mod* Mod::create_submodule(Mod* parent, FilePath filepath, FilePath basePath, Identifier sname, ModuleType type,
                            const VisibilityInfo& visibilityInfo, Ctx* ctx) {
 	SHOW("Creating submodule: " << sname.value)
 	auto* sub = std::construct_at(OwnNormal(Mod), std::move(sname), std::move(filepath), std::move(basePath), type,
@@ -355,7 +357,7 @@ Mod* Mod::create_submodule(Mod* parent, fs::path filepath, fs::path basePath, Id
 	return sub;
 }
 
-Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
+Mod* Mod::create_file_mod(Mod* parent, FilePath filepath, FilePath basePath, Identifier fname, Vec<ast::Node*> nodes,
                           VisibilityInfo visibilityInfo, Ctx* ctx) {
 	auto* sub = std::construct_at(OwnNormal(Mod), std::move(fname), std::move(filepath), std::move(basePath),
 	                              ModuleType::file, visibilityInfo, ctx);
@@ -368,7 +370,7 @@ Mod* Mod::create_file_mod(Mod* parent, fs::path filepath, fs::path basePath, Ide
 	return sub;
 }
 
-Mod* Mod::create_root_lib(Mod* parent, fs::path filepath, fs::path basePath, Identifier fname, Vec<ast::Node*> nodes,
+Mod* Mod::create_root_lib(Mod* parent, FilePath filepath, FilePath basePath, Identifier fname, Vec<ast::Node*> nodes,
                           const VisibilityInfo& visibilityInfo, Ctx* ctx) {
 	auto* sub = std::construct_at(OwnNormal(Mod), std::move(fname), std::move(filepath), std::move(basePath),
 	                              ModuleType::lib, visibilityInfo, ctx);
@@ -2808,7 +2810,7 @@ std::set<String> Mod::get_all_linkable_libs() const {
 }
 
 void Mod::find_native_library_paths() {
-	Vec<fs::path> unixPaths    = {"/lib", "/usr/lib", "/usr/local/lib"};
+	Vec<FilePath> unixPaths    = {"/lib", "/usr/lib", "/usr/local/lib"};
 	auto          cfg          = cli::Config::get();
 	const auto    hostTriple   = llvm::Triple(LLVM_HOST_TRIPLE);
 	const auto    targetTriple = llvm::Triple(cfg->get_target_triple());
@@ -2853,17 +2855,17 @@ void Mod::find_native_library_paths() {
 		}
 	}
 	if (cfg->has_sysroot()) {
-		if (fs::exists(fs::path(cfg->get_sysroot()) / "lib")) {
-			usableNativeLibPaths.push_back(fs::path(cfg->get_sysroot()) / "lib");
+		if (fs::exists(FilePath(cfg->get_sysroot()) / "lib")) {
+			usableNativeLibPaths.push_back(FilePath(cfg->get_sysroot()) / "lib");
 		}
 	}
 }
 
-Maybe<fs::path> Mod::find_static_library_path(String libName) const {
+Maybe<FilePath> Mod::find_static_library_path(String libName) const {
 	SHOW("Finding static library path for " << libName)
 	for (auto folder : usableNativeLibPaths) {
-		if (fs::exists(fs::path(folder) / ("lib" + libName + ".a"))) {
-			return fs::path(folder) / ("lib" + libName + ".a");
+		if (fs::exists(FilePath(folder) / ("lib" + libName + ".a"))) {
+			return FilePath(folder) / ("lib" + libName + ".a");
 		}
 	}
 	return None;
@@ -2962,8 +2964,8 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 					}
 					if (version.has_value()) {
 						auto            versionPath = msvcMainPath / std::to_string(version.value());
-						Maybe<fs::path> candidateMSVCLibPath;
-						Maybe<fs::path> candidateATLMFCLibPath;
+						Maybe<FilePath> candidateMSVCLibPath;
+						Maybe<FilePath> candidateATLMFCLibPath;
 						if (target.isX86() && target.isArch64Bit()) {
 							candidateMSVCLibPath   = versionPath / "lib" / "x64";
 							candidateATLMFCLibPath = versionPath / "atlmfc" / "lib" / "x64";
@@ -3005,7 +3007,7 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 			} else if (findUCRTLibPath || findUMLibPath) {
 				auto windowsKitPath = windowsPath / "SDK";
 				if (fs::exists(windowsKitPath) && fs::is_directory(windowsKitPath)) {
-					Maybe<fs::path> osVerPath;
+					Maybe<FilePath> osVerPath;
 					Maybe<float>    osVer;
 					for (auto it : fs::directory_iterator(windowsKitPath)) {
 						if (fs::is_directory(it)) {
@@ -3030,8 +3032,8 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 					}
 					if (osVerPath.has_value() && fs::exists(osVerPath.value() / "Lib")) {
 						SHOW("Found OS Ver Path: " << (osVerPath.value() / "Lib").string())
-						std::array<u64, 4> verNums = {0, 0, 0, 0};
-						fs::path           osVerSDKPath;
+						Array<u64, 4> verNums = {0, 0, 0, 0};
+						FilePath      osVerSDKPath;
 						for (auto it : fs::directory_iterator(osVerPath.value() / "Lib")) {
 							if (fs::is_directory(it)) {
 								SHOW("In OS Ver main path, iterating " << it.path().string())
@@ -3044,10 +3046,10 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 								}
 								SHOW("Dot count is " << dotCount)
 								if (dotCount == 3) {
-									auto               firstDot  = osVersionStr.find('.');
-									auto               secondDot = osVersionStr.find('.', firstDot + 1);
-									auto               thirdDot  = osVersionStr.find('.', secondDot + 1);
-									std::array<u64, 4> newVerNum = {
+									auto          firstDot  = osVersionStr.find('.');
+									auto          secondDot = osVersionStr.find('.', firstDot + 1);
+									auto          thirdDot  = osVersionStr.find('.', secondDot + 1);
+									Array<u64, 4> newVerNum = {
 									    std::stoul(osVersionStr.substr(0, firstDot - 1)),
 									    std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
 									    std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
@@ -3070,7 +3072,7 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 						if (fs::exists(osVerSDKPath)) {
 							SHOW("Found OS Ver SDK Path: " << osVerSDKPath.string())
 							if (fs::exists(osVerSDKPath / "ucrt")) {
-								Maybe<fs::path> candidateUCRTPath;
+								Maybe<FilePath> candidateUCRTPath;
 								if (target.isX86() && target.isArch64Bit()) {
 									candidateUCRTPath = osVerSDKPath / "ucrt" / "x64";
 								} else if (target.isX86() && target.isArch32Bit()) {
@@ -3083,7 +3085,7 @@ bool Mod::find_windows_toolchain_libs(ir::Ctx* irCtx, bool findMSVCLibPath, bool
 								windowsUCRTLibPath = candidateUCRTPath;
 							}
 							if (fs::exists(osVerSDKPath / "um")) {
-								Maybe<fs::path> candidateUMPath;
+								Maybe<FilePath> candidateUMPath;
 								if (target.isX86() && target.isArch64Bit()) {
 									candidateUMPath = osVerSDKPath / "um" / "x64";
 								} else if (target.isX86() && target.isArch32Bit()) {
@@ -3157,7 +3159,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		if (not vsPath.has_value()) {
 			(void)find_windows_toolchain_libs(irCtx, true, true, false, false);
 		} else {
-			auto msvcMainPath = fs::path(vsPath.value()) / "VC" / "Tools" / "MSVC";
+			auto msvcMainPath = FilePath(vsPath.value()) / "VC" / "Tools" / "MSVC";
 			// / "14.32.31326" / "bin" / "Hostx64" / "x64";
 
 			if (not fs::exists(msvcMainPath)) {
@@ -3168,7 +3170,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 				//              None);
 				SHOW("Found MSVC Root path: " << msvcMainPath.string())
 				Maybe<int>      versionMajor;
-				Maybe<fs::path> versionPath;
+				Maybe<FilePath> versionPath;
 				for (auto it : fs::directory_iterator(msvcMainPath)) {
 					if (fs::is_directory(it)) {
 						auto dirName = it.path().filename().string();
@@ -3191,8 +3193,8 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 					(void)find_windows_toolchain_libs(irCtx, true, true, false, false);
 				} else {
 					SHOW("Found MSVC Version path")
-					Maybe<fs::path> candidateMSVCLibPath;
-					Maybe<fs::path> candidateATLMFCLibPath;
+					Maybe<FilePath> candidateMSVCLibPath;
+					Maybe<FilePath> candidateATLMFCLibPath;
 					if (target.isX86() && target.isArch64Bit()) {
 						candidateMSVCLibPath   = versionPath.value() / "lib" / "x64";
 						candidateATLMFCLibPath = versionPath.value() / "atlmfc" / "lib" / "x64";
@@ -3225,11 +3227,11 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 			//   irCtx->Error("Could not find installation path of the latest MSVC version", None);
 		}
 	}
-	auto windowsKitPath = fs::path("C:/Program Files (x86)/Windows Kits");
+	auto windowsKitPath = FilePath("C:/Program Files (x86)/Windows Kits");
 	if (not fs::exists(windowsKitPath)) {
 		(void)find_windows_toolchain_libs(irCtx, false, false, true, true);
 	} else {
-		Maybe<fs::path> osVerPath;
+		Maybe<FilePath> osVerPath;
 		Maybe<float>    osVer;
 		for (auto it : fs::directory_iterator(windowsKitPath)) {
 			if (fs::is_directory(it)) {
@@ -3254,8 +3256,8 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 		}
 		if (osVerPath.has_value() && fs::exists(osVerPath.value() / "Lib")) {
 			SHOW("Found OS Ver Path: " << (osVerPath.value() / "Lib").string())
-			std::array<u64, 4> verNums = {0, 0, 0, 0};
-			fs::path           osVerSDKPath;
+			Array<u64, 4> verNums = {0, 0, 0, 0};
+			FilePath      osVerSDKPath;
 			for (auto it : fs::directory_iterator(osVerPath.value() / "Lib")) {
 				if (fs::is_directory(it)) {
 					SHOW("In OS Ver main path, iterating " << it.path().string())
@@ -3268,13 +3270,13 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 					}
 					SHOW("Dot count is " << dotCount)
 					if (dotCount == 3) {
-						auto               firstDot  = osVersionStr.find('.');
-						auto               secondDot = osVersionStr.find('.', firstDot + 1);
-						auto               thirdDot  = osVersionStr.find('.', secondDot + 1);
-						std::array<u64, 4> newVerNum = {std::stoul(osVersionStr.substr(0, firstDot - 1)),
-						                                std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
-						                                std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
-						                                std::stoul(osVersionStr.substr(thirdDot + 1))};
+						auto          firstDot  = osVersionStr.find('.');
+						auto          secondDot = osVersionStr.find('.', firstDot + 1);
+						auto          thirdDot  = osVersionStr.find('.', secondDot + 1);
+						Array<u64, 4> newVerNum = {std::stoul(osVersionStr.substr(0, firstDot - 1)),
+						                           std::stoul(osVersionStr.substr(firstDot + 1, secondDot - 1)),
+						                           std::stoul(osVersionStr.substr(secondDot + 1, thirdDot - 1)),
+						                           std::stoul(osVersionStr.substr(thirdDot + 1))};
 						for (usize i = 0; i < 4; i++) {
 							if (newVerNum[i] > verNums[i]) {
 								verNums      = newVerNum;
@@ -3293,7 +3295,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 			if (fs::exists(osVerSDKPath)) {
 				SHOW("Found OS Ver SDK Path: " << osVerSDKPath.string())
 				if (fs::exists(osVerSDKPath / "ucrt")) {
-					Maybe<fs::path> candidateUCRTPath;
+					Maybe<FilePath> candidateUCRTPath;
 					if (target.isX86() && target.isArch64Bit()) {
 						candidateUCRTPath = osVerSDKPath / "ucrt" / "x64";
 					} else if (target.isX86() && target.isArch32Bit()) {
@@ -3306,7 +3308,7 @@ bool Mod::find_windows_sdk_paths(ir::Ctx* irCtx) {
 					windowsUCRTLibPath = candidateUCRTPath;
 				}
 				if (fs::exists(osVerSDKPath / "um")) {
-					Maybe<fs::path> candidateUMPath;
+					Maybe<FilePath> candidateUMPath;
 					if (target.isX86() && target.isArch64Bit()) {
 						candidateUMPath = osVerSDKPath / "um" / "x64";
 					} else if (target.isX86() && target.isArch32Bit()) {
@@ -3399,10 +3401,10 @@ void Mod::bundle_modules(Ctx* ctx) {
 			                                           : (ctx->clangTargetInfo->getTriple().isWasm() ? "wasm" : "")))
 			                   .string();
 			std::error_code err;
-			fs::create_directories(fs::path(outPath).parent_path(), err);
+			fs::create_directories(FilePath(outPath).parent_path(), err);
 			if (err) {
 				ctx->Error("Could not create the parent directories in the path " +
-				               ctx->color(fs::path(outPath).parent_path().string()) +
+				               ctx->color(FilePath(outPath).parent_path().string()) +
 				               ". The error message was: " + ctx->color(err.message()),
 				           None);
 			}
@@ -3523,10 +3525,10 @@ void Mod::bundle_modules(Ctx* ctx) {
 			                         .string();
 			// NOTE - Assuming both static and shared libraries live in the same directory
 			std::error_code err;
-			fs::create_directories(fs::path(outPath).parent_path(), err);
+			fs::create_directories(FilePath(outPath).parent_path(), err);
 			if (err) {
 				ctx->Error("Could not create the parent directories in the path " +
-				               ctx->color(fs::path(outPath).parent_path().string()) +
+				               ctx->color(FilePath(outPath).parent_path().string()) +
 				               ". The error message was: " + ctx->color(err.message()),
 				           None);
 			}
@@ -3909,7 +3911,7 @@ void Mod::bundle_modules(Ctx* ctx) {
 	}
 }
 
-fs::path Mod::get_resolved_output_path(const String& extension, Ctx* ctx) {
+FilePath Mod::get_resolved_output_path(const String& extension, Ctx* ctx) {
 	auto* config = cli::Config::get();
 	auto  fPath  = filePath;
 	auto  out    = fPath.replace_extension(extension);

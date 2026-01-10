@@ -1,7 +1,8 @@
 #ifndef QAT_EMIT_PHASE_HPP
 #define QAT_EMIT_PHASE_HPP
 
-#include "../utils/helpers.hpp"
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
 
 namespace qat::ir {
 

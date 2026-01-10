@@ -1,8 +1,6 @@
 #ifndef QAT_IR_METALIB_HPP
 #define QAT_IR_METALIB_HPP
 
-#include "../utils/macros.hpp"
-
 namespace qat::ir {
 
 class Mod;

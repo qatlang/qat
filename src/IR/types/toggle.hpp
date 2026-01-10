@@ -5,6 +5,8 @@
 #include "../../utils/visibility.hpp"
 #include "./expanded_type.hpp"
 
+#include <helpers/deque.hpp>
+
 namespace qat::ast {
 class DefineToggleType;
 }

@@ -2,7 +2,8 @@
 #define QAT_PARSER_TOKEN_FAMILY_HPP
 
 #include "../lexer/token_type.hpp"
-#include "../utils/helpers.hpp"
+
+#include <helpers/vec.hpp>
 
 namespace qat::parser {
 

@@ -49,6 +49,6 @@ target_compile_options(ASTExpressions PRIVATE
 
 target_link_directories(ASTExpressions PUBLIC ../../utils)
 
-target_include_directories(ASTExpressions SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(ASTExpressions SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_libraries(ASTExpressions utils)

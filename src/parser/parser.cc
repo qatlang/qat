@@ -152,9 +152,8 @@
 #include "./cache_symbol.hpp"
 #include "./parser_context.hpp"
 
-#include <array>
 #include <chrono>
-#include <string>
+#include <helpers/array.hpp>
 #include <utility>
 
 #define IdentifierAt(ind)     Identifier(tokens.at(ind).value, tokens.at(ind).fileRange)
@@ -301,11 +300,11 @@ ast::ImportEntities* Parser::parse_import_entities(ParserContext& ctx, Maybe<ast
 	return ast::ImportEntities::create(rootGroups, visibSpec, RangeSpan(fromMain, uptoMain));
 }
 
-Vec<fs::path>& Parser::get_imported_paths() { return importedPaths; }
+Vec<FilePath>& Parser::get_imported_paths() { return importedPaths; }
 
 void Parser::clear_imported_paths() { importedPaths.clear(); }
 
-Vec<fs::path>& Parser::get_member_paths() { return memberPaths; }
+Vec<FilePath>& Parser::get_member_paths() { return memberPaths; }
 
 void Parser::clear_member_paths() { memberPaths.clear(); }
 
@@ -720,13 +719,12 @@ Pair<ast::PrerunExpression*, usize> Parser::do_prerun_expression(ParserContext& 
 			}
 			case TokenType::byteLiteral:
 			case TokenType::characterLiteral: {
-				setCachedPreExp(
-				    token.type == TokenType::byteLiteral
-				        ? ast::Character::create_byte(ValueAt(i)[0], RangeAt(i))
-				        : ast::Character::create_char(std::array<u8, 4>{(u8)ValueAt(i)[0], (u8)ValueAt(i)[1],
-				                                                        (u8)ValueAt(i)[2], (u8)ValueAt(i)[3]},
-				                                      RangeAt(i)),
-				    i);
+				setCachedPreExp(token.type == TokenType::byteLiteral
+				                    ? ast::Character::create_byte(ValueAt(i)[0], RangeAt(i))
+				                    : ast::Character::create_char(Array<u8, 4>{(u8)ValueAt(i)[0], (u8)ValueAt(i)[1],
+				                                                               (u8)ValueAt(i)[2], (u8)ValueAt(i)[3]},
+				                                                  RangeAt(i)),
+				                i);
 				break;
 			}
 			case TokenType::unaryOperator: {
@@ -2511,8 +2509,8 @@ Vec<ast::Node*> Parser::parse(ParserContext preCtx, // NOLINT(misc-no-recursion)
 	};
 	auto hasCachedSymbol = [&c_sym]() { return c_sym.has_value(); };
 
-	std::deque<Token>      cacheT;
-	std::deque<ast::Type*> cacheTy;
+	Deque<Token>      cacheT;
+	Deque<ast::Type*> cacheTy;
 
 	Maybe<ast::VisibilitySpec> visibility;
 	auto                       setVisibility  = [&](ast::VisibilitySpec kind) { visibility = kind; };
@@ -4612,8 +4610,8 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 			case TokenType::characterLiteral: {
 				setCachedExpr(token.type == TokenType::byteLiteral
 				                  ? ast::Character::create_byte(ValueAt(i)[0], RangeAt(i))
-				                  : ast::Character::create_char(std::array<u8, 4>{(u8)ValueAt(i)[0], (u8)ValueAt(i)[1],
-				                                                                  (u8)ValueAt(i)[2], (u8)ValueAt(i)[3]},
+				                  : ast::Character::create_char(Array<u8, 4>{(u8)ValueAt(i)[0], (u8)ValueAt(i)[1],
+				                                                             (u8)ValueAt(i)[2], (u8)ValueAt(i)[3]},
 				                                                RangeAt(i)),
 				              i);
 				break;

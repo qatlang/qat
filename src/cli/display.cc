@@ -1,6 +1,7 @@
 #include "./display.hpp"
 #include "./version.hpp"
 
+#include <iostream>
 #include <llvm/Config/llvm-config.h>
 
 namespace qat::cli::display {

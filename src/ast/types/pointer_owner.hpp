@@ -3,7 +3,6 @@
 
 #include "../../IR/types/pointer.hpp"
 #include "../../utils/file_range.hpp"
-#include "../../utils/macros.hpp"
 
 namespace qat::ir {
 class Type;

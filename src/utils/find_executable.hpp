@@ -1,7 +1,9 @@
 #ifndef QAT_UTILS_FIND_EXECUTABLE_HPP
 #define QAT_UTILS_FIND_EXECUTABLE_HPP
 
-#include "./helpers.hpp"
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/string_view.hpp>
 
 namespace qat {
 

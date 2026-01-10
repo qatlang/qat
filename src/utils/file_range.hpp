@@ -1,10 +1,10 @@
-#ifndef QAT_UTILS_FILE_PLACEMENT_HPP
-#define QAT_UTILS_FILE_PLACEMENT_HPP
-
-#include "./helpers.hpp"
+#ifndef QAT_UTILS_FILE_RANGE_HPP
+#define QAT_UTILS_FILE_RANGE_HPP
 
 #include <boost/json.hpp>
-#include <filesystem>
+#include <helpers/integers.hpp>
+#include <helpers/string.hpp>
+#include <ostream>
 
 namespace qat {
 

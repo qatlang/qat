@@ -1,8 +1,9 @@
 #ifndef QAT_IR_TYPES_ADDRESS_SPACE_HPP
 #define QAT_IR_TYPES_ADDRESS_SPACE_HPP
 
-#include "../../utils/helpers.hpp"
-#include "../../utils/macros.hpp"
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
 
 namespace llvm {
 class Value;

@@ -14,7 +14,6 @@
 #include <clang/Basic/AddressSpaces.h>
 #include <clang/Basic/DiagnosticDriver.h>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <llvm/IR/GlobalValue.h>

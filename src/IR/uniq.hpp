@@ -1,9 +1,7 @@
 #ifndef QAT_IR_ELEMENT_HPP
 #define QAT_IR_ELEMENT_HPP
 
-#include "../utils/macros.hpp"
 #include "../utils/unique_id.hpp"
-#include <string>
 
 namespace qat::ir {
 
@@ -17,7 +15,7 @@ class Uniq {
 
 	u64 get_id() const { return id; }
 
-	bool isID(const u64& val) const { return (val == id); }
+	bool isID(u64 val) const { return val == id; }
 };
 
 } // namespace qat::ir

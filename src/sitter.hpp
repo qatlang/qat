@@ -5,13 +5,13 @@
 #include "./IR/qat_module.hpp"
 #include "./lexer/lexer.hpp"
 #include "./parser/parser.hpp"
-#include "./utils/helpers.hpp"
 
-#include <filesystem>
+#include <helpers/deque.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/pair.hpp>
+#include <helpers/string.hpp>
 
 namespace qat {
-
-namespace fs = std::filesystem;
 
 class QatSitter {
 	friend class qat::ir::Ctx;
@@ -29,13 +29,13 @@ class QatSitter {
 
 	void initialise();
 	void destroy();
-	void remove_entity_with_path(const fs::path& path);
-	void handle_path(const fs::path& path, ir::Ctx* irCtx);
+	void remove_entity_with_path(FilePath const& path);
+	void handle_path(FilePath const& path, ir::Ctx* irCtx);
 	void display_stats();
 
-	static bool is_name_valid(const String& name);
+	static bool is_name_valid(String const& name);
 
-	static Maybe<Pair<String, fs::path>> detect_lib_file(const fs::path& path);
+	static Maybe<Pair<String, FilePath>> detect_lib_file(FilePath const& path);
 
 	~QatSitter();
 };

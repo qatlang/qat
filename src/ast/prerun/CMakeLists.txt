@@ -34,6 +34,6 @@ target_compile_options(ASTPrerun PRIVATE
 
 target_link_directories(ASTPrerun PUBLIC ../../utils)
 
-target_include_directories(ASTPrerun SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(ASTPrerun SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_libraries(ASTPrerun utils)

@@ -15,7 +15,7 @@
 
 namespace qat::ir {
 
-std::unordered_map<MethodType, String> Method::methodTypes = {
+HashMap<MethodType, String> Method::methodTypes = {
     {MethodType::normal, "normalMethod"},
     {MethodType::staticFn, "staticFunction"},
     {MethodType::valueMethod, "valueMethod"},

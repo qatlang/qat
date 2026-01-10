@@ -3,10 +3,9 @@
 
 #include "../ast/types/qat_type.hpp"
 #include "../ast/types/typed_generic.hpp"
-#include "../utils/helpers.hpp"
-#include <deque>
-#include <map>
-#include <string>
+
+#include <helpers/deque.hpp>
+#include <helpers/string.hpp>
 
 namespace qat::parser {
 
@@ -19,12 +18,12 @@ class ParserContext {
   public:
 	ParserContext();
 
-	bool                        has_typed_generic(const String& name) const;
-	bool                        has_prerun_generic(const String& name) const;
+	bool                        has_typed_generic(String const& name) const;
+	bool                        has_prerun_generic(String const& name) const;
 	void                        add_abstract_generic(ast::GenericAbstractType* type);
-	void                        remove_named_generic_abstract(const String& name);
-	ast::TypedGenericAbstract*  get_typed_generic(const String& name);
-	ast::PrerunGenericAbstract* get_prerun_generic(const String& name);
+	void                        remove_named_generic_abstract(String const& name);
+	ast::TypedGenericAbstract*  get_typed_generic(String const& name);
+	ast::PrerunGenericAbstract* get_prerun_generic(String const& name);
 
   private:
 	// All generic abstracts available in the current scope

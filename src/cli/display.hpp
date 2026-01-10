@@ -1,9 +1,7 @@
 #ifndef QAT_CLI_DISPLAY_HPP
 #define QAT_CLI_DISPLAY_HPP
 
-#include "../utils/helpers.hpp"
-#include <iostream>
-#include <string>
+#include <helpers/string.hpp>
 
 namespace qat::cli::display {
 
@@ -17,7 +15,7 @@ void shortVersion();
 void about();
 
 // Displays the build info
-void build_info(const String& buildCommit);
+void build_info(String const& buildCommit);
 
 // Displays detailed information on how to use the CLI of the compiler.
 void help();

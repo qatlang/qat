@@ -1,7 +1,7 @@
 #ifndef QAT_LEXER_TOKEN_TYPE_HPP
 #define QAT_LEXER_TOKEN_TYPE_HPP
 
-#include "../utils/helpers.hpp"
+#include <helpers/integers.hpp>
 
 namespace qat::lexer {
 

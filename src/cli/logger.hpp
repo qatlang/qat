@@ -2,7 +2,11 @@
 #define QAT_LOGGER_HPP
 
 #include "../utils/file_range.hpp"
-#include "../utils/helpers.hpp"
+
+#include <helpers/files.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/pointers.hpp>
+#include <helpers/string.hpp>
 #include <iostream>
 #include <variant>
 
@@ -17,13 +21,13 @@ namespace cli {
 class Config;
 }
 
-using ErrorLocation = std::variant<FileRangePtr, fs::path>;
+using ErrorLocation = std::variant<FileRangePtr, FilePath>;
 
-inline fs::path getPathFromErrorLocation(ErrorLocation& loc) {
+inline FilePath getPathFromErrorLocation(ErrorLocation& loc) {
 	if (loc.index() == 0) {
 		return *std::get<FileRangePtr>(loc)->file;
 	} else {
-		return std::get<fs::path>(loc);
+		return std::get<FilePath>(loc);
 	}
 }
 
@@ -33,14 +37,15 @@ class Logger {
 	friend cli::Config;
 	friend ir::Ctx;
 
-	static Maybe<Unique<Logger>> instance;
+	static Maybe<Own<Logger>> instance;
 
 	LogLevel logLevel = LogLevel::NONE;
 
   public:
 	Logger();
 	~Logger() = default;
-	static Unique<Logger> const& get();
+
+	static Own<Logger> const& get();
 
 	void say(String message) const {
 		if (logLevel == LogLevel::NONE) {

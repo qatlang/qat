@@ -4,6 +4,8 @@
 
 int main(int count, const char** args) {
 	using namespace qat;
+	static_assert(std::numeric_limits<float>::is_iec559, "float is expected to be 32 bits");
+	static_assert(std::numeric_limits<double>::is_iec559, "double is expected to be 64 bits");
 
 	auto* cli = cli::Config::initialise(count, args);
 	if (cli->should_exit()) {

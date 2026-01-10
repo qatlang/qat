@@ -39,9 +39,10 @@ void DefineStructType::create_opaque(ir::Mod* mod, ir::Ctx* irCtx) {
 		}
 		auto eqStructTy =
 		    hasAllMems
-		        ? llvm::StructType::get(
-		              irCtx->llctx, allMemEqTys,
-		              metaIR.has_value() ? metaIR->get_value_as_bool(ir::MetaInfo::packedKey).value_or(false) : false)
+		        ? llvm::StructType::get(irCtx->llctx, allMemEqTys,
+		                                metaIR.has_value()
+		                                    ? metaIR->get_value_as_bool(String(ir::MetaInfo::packedKey)).value_or(false)
+		                                    : false)
 		        : nullptr;
 		setOpaque(
 		    ir::OpaqueType::get(name, {}, None, ir::OpaqueSubtypeKind::STRUCT, mod,
@@ -104,9 +105,10 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 		}
 		auto eqStructTy =
 		    hasAllMems
-		        ? llvm::StructType::get(
-		              irCtx->llctx, allMemEqTys,
-		              metaIR.has_value() ? metaIR->get_value_as_bool(ir::MetaInfo::packedKey).value_or(false) : false)
+		        ? llvm::StructType::get(irCtx->llctx, allMemEqTys,
+		                                metaIR.has_value()
+		                                    ? metaIR->get_value_as_bool(String(ir::MetaInfo::packedKey)).value_or(false)
+		                                    : false)
 		        : nullptr;
 		SHOW("Setting opaque. Generic count: " << genericsIR.size() << " Module is " << mod << ". GenericStructType is "
 		                                       << genericStructType)
@@ -149,7 +151,7 @@ ir::StructType* DefineStructType::create_type(Vec<ir::GenericToFill*> const& gen
 	SHOW("Creating struct type: " << cTyName.value)
 	auto resultType = ir::StructType::create(
 	    mod, cTyName, genericsIR, get_opaque(), mems, mainVisibility, irCtx->llctx, None,
-	    metaIR.has_value() ? metaIR->get_value_as_bool(ir::MetaInfo::packedKey).value_or(false) : false);
+	    metaIR.has_value() ? metaIR->get_value_as_bool(String(ir::MetaInfo::packedKey)).value_or(false) : false);
 	if (genericStructType) {
 		genericStructType->variants.push_back(ir::GenericVariant<ir::StructType>(resultType, genericsToFill));
 	}
@@ -385,7 +387,7 @@ void DefineStructType::do_phase(ir::EmitPhase phase, ir::Mod* mod, ir::Ctx* irCt
 		if (metaIR->has_key(ir::MetaInfo::packedKey)) {
 			auto packVal = metaIR->get_value_for(ir::MetaInfo::packedKey);
 			if (not packVal->get_ir_type()->is_bool()) {
-				irCtx->Error("The key " + irCtx->color(ir::MetaInfo::packedKey) + " expects a value of type " +
+				irCtx->Error("The key " + irCtx->color(String(ir::MetaInfo::packedKey)) + " expects a value of type " +
 				                 irCtx->color("bool"),
 				             metaInfo.value().fileRange);
 			}

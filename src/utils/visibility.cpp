@@ -91,11 +91,11 @@ bool VisibilityInfo::operator==(const VisibilityInfo& other) const {
 VisibilityInfo::VisibilityInfo(const VisibilityInfo& other)
     : kind(other.kind), moduleVal(other.moduleVal), typePtr(other.typePtr) {}
 
-const std::map<VisibilityKind, String> Visibility::kindValueMap = {
+const HashMap<VisibilityKind, String> Visibility::kindValueMap = {
     {VisibilityKind::pub, "public"}, {VisibilityKind::type, "type"},     {VisibilityKind::lib, "library"},
     {VisibilityKind::file, "file"},  {VisibilityKind::parent, "parent"}, {VisibilityKind::folder, "folder"}};
 
-const std::map<String, VisibilityKind> Visibility::valueKindMap = {
+const HashMap<String, VisibilityKind> Visibility::valueKindMap = {
     {"public", VisibilityKind::pub}, {"type", VisibilityKind::type},     {"library", VisibilityKind::lib},
     {"file", VisibilityKind::file},  {"parent", VisibilityKind::parent}, {"folder", VisibilityKind::folder}};
 

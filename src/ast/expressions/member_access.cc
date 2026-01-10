@@ -7,8 +7,8 @@
 #include "../../IR/types/struct_type.hpp"
 #include "../../IR/types/toggle.hpp"
 #include "../../IR/types/unsigned.hpp"
-#include "../../utils/helpers.hpp"
 
+#include <helpers/maybe.hpp>
 #include <llvm/Analysis/ConstantFolding.h>
 #include <llvm/IR/Constants.h>
 #include <llvm/Support/Casting.h>

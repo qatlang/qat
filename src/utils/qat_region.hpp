@@ -1,7 +1,8 @@
 #ifndef QAT_REGION_HPP
 #define QAT_REGION_HPP
 
-#include "helpers.hpp"
+#include <helpers/integers.hpp>
+#include <helpers/vec.hpp>
 #include <mutex>
 
 #define OwnNormal(TYPE_NAME) (TYPE_NAME*)QatRegion::getMemory(sizeof(TYPE_NAME))
@@ -17,6 +18,7 @@ class QatRegion {
   public:
 	static void* getMemory(usize size);
 	static void  destroyAllBlocks();
+
 	static usize get_total_size() { return totalSize; }
 };
 

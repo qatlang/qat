@@ -1,8 +1,6 @@
 #ifndef QAT_IR_CONTROL_FLOW_HPP
 #define QAT_IR_CONTROL_FLOW_HPP
 
-#include "../utils/macros.hpp"
-
 #include <llvm/IR/IRBuilder.h>
 
 namespace qat::ir {

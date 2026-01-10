@@ -2,7 +2,6 @@
 #define QAT_IR_FUNCTION_HPP
 
 #include "../utils/file_range.hpp"
-#include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
 #include "../utils/mentionable.hpp"
 #include "../utils/qat_region.hpp"
@@ -17,6 +16,10 @@
 #include "meta_info.hpp"
 #include "types/function.hpp"
 
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 #include <llvm/IR/BasicBlock.h>
 #include <llvm/IR/DerivedTypes.h>
 #include <llvm/IR/Function.h>

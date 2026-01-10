@@ -1,5 +1,6 @@
 #include "./qat_region.hpp"
-#include "helpers.hpp"
+
+#include <cstdlib>
 
 namespace qat {
 

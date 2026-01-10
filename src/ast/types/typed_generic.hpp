@@ -1,10 +1,13 @@
 #ifndef QAT_AST_NAMED_GENERIC_HPP
 #define QAT_AST_NAMED_GENERIC_HPP
 
-#include "../../utils/helpers.hpp"
 #include "../node.hpp"
 #include "./generic_abstract.hpp"
 #include "./qat_type.hpp"
+
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ast {
 

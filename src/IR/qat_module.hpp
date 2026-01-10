@@ -15,11 +15,17 @@
 #include "./types/float.hpp"
 #include "./value.hpp"
 
+#include <helpers/deque.hpp>
+#include <helpers/files.hpp>
+#include <helpers/hashmap.hpp>
+#include <helpers/hashset.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 #include <lld/Common/Driver.h>
 #include <llvm/IR/Intrinsics.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Passes/PassBuilder.h>
-#include <set>
 
 LLD_HAS_DRIVER(elf)
 LLD_HAS_DRIVER(coff)
@@ -188,31 +194,31 @@ class LibToLink {
 					return name.value().value == other.name.value().value;
 				}
 				case LibToLinkType::libPath: {
-					const auto filePath = fs::path(*fileRange->file);
-					return fs::absolute(fs::path(path->first).is_relative() ? (filePath / path->first)
-					                                                        : fs::path(path->first)) ==
-					       fs::absolute(fs::path(other.path->first).is_relative() ? (filePath / other.path->first)
-					                                                              : fs::path(other.path->first));
+					const auto filePath = FilePath(*fileRange->file);
+					return fs::absolute(FilePath(path->first).is_relative() ? (filePath / path->first)
+					                                                        : FilePath(path->first)) ==
+					       fs::absolute(FilePath(other.path->first).is_relative() ? (filePath / other.path->first)
+					                                                              : FilePath(other.path->first));
 				}
 				case LibToLinkType::staticAndSharedPaths: {
-					const auto filePath = fs::path(*fileRange->file);
-					return (fs::absolute(fs::path(path->first).is_relative() ? (filePath / path->first)
-					                                                         : fs::path(path->first)) ==
-					        fs::absolute(fs::path(other.path->first).is_relative() ? (filePath / other.path->first)
-					                                                               : fs::path(other.path->first))) &&
-					       (fs::absolute(fs::path(sharedPath->first).is_relative() ? (filePath / sharedPath->first)
-					                                                               : fs::path(sharedPath->first)) ==
-					        fs::absolute(fs::path(other.sharedPath->first).is_relative()
+					const auto filePath = FilePath(*fileRange->file);
+					return (fs::absolute(FilePath(path->first).is_relative() ? (filePath / path->first)
+					                                                         : FilePath(path->first)) ==
+					        fs::absolute(FilePath(other.path->first).is_relative() ? (filePath / other.path->first)
+					                                                               : FilePath(other.path->first))) &&
+					       (fs::absolute(FilePath(sharedPath->first).is_relative() ? (filePath / sharedPath->first)
+					                                                               : FilePath(sharedPath->first)) ==
+					        fs::absolute(FilePath(other.sharedPath->first).is_relative()
 					                         ? (filePath / other.sharedPath->first)
-					                         : fs::path(other.sharedPath->first)));
+					                         : FilePath(other.sharedPath->first)));
 				}
 				case LibToLinkType::nameWithLookupPath: {
-					const auto filePath = fs::path(*fileRange->file);
+					const auto filePath = FilePath(*fileRange->file);
 					return (name.value().value == other.name.value().value) &&
-					       (fs::absolute(fs::path(path->first).is_relative() ? (filePath / path->first)
-					                                                         : fs::path(path->first)) ==
-					        fs::absolute(fs::path(other.path->first).is_relative() ? (filePath / other.path->first)
-					                                                               : fs::path(other.path->first)));
+					       (fs::absolute(FilePath(path->first).is_relative() ? (filePath / path->first)
+					                                                         : FilePath(path->first)) ==
+					        fs::absolute(FilePath(other.path->first).is_relative() ? (filePath / other.path->first)
+					                                                               : FilePath(other.path->first)));
 				}
 			}
 		} else {
@@ -467,25 +473,25 @@ class Mod final : public Uniq, public Mentionable {
 	friend struct TypeInfo;
 
   public:
-	Mod(Identifier _name, fs::path _filePath, fs::path _basePath, ModuleType _type, const VisibilityInfo& _visibility,
+	Mod(Identifier _name, FilePath _filePath, FilePath _basePath, ModuleType _type, const VisibilityInfo& _visibility,
 	    ir::Ctx* irCtx);
 
 	static Vec<Mod*>     allModules;
-	static Vec<fs::path> usableNativeLibPaths;
+	static Vec<FilePath> usableNativeLibPaths;
 	static Maybe<String> usableClangPath;
 
-	static Maybe<fs::path> windowsMSVCLibPath;
-	static Maybe<fs::path> windowsATLMFCLibPath;
-	static Maybe<fs::path> windowsUCRTLibPath;
-	static Maybe<fs::path> windowsUMLibPath;
+	static Maybe<FilePath> windowsMSVCLibPath;
+	static Maybe<FilePath> windowsATLMFCLibPath;
+	static Maybe<FilePath> windowsUCRTLibPath;
+	static Maybe<FilePath> windowsUMLibPath;
 
 	static void clear_all();
 
-	static bool has_file_module(const fs::path& fPath);
-	static bool has_folder_module(const fs::path& fPath);
+	static bool has_file_module(const FilePath& fPath);
+	static bool has_folder_module(const FilePath& fPath);
 
-	static Mod* get_file_module(const fs::path& fPath);
-	static Mod* get_folder_module(const fs::path& fPath);
+	static Mod* get_file_module(const FilePath& fPath);
+	static Mod* get_folder_module(const FilePath& fPath);
 
   private:
 	Identifier        name;
@@ -493,8 +499,8 @@ class Mod final : public Uniq, public Mentionable {
 	bool              rootLib = false;
 	Maybe<MetaInfo>   metaInfo;
 	Deque<LibToLink>  nativeLibsToLink;
-	fs::path          filePath;
-	fs::path          basePath;
+	FilePath          filePath;
+	FilePath          basePath;
 	VisibilityInfo    visibility;
 	Mod*              parent = nullptr;
 	Mod*              active = nullptr;
@@ -568,10 +574,10 @@ class Mod final : public Uniq, public Mentionable {
 	Function* moduleDeinitialiser = nullptr;
 	u64       nonConstantGlobals  = 0;
 
-	std::set<u64> integerBitwidths;
-	std::set<u64> unsignedBitwidths;
+	HashSet<u64> integerBitwidths;
+	HashSet<u64> unsignedBitwidths;
 
-	std::set<FloatTypeKind> floatKinds;
+	HashSet<FloatTypeKind> floatKinds;
 
 	bool isMatrixIntrinsicsUsed = false;
 
@@ -579,8 +585,8 @@ class Mod final : public Uniq, public Mentionable {
 
 	Vec<ast::Node*> nodes;
 	bool            hasMain = false;
-	fs::path        llPath;
-	Maybe<fs::path> objectFilePath;
+	FilePath        llPath;
+	Maybe<FilePath> objectFilePath;
 
 	mutable llvm::Module*              llvmModule;
 	mutable Vec<llvm::GlobalVariable*> otherGlobals;
@@ -604,18 +610,18 @@ class Mod final : public Uniq, public Mentionable {
 
 	bool should_be_named() const;
 
-	static std::map<InternalDependency, Function*> providedFunctions;
+	static HashMap<InternalDependency, Function*> providedFunctions;
 
   public:
 	~Mod();
 
-	static Mod* create(const Identifier& name, const fs::path& filepath, const fs::path& basePath, ModuleType type,
+	static Mod* create(const Identifier& name, const FilePath& filepath, const FilePath& basePath, ModuleType type,
 	                   const VisibilityInfo& visib_info, ir::Ctx* irCtx);
-	static Mod* create_submodule(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name, ModuleType type,
+	static Mod* create_submodule(Mod* parent, FilePath _filepath, FilePath basePath, Identifier name, ModuleType type,
 	                             const VisibilityInfo& visibilityInfo, ir::Ctx* irCtx);
-	static Mod* create_file_mod(Mod* parent, fs::path _filepath, fs::path basePath, Identifier name, Vec<ast::Node*>,
+	static Mod* create_file_mod(Mod* parent, FilePath _filepath, FilePath basePath, Identifier name, Vec<ast::Node*>,
 	                            VisibilityInfo visibilityInfo, ir::Ctx* irCtx);
-	static Mod* create_root_lib(Mod* parent, fs::path _filePath, fs::path basePath, Identifier name,
+	static Mod* create_root_lib(Mod* parent, FilePath _filePath, FilePath basePath, Identifier name,
 	                            Vec<ast::Node*> nodes, const VisibilityInfo& visibInfo, ir::Ctx* irCtx);
 
 	static bool has_provided_function(InternalDependency unit) { return providedFunctions.contains(unit); }
@@ -940,9 +946,9 @@ class Mod final : public Uniq, public Mentionable {
 
 	void set_matrix_intrinsic_used() { isMatrixIntrinsicsUsed = true; }
 
-	fs::path        get_resolved_output_path(const String& extension, Ctx* irCtx);
+	FilePath        get_resolved_output_path(const String& extension, Ctx* irCtx);
 	llvm::Module*   get_llvm_module() const;
-	Maybe<fs::path> find_static_library_path(String libName) const;
+	Maybe<FilePath> find_static_library_path(String libName) const;
 
 	bool find_clang_path(Ctx* irCtx);
 	bool find_windows_sdk_paths(Ctx* irCtx);

@@ -3,7 +3,8 @@
 #include "./run_command.hpp"
 #include "./unique_id.hpp"
 
-#include <set>
+#include <helpers/files.hpp>
+#include <helpers/hashset.hpp>
 #include <sstream>
 #include <unicode/brkiter.h>
 #include <unicode/uchar.h>
@@ -42,9 +43,9 @@ u64 unique_id() {
 String uid_string() { return std::to_string(unique_id()); }
 
 bool is_invisible_unicode(u32 scalar) {
-	static std::set<u32> invisibles{0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, 0x00A0, 0x2000, 0x2001, 0x2002, 0x2003,
-	                                0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x202A,
-	                                0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069, 0x200E, 0x200F};
+	static HashSet<u32> invisibles{0x200B, 0x200C, 0x200D, 0x2060, 0xFEFF, 0x00A0, 0x2000, 0x2001, 0x2002, 0x2003,
+	                               0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x202F, 0x205F, 0x202A,
+	                               0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069, 0x200E, 0x200F};
 	return invisibles.contains(scalar);
 }
 
@@ -144,7 +145,7 @@ Maybe<String> find_executable(StringView name) {
 
 	i = 0;
 	while (i < path.size()) {
-		fs::path it;
+		FilePath it;
 		auto     sep = path.find_first_of(';', i);
 		if (sep != StringView::npos) {
 			it = path.substr(i, sep - i);
@@ -178,7 +179,7 @@ Maybe<String> find_executable(StringView name) {
 #else
 	usize i = 0;
 	while (i < path.size()) {
-		fs::path it;
+		FilePath it;
 		auto     colon = path.find_first_of(':', i);
 		if (colon != StringView::npos) {
 			it = path.substr(i, colon - i);

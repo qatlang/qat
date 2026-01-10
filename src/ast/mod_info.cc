@@ -1,5 +1,4 @@
 #include "./mod_info.hpp"
-#include <filesystem>
 
 namespace qat::ast {
 

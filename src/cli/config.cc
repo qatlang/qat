@@ -9,7 +9,6 @@
 #include "./version.hpp"
 
 #include <cstdlib>
-#include <filesystem>
 #include <fstream>
 #include <system_error>
 
@@ -17,6 +16,7 @@
 #include <mach-o/dyld.h>
 
 #elif OS_IS_WINDOWS
+#include "../utils/macros.hpp"
 #if RUNTIME_IS_MINGW
 #include <sdkddkver.h>
 #include <windows.h>
@@ -49,7 +49,7 @@ void Config::find_corelib_and_toolchain() {
 		SHOW("Could not find qat path from env");
 		return;
 	}
-	qatDirPath       = fs::path(qatPathEnv.value()).parent_path();
+	qatDirPath       = FilePath(qatPathEnv.value()).parent_path();
 	auto stdPathCand = fs::absolute(qatDirPath / ("../" CORELIB));
 	if (not isNoCoreLib && not isFreestanding) {
 		if (not fs::exists(stdPathCand)) {
@@ -203,7 +203,7 @@ void Config::setup_path_in_env(bool) {
 		}
 #else
 		auto     homeEnv = std::getenv("HOME");
-		fs::path homePath;
+		FilePath homePath;
 		if (homeEnv == nullptr) {
 			log->warn("Could not get the " + log->color("HOME") +
 			              " variable from the program environment, while trying to update the " + log->color("PATH") +
@@ -211,12 +211,12 @@ void Config::setup_path_in_env(bool) {
 			          None);
 			homePath = "~";
 		} else {
-			homePath = fs::path(homeEnv);
+			homePath = FilePath(homeEnv);
 		}
 		bool           foundBashFile  = false;
 		bool           foundZshFile   = false;
-		const fs::path bashConfigPath = homePath / ".bashrc";
-		const fs::path zshConfigPath  = homePath / ".zshrc";
+		const FilePath bashConfigPath = homePath / ".bashrc";
+		const FilePath zshConfigPath  = homePath / ".zshrc";
 #define QAT_PATH_PREPEND "export PATH=\"" + qatDirPath.string() + ":$PATH\""
 #define QAT_PATH_APPEND  "export PATH=\"$PATH:" + qatDirPath.string() + '"'
 		if (fs::exists(bashConfigPath) && fs::is_regular_file(bashConfigPath)) {
@@ -286,7 +286,7 @@ void Config::setup_path_in_env(bool) {
 		}
 #endif
 	} else {
-		qatDirPath = fs::path(qatPathEnv.value()).parent_path();
+		qatDirPath = FilePath(qatPathEnv.value()).parent_path();
 	}
 	qatDirPath = fs::absolute(qatDirPath);
 	find_corelib_and_toolchain();
@@ -679,9 +679,9 @@ Config::Config(u64 count, const char** args)
 			} else if (arg == "--clear-llvm") {
 				clearLLVMFiles = true;
 			} else {
-				auto argCheck = fs::path(arg).is_relative() ? (fs::current_path() / arg) : fs::path(arg);
+				auto argCheck = FilePath(arg).is_relative() ? (fs::current_path() / arg) : FilePath(arg);
 				if (fs::exists(argCheck)) {
-					paths.push_back(fs::path(argCheck));
+					paths.push_back(FilePath(argCheck));
 				} else {
 					if (arg.starts_with("--")) {
 						log->fatalError("Unrecognised argument " + log->color(arg) +
@@ -718,7 +718,7 @@ Config::Config(u64 count, const char** args)
 			    (paths.size() == 1)) {
 				if ((fs::is_regular_file(paths[0]) && (paths[0].extension() == ".qat")) || fs::is_directory(paths[0])) {
 					auto candParent =
-					    fs::is_directory(paths[0]) ? fs::path(paths[0]) : fs::path(paths[0]).parent_path();
+					    fs::is_directory(paths[0]) ? FilePath(paths[0]) : FilePath(paths[0]).parent_path();
 					if (fs::exists(candParent)) {
 						auto outDir = candParent / ".qatcache";
 						outputPath  = outDir;

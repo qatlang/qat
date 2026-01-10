@@ -265,7 +265,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			if (proVal.has_value()) {
 				auto inDep = ir::internal_dependency_from_string(proVal.value());
 				if (not inDep.has_value()) {
-					irCtx->Error("The " + irCtx->color(ir::MetaInfo::providesKey) + " key has a value of " +
+					irCtx->Error("The " + irCtx->color(String(ir::MetaInfo::providesKey)) + " key has a value of " +
 					                 irCtx->color(proVal.value()) + ", which is not a recognised internal dependency",
 					             irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey));
 				}
@@ -338,7 +338,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 				}
 				ir::Mod::add_provided_function(inDep.value(), fun);
 			} else {
-				irCtx->Error("Could not get the value of the " + irCtx->color(ir::MetaInfo::providesKey) +
+				irCtx->Error("Could not get the value of the " + irCtx->color(String(ir::MetaInfo::providesKey)) +
 				                 " key in the metadata of the function",
 				             irMetaInfo->get_value_range_for(ir::MetaInfo::providesKey));
 			}

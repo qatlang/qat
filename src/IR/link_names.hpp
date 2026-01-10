@@ -1,8 +1,9 @@
 #ifndef QAT_IR_LINK_NAMES_HPP
 #define QAT_IR_LINK_NAMES_HPP
 
-#include "../utils/helpers.hpp"
-#include "../utils/macros.hpp"
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ir {
 class Mod;

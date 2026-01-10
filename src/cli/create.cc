@@ -16,7 +16,7 @@
 
 namespace qat::cli {
 
-void create_project(String name, fs::path path, bool isLib, Maybe<String> vcs) {
+void create_project(String name, FilePath path, bool isLib, Maybe<String> vcs) {
 	auto& log    = Logger::get();
 	auto  lexRes = lexer::Lexer::word_to_token(name, nullptr);
 	if (lexRes.has_value() && lexRes->type != lexer::TokenType::identifier) {

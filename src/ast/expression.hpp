@@ -110,7 +110,7 @@ class Expression : public Node {
 
 	virtual ir::Value* emit(EmitCtx* emitCtx) = 0;
 
-	NodeType nodeType() const override = 0;
+	virtual NodeType nodeType() const override = 0;
 };
 
 class PrerunExpression : public Expression {
@@ -121,7 +121,7 @@ class PrerunExpression : public Expression {
 
 	ir::PrerunValue* emit(EmitCtx* emitCtx) override = 0;
 
-	virtual NodeType nodeType() const = 0;
+	virtual NodeType nodeType() const override = 0;
 
 	virtual String to_string() const = 0;
 };

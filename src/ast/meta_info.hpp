@@ -4,6 +4,12 @@
 #include "../IR/types/unsigned.hpp"
 #include "./expression.hpp"
 
+#include <helpers/hashset.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/pair.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
+
 namespace qat::ast {
 
 struct MetaInfo {
@@ -21,7 +27,7 @@ struct MetaInfo {
 	bool has_inline_range() const { return inlineRange.has_value(); }
 
 	ir::MetaInfo toIR(EmitCtx* ctx) const {
-		std::set<String>                        keys;
+		HashSet<String>                         keys;
 		Vec<Pair<Identifier, ir::PrerunValue*>> resultVec;
 		Vec<FileRangePtr>                       valuesRange;
 		for (auto& kv : keyValues) {
@@ -46,18 +52,20 @@ struct MetaInfo {
 					           kv.second->fileRange);
 				}
 				if (inlineRange.has_value()) {
-					ctx->Error("The " + ctx->color(ir::MetaInfo::inlineKey) + " condition is repeating here",
+					ctx->Error("The " + ctx->color(String(ir::MetaInfo::inlineKey)) + " condition is repeating here",
 					           inlineRange.value()->is_before(kv.second->fileRange) ? kv.second->fileRange
 					                                                                : inlineRange.value(),
-					           Pair<String, FileRangePtr>{
-					               "The " + ctx->color(ir::MetaInfo::inlineKey) + " condition is already provided here",
-					               inlineRange.value()->is_before(kv.second->fileRange) ? inlineRange.value()
-					                                                                    : kv.second->fileRange});
+					           Pair<String, FileRangePtr>{"The " + ctx->color(String(ir::MetaInfo::inlineKey)) +
+					                                          " condition is already provided here",
+					                                      inlineRange.value()->is_before(kv.second->fileRange)
+					                                          ? inlineRange.value()
+					                                          : kv.second->fileRange});
 				}
 				if (not irVal->get_ir_type()->is_bool()) {
-					ctx->Error("The " + ctx->color(ir::MetaInfo::inlineKey) + " field is expected to be of type " +
-					               ctx->color("bool") + ". Got an expression of type " +
-					               ctx->color(irVal->get_ir_type()->to_string()) + " instead",
+					ctx->Error("The " + ctx->color(String(ir::MetaInfo::inlineKey)) +
+					               " field is expected to be of type " + ctx->color("bool") +
+					               ". Got an expression of type " + ctx->color(irVal->get_ir_type()->to_string()) +
+					               " instead",
 					           kv.second->fileRange);
 				}
 			}
@@ -70,7 +78,7 @@ struct MetaInfo {
 				               ctx->color("inline") + " keyword cannot be used here",
 				           inlineRange);
 			}
-			resultVec.push_back({{ir::MetaInfo::inlineKey, inlineRange.value()},
+			resultVec.push_back({{String(ir::MetaInfo::inlineKey), inlineRange.value()},
 			                     ir::PrerunValue::get(llvm::ConstantInt::getBool(ctx->irCtx->llctx, false),
 			                                          ir::UnsignedType::create_bool(ctx->irCtx))});
 			valuesRange.push_back(inlineRange.value());

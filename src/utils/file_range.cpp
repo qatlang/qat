@@ -1,8 +1,6 @@
 #include "./file_range.hpp"
 #include "./qat_region.hpp"
 
-#include <filesystem>
-
 namespace qat {
 
 FilePos::FilePos(u64 _line, u64 _byte) : line(_line), byteOffset(_byte) {}

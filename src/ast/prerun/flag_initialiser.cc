@@ -3,6 +3,8 @@
 #include "../../IR/types/unsigned.hpp"
 #include "../types/qat_type.hpp"
 
+#include <helpers/hashmap.hpp>
+
 namespace qat::ast {
 
 void FlagInitialiser::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
@@ -34,7 +36,7 @@ ir::PrerunValue* FlagInitialiser::emit(EmitCtx* ctx) {
 			return ir::PrerunValue::get(llvm::ConstantInt::get(useType->get_llvm_type(), 0u, false), useType);
 		}
 	} else {
-		Map<usize, Identifier> foundVariants;
+		HashMap<usize, Identifier> foundVariants;
 		for (usize i = 0; i < variants.size(); i++) {
 			auto ind = useType->as_flag()->get_index_of(variants[i].value);
 			if (not ind.has_value()) {

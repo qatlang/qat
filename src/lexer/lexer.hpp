@@ -4,11 +4,14 @@
 #include "../utils/file_range.hpp"
 #include "./token.hpp"
 
-#include "../utils/macros.hpp"
-#include <filesystem>
-#include <unordered_map>
-#include <unordered_set>
-#include <utility>
+#include <helpers/files.hpp>
+#include <helpers/hashmap.hpp>
+#include <helpers/hashset.hpp>
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/string_view.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ir {
 class Ctx;
@@ -34,15 +37,15 @@ class Lexer {
 
 	ir::Ctx* irCtx;
 
-	static const std::unordered_map<StringView, TokenType> keywordMapping;
+	static const HashMap<StringView, TokenType> keywordMapping;
 
-	static const std::unordered_set<StringView> nativeTypeMapping;
+	static const HashSet<StringView> nativeTypeMapping;
 
-	static const std::unordered_set<StringView> floatTypeMapping;
+	static const HashSet<StringView> floatTypeMapping;
 
-	static const std::unordered_set<StringView> intTypeMapping;
+	static const HashSet<StringView> intTypeMapping;
 
-	static const std::unordered_set<StringView> unsignedTypeMapping;
+	static const HashSet<StringView> unsignedTypeMapping;
 
   public:
 	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
@@ -59,7 +62,7 @@ class Lexer {
 	static u64 timeInNanoseconds;
 	static u64 lineCount;
 
-	void error(const String& message, Maybe<usize> offset = None);
+	void error(String const& message, Maybe<usize> offset = None);
 
 	void analyse();
 
@@ -67,7 +70,7 @@ class Lexer {
 
 	void read();
 
-	void change_file(fs::path newFile);
+	void change_file(FilePath newFile);
 
 	static Maybe<Token> word_to_token(const String& value, Lexer* lexInst);
 

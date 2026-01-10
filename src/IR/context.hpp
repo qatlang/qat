@@ -9,7 +9,6 @@
 #include "./types/atomic.hpp"
 
 #include <boost/json.hpp>
-#include <chrono>
 #include <clang/Basic/Diagnostic.h>
 #include <clang/Basic/TargetInfo.h>
 #include <llvm/IR/ConstantFolder.h>
@@ -18,8 +17,6 @@
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
 #include <string>
-
-using HighResTimePoint = std::chrono::high_resolution_clock::time_point;
 
 namespace qat {
 
@@ -145,7 +142,7 @@ class Ctx {
 	clang::TargetInfo*       clangTargetInfo;
 	llvm::DataLayout         dataLayout;
 	IRBuilderTy              builder;
-	Vec<fs::path>            executablePaths;
+	Vec<FilePath>            executablePaths;
 
 	Maybe<Pair<ir::AtomicOrdering, FileRangePtr>> atomicScopeOrdering;
 
@@ -153,7 +150,7 @@ class Ctx {
 	bool                             hasMain;
 	bool                             stdLibPossiblyRequired = false;
 	mutable u64                      stringCount;
-	Vec<fs::path>                    llvmOutputPaths;
+	Vec<FilePath>                    llvmOutputPaths;
 	Vec<String>                      nativeLibsToLink;
 	mutable Vec<GenericEntityMarker> allActiveGenerics;
 	mutable Vec<usize>               lastMainActiveGeneric;
@@ -207,7 +204,7 @@ class Ctx {
 
 	llvm::GlobalValue::LinkageTypes getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const;
 
-	void add_exe_path(fs::path path);
+	void add_exe_path(FilePath path);
 	void add_binary_size(usize size);
 	void write_json_result(bool status) const;
 

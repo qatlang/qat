@@ -5,7 +5,7 @@ target_compile_options(lexer PRIVATE
   -Wall
   -Wunused)
 
-target_include_directories(lexer SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}")
+target_include_directories(lexer SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 
 target_link_directories(lexer
 	PUBLIC ../cli

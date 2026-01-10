@@ -2,13 +2,15 @@
 #define QAT_IR_TYPES_DEFINITION_HPP
 
 #include "../../utils/file_range.hpp"
-#include "../../utils/helpers.hpp"
 #include "../../utils/identifier.hpp"
 #include "../../utils/qat_region.hpp"
 #include "../../utils/visibility.hpp"
 #include "../generic_variant.hpp"
 #include "./expanded_type.hpp"
 
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 #include <llvm/IR/LLVMContext.h>
 
 namespace qat::ast {

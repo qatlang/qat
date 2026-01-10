@@ -5,10 +5,10 @@
 #include "../utils/utils.hpp"
 #include "./token_type.hpp"
 
-#include <chrono>
 #include <fstream>
+#include <helpers/array.hpp>
+#include <helpers/time.hpp>
 #include <sstream>
-#include <string>
 
 #define NanosecondsInMicroseconds 1000
 #define NanosecondsInMilliseconds 1000000
@@ -22,7 +22,7 @@ namespace qat::lexer {
 u64 Lexer::timeInNanoseconds = 0;
 u64 Lexer::lineCount         = 0;
 
-const std::unordered_map<StringView, TokenType> Lexer::keywordMapping = {
+const HashMap<StringView, TokenType> Lexer::keywordMapping = {
     {"_", TokenType::blank},
     {"null", TokenType::null},
     {"pub", TokenType::pub},
@@ -194,7 +194,7 @@ void Lexer::analyse() {
 	lineCount += lineNumber;
 }
 
-void Lexer::change_file(fs::path newFilePath) {
+void Lexer::change_file(FilePath newFilePath) {
 	tokens.clear();
 	filePath   = std::construct_at(OwnNormal(String), newFilePath.string());
 	cursor     = -1;
@@ -470,8 +470,8 @@ void Lexer::tokeniser() {
 				break;
 			}
 			case '`': {
-				auto              start = byteNumber;
-				std::array<u8, 4> bytes = {0, 0, 0, 0};
+				auto         start = byteNumber;
+				Array<u8, 4> bytes = {0, 0, 0, 0};
 				read();
 				if (get() == '\\') {
 					read();
@@ -767,7 +767,7 @@ void Lexer::tokeniser() {
 								      "first in the sequence for a character is " +
 								      utils::to_hex_with_prefix(get(), 2));
 							}
-							std::array<u8, 4> bytes{0, 0, 0, 0};
+							Array<u8, 4> bytes{0, 0, 0, 0};
 							switch (byteLen.value()) {
 								case 1: {
 									if (is_invisible_ascii_char(get())) {
@@ -1119,7 +1119,7 @@ void Lexer::tokeniser() {
 						    "Invalid UTF-8 encoding. Could not calculate the number of bytes required for the current character from its first byte. The first byte is " +
 						    utils::to_hex_with_prefix(get(), 2));
 					}
-					std::array<u8, 4> bytes{0, 0, 0, 0};
+					Array<u8, 4> bytes{0, 0, 0, 0};
 					switch (byteLen.value()) {
 						case 1: {
 							auto tempRange = idVal.empty() ? idRange : this->get_position(idVal.length());
@@ -1304,7 +1304,7 @@ Maybe<Token> Lexer::word_to_token(String const& wordValue, Lexer* lexInst) {
 			if (firstByteLen.value() > wordValue.length()) {
 				return None;
 			}
-			std::array<u8, 4> firstBytes{0, 0, 0, 0};
+			Array<u8, 4> firstBytes{0, 0, 0, 0};
 			for (u8 i = 0; i < firstByteLen.value(); i++) {
 				firstBytes[i] = wordValue[i];
 			}
@@ -1318,7 +1318,7 @@ Maybe<Token> Lexer::word_to_token(String const& wordValue, Lexer* lexInst) {
 					if (not byteLen.has_value()) {
 						return None;
 					}
-					std::array<u8, 4> bytes{0, 0, 0, 0};
+					Array<u8, 4> bytes{0, 0, 0, 0};
 					for (u8 j = 0; j < byteLen.value(); j++) {
 						bytes[j] = wordValue[i + j];
 					}

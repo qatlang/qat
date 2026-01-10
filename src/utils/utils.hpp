@@ -1,10 +1,13 @@
 #ifndef QAT_UTILS_UTILS_HPP
 #define QAT_UTILS_UTILS_HPP
 
-#include "./helpers.hpp"
-#include "./macros.hpp"
-
-#include <array>
+#include <helpers/array.hpp>
+#include <helpers/integers.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/pair.hpp>
+#include <helpers/string.hpp>
+#include <helpers/string_view.hpp>
+#include <helpers/vec.hpp>
 #include <random>
 
 namespace qat::utils {
@@ -59,8 +62,8 @@ inline u64 random_number() {
 	return dist(rng);
 }
 
-inline Maybe<Pair<std::array<u8, 4>, u8>> unicode_scalar_to_utf8(u32 scalar) {
-	std::array<u8, 4> bytes = {0, 0, 0, 0};
+inline Maybe<Pair<Array<u8, 4>, u8>> unicode_scalar_to_utf8(u32 scalar) {
+	Array<u8, 4> bytes = {0, 0, 0, 0};
 	if (scalar >= 0x0000 && scalar <= 0x007F) {
 		bytes[0] = (u8)scalar;
 		return std::make_pair(bytes, 1);
@@ -84,7 +87,7 @@ inline Maybe<Pair<std::array<u8, 4>, u8>> unicode_scalar_to_utf8(u32 scalar) {
 	}
 }
 
-inline Maybe<u32> utf8_to_unicode_scalar(std::array<u8, 4> bytes) {
+inline Maybe<u32> utf8_to_unicode_scalar(Array<u8, 4> bytes) {
 	u32 value = 0;
 	if ((bytes[0] & 0x80) == 0) {
 		value = bytes[0];

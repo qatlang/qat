@@ -2,9 +2,11 @@
 #define QAT_AST_MEMBER_PARENT_LIKE_HPP
 
 #include "../IR/method.hpp"
-#include "../utils/helpers.hpp"
-#include "../utils/macros.hpp"
 #include "../utils/qat_region.hpp"
+
+#include <helpers/maybe.hpp>
+#include <helpers/pair.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ast {
 

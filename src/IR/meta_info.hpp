@@ -5,14 +5,20 @@
 #include "./types/text.hpp"
 #include "value.hpp"
 
+#include <helpers/maybe.hpp>
+#include <helpers/pair.hpp>
+#include <helpers/string.hpp>
+#include <helpers/string_view.hpp>
+#include <helpers/vec.hpp>
+
 namespace qat::ir {
 
 struct MetaInfo {
-	static constexpr auto foreignKey  = "foreign";
-	static constexpr auto linkAsKey   = "linkAs";
-	static constexpr auto packedKey   = "packed";
-	static constexpr auto inlineKey   = "inline";
-	static constexpr auto providesKey = "provides";
+	static constexpr StringView foreignKey  = "foreign";
+	static constexpr StringView linkAsKey   = "linkAs";
+	static constexpr StringView packedKey   = "packed";
+	static constexpr StringView inlineKey   = "inline";
+	static constexpr StringView providesKey = "provides";
 
 	MetaInfo(Vec<Pair<Identifier, ir::PrerunValue*>> keyValues, Vec<FileRangePtr> _valueRanges, FileRangePtr _fileRange)
 	    : valueRanges(_valueRanges), fileRange(_fileRange) {
@@ -27,7 +33,7 @@ struct MetaInfo {
 	Vec<FileRangePtr>     valueRanges;
 	FileRangePtr          fileRange;
 
-	bool has_key(String const& name) const {
+	bool has_key(StringView name) const {
 		for (auto& k : keys) {
 			if (k.value == name) {
 				return true;
@@ -36,7 +42,7 @@ struct MetaInfo {
 		return false;
 	}
 
-	ir::PrerunValue* get_value_for(String const& name) const {
+	ir::PrerunValue* get_value_for(StringView name) const {
 		usize ind = 0;
 		for (auto& k : keys) {
 			if (k.value == name) {
@@ -47,7 +53,7 @@ struct MetaInfo {
 		return nullptr;
 	}
 
-	FileRangePtr get_value_range_for(String const& name) const {
+	FileRangePtr get_value_range_for(StringView name) const {
 		usize ind = 0;
 		for (auto& k : keys) {
 			if (k.value == name) {
@@ -65,14 +71,14 @@ struct MetaInfo {
 		return None;
 	}
 
-	Maybe<String> get_value_as_string_for(String key) const {
+	Maybe<String> get_value_as_string_for(StringView key) const {
 		if (has_key(key)) {
 			return ir::TextType::value_to_string(get_value_for(key));
 		}
 		return None;
 	}
 
-	Maybe<bool> get_value_as_bool(String key) const {
+	Maybe<bool> get_value_as_bool(StringView key) const {
 		if (has_key(key)) {
 			return llvm::cast<llvm::ConstantInt>(get_value_for(key)->get_llvm_constant())->getValue().getBoolValue();
 		}

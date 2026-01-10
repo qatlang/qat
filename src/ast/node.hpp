@@ -6,8 +6,11 @@
 #include "../IR/types/mix.hpp"
 #include "../IR/types/text.hpp"
 #include "../utils/file_range.hpp"
-#include "../utils/helpers.hpp"
 #include "./node_type.hpp"
+
+#include <helpers/pair.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ast {
 

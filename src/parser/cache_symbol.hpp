@@ -2,9 +2,11 @@
 #define QAT_PARSER_CACHE_SYMBOL_HPP
 
 #include "../utils/file_range.hpp"
-#include "../utils/helpers.hpp"
 #include "../utils/identifier.hpp"
-#include "../utils/macros.hpp"
+
+#include <helpers/integers.hpp>
+#include <helpers/string.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::parser {
 

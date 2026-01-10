@@ -1,14 +1,14 @@
 #ifndef QAT_CLI_ERROR_HPP
 #define QAT_CLI_ERROR_HPP
 
-#include "../utils/helpers.hpp"
-#include "./color.hpp"
-#include <iostream>
+#include <helpers/files.hpp>
+#include <helpers/maybe.hpp>
+#include <helpers/string.hpp>
 
 namespace qat::cli {
 
-void Error(const String& message, Maybe<fs::path> path);
-void Warning(const String& message, Maybe<fs::path> path);
+void Error(String const& message, Maybe<FilePath> path);
+void Warning(String const& message, Maybe<FilePath> path);
 
 } // namespace qat::cli
 

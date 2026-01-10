@@ -1,12 +1,13 @@
 #ifndef QAT_IR_GENERIC_VARIANT_HPP
 #define QAT_IR_GENERIC_VARIANT_HPP
 
-#include "../utils/helpers.hpp"
-#include "../utils/macros.hpp"
 #include "./generics.hpp"
 #include "./type_id.hpp"
 #include "./types/qat_type.hpp"
 #include "./value.hpp"
+
+#include <helpers/integers.hpp>
+#include <helpers/vec.hpp>
 
 namespace qat::ir {
 

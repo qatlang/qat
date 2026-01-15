@@ -5704,32 +5704,30 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							}
 							setCachedExpr(ast::IsVariant::create(exp, kind, std::move(name), RangeSpan(start, i)), i);
 						}
-					} else if (is_next(TokenType::orWord, i)) {
-						if (is_next(TokenType::colon, i + 1) && is_next(TokenType::use, i + 2)) {
-							i += 3;
-							if (not is_next(TokenType::parenthesisOpen, i)) {
-								add_error("Expected ( after this", RangeSpan(start, i));
-							}
-							i++;
-							auto candRes = do_expression(preCtx, None, i, None);
-							i            = candRes.second;
-							if (not is_next(TokenType::parenthesisClose, i)) {
-								add_error("Expected ) after this", RangeSpan(start, i));
-							}
-							i++;
-							setCachedExpr(ast::OrUseValue::create(exp, candRes.first, RangeSpan(start, i)), i);
-						} else {
-							add_error("Unexpected token found here", RangeAt(i + 1));
+					} else if (is_next(TokenType::binaryOperator, i) and (ValueAt(i + 1) == "or")) {
+						i++;
+						if (not is_next(TokenType::parenthesisOpen, i)) {
+							add_error("Expected ( after this. The valid syntax is " +
+							              color_error("maybeValue'or(value)"),
+							          RangeAt(i));
 						}
+						i++;
+						auto candRes = do_expression(preCtx, None, i, None);
+						i            = candRes.second;
+						if (not is_next(TokenType::parenthesisClose, i)) {
+							add_error("Expected ) after this", RangeSpan(start, i));
+						}
+						i++;
+						setCachedExpr(ast::OrUseValue::create(exp, candRes.first, RangeSpan(start, i)), i);
 					} else if (is_next(TokenType::match, i)) {
 						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
 							add_error(
-							    "Expected a ( after this to start the list of values to be matched to the respective variants",
+							    "Expected a ( after this to start the list of values to be inline-matched to the respective variants",
 							    RangeSpan(start, i + 1));
 						}
 						i += 2;
 						Vec<ast::Expression*> values;
-						while ((i + 1 < tokens.size()) && not is_next(TokenType::parenthesisClose, i)) {
+						while ((i + 1 < tokens.size()) and not is_next(TokenType::parenthesisClose, i)) {
 							auto itExp = do_expression(preCtx, None, i, None, None);
 							values.push_back(itExp.first);
 							i = itExp.second;

@@ -6935,7 +6935,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					auto                    name = IdentifierAt(i + 1);
 					ast::Type*              type = nullptr;
 					Maybe<ast::Expression*> value;
-					bool                    isBlank = false;
+					bool                    isUninitialised = false;
 					i++;
 					if (is_next(TokenType::typeSeparator, i)) {
 						i++;
@@ -6951,8 +6951,8 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 					}
 					if (is_next(TokenType::assignment, i)) {
 						i++;
-						if (is_next(TokenType::blank, i)) {
-							isBlank = true;
+						if (is_next(TokenType::questionMark, i)) {
+							isUninitialised = true;
 							i++;
 						} else {
 							auto expRes = do_expression(preCtx, None, i, None);
@@ -6965,7 +6965,7 @@ Vec<ast::Sentence*> Parser::do_sentences(ParserContext& preCtx, usize from, usiz
 						          RangeSpan(start, i));
 					}
 					i++;
-					addSentence(ast::LocalDeclaration::create(isVarDecl, std::move(name), type, value, isBlank,
+					addSentence(ast::LocalDeclaration::create(isVarDecl, std::move(name), type, value, isUninitialised,
 					                                          RangeSpan(start, i)));
 					break;
 				} else if (is_next(TokenType::blank, i)) {

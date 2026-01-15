@@ -95,7 +95,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 			return nullptr;
 		}
 	} else {
-		if (isBlankValue) {
+		if (isUninitialised) {
 			if (not type) {
 				ctx->Error("Ignoring the initialisation of the " + ctx->color("let") +
 				               " binding using _ is only allowed if a type is provided. Use the syntax " +

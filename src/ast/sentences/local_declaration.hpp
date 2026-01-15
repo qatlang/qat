@@ -14,17 +14,17 @@ class LocalDeclaration final : public Sentence {
 	Identifier         name;
 	Type*              type;
 	Maybe<Expression*> value;
-	bool               isBlankValue;
+	bool               isUninitialised;
 
   public:
-	LocalDeclaration(bool isVar, Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isBlankValue,
+	LocalDeclaration(bool isVar, Identifier _name, Type* _type, Maybe<Expression*> _value, bool _isUninitialised,
 	                 FileRangePtr _fileRange)
 	    : Sentence(_fileRange), variability(isVar), name(_name), type(_type), value(_value),
-	      isBlankValue(_isBlankValue) {}
+	      isUninitialised(_isUninitialised) {}
 
 	static LocalDeclaration* create(bool isVar, Identifier name, Type* type, Maybe<Expression*> value,
-	                                bool isBlankValue, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(LocalDeclaration), isVar, name, type, value, isBlankValue, fileRange);
+	                                bool isUninitialised, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(LocalDeclaration), isVar, name, type, value, isUninitialised, fileRange);
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {

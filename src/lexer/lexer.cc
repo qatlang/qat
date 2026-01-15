@@ -86,8 +86,6 @@ const HashMap<StringView, TokenType> Lexer::keywordMapping = {
     {"in", TokenType::in},
     {"ok", TokenType::ok},
     {"of", TokenType::of},
-    {"or", TokenType::orWord},
-    {"and", TokenType::andWord},
     {"range", TokenType::range},
     {"result", TokenType::result},
     {"error", TokenType::error},
@@ -102,22 +100,29 @@ const HashMap<StringView, TokenType> Lexer::keywordMapping = {
     {"atomic", TokenType::atomic},
 };
 
-const std::unordered_set<StringView> Lexer::nativeTypeMapping = {
+const HashSet<StringView> Lexer::nativeTypeMapping = {
     "int",      "uint",     "byte",      "ubyte",   "shortint", "ushortint", "widechar",   "uwidechar",  "longint",
     "ulongint", "longlong", "ulonglong", "usize",   "isize",    "float",     "double",     "longdouble", "intmax",
     "uintmax",  "intptr",   "uintptr",   "ptrdiff", "uptrdiff", "sigatomic", "bytestring", "widebool",
 };
 
-const std::unordered_set<StringView> Lexer::intTypeMapping = {
+const HashSet<StringView> Lexer::intTypeMapping = {
     "i1", "i2", "i4", "i8", "i16", "i32", "i64", "i128", "i256", "i512", "i1024",
 };
 
-const std::unordered_set<StringView> Lexer::unsignedTypeMapping = {
+const HashSet<StringView> Lexer::unsignedTypeMapping = {
     "u1", "u2", "u4", "u8", "u16", "u21", "u32", "u64", "u128", "u256", "u512", "u1024",
 };
 
-const std::unordered_set<StringView> Lexer::floatTypeMapping = {
+const HashSet<StringView> Lexer::floatTypeMapping = {
     "f16", "fbrain", "f32", "f64", "f80", "f128", "f128ppc",
+};
+
+const HashMap<StringView, TokenType> Lexer::valuedTokenMapping = {
+    {"bool", TokenType::unsignedIntegerType},
+    {"xor", TokenType::binaryOperator},
+    {"or", TokenType::binaryOperator},
+    {"and", TokenType::binaryOperator},
 };
 
 void Lexer::read() {
@@ -282,16 +287,6 @@ void Lexer::tokeniser() {
 				NORMAL_TOKEN(TokenType::curlybraceClose, this->get_position(1))
 				break;
 			}
-			case '^': {
-				read();
-				if (get() == '=') {
-					read();
-					VALUE_TOKEN(TokenType::assignedBinaryOperator, "^=", this->get_position(2))
-				} else {
-					VALUE_TOKEN(TokenType::binaryOperator, "^", this->get_position(1))
-				}
-				break;
-			}
 			case ':': {
 				read();
 				if (get() == '[') {
@@ -378,13 +373,9 @@ void Lexer::tokeniser() {
 					read();
 					VALUE_TOKEN(TokenType::assignedBinaryOperator, "&=", this->get_position(2))
 				} else if (get() == '&') {
-					read();
-					if (get() == '=') {
-						read();
-						VALUE_TOKEN(TokenType::assignedBinaryOperator, "&&=", this->get_position(3))
-					} else {
-						VALUE_TOKEN(TokenType::binaryOperator, "&&", this->get_position(2))
-					}
+					error("&& is not a valid operator in the language. Did you mean to use the " + irCtx->color("and") +
+					          " operator, which performs the " + irCtx->color("logical and") + " operation?",
+					      2);
 				} else {
 					VALUE_TOKEN(TokenType::binaryOperator, "&", this->get_position(1))
 				}
@@ -396,13 +387,9 @@ void Lexer::tokeniser() {
 					read();
 					VALUE_TOKEN(TokenType::assignedBinaryOperator, "|=", this->get_position(2))
 				} else if (get() == '|') {
-					read();
-					if (get() == '=') {
-						read();
-						VALUE_TOKEN(TokenType::assignedBinaryOperator, "||=", this->get_position(3))
-					} else {
-						VALUE_TOKEN(TokenType::binaryOperator, "||", this->get_position(2))
-					}
+					error("|| is not a valid operator in the language. Did you mean to use the " + irCtx->color("or") +
+					          " operator, which performs the " + irCtx->color("logical or") + " operation?",
+					      2);
 				} else {
 					VALUE_TOKEN(TokenType::binaryOperator, "|", this->get_position(1))
 				}
@@ -1277,8 +1264,8 @@ Maybe<Token> Lexer::word_to_token(String const& wordValue, Lexer* lexInst) {
 	} else if (unsignedTypeMapping.contains(wordValue)) {
 		return Token(TokenType::unsignedIntegerType, wordValue.substr(1, wordValue.length() - 1),
 		             getPos(wordValue.length()));
-	} else if (wordValue == "bool") {
-		return Token(TokenType::unsignedIntegerType, "bool", getPos(String::traits_type::length("bool")));
+	} else if (valuedTokenMapping.contains(wordValue)) {
+		return Token(valuedTokenMapping.at(wordValue), wordValue, getPos(wordValue.length()));
 	} else if (floatTypeMapping.contains(wordValue)) {
 		return Token(TokenType::floatType, wordValue, getPos(wordValue.length()));
 	} else if (nativeTypeMapping.contains(wordValue)) {

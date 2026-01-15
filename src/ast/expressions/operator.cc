@@ -59,7 +59,7 @@ OperatorKind operator_from_string(String const& str) {
 		return OperatorKind::BITWISE_OR;
 	} else if (str == "&") {
 		return OperatorKind::BITWISE_AND;
-	} else if (str == "^") {
+	} else if (str == "xor") {
 		return OperatorKind::BITWISE_XOR;
 	} else if (str == "<<") {
 		return OperatorKind::LOGICAL_LEFT_SHIFT;
@@ -79,13 +79,13 @@ OperatorKind operator_from_string(String const& str) {
 		return OperatorKind::GREATER_THAN;
 	} else if (str == ">=") {
 		return OperatorKind::GREATER_THAN_OR_EQUAL_TO;
-	} else if (str == "&&") {
+	} else if (str == "and") {
 		return OperatorKind::AND;
-	} else if (str == "||") {
+	} else if (str == "or") {
 		return OperatorKind::OR;
 	} else if (str == "[]") {
 		return OperatorKind::INDEX;
-	} else if (str == "!") {
+	} else if (str == "not") {
 		return OperatorKind::NOT;
 	} else if (str == "ref") {
 		return OperatorKind::DEREFERENCE;
@@ -105,7 +105,7 @@ OperatorKind operator_from_string(String const& str) {
 		return OperatorKind::ASSIGNED_BITWISE_OR;
 	} else if (str == "&=") {
 		return OperatorKind::ASSIGNED_BITWISE_AND;
-	} else if (str == "^=") {
+	} else if (str == "xor=") {
 		return OperatorKind::ASSIGNED_BITWISE_XOR;
 	} else if (str == "~=") {
 		return OperatorKind::ASSIGNED_BITWISE_NOT;
@@ -115,9 +115,9 @@ OperatorKind operator_from_string(String const& str) {
 		return OperatorKind::ASSIGNED_LOGICAL_RIGHT_SHIFT;
 	} else if (str == ">>>=") {
 		return OperatorKind::ASSIGNED_ARITHMETIC_RIGHT_SHIFT;
-	} else if (str == "&&=") {
+	} else if (str == "and=") {
 		return OperatorKind::ASSIGNED_AND;
-	} else if (str == "||=") {
+	} else if (str == "or=") {
 		return OperatorKind::ASSIGNED_OR;
 	}
 	std::unreachable();
@@ -141,7 +141,7 @@ String operator_to_string(OperatorKind opr) {
 		case OperatorKind::BITWISE_AND:
 			return "&";
 		case OperatorKind::BITWISE_XOR:
-			return "^";
+			return "xor";
 		case OperatorKind::LOGICAL_LEFT_SHIFT:
 			return "<<";
 		case OperatorKind::LOGICAL_RIGHT_SHIFT:
@@ -161,17 +161,17 @@ String operator_to_string(OperatorKind opr) {
 		case OperatorKind::GREATER_THAN_OR_EQUAL_TO:
 			return ">=";
 		case OperatorKind::AND:
-			return "&&";
+			return "and";
 		case OperatorKind::OR:
-			return "||";
+			return "or";
 		case OperatorKind::INDEX:
 			return "[]";
 		case OperatorKind::NOT:
 			return "!";
 		case OperatorKind::COPY_ASSIGNMENT:
-			return "copy =";
+			return "copy=";
 		case OperatorKind::MOVE_ASSIGNMENT:
-			return "move =";
+			return "move=";
 		case OperatorKind::DEREFERENCE:
 			return "ref";
 		case OperatorKind::BITWISE_NOT:
@@ -191,7 +191,7 @@ String operator_to_string(OperatorKind opr) {
 		case OperatorKind::ASSIGNED_BITWISE_AND:
 			return "&=";
 		case OperatorKind::ASSIGNED_BITWISE_XOR:
-			return "^=";
+			return "xor=";
 		case OperatorKind::ASSIGNED_BITWISE_NOT:
 			return "~=";
 		case OperatorKind::ASSIGNED_LOGICAL_LEFT_SHIFT:
@@ -201,9 +201,9 @@ String operator_to_string(OperatorKind opr) {
 		case OperatorKind::ASSIGNED_ARITHMETIC_RIGHT_SHIFT:
 			return ">>>=";
 		case OperatorKind::ASSIGNED_AND:
-			return "&&=";
+			return "and=";
 		case OperatorKind::ASSIGNED_OR:
-			return "||=";
+			return "or=";
 	}
 }
 

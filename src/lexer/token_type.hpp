@@ -117,8 +117,6 @@ enum class TokenType : u8 {
 	polymorph,
 	toggle,
 	of,
-	orWord,
-	andWord,
 	ignore,
 	atomic,
 	swap,

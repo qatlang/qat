@@ -47,6 +47,8 @@ class Lexer {
 
 	static const HashSet<StringView> unsignedTypeMapping;
 
+	static const HashMap<StringView, TokenType> valuedTokenMapping;
+
   public:
 	explicit Lexer(ir::Ctx* _irCtx) : irCtx(_irCtx) {};
 

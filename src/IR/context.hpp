@@ -138,7 +138,9 @@ class Ctx {
 	llvm::LLVMContext    llctx;
 	llvm::TargetMachine* targetMachine = nullptr;
 
+	clang::DiagnosticOptions diagnosticOptions;
 	clang::DiagnosticsEngine diagnosticsEngine;
+	clang::TargetOptions     targetOptions;
 	clang::TargetInfo*       clangTargetInfo;
 	llvm::DataLayout         dataLayout;
 	IRBuilderTy              builder;

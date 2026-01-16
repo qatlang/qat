@@ -67,7 +67,8 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 					break;
 				}
 				case OperatorKind::MULTIPLY: {
-					llRes = llvm::ConstantExpr::getMul(lhsConst, rhsConst);
+					llRes =
+					    llvm::ConstantFoldBinaryInstruction(llvm::BinaryOperator::BinaryOps::Mul, lhsConst, rhsConst);
 					break;
 				}
 				case OperatorKind::DIVIDE: {
@@ -185,10 +186,12 @@ ir::PrerunValue* PrerunBinaryOperator::emit(EmitCtx* ctx) {
 					break;
 				}
 				case OperatorKind::MULTIPLY: {
-					llRes = llvm::ConstantExpr::getMul(lhsConst, rhsConst);
+					llRes =
+					    llvm::ConstantFoldBinaryInstruction(llvm::BinaryOperator::BinaryOps::Mul, lhsConst, rhsConst);
 					break;
 				}
 				case OperatorKind::DIVIDE: {
+
 					llRes = llvm::cast<llvm::Constant>(ctx->irCtx->builder.CreateUDiv(lhsConst, rhsConst));
 					break;
 				}

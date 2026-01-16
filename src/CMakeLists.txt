@@ -98,7 +98,7 @@ message(STATUS "Found LLVM version ${LLVM_VERSION}")
 message(STATUS "Using LLVM-Config.cmake from ${LLVM_DIR}")
 
 set(Boost_USE_STATIC_LIBS ON)
-find_package(Boost REQUIRED COMPONENTS filesystem json PATHS "${BOOST_DIR}/lib/cmake" NO_DEFAULT_PATH)
+find_package(Boost REQUIRED COMPONENTS filesystem json process PATHS "${BOOST_DIR}/lib/cmake" NO_DEFAULT_PATH)
 
 if(is_os_linux)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++23 -fexceptions -fno-rtti ${LLVM_DEFINITIONS}")

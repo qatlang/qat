@@ -47,16 +47,13 @@ void QatError::setRange(FileRangePtr range) { fileRange = range; }
 Ctx* Ctx::instance = nullptr;
 
 Ctx::Ctx()
-    : llctx(), diagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()),
-                                 llvm::IntrusiveRefCntPtr<clang::DiagnosticOptions>(new clang::DiagnosticOptions())),
-      clangTargetInfo(clang::TargetInfo::CreateTargetInfo(diagnosticsEngine,
-                                                          []() {
-	                                                          auto targetOpts =
-	                                                              std::make_shared<clang::TargetOptions>();
-	                                                          targetOpts->Triple =
-	                                                              cli::Config::get()->get_target_triple();
-	                                                          return targetOpts;
-                                                          }())),
+    : llctx(), diagnosticOptions(),
+      diagnosticsEngine(llvm::IntrusiveRefCntPtr<clang::DiagnosticIDs>(new clang::DiagnosticIDs()), diagnosticOptions),
+      targetOptions(), clangTargetInfo(([&]() {
+	      auto cfg             = cli::Config::get();
+	      targetOptions.Triple = cfg->get_target_triple();
+	      return clang::TargetInfo::CreateTargetInfo(diagnosticsEngine, targetOptions);
+      })()),
       dataLayout(clangTargetInfo->getDataLayoutString()), builder(llctx), hasMain(false) {}
 
 llvm::GlobalValue::LinkageTypes Ctx::getGlobalLinkageForVisibility(VisibilityInfo const& visibInfo) const {

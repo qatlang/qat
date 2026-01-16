@@ -99,7 +99,6 @@ void EntityState::do_next_phase(Mod* mod, Ctx* ctx) {
 
 void Mod::clear_all() {
 	for (auto* mod : allModules) {
-		mod->llvmModule->dropTriviallyDeadConstantArrays();
 		mod->llvmModule->dropAllReferences();
 		std::destroy_at(mod);
 	}
@@ -159,7 +158,7 @@ Mod::Mod(Identifier _name, FilePath _filepath, FilePath _basePath, ModuleType _t
 	llvmModule->setSourceFileName(filePath.string());
 	llvmModule->setCodeModel(llvm::CodeModel::Small);
 	llvmModule->setSDKVersion(cli::Config::get()->get_version_tuple());
-	llvmModule->setTargetTriple(cli::Config::get()->get_target_triple());
+	llvmModule->setTargetTriple(llvm::Triple(cli::Config::get()->get_target_triple()));
 	llvmModule->setDataLayout(ctx->dataLayout);
 	allModules.push_back(this);
 }

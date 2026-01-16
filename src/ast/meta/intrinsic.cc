@@ -101,7 +101,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		checkFn(fourthVal, arguments[3]->fileRange);
 		checkFn(fifthVal, arguments[4]->fileRange);
 		if (thirdVal->is_prerun_value() && fourthVal->is_prerun_value()) {
-			auto oneMulRes = llvm::ConstantExpr::getMul(thirdVal->get_llvm_constant(), fourthVal->get_llvm_constant());
+			auto oneMulRes = llvm::ConstantFoldBinaryInstruction(
+			    llvm::BinaryOperator::BinaryOps::Mul, thirdVal->get_llvm_constant(), fourthVal->get_llvm_constant());
 			if (not llvm::cast<llvm::ConstantInt>(
 			            llvm::ConstantFoldCompareInstruction(
 			                llvm::CmpInst::ICMP_EQ,
@@ -121,7 +122,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 			}
 		}
 		if (fourthVal->is_prerun_value() && fifthVal->is_prerun_value()) {
-			auto twoMulRes = llvm::ConstantExpr::getMul(fourthVal->get_llvm_constant(), fifthVal->get_llvm_constant());
+			auto twoMulRes = llvm::ConstantFoldBinaryInstruction(
+			    llvm::BinaryOperator::BinaryOps::Mul, fourthVal->get_llvm_constant(), fifthVal->get_llvm_constant());
 			if (not llvm::cast<llvm::ConstantInt>(
 			            llvm::ConstantFoldCompareInstruction(
 			                llvm::CmpInst::ICMP_EQ,
@@ -142,10 +144,9 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		}
 		auto retTy = ir::VectorType::create(
 		    oneTy->get_element_type(),
-		    *llvm::cast<llvm::ConstantInt>(
-		         llvm::ConstantFoldConstant(
-		             llvm::ConstantExpr::getMul(thirdVal->get_llvm_constant(), fifthVal->get_llvm_constant()),
-		             ctx->irCtx->dataLayout))
+		    *llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldBinaryInstruction(llvm::BinaryOperator::BinaryOps::Mul,
+		                                                                       thirdVal->get_llvm_constant(),
+		                                                                       fifthVal->get_llvm_constant()))
 		         ->getValue()
 		         .getRawData(),
 		    ir::VectorKind::fixed, ctx->irCtx);
@@ -215,7 +216,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 			           arguments[2]->fileRange);
 		}
 		if (secondVal->is_prerun_value() && thirdVal->is_prerun_value()) {
-			auto oneMulRes = llvm::ConstantExpr::getMul(secondVal->get_llvm_constant(), thirdVal->get_llvm_constant());
+			auto oneMulRes = llvm::ConstantFoldBinaryInstruction(
+			    llvm::BinaryOperator::BinaryOps::Mul, secondVal->get_llvm_constant(), thirdVal->get_llvm_constant());
 			if (not llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
 			                                          llvm::CmpInst::ICMP_EQ,
 			                                          llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx),
@@ -344,7 +346,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 			}
 		}
 		if (rowVal->is_prerun_value() && colVal->is_prerun_value()) {
-			auto mulRes = llvm::ConstantExpr::getMul(rowVal->get_llvm_constant(), colVal->get_llvm_constant());
+			auto mulRes = llvm::ConstantFoldBinaryInstruction(llvm::BinaryOperator::BinaryOps::Mul,
+			                                                  rowVal->get_llvm_constant(), colVal->get_llvm_constant());
 			if (not llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
 			                                          llvm::CmpInst::ICMP_EQ,
 			                                          llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx),
@@ -476,7 +479,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 			}
 		}
 		if (rowVal->is_prerun_value() && colVal->is_prerun_value()) {
-			auto mulRes = llvm::ConstantExpr::getMul(rowVal->get_llvm_constant(), colVal->get_llvm_constant());
+			auto mulRes = llvm::ConstantFoldBinaryInstruction(llvm::BinaryOperator::BinaryOps::Mul,
+			                                                  rowVal->get_llvm_constant(), colVal->get_llvm_constant());
 			if (not llvm::cast<llvm::ConstantInt>(llvm::ConstantFoldCompareInstruction(
 			                                          llvm::CmpInst::ICMP_EQ,
 			                                          llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx),

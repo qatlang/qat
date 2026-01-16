@@ -40,4 +40,4 @@ target_include_directories(ASTTypes SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMA
 
 target_link_directories(ASTTypes PUBLIC ../../utils)
 
-target_link_libraries(ASTTypes utils)
+target_link_libraries(ASTTypes utils IR)

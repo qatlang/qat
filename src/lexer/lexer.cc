@@ -373,8 +373,8 @@ void Lexer::tokeniser() {
 					read();
 					VALUE_TOKEN(TokenType::assignedBinaryOperator, "&=", this->get_position(2))
 				} else if (get() == '&') {
-					error("&& is not a valid operator in the language. Did you mean to use the " + irCtx->color("and") +
-					          " operator, which performs the " + irCtx->color("logical and") + " operation?",
+					error(irCtx->color("&&") + " is not a valid operator in the language. Did you mean to use the " +
+					          irCtx->color("and") + " operator, which performs the 'logical and' operation?",
 					      2);
 				} else {
 					VALUE_TOKEN(TokenType::binaryOperator, "&", this->get_position(1))
@@ -387,8 +387,8 @@ void Lexer::tokeniser() {
 					read();
 					VALUE_TOKEN(TokenType::assignedBinaryOperator, "|=", this->get_position(2))
 				} else if (get() == '|') {
-					error("|| is not a valid operator in the language. Did you mean to use the " + irCtx->color("or") +
-					          " operator, which performs the " + irCtx->color("logical or") + " operation?",
+					error(irCtx->color("||") + " is not a valid operator in the language. Did you mean to use the " +
+					          irCtx->color("or") + " operator, which performs the 'logical or' operation?",
 					      2);
 				} else {
 					VALUE_TOKEN(TokenType::binaryOperator, "|", this->get_position(1))

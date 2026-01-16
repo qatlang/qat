@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16.3)
 PROJECT(qat
+	LANGUAGES CXX
 	VERSION "0.9.0"
 	DESCRIPTION "Qat Programming Language"
 	HOMEPAGE_URL "https://qatlang.org")
@@ -23,21 +24,6 @@ set(is_os_windows OFF)
 set(is_os_macos OFF)
 set(is_os_freebsd OFF)
 set(is_os_haiku OFF)
-
-set(is_arch_x64 OFF)
-set(is_arch_x32 OFF)
-set(is_arch_arm64 OFF)
-set(is_arch_riscv64 OFF)
-
-if((TARGET_ARCHITECTURE MATCHES "x86|i686") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "X86|x86"))
-	set(is_arch_x32 ON)
-elseif((TARGET_ARCHITECTURE MATCHES "x64|x86_64|amd64") OR(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|AMD64"))
-	set(is_arch_x64 ON)
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "AARCH64|ARM64|arm64|aarch64")
-	set(is_arch_arm64 ON)
-elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL riscv64)
-	set(is_arch_riscv64 ON)
-endif()
 
 if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 	set(is_os_linux ON)

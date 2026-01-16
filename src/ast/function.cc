@@ -192,7 +192,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			args.push_back(ir::Argument::Create(
 			    Identifier(arguments.at(0)->get_name().value + "'data", arguments.at(0)->get_name().range),
 			    ir::PtrType::get(false, ir::NativeType::get_bytestring(false, true, None, irCtx), true,
-			                     ir::PtrOwner::of_none(), false, None, irCtx),
+			                     ir::Locality::of_none(), false, None, irCtx),
 			    1u));
 		}
 		if (variadics.has_value()) {
@@ -366,7 +366,7 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 			auto* cmdArgsVal =
 			    block->new_local(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
 			                     ir::PtrType::get(false, ir::NativeType::get_bytestring(false, true, None, irCtx),
-			                                      false, ir::PtrOwner::of_none(), true, None, irCtx),
+			                                      false, ir::Locality::of_none(), true, None, irCtx),
 			                     false, irCtx, fnEmit->arg_name_at(0).range);
 			SHOW("Storing argument pointer")
 			irCtx->builder.CreateStore(

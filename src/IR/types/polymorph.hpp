@@ -13,16 +13,16 @@ class Polymorph final : public Type {
 	bool                isTyped;
 	bool                isVar;
 	Vec<Skill*>         skills;
-	Maybe<PtrOwner>     owner;
+	Maybe<Locality>     owner;
 	Maybe<AddressSpace> addressSpace;
 
 	static Vec<Polymorph*> allPolyTypes;
 
   public:
-	Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner, Maybe<AddressSpace>,
+	Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Locality> _owner, Maybe<AddressSpace>,
 	          ir::Ctx* ctx);
 
-	static Polymorph* create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<PtrOwner> owner,
+	static Polymorph* create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<Locality> owner,
 	                         Maybe<AddressSpace> addressSpace, ir::Ctx* ctx);
 
 	~Polymorph() = default;
@@ -37,7 +37,7 @@ class Polymorph final : public Type {
 
 	bool has_address_space() const { return addressSpace.has_value(); }
 
-	PtrOwner get_owner() const { return owner.value(); }
+	Locality get_owner() const { return owner.value(); }
 
 	Maybe<AddressSpace> const& get_address_space() const { return addressSpace; }
 

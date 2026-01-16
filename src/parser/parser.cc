@@ -2024,7 +2024,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						isSubtypeVar = true;
 						i++;
 					}
-					auto                     ptrOwner     = ast::PtrOwner::of_none(FileRange::null);
+					auto                     ptrOwner     = ast::Locality::none(FileRange::null);
 					Maybe<ast::AddressSpace> addressSpace = None;
 					auto                     subRes       = do_type(preCtx, i, None);
 					i                                     = subRes.second;
@@ -2037,19 +2037,19 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						bool parsedOwnership = false;
 						if (is_next(TokenType::heap, i)) {
 							i++;
-							ptrOwner        = ast::PtrOwner::of_heap(RangeAt(i));
+							ptrOwner        = ast::Locality::in_heap(RangeAt(i));
 							parsedOwnership = true;
 						} else if (is_next(TokenType::Static, i)) {
 							i++;
-							ptrOwner        = ast::PtrOwner::of_static(RangeAt(i));
+							ptrOwner        = ast::Locality::in_static(RangeAt(i));
 							parsedOwnership = true;
 						} else if (is_next(TokenType::own, i)) {
 							i++;
-							ptrOwner        = ast::PtrOwner::of_own(RangeAt(i));
+							ptrOwner        = ast::Locality::in_own(RangeAt(i));
 							parsedOwnership = true;
 						} else if (is_next(TokenType::selfInstance, i)) {
 							i++;
-							ptrOwner        = ast::PtrOwner::of_self_instance(RangeAt(i));
+							ptrOwner        = ast::Locality::in_self_instance(RangeAt(i));
 							parsedOwnership = true;
 						} else if (is_next(TokenType::region, i)) {
 							const auto oStart = i + 1;
@@ -2062,14 +2062,14 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 									add_error("Expected ) after this", RangeSpan(pStart, i));
 								}
 								i++;
-								ptrOwner = ast::PtrOwner::of_region_type(ownTy.first, RangeSpan(oStart, i));
+								ptrOwner = ast::Locality::in_region_type(ownTy.first, RangeSpan(oStart, i));
 							} else {
-								ptrOwner = ast::PtrOwner::of_any_region(RangeAt(i));
+								ptrOwner = ast::Locality::in_any_region(RangeAt(i));
 							}
 							parsedOwnership = true;
 						} else if (is_next(TokenType::pre, i)) {
 							i++;
-							ptrOwner        = ast::PtrOwner::of_prerun(RangeAt(i));
+							ptrOwner        = ast::Locality::in_prerun(RangeAt(i));
 							parsedOwnership = true;
 						}
 						if (parsedOwnership) {
@@ -5886,7 +5886,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						    ast::Cast::create(exp, targetTy.first, FileRange::merge(exp->fileRange, RangeAt(i))), i);
 					} else if (is_next(TokenType::polymorph, i)) {
 						const auto           start = i;
-						Maybe<ast::PtrOwner> ptrOwner;
+						Maybe<ast::Locality> ptrOwner;
 						bool                 isPtrPoly = false;
 						i++;
 						if (is_next(TokenType::colon, i) && is_next(TokenType::ptrType, i + 1)) {
@@ -5971,16 +5971,16 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						Maybe<ast::AddressSpace> addressSpace;
 						if (foundSeparator) {
 							if (is_next(TokenType::heap, i)) {
-								ptrOwner = ast::PtrOwner::of_heap(RangeAt(i + 1));
+								ptrOwner = ast::Locality::in_heap(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::Static, i)) {
-								ptrOwner = ast::PtrOwner::of_static(RangeAt(i + 1));
+								ptrOwner = ast::Locality::in_static(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::own, i)) {
-								ptrOwner = ast::PtrOwner::of_own(RangeAt(i + 1));
+								ptrOwner = ast::Locality::in_own(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::selfInstance, i)) {
-								ptrOwner = ast::PtrOwner::of_self_instance(RangeAt(i + 1));
+								ptrOwner = ast::Locality::in_self_instance(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::region, i)) {
 								const auto oStart = i + 1;
@@ -5992,13 +5992,13 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 										add_error("Expected ) after this", RangeSpan(pStart, i));
 									}
 									i++;
-									ptrOwner = ast::PtrOwner::of_region_type(ownTy.first, RangeSpan(oStart, i));
+									ptrOwner = ast::Locality::in_region_type(ownTy.first, RangeSpan(oStart, i));
 								} else {
-									ptrOwner = ast::PtrOwner::of_any_region(RangeAt(i + 1));
+									ptrOwner = ast::Locality::in_any_region(RangeAt(i + 1));
 									i++;
 								}
 							} else if (is_next(TokenType::pre, i)) {
-								ptrOwner = ast::PtrOwner::of_prerun(RangeAt(i + 1));
+								ptrOwner = ast::Locality::in_prerun(RangeAt(i + 1));
 								i++;
 							}
 							if (ptrOwner.has_value()) {
@@ -6045,7 +6045,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						}
 						i++;
 						if (not ptrOwner.has_value() && isPtrPoly) {
-							ptrOwner = ast::PtrOwner::of_none(RangeSpan(start, i));
+							ptrOwner = ast::Locality::none(RangeSpan(start, i));
 						}
 						setCachedExpr(ast::GetPolymorph::create(exp, isVar, std::move(typeRange), std::move(skillSpec),
 						                                        std::move(ptrOwner), std::move(addressSpace),

@@ -10,12 +10,12 @@ namespace qat::ir {
 
 Vec<Polymorph*> Polymorph::allPolyTypes = {};
 
-Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrOwner> _owner,
+Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Locality> _owner,
                      Maybe<ir::AddressSpace> _addressSpace, ir::Ctx* ctx)
     : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
       addressSpace(std::move(_addressSpace)) {
 	auto objPtrTy = ir::PtrType::get(isVar, ir::UnsignedType::create(8u, ctx), true,
-	                                 owner.value_or(PtrOwner::of_none()), false, addressSpace, ctx);
+	                                 owner.value_or(Locality::of_none()), false, addressSpace, ctx);
 	// auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
 	auto globalPtrTy = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 
@@ -45,7 +45,7 @@ Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<PtrO
 	allPolyTypes.push_back(this);
 }
 
-Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<PtrOwner> owner,
+Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<Locality> owner,
                              Maybe<AddressSpace> addressSpace, ir::Ctx* ctx) {
 	std::sort(skills.begin(), skills.end(), [](Skill* first, Skill* second) -> bool {
 		return utils::bytewise_comparison(first->get_full_name(), second->get_full_name());

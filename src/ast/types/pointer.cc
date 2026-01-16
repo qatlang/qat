@@ -38,7 +38,7 @@ ir::Type* PtrType::emit(EmitCtx* ctx) {
 		        ctx->color("var"),
 		    fileRange);
 	}
-	return ir::PtrType::get(isSubtypeVar, subTy, isNonNullable, get_ptr_owner(ctx, owner, fileRange), isMulti,
+	return ir::PtrType::get(isSubtypeVar, subTy, isNonNullable, get_locality(ctx, owner, fileRange), isMulti,
 	                        addressSpace.has_value() ? Maybe<ir::AddressSpace>(addressSpace.value().to_ir(ctx)) : None,
 	                        ctx->irCtx);
 }
@@ -48,7 +48,7 @@ AstTypeKind PtrType::type_kind() const { return AstTypeKind::POINTER; }
 String PtrType::to_string() const {
 	return (isMulti ? (isNonNullable ? "multi![" : "multi:[") : (isNonNullable ? "ptr![" : "ptr:[")) +
 	       String(isSubtypeVar ? "var " : "") + type->to_string() +
-	       (owner.kind != OwnerKind::NONE ? (", " + owner.to_string()) : "") +
+	       (owner.kind != LocalityKind::NONE ? (", " + owner.to_string()) : "") +
 	       (addressSpace.has_value() ? (", " + addressSpace.value().to_string()) : "") + "]";
 }
 

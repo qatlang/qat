@@ -314,13 +314,13 @@ Pair<String, Vec<llvm::Value*>> Logic::format_values(ast::EmitCtx* ctx, Vec<ir::
 						        llvm::PointerType::get(valTy->as_ptr()->get_subtype()->get_llvm_type(),
 						                               ctx->irCtx->dataLayout.getProgramAddressSpace()),
 						        ctx->irCtx->builder.CreateStructGEP(valTy->get_llvm_type(), val->get_llvm(), 0u)),
-						    ir::PtrType::get(false, valTy->as_ptr()->get_subtype(), false, PtrOwner::of_none(), false,
+						    ir::PtrType::get(false, valTy->as_ptr()->get_subtype(), false, Locality::of_none(), false,
 						                     None, ctx->irCtx),
 						    false);
 					} else {
 						val = ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
 						                     ir::PtrType::get(false, valTy->as_ptr()->get_subtype(), false,
-						                                      PtrOwner::of_none(), false, None, ctx->irCtx),
+						                                      Locality::of_none(), false, None, ctx->irCtx),
 						                     false);
 					}
 				} else {

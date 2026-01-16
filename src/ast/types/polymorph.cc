@@ -19,7 +19,7 @@ ir::Type* PolymorphType::emit(EmitCtx* ctx) {
 		irSkills.push_back(sk.find_skill(ctx));
 	}
 	auto ptrOwner =
-	    owner.has_value() ? Maybe<ir::PtrOwner>(get_ptr_owner(ctx, owner.value(), owner.value().range)) : None;
+	    owner.has_value() ? Maybe<ir::Locality>(get_locality(ctx, owner.value(), owner.value().range)) : None;
 	Maybe<ir::AddressSpace> addr;
 	if (addressSpace.has_value()) {
 		addr = addressSpace.value().to_ir(ctx);

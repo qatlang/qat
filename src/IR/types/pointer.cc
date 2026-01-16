@@ -12,25 +12,25 @@ namespace qat::ir {
 
 Vec<PtrType*> PtrType::allPtrTypes = {};
 
-PtrOwner PtrOwner::of_heap() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::HEAP}; }
+Locality Locality::of_heap() { return Locality{.owner = nullptr, .ownerTy = OwnerKind::HEAP}; }
 
-PtrOwner PtrOwner::of_static() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::STATIC}; }
+Locality Locality::of_static() { return Locality{.owner = nullptr, .ownerTy = OwnerKind::STATIC}; }
 
-PtrOwner PtrOwner::of_none() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::NONE}; }
+Locality Locality::of_none() { return Locality{.owner = nullptr, .ownerTy = OwnerKind::NONE}; }
 
-PtrOwner PtrOwner::of_own(Function* fun) { return PtrOwner{.owner = (void*)fun, .ownerTy = OwnerKind::OWN}; }
+Locality Locality::of_own(Function* fun) { return Locality{.owner = (void*)fun, .ownerTy = OwnerKind::OWN}; }
 
-PtrOwner PtrOwner::of_self(Type* typ) { return PtrOwner{.owner = (void*)typ, .ownerTy = OwnerKind::SELF}; }
+Locality Locality::of_self(Type* typ) { return Locality{.owner = (void*)typ, .ownerTy = OwnerKind::SELF}; }
 
-PtrOwner PtrOwner::of_region_type(Region* region) {
-	return PtrOwner{.owner = region, .ownerTy = OwnerKind::REGION_TYPE};
+Locality Locality::of_region_type(Region* region) {
+	return Locality{.owner = region, .ownerTy = OwnerKind::REGION_TYPE};
 }
 
-PtrOwner PtrOwner::of_any_region() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::ANY_REGION}; }
+Locality Locality::of_any_region() { return Locality{.owner = nullptr, .ownerTy = OwnerKind::ANY_REGION}; }
 
-PtrOwner PtrOwner::of_prerun() { return PtrOwner{.owner = nullptr, .ownerTy = OwnerKind::PRERUN}; }
+Locality Locality::of_prerun() { return Locality{.owner = nullptr, .ownerTy = OwnerKind::PRERUN}; }
 
-bool PtrOwner::is_same(const PtrOwner& other) const {
+bool Locality::is_same(const Locality& other) const {
 	if (ownerTy == other.ownerTy) {
 		switch (ownerTy) {
 			case OwnerKind::NONE:
@@ -51,7 +51,7 @@ bool PtrOwner::is_same(const PtrOwner& other) const {
 	}
 }
 
-String PtrOwner::to_string() const {
+String Locality::to_string() const {
 	switch (ownerTy) {
 		case OwnerKind::ANY_REGION:
 			return "region";
@@ -72,7 +72,7 @@ String PtrOwner::to_string() const {
 	}
 }
 
-PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
+PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locality _owner, bool _hasMulti,
                  Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx)
     : subType(_type), isSubtypeVar(_isSubtypeVariable), owner(_owner), hasMulti(_hasMulti), nonNullable(_nonNullable),
       addressSpace(std::move(_addressSpace)) {
@@ -101,7 +101,7 @@ PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwn
 	allPtrTypes.push_back(this);
 }
 
-PtrType* PtrType::get(bool isSubtypeVariable, Type* type, bool nonNullable, PtrOwner owner, bool hasMulti,
+PtrType* PtrType::get(bool isSubtypeVariable, Type* type, bool nonNullable, Locality owner, bool hasMulti,
                       Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
 	for (auto* typ : allPtrTypes) {
 		if (typ->get_subtype()->is_same(type) && (typ->is_subtype_variable() == isSubtypeVariable) &&
@@ -148,7 +148,7 @@ Type* PtrType::get_subtype() const { return subType; }
 
 Maybe<AddressSpace> const& PtrType::get_address_space() const { return addressSpace; }
 
-PtrOwner PtrType::get_owner() const { return owner; }
+Locality PtrType::get_owner() const { return owner; }
 
 u32 PtrType::usable_address_space(ir::Ctx* irCtx) const {
 	if (addressSpace.has_value()) {

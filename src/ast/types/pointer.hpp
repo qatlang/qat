@@ -9,19 +9,19 @@ namespace qat::ast {
 
 class PtrType final : public Type {
 	Type*               type;
-	PtrOwner            owner;
+	Locality            owner;
 	bool                isMulti;
 	bool                isSubtypeVar;
 	bool                isNonNullable;
 	Maybe<AddressSpace> addressSpace;
 
   public:
-	PtrType(Type* _type, bool _isSubtypeVar, PtrOwner _owner, bool _isNonNullable, bool _isMulti,
+	PtrType(Type* _type, bool _isSubtypeVar, Locality _owner, bool _isNonNullable, bool _isMulti,
 	        Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Type(_fileRange), type(_type), owner(_owner), isMulti(_isMulti), isSubtypeVar(_isSubtypeVar),
 	      isNonNullable(_isNonNullable), addressSpace(std::move(_addressSpace)) {}
 
-	static PtrType* create(Type* type, bool isSubtypeVar, PtrOwner owner, bool isNonNullable, bool isMulti,
+	static PtrType* create(Type* type, bool isSubtypeVar, Locality owner, bool isNonNullable, bool isMulti,
 	                       Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(PtrType), type, isSubtypeVar, owner, isNonNullable, isMulti,
 		                         std::move(addressSpace), fileRange);

@@ -23,7 +23,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		}
 		auto resTy = ir::Polymorph::create(
 		    isTypeRange.has_value(), isVar, std::move(skillsIR),
-		    owner.has_value() ? Maybe<ir::PtrOwner>(get_ptr_owner(ctx, owner.value(), fileRange)) : None,
+		    owner.has_value() ? Maybe<ir::Locality>(get_locality(ctx, owner.value(), fileRange)) : None,
 		    std::move(addr), ctx->irCtx);
 
 		if (val->get_ir_type()->is_ref()) {
@@ -204,9 +204,9 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				skillsIR.push_back(doneSkills.back()->get_skill());
 			}
 		}
-		Maybe<ir::PtrOwner> ptrOwner;
+		Maybe<ir::Locality> ptrOwner;
 		if (owner.has_value()) {
-			ptrOwner = get_ptr_owner(ctx, owner.value(), owner.value().range);
+			ptrOwner = get_locality(ctx, owner.value(), owner.value().range);
 		}
 		Maybe<ir::AddressSpace> addr;
 		if (addressSpace.has_value()) {

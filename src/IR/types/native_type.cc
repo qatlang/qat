@@ -525,7 +525,7 @@ NativeType* NativeType::get_bytestring(bool hasVar, bool isNonNullable, Maybe<Ad
 	}
 	return std::construct_at(OwnNormal(NativeType),
 	                         ir::PtrType::get(hasVar, ir::IntegerType::get(8u, irCtx), isNonNullable,
-	                                          PtrOwner::of_none(), false, addressSpace, irCtx),
+	                                          Locality::of_none(), false, addressSpace, irCtx),
 	                         NativeTypeKind::ByteString, std::move(addressSpace));
 }
 

@@ -17,16 +17,16 @@ class PolymorphType final : public Type {
 	bool                isTyped;
 	bool                isVar;
 	Vec<SkillEntity>    skills;
-	Maybe<PtrOwner>     owner;
+	Maybe<Locality>     owner;
 	Maybe<AddressSpace> addressSpace;
 
   public:
-	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<PtrOwner> _owner,
+	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<Locality> _owner,
 	              Maybe<AddressSpace> _addressSpace, FileRangePtr _range)
 	    : Type(_range), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
 	      addressSpace(std::move(_addressSpace)) {}
 
-	static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<PtrOwner> owner,
+	static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<Locality> owner,
 	                             Maybe<AddressSpace> addressSpace, FileRangePtr range) {
 		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), std::move(owner),
 		                         std::move(addressSpace), std::move(range));
@@ -61,7 +61,8 @@ class PolymorphType final : public Type {
 		return String(isTyped ? (owner.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
 		                      : (owner.has_value() ? "poly:ptr[" : "poly:[")) +
 		       (isVar ? "var " : "") + skillStr +
-		       (owner.has_value() && owner.value().kind != OwnerKind::NONE ? (", " + owner.value().to_string()) : "") +
+		       (owner.has_value() && owner.value().kind != LocalityKind::NONE ? (", " + owner.value().to_string())
+		                                                                      : "") +
 		       (addressSpace.has_value() ? (", " + addressSpace.value().to_string()) : "") + "]";
 	}
 };

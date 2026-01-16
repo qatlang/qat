@@ -18,21 +18,25 @@ enum class OwnerKind {
 	SELF,
 	STATIC,
 	PRERUN,
+	USE,
+	ATOMIC,
 };
 
-class PtrOwner {
+class Locality {
   public:
 	void*     owner;
 	OwnerKind ownerTy;
 
-	static PtrOwner of_heap();
-	static PtrOwner of_static();
-	static PtrOwner of_none();
-	static PtrOwner of_own(Function* fun);
-	static PtrOwner of_self(Type* type);
-	static PtrOwner of_region_type(Region* region);
-	static PtrOwner of_any_region();
-	static PtrOwner of_prerun();
+	static Locality of_heap();
+	static Locality of_static();
+	static Locality of_none();
+	static Locality of_own(Function* fun);
+	static Locality of_self(Type* type);
+	static Locality of_use();
+	static Locality of_atomic();
+	static Locality of_region_type(Region* region);
+	static Locality of_any_region();
+	static Locality of_prerun();
 
 	Type* owner_as_type() const { return (Type*)owner; }
 
@@ -58,7 +62,11 @@ class PtrOwner {
 
 	bool is_prerun() const { return ownerTy == OwnerKind::PRERUN; }
 
-	bool is_same(const PtrOwner& other) const;
+	bool is_use() const { return ownerTy == OwnerKind::USE; }
+
+	bool is_atomic() const { return ownerTy == OwnerKind::ATOMIC; }
+
+	bool is_same(const Locality& other) const;
 
 	String to_string() const;
 };
@@ -67,7 +75,7 @@ class PtrType : public Type {
   private:
 	Type*               subType;
 	bool                isSubtypeVar;
-	PtrOwner            owner;
+	Locality            owner;
 	bool                hasMulti;
 	bool                nonNullable;
 	Maybe<AddressSpace> addressSpace;
@@ -75,14 +83,14 @@ class PtrType : public Type {
 	static Vec<PtrType*> allPtrTypes;
 
   public:
-	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, PtrOwner _owner, bool _hasMulti,
+	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, Locality _owner, bool _hasMulti,
 	        Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx);
 
-	static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, PtrOwner _owner, bool _hasMulti,
+	static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locality _owner, bool _hasMulti,
 	                    Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
 	Type*    get_subtype() const;
-	PtrOwner get_owner() const;
+	Locality get_owner() const;
 
 	bool has_address_space() const { return addressSpace.has_value(); }
 

@@ -40,7 +40,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
 			               ", which is a pointer type without heap ownership. This expression expects to be of type " +
 			               ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
-			                                           finalTy->is_non_nullable(), ir::PtrOwner::of_heap(), false,
+			                                           finalTy->is_non_nullable(), ir::Locality::of_heap(), false,
 			                                           finalTy->get_address_space(), ctx->irCtx)
 			                              ->to_string()),
 			           fileRange);
@@ -50,7 +50,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
 			        ", which is a pointer type without region ownership. This expression expects either to be of type " +
 			        ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
-			                                    finalTy->is_non_nullable(), ir::PtrOwner::of_any_region(), false,
+			                                    finalTy->is_non_nullable(), ir::Locality::of_any_region(), false,
 			                                    finalTy->get_address_space(), ctx->irCtx)
 			                       ->to_string()) +
 			        " or of type " +
@@ -90,7 +90,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    {llvm::ConstantInt::get(mallocFn->getArg(0)->getType(),
 			                            (usize)ctx->irCtx->dataLayout.getTypeAllocSize(exprTy->get_llvm_type()))});
 			result = ir::Value::get(
-			    mallocCall, ir::PtrType::get(true, exprTy, false, ir::PtrOwner::of_heap(), false, None, ctx->irCtx),
+			    mallocCall, ir::PtrType::get(true, exprTy, false, ir::Locality::of_heap(), false, None, ctx->irCtx),
 			    false);
 		} else if (is_target_region()) {
 			auto regRes = target_as_region()->emit(ctx);
@@ -135,7 +135,7 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    {llvm::ConstantInt::get(mallocFn->getArg(0)->getType(),
 			                            (usize)ctx->irCtx->dataLayout.getTypeAllocSize(expTy->get_llvm_type()))});
 			result = ir::Value::get(
-			    mallocCall, ir::PtrType::get(true, expTy, false, ir::PtrOwner::of_heap(), false, None, ctx->irCtx),
+			    mallocCall, ir::PtrType::get(true, expTy, false, ir::Locality::of_heap(), false, None, ctx->irCtx),
 			    false);
 		} else if (is_target_region()) {
 			auto regRes = target_as_region()->emit(ctx);

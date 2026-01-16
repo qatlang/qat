@@ -49,17 +49,17 @@ class GetPolymorph final : public Expression {
 	Maybe<FileRangePtr> isTypeRange;
 	Vec<PolySkillSpec>  skills;
 
-	Maybe<PtrOwner>     owner;
+	Maybe<Locality>     owner;
 	Maybe<AddressSpace> addressSpace;
 
   public:
 	GetPolymorph(Expression* _value, bool _isVar, Maybe<FileRangePtr> _isTypeRange, Vec<PolySkillSpec> _skills,
-	             Maybe<PtrOwner> _owner, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
+	             Maybe<Locality> _owner, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), value(_value), isVar(_isVar), isTypeRange(std::move(_isTypeRange)),
 	      skills(std::move(_skills)), owner(std::move(_owner)), addressSpace(std::move(_addressSpace)) {}
 
 	static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRangePtr> isTypeRange,
-	                            Vec<PolySkillSpec> skills, Maybe<PtrOwner> owner, Maybe<AddressSpace> addressSpace,
+	                            Vec<PolySkillSpec> skills, Maybe<Locality> owner, Maybe<AddressSpace> addressSpace,
 	                            FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(GetPolymorph), value, isVar, std::move(isTypeRange), std::move(skills),
 		                         std::move(owner), std::move(addressSpace), std::move(fileRange));

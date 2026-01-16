@@ -162,7 +162,7 @@ ir::Value* PlainInitialiser::emit(EmitCtx* ctx) {
 					              ctx->irCtx->builder.CreateStructGEP(dataType->get_llvm_type(), strData->get_llvm(),
 					                                                  0u)),
 					    ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-					                     ir::PtrOwner::of_none(), false, None, ctx->irCtx),
+					                     ir::Locality::of_none(), false, None, ctx->irCtx),
 					    false);
 				} else {
 					if (strData->is_ghost_ref() || strData->get_ir_type()->is_ref()) {

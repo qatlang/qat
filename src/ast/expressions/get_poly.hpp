@@ -3,8 +3,8 @@
 
 #include "../expression.hpp"
 #include "../skill_entity.hpp"
+#include "../types/locality.hpp"
 #include "../types/pointer.hpp"
-#include "../types/pointer_owner.hpp"
 
 #include <variant>
 
@@ -49,20 +49,20 @@ class GetPolymorph final : public Expression {
 	Maybe<FileRangePtr> isTypeRange;
 	Vec<PolySkillSpec>  skills;
 
-	Maybe<Locality>     owner;
+	Maybe<Locality>     locality;
 	Maybe<AddressSpace> addressSpace;
 
   public:
 	GetPolymorph(Expression* _value, bool _isVar, Maybe<FileRangePtr> _isTypeRange, Vec<PolySkillSpec> _skills,
 	             Maybe<Locality> _owner, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), value(_value), isVar(_isVar), isTypeRange(std::move(_isTypeRange)),
-	      skills(std::move(_skills)), owner(std::move(_owner)), addressSpace(std::move(_addressSpace)) {}
+	      skills(std::move(_skills)), locality(std::move(_owner)), addressSpace(std::move(_addressSpace)) {}
 
 	static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRangePtr> isTypeRange,
-	                            Vec<PolySkillSpec> skills, Maybe<Locality> owner, Maybe<AddressSpace> addressSpace,
+	                            Vec<PolySkillSpec> skills, Maybe<Locality> locality, Maybe<AddressSpace> addressSpace,
 	                            FileRangePtr fileRange) {
 		return std::construct_at(OwnNormal(GetPolymorph), value, isVar, std::move(isTypeRange), std::move(skills),
-		                         std::move(owner), std::move(addressSpace), std::move(fileRange));
+		                         std::move(locality), std::move(addressSpace), std::move(fileRange));
 	}
 
 	void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) final {
@@ -73,8 +73,8 @@ class GetPolymorph final : public Expression {
 				sk.as_done_skill().update_dependencies(phase, ir::DependType::partial, ent, ctx);
 			}
 		}
-		if (owner.has_value() && owner.value().candidate) {
-			owner.value().candidate->update_dependencies(phase, ir::DependType::complete, ent, ctx);
+		if (locality.has_value() && locality.value().candidate) {
+			locality.value().candidate->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 		}
 		if (addressSpace.has_value() && addressSpace.value().value) {
 			UPDATE_DEPS(addressSpace.value().value);

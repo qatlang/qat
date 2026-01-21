@@ -1,4 +1,4 @@
-#include "./pointer_owner.hpp"
+#include "./locality.hpp"
 #include "../../IR/method.hpp"
 #include "../emit_ctx.hpp"
 #include "./qat_type.hpp"
@@ -26,8 +26,8 @@ String Locality::to_string() const {
 	}
 }
 
-String locality_to_string(LocalityKind ownType) {
-	switch (ownType) {
+String locality_to_string(LocalityKind locality) {
+	switch (locality) {
 		case LocalityKind::STATIC:
 			return "static";
 		case LocalityKind::SELF_INSTANCE:
@@ -47,13 +47,14 @@ String locality_to_string(LocalityKind ownType) {
 	}
 }
 
-ir::Locality get_locality(EmitCtx* ctx, Locality owner, FileRangePtr fileRange) {
-	if (owner.kind == LocalityKind::OWN) {
+ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRange) {
+	if (locality.kind == LocalityKind::OWN) {
 		if (not ctx->get_fn()) {
-			ctx->Error("This pointer type is not inside a function and hence cannot have function ownership",
+			ctx->Error("This pointer type is not inside a function and hence cannot have the " + ctx->color("own") +
+			               " locality.",
 			           fileRange);
 		}
-	} else if (owner.kind == LocalityKind::SELF_INSTANCE) {
+	} else if (locality.kind == LocalityKind::SELF_INSTANCE) {
 		if (not ctx->has_member_parent()) {
 			ctx->Error("No parent type found in scope and hence the pointer "
 			           "cannot be owned by the parent type instance",
@@ -61,9 +62,9 @@ ir::Locality get_locality(EmitCtx* ctx, Locality owner, FileRangePtr fileRange) 
 		}
 	}
 	ir::Type* ownerVal = nullptr;
-	if (owner.kind == LocalityKind::REGION_TYPE) {
-		if (owner.candidate) {
-			auto* regTy = owner.candidate->emit(ctx);
+	if (locality.kind == LocalityKind::REGION_TYPE) {
+		if (locality.candidate) {
+			auto* regTy = locality.candidate->emit(ctx);
 			if (not regTy->is_region()) {
 				ctx->Error("The provided type is not a region type and hence pointer "
 				           "owner cannot be " +
@@ -73,7 +74,7 @@ ir::Locality get_locality(EmitCtx* ctx, Locality owner, FileRangePtr fileRange) 
 			ownerVal = regTy;
 		}
 	}
-	switch (owner.kind) {
+	switch (locality.kind) {
 		case LocalityKind::SELF_INSTANCE: {
 			if (ctx->has_member_parent()) {
 				return ir::Locality::of_self(ctx->get_member_parent()->get_parent_type());

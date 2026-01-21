@@ -102,7 +102,7 @@ ir::Value* OrUseValue::emit(EmitCtx* ctx) {
 		ctx->irCtx->builder.CreateCondBr(condition, trueBlock->get_bb(), falseBlock->get_bb());
 		trueBlock->set_active(ctx->irCtx->builder);
 		auto expectedCandTy =
-		    ir::PtrType::get(ptrTy->is_subtype_variable(), ptrTy->get_subtype(), true, ptrTy->get_owner(),
+		    ir::PtrType::get(ptrTy->is_subtype_variable(), ptrTy->get_subtype(), true, ptrTy->get_locality(),
 		                     ptrTy->is_multi(), ptrTy->get_address_space(), ctx->irCtx);
 		llvm::Value* trueValue = nullptr;
 		if (ptrTy->is_multi()) {

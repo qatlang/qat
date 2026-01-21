@@ -47,9 +47,10 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				loadRef();
 				auto targetTy =
 				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_ptr() : destTy->as_ptr();
-				if (not valPtrTy->get_owner().is_same(targetTy->get_owner()) && not targetTy->get_owner().is_none()) {
+				if (not valPtrTy->get_locality().is_same(targetTy->get_locality()) &&
+				    not targetTy->get_locality().is_none()) {
 					ctx->Error(
-					    "This change of ownership of the pointer type is not allowed. Pointers with known ownership can only be converted to anonymous ownership",
+					    "This change of locality of the pointer type is not allowed. Pointers with known locality can only be converted to anonymous locality.",
 					    fileRange);
 				}
 				if (valPtrTy->is_nullable() != targetTy->as_ptr()->is_nullable()) {
@@ -138,7 +139,7 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			           (destValTy->as_ptr()->get_subtype()->is_unsigned() ||
 			            (destValTy->as_ptr()->get_subtype()->is_native_type() &&
 			             destValTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
-			           destValTy->as_ptr()->get_owner().is_none() &&
+			           destValTy->as_ptr()->get_locality().is_none() &&
 			           (destValTy->as_ptr()->get_subtype()->is_unsigned()
 			                ? (destValTy->as_ptr()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
 			                : (destValTy->as_ptr()

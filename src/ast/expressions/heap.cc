@@ -86,14 +86,14 @@ ir::Value* HeapPut::emit(EmitCtx* ctx) {
 	auto  expTy = exp->is_ref() ? exp->get_ir_type()->as_ref()->get_subtype() : exp->get_ir_type();
 	if (expTy->is_ptr()) {
 		auto ptrTy = expTy->as_ptr();
-		if (not ptrTy->get_owner().is_heap()) {
+		if (not ptrTy->get_locality().is_heap()) {
 			ctx->Error("The pointer type of this expression is " + ctx->color(ptrTy->to_string()) +
-			               " which does not have heap ownership and hence cannot be used here",
+			               " which does not have heap locality and hence cannot be used here",
 			           ptr->fileRange);
 		}
 	} else {
 		ctx->Error(
-		    "Expecting an expression having a pointer type with heap ownership. The provided expression is of type " +
+		    "Expecting an expression having a pointer type with heap locality. The provided expression is of type " +
 		        ctx->color(expTy->to_string()) + ". Other expression types are not supported",
 		    ptr->fileRange);
 	}
@@ -133,8 +133,8 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		if (ptrVal->get_ir_type()->as_ref()->get_subtype()->is_ptr()) {
 			ptrType = ptrVal->get_ir_type()->as_ref()->get_subtype()->as_ptr();
 			ptrVal->load_ghost_ref(ctx->irCtx->builder);
-			if (not ptrType->get_owner().is_heap()) {
-				ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
+			if (not ptrType->get_locality().is_heap()) {
+				ctx->Error("The locality of this pointer is not " + ctx->color("heap") +
 				               " and hence cannot be used in heap:grow",
 				           fileRange);
 			}
@@ -156,8 +156,8 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 				ctx->Error("This expression is not a variable", fileRange);
 			}
 			ptrType = ptrVal->get_ir_type()->as_ptr();
-			if (not ptrType->get_owner().is_heap()) {
-				ctx->Error("The ownership of this pointer is not " + ctx->color("heap") +
+			if (not ptrType->get_locality().is_heap()) {
+				ctx->Error("The locality of this pointer is not " + ctx->color("heap") +
 				               " and hence cannot be used in heap:grow",
 				           fileRange);
 			}
@@ -176,10 +176,10 @@ ir::Value* HeapGrow::emit(EmitCtx* ctx) {
 		}
 	} else {
 		ptrType = ptrVal->get_ir_type()->as_ptr();
-		if (not ptrType->get_owner().is_heap()) {
+		if (not ptrType->get_locality().is_heap()) {
 			ctx->Error("Expected a multipointer with " + ctx->color("heap") +
-			               " ownership. The ownership of this pointer is " +
-			               ctx->color(ptrType->get_owner().to_string()) + " and hence cannot be used.",
+			               " locality. The locality of this pointer is " +
+			               ctx->color(ptrType->get_locality().to_string()) + " and hence cannot be used.",
 			           fileRange);
 		}
 		if (not ptrType->is_multi()) {

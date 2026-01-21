@@ -85,7 +85,7 @@ ir::Value* NonNull::emit(EmitCtx* ctx) {
 		    {}, fileRange, ctx);
 		(void)ir::add_branch(ctx->irCtx->builder, restBlock->get_bb());
 		restBlock->set_active(ctx->irCtx->builder);
-		auto resTy = ir::PtrType::get(ptrTy->is_subtype_variable(), ptrTy->get_subtype(), true, ptrTy->get_owner(),
+		auto resTy = ir::PtrType::get(ptrTy->is_subtype_variable(), ptrTy->get_subtype(), true, ptrTy->get_locality(),
 		                              ptrTy->is_multi(), ptrTy->get_address_space(), ctx->irCtx);
 		if (ptrTy->is_multi()) {
 			return ir::Value::get(ctx->irCtx->builder.CreateBitCast(cand->get_llvm(), resTy->get_llvm_type()), resTy,

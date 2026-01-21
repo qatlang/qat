@@ -36,19 +36,19 @@ ir::Value* InExpression::emit(EmitCtx* ctx) {
 			    fileRange);
 		}
 		finalTy = inferredType->as_ptr();
-		if (is_target_heap() && not finalTy->get_owner().is_heap()) {
+		if (is_target_heap() && not finalTy->get_locality().is_heap()) {
 			ctx->Error("The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			               ", which is a pointer type without heap ownership. This expression expects to be of type " +
+			               ", which is a pointer type without heap locality. This expression expects to be of type " +
 			               ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
 			                                           finalTy->is_non_nullable(), ir::Locality::of_heap(), false,
 			                                           finalTy->get_address_space(), ctx->irCtx)
 			                              ->to_string()),
 			           fileRange);
 		} else if (is_target_region() &&
-		           not(finalTy->get_owner().is_region_type() || finalTy->get_owner().is_any_region())) {
+		           not(finalTy->get_locality().is_region_type() || finalTy->get_locality().is_any_region())) {
 			ctx->Error(
 			    "The type inferred from scope is " + ctx->color(inferredType->to_string()) +
-			        ", which is a pointer type without region ownership. This expression expects either to be of type " +
+			        ", which is a pointer type without region locality. This expression expects either to be of type " +
 			        ctx->color(ir::PtrType::get(finalTy->is_subtype_variable(), finalTy->get_subtype(),
 			                                    finalTy->is_non_nullable(), ir::Locality::of_any_region(), false,
 			                                    finalTy->get_address_space(), ctx->irCtx)

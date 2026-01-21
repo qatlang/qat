@@ -101,7 +101,7 @@ bool Type::is_same(Type const* other) const {
 				       ir::AddressSpace::compare(thisTy->get_address_space(), otherTy->get_address_space()) &&
 				       (thisTy->is_nullable() == otherTy->is_nullable()) &&
 				       (thisTy->get_subtype()->is_same(otherTy->get_subtype())) &&
-				       (thisTy->get_owner().is_same(otherTy->get_owner()));
+				       (thisTy->get_locality().is_same(otherTy->get_locality()));
 			}
 			case TypeKind::REFERENCE: {
 				return (((RefType*)this)->has_variability() == ((RefType*)other)->has_variability()) &&
@@ -222,10 +222,11 @@ bool Type::is_same(Type const* other) const {
 				if (thisVal->get_skills().size() != otherVal->get_skills().size()) {
 					return false;
 				}
-				if (thisVal->owner.has_value() != otherVal->owner.has_value()) {
+				if (thisVal->locality.has_value() != otherVal->locality.has_value()) {
 					return false;
 				}
-				if (thisVal->owner.has_value() && not thisVal->owner.value().is_same(otherVal->owner.value())) {
+				if (thisVal->locality.has_value() &&
+				    not thisVal->locality.value().is_same(otherVal->locality.value())) {
 					return false;
 				}
 				for (usize i = 0; i < thisVal->get_skills().size(); i++) {
@@ -301,14 +302,14 @@ bool Type::is_compatible_with(Type const* candidate) const {
 		if (not ir::AddressSpace::compare(targPtr->get_address_space(), candPtr->get_address_space())) {
 			return false;
 		}
-		auto targOwn = targPtr->get_owner();
-		auto candOwn = candPtr->get_owner();
-		if (targOwn.is_none() &&
-		    (candOwn.is_heap() || candOwn.is_any_region() || candOwn.is_region_type() || candOwn.is_static())) {
+		auto targLocality = targPtr->get_locality();
+		auto candLocality = candPtr->get_locality();
+		if (targLocality.is_none() && (candLocality.is_heap() || candLocality.is_any_region() ||
+		                               candLocality.is_region_type() || candLocality.is_static())) {
 			return true;
-		} else if (targOwn.is_static() && (candOwn.is_region_type() || candOwn.is_any_region())) {
+		} else if (targLocality.is_static() && (candLocality.is_region_type() || candLocality.is_any_region())) {
 			return true;
-		} else if (targOwn.is_any_region() && candOwn.is_region_type()) {
+		} else if (targLocality.is_any_region() && candLocality.is_region_type()) {
 			return true;
 		}
 		return false;

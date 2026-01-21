@@ -18,13 +18,14 @@ ir::Type* PolymorphType::emit(EmitCtx* ctx) {
 	for (auto& sk : skills) {
 		irSkills.push_back(sk.find_skill(ctx));
 	}
-	auto ptrOwner =
-	    owner.has_value() ? Maybe<ir::Locality>(get_locality(ctx, owner.value(), owner.value().range)) : None;
+	auto ptrLocality =
+	    locality.has_value() ? Maybe<ir::Locality>(get_locality(ctx, locality.value(), locality.value().range)) : None;
 	Maybe<ir::AddressSpace> addr;
 	if (addressSpace.has_value()) {
 		addr = addressSpace.value().to_ir(ctx);
 	}
-	return ir::Polymorph::create(isTyped, isVar, std::move(irSkills), std::move(ptrOwner), std::move(addr), ctx->irCtx);
+	return ir::Polymorph::create(isTyped, isVar, std::move(irSkills), std::move(ptrLocality), std::move(addr),
+	                             ctx->irCtx);
 }
 
 } // namespace qat::ast

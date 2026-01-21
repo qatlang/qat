@@ -9,7 +9,7 @@ namespace qat::ir {
 class Function;
 class Region;
 
-enum class OwnerKind {
+enum class LocalityKind {
 	NONE,
 	ANY_REGION,
 	REGION_TYPE,
@@ -24,8 +24,8 @@ enum class OwnerKind {
 
 class Locality {
   public:
-	void*     owner;
-	OwnerKind ownerTy;
+	void*        owner;
+	LocalityKind locality;
 
 	static Locality of_heap();
 	static Locality of_static();
@@ -46,25 +46,25 @@ class Locality {
 
 	Type* owner_as_parent_type() const { return (Type*)owner; }
 
-	bool is_none() const { return ownerTy == OwnerKind::NONE; }
+	bool is_none() const { return locality == LocalityKind::NONE; }
 
-	bool is_any_region() const { return ownerTy == OwnerKind::ANY_REGION; }
+	bool is_any_region() const { return locality == LocalityKind::ANY_REGION; }
 
-	bool is_region_type() const { return ownerTy == OwnerKind::REGION_TYPE; }
+	bool is_region_type() const { return locality == LocalityKind::REGION_TYPE; }
 
-	bool is_heap() const { return ownerTy == OwnerKind::HEAP; }
+	bool is_heap() const { return locality == LocalityKind::HEAP; }
 
-	bool is_own() const { return ownerTy == OwnerKind::OWN; }
+	bool is_own() const { return locality == LocalityKind::OWN; }
 
-	bool is_self() const { return ownerTy == OwnerKind::SELF; }
+	bool is_self() const { return locality == LocalityKind::SELF; }
 
-	bool is_static() const { return ownerTy == OwnerKind::STATIC; }
+	bool is_static() const { return locality == LocalityKind::STATIC; }
 
-	bool is_prerun() const { return ownerTy == OwnerKind::PRERUN; }
+	bool is_prerun() const { return locality == LocalityKind::PRERUN; }
 
-	bool is_use() const { return ownerTy == OwnerKind::USE; }
+	bool is_use() const { return locality == LocalityKind::USE; }
 
-	bool is_atomic() const { return ownerTy == OwnerKind::ATOMIC; }
+	bool is_atomic() const { return locality == LocalityKind::ATOMIC; }
 
 	bool is_same(const Locality& other) const;
 
@@ -75,7 +75,7 @@ class PtrType : public Type {
   private:
 	Type*               subType;
 	bool                isSubtypeVar;
-	Locality            owner;
+	Locality            locality;
 	bool                hasMulti;
 	bool                nonNullable;
 	Maybe<AddressSpace> addressSpace;
@@ -90,7 +90,7 @@ class PtrType : public Type {
 	                    Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
 	Type*    get_subtype() const;
-	Locality get_owner() const;
+	Locality get_locality() const;
 
 	bool has_address_space() const { return addressSpace.has_value(); }
 

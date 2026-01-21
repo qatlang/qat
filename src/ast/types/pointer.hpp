@@ -2,28 +2,28 @@
 #define QAT_TYPES_POINTER_HPP
 
 #include "./address_space.hpp"
-#include "./pointer_owner.hpp"
+#include "./locality.hpp"
 #include "./qat_type.hpp"
 
 namespace qat::ast {
 
 class PtrType final : public Type {
 	Type*               type;
-	Locality            owner;
+	Locality            locality;
 	bool                isMulti;
 	bool                isSubtypeVar;
 	bool                isNonNullable;
 	Maybe<AddressSpace> addressSpace;
 
   public:
-	PtrType(Type* _type, bool _isSubtypeVar, Locality _owner, bool _isNonNullable, bool _isMulti,
+	PtrType(Type* _type, bool _isSubtypeVar, Locality _locality, bool _isNonNullable, bool _isMulti,
 	        Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
-	    : Type(_fileRange), type(_type), owner(_owner), isMulti(_isMulti), isSubtypeVar(_isSubtypeVar),
+	    : Type(_fileRange), type(_type), locality(_locality), isMulti(_isMulti), isSubtypeVar(_isSubtypeVar),
 	      isNonNullable(_isNonNullable), addressSpace(std::move(_addressSpace)) {}
 
-	static PtrType* create(Type* type, bool isSubtypeVar, Locality owner, bool isNonNullable, bool isMulti,
+	static PtrType* create(Type* type, bool isSubtypeVar, Locality locality, bool isNonNullable, bool isMulti,
 	                       Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(PtrType), type, isSubtypeVar, owner, isNonNullable, isMulti,
+		return std::construct_at(OwnNormal(PtrType), type, isSubtypeVar, locality, isNonNullable, isMulti,
 		                         std::move(addressSpace), fileRange);
 	}
 

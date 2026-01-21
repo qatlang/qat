@@ -11,12 +11,12 @@ add_library(ASTTypes STATIC
 	generic_integer.cc
 	integer.cc
 	linked_generic.cc
+	locality.cc
 	maybe.cc
 	named.cc
 	native_type.cc
 	reference.cc
 	pointer.cc
-	pointer_owner.cc
 	polymorph.cc
 	prerun_generic.cc
 	qat_type.cc

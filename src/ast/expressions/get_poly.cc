@@ -23,7 +23,7 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		}
 		auto resTy = ir::Polymorph::create(
 		    isTypeRange.has_value(), isVar, std::move(skillsIR),
-		    owner.has_value() ? Maybe<ir::Locality>(get_locality(ctx, owner.value(), fileRange)) : None,
+		    locality.has_value() ? Maybe<ir::Locality>(get_locality(ctx, locality.value(), fileRange)) : None,
 		    std::move(addr), ctx->irCtx);
 
 		if (val->get_ir_type()->is_ref()) {
@@ -35,32 +35,32 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 			val->load_ghost_ref(ctx->irCtx->builder);
 		}
 		auto origTy = val->get_ir_type()->as_poly();
-		if (resTy->has_owner() != origTy->has_owner()) {
-			if (not resTy->has_owner() && not origTy->get_owner().is_none()) {
+		if (resTy->has_locality() != origTy->has_locality()) {
+			if (not resTy->has_locality() && not origTy->get_locality().is_none()) {
 				ctx->Error(
 				    "The existing polymorph here of type " + ctx->color(origTy->to_string()) +
 				        " is a pointer polymorph, but the resultant polymorph of type " +
 				        ctx->color(resTy->to_string()) +
-				        " is a reference polymorph. Reference polymorphs can be extracted only from a pointer polymorph with anonymous ownership."
+				        " is a reference polymorph. Reference polymorphs can be extracted only from a pointer polymorph with anonymous locality."
 				        " Please check the existing pointer polymorph to be safe, and retrieve a reference polymorph from it"
 				        " if you want to do so, via pattern matching or conversion",
 				    fileRange);
-			} else if (not origTy->has_owner() && not resTy->get_owner().is_none()) {
+			} else if (not origTy->has_locality() && not resTy->get_locality().is_none()) {
 				ctx->Error(
 				    "The existing polymorph here of type " + ctx->color(origTy->to_string()) +
 				        " is a reference polymorph, but the resultant polymorph of type " +
 				        ctx->color(resTy->to_string()) +
-				        " is a pointer polymorph with ownership. Only pointer polymorphs with anonymous ownership can be extracted"
+				        " is a pointer polymorph with locality. Only pointer polymorphs with anonymous locality can be extracted"
 				        " from a reference polymorph",
 				    fileRange);
 			}
-		} else if ((resTy->has_owner() && origTy->has_owner()) && not resTy->get_owner().is_same(origTy->get_owner()) &&
-		           not resTy->get_owner().is_none()) {
+		} else if ((resTy->has_locality() && origTy->has_locality()) &&
+		           not resTy->get_locality().is_same(origTy->get_locality()) && not resTy->get_locality().is_none()) {
 			ctx->Error(
-			    "The pointer ownership of the resultant pointer polymorph of type " + ctx->color(resTy->to_string()) +
-			        " is not compatible with the pointer ownership of the existing polymorph of type " +
+			    "The pointer locality of the resultant pointer polymorph of type " + ctx->color(resTy->to_string()) +
+			        " is not compatible with the pointer locality of the existing polymorph of type " +
 			        ctx->color(origTy->to_string()) +
-			        ". Only pointer polymorphs with anonymous ownership can be extracted from pointer polymorphs with other ownership types",
+			        ". Only pointer polymorphs with anonymous locality can be extracted from pointer polymorphs with other locality types",
 			    fileRange);
 		} else if (resTy->has_address_space() != origTy->has_address_space()) {
 			ctx->Error("The existing polymorph is of type " + ctx->color(origTy->to_string()) +
@@ -96,9 +96,9 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		}
 		auto loc = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false,
 		                                                 ctx->irCtx, fileRange);
-		if (origTy->has_owner() && not origTy->get_owner().is_none() &&
+		if (origTy->has_locality() && not origTy->get_locality().is_none() &&
 		    llvm::cast<llvm::StructType>(origTy->get_llvm_type())->getElementType(0)->isStructTy() &&
-		    (not resTy->has_owner() || resTy->get_owner().is_none())) {
+		    (not resTy->has_locality() || resTy->get_locality().is_none())) {
 			ctx->irCtx->builder.CreateStore(
 			    ctx->irCtx->builder.CreateExtractValue(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
 			                                           {0u}),
@@ -204,34 +204,34 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 				skillsIR.push_back(doneSkills.back()->get_skill());
 			}
 		}
-		Maybe<ir::Locality> ptrOwner;
-		if (owner.has_value()) {
-			ptrOwner = get_locality(ctx, owner.value(), owner.value().range);
+		Maybe<ir::Locality> irLocality;
+		if (locality.has_value()) {
+			irLocality = get_locality(ctx, locality.value(), locality.value().range);
 		}
 		Maybe<ir::AddressSpace> addr;
 		if (addressSpace.has_value()) {
 			addr = addressSpace.value().to_ir(ctx);
 		}
-		auto resTy             = ir::Polymorph::create(isTypeRange.has_value(), isVar, skillsIR, std::move(ptrOwner),
+		auto resTy             = ir::Polymorph::create(isTypeRange.has_value(), isVar, skillsIR, std::move(irLocality),
 		                                               std::move(addr), ctx->irCtx);
 		bool storeInstanceAsIs = true;
-		if (not ptrOwner.has_value()) {
-			if (val->is_ptr() && not val->get_ir_type()->as_ptr()->get_owner().is_none()) {
+		if (not irLocality.has_value()) {
+			if (val->is_ptr() && not val->get_ir_type()->as_ptr()->get_locality().is_none()) {
 				ctx->Error(
 				    "Trying to get a reference polymorph of " + ctx->color(resTy->to_string()) +
-				        " from an expression which is a pointer with ownership. Reference polymorphs can be extracted only from reference-like expressions or from pointers with anonymous ownership",
+				        " from an expression which is a pointer with locality. Reference polymorphs can be extracted only from reference-like expressions or from pointers with anonymous locality",
 				    fileRange);
 			}
 		} else {
-			if (not ptrOwner.value().is_none() && val->is_ptr() &&
-			    not ptrOwner.value().is_same(val->get_ir_type()->as_ptr()->get_owner())) {
+			if (not irLocality.value().is_none() && val->is_ptr() &&
+			    not irLocality.value().is_same(val->get_ir_type()->as_ptr()->get_locality())) {
 				ctx->Error(
 				    "Trying to get a pointer polymorph of " + ctx->color(resTy->to_string()) +
 				        " from a pointer expression of type " + ctx->color(val->get_ir_type()->to_string()) +
-				        ". The ownership of the pointer polymorph and that of the pointer expression does not match",
+				        ". The locality of the pointer polymorph and that of the pointer expression does not match",
 				    fileRange);
 			}
-			if (ptrOwner.value().is_none() && val->is_ptr() &&
+			if (irLocality.value().is_none() && val->is_ptr() &&
 			    llvm::isa<llvm::StructType>(val->get_ir_type()->get_llvm_type())) {
 				storeInstanceAsIs = false;
 			}

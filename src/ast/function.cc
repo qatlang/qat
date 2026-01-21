@@ -135,7 +135,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			             arg->get_name().range);
 		}
 		auto* genType = arg->get_type()->emit(EmitCtx::get(irCtx, mod));
-		if (genType->is_ptr() && genType->as_ptr()->get_owner().is_prerun()) {
+		if (genType->is_ptr() && genType->as_ptr()->get_locality().is_prerun()) {
 			irCtx->Error("Prerun " + String(genType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
 			                 " are not allowed for arguments of a normal function",
 			             arg->get_name().range);
@@ -213,7 +213,7 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 	}
 	SHOW("Variability setting complete")
 	auto* retTy = returnType.has_value() ? returnType.value()->emit(emitCtx) : ir::VoidType::get(irCtx->llctx);
-	if (retTy->is_ptr() && retTy->as_ptr()->get_owner().is_prerun()) {
+	if (retTy->is_ptr() && retTy->as_ptr()->get_locality().is_prerun()) {
 		irCtx->Error("Prerun " + String(retTy->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
 		                 " are not allowed to be the given type in normal functions",
 		             fileRange);

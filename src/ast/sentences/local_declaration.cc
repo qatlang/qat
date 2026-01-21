@@ -44,7 +44,7 @@ ir::Value* LocalDeclaration::emit(EmitCtx* ctx) {
 				               " is not sized and hence cannot be allocated",
 				           fileRange);
 			}
-			if (declType->is_ptr() && declType->as_ptr()->get_owner().is_prerun()) {
+			if (declType->is_ptr() && declType->as_ptr()->get_locality().is_prerun()) {
 				ctx->Error("Prerun " + String(declType->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
 				               " cannot be used in " + ctx->color("let") + " bindings in normal functions",
 				           fileRange);

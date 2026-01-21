@@ -122,7 +122,7 @@ LocalValue* Block::get_value(const String& name) const {
 }
 
 LocalValue* Block::new_local(const String& name, ir::Type* type, bool isVar, Ctx* ctx, FileRangePtr fileRange) {
-	if (type->is_ptr() && type->as_ptr()->get_owner().is_prerun()) {
+	if (type->is_ptr() && type->as_ptr()->get_locality().is_prerun()) {
 		ctx->Error("Prerun " + String(type->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
 		               " are now allowed to be normal values, and hence cannot be allocated",
 		           fileRange);
@@ -132,7 +132,7 @@ LocalValue* Block::new_local(const String& name, ir::Type* type, bool isVar, Ctx
 }
 
 UseValue* Block::create_use_value(String name, llvm::Value* value, ir::Type* type, Ctx* ctx, FileRangePtr fileRange) {
-	if (type->is_ptr() && type->as_ptr()->get_owner().is_prerun()) {
+	if (type->is_ptr() && type->as_ptr()->get_locality().is_prerun()) {
 		ctx->Error("Prerun " + String(type->as_ptr()->is_multi() ? "multi-pointers" : "pointers") +
 		               " are now allowed to be normal values",
 		           fileRange);
@@ -232,8 +232,8 @@ void Block::destroy_locals(ast::EmitCtx* ctx) {
 	for (auto* loc : values) {
 		if (loc->get_ir_type()->is_destructible()) {
 			if (loc->get_ir_type()->is_ptr()
-			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_own() &&
-			           (loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() ==
+			        ? (loc->get_ir_type()->as_ptr()->get_locality().is_own() &&
+			           (loc->get_ir_type()->as_ptr()->get_locality().owner_as_parent_function()->get_id() ==
 			            ctx->get_fn()->get_id()))
 			        : true) {
 				loc->get_ir_type()->destroy_value(ctx->irCtx, loc, ctx->get_fn());
@@ -459,8 +459,8 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 		} else if (loc->get_ir_type()->is_destructible()) {
 			loc->get_ir_type()->destroy_value(irCtx, loc->to_new_ir_value(), fun);
 			SHOW("Destroyed value using type level feature")
-		} else if (loc->get_ir_type()->is_ptr() && loc->get_ir_type()->as_ptr()->get_owner().is_own() &&
-		           loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() == fun->get_id()) {
+		} else if (loc->get_ir_type()->is_ptr() && loc->get_ir_type()->as_ptr()->get_locality().is_own() &&
+		           loc->get_ir_type()->as_ptr()->get_locality().owner_as_parent_function()->get_id() == fun->get_id()) {
 			auto* ptrTy = loc->get_ir_type()->as_ptr();
 			if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
 				auto  intPtrTy = llvm::PointerType::get(irCtx->llctx, ptrTy->usable_address_space(irCtx));
@@ -563,7 +563,7 @@ void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 		if (mFn->get_method_type() == MethodType::destructor) {
 			for (usize i = 0; i < cTy->get_members().size(); i++) {
 				auto& mem = cTy->get_members().at(i);
-				if (mem->type->is_ptr() && mem->type->as_ptr()->get_owner().is_self()) {
+				if (mem->type->is_ptr() && mem->type->as_ptr()->get_locality().is_self()) {
 					auto* ptrTy  = mem->type->as_ptr();
 					auto* memPtr = irCtx->builder.CreateStructGEP(
 					    ptrTy->get_llvm_type(),
@@ -728,8 +728,8 @@ void destroy_locals_from(ir::Ctx* irCtx, ir::Block* block) {
 	for (auto* loc : locals) {
 		if (loc->get_ir_type()->is_destructible()) {
 			if (loc->get_ir_type()->is_ptr()
-			        ? (loc->get_ir_type()->as_ptr()->get_owner().is_own() &&
-			           (loc->get_ir_type()->as_ptr()->get_owner().owner_as_parent_function()->get_id() ==
+			        ? (loc->get_ir_type()->as_ptr()->get_locality().is_own() &&
+			           (loc->get_ir_type()->as_ptr()->get_locality().owner_as_parent_function()->get_id() ==
 			            block->get_fn()->get_id()))
 			        : true) {
 				loc->get_ir_type()->destroy_value(irCtx, loc, block->get_fn());

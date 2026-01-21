@@ -9,8 +9,8 @@ namespace qat::ast {
 
 void PtrType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>, ir::EntityState* ent, EmitCtx* ctx) {
 	type->update_dependencies(phase, ir::DependType::partial, ent, ctx);
-	if (owner.candidate) {
-		owner.candidate->update_dependencies(phase, ir::DependType::partial, ent, ctx);
+	if (locality.candidate) {
+		locality.candidate->update_dependencies(phase, ir::DependType::partial, ent, ctx);
 	}
 	if (addressSpace.has_value() && (addressSpace.value().value != nullptr)) {
 		UPDATE_DEPS(addressSpace.value().value);
@@ -38,7 +38,7 @@ ir::Type* PtrType::emit(EmitCtx* ctx) {
 		        ctx->color("var"),
 		    fileRange);
 	}
-	return ir::PtrType::get(isSubtypeVar, subTy, isNonNullable, get_locality(ctx, owner, fileRange), isMulti,
+	return ir::PtrType::get(isSubtypeVar, subTy, isNonNullable, get_locality(ctx, locality, fileRange), isMulti,
 	                        addressSpace.has_value() ? Maybe<ir::AddressSpace>(addressSpace.value().to_ir(ctx)) : None,
 	                        ctx->irCtx);
 }
@@ -48,7 +48,7 @@ AstTypeKind PtrType::type_kind() const { return AstTypeKind::POINTER; }
 String PtrType::to_string() const {
 	return (isMulti ? (isNonNullable ? "multi![" : "multi:[") : (isNonNullable ? "ptr![" : "ptr:[")) +
 	       String(isSubtypeVar ? "var " : "") + type->to_string() +
-	       (owner.kind != LocalityKind::NONE ? (", " + owner.to_string()) : "") +
+	       (locality.kind != LocalityKind::NONE ? (", " + locality.to_string()) : "") +
 	       (addressSpace.has_value() ? (", " + addressSpace.value().to_string()) : "") + "]";
 }
 

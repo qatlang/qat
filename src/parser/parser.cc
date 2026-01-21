@@ -2024,7 +2024,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						isSubtypeVar = true;
 						i++;
 					}
-					auto                     ptrOwner     = ast::Locality::none(FileRange::null);
+					auto                     ptrLocality  = ast::Locality::none(FileRange::null);
 					Maybe<ast::AddressSpace> addressSpace = None;
 					auto                     subRes       = do_type(preCtx, i, None);
 					i                                     = subRes.second;
@@ -2034,23 +2034,23 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						foundSeparator = true;
 					}
 					if (foundSeparator) {
-						bool parsedOwnership = false;
+						bool parsedLocality = false;
 						if (is_next(TokenType::heap, i)) {
 							i++;
-							ptrOwner        = ast::Locality::in_heap(RangeAt(i));
-							parsedOwnership = true;
+							ptrLocality    = ast::Locality::in_heap(RangeAt(i));
+							parsedLocality = true;
 						} else if (is_next(TokenType::Static, i)) {
 							i++;
-							ptrOwner        = ast::Locality::in_static(RangeAt(i));
-							parsedOwnership = true;
+							ptrLocality    = ast::Locality::in_static(RangeAt(i));
+							parsedLocality = true;
 						} else if (is_next(TokenType::own, i)) {
 							i++;
-							ptrOwner        = ast::Locality::in_own(RangeAt(i));
-							parsedOwnership = true;
+							ptrLocality    = ast::Locality::in_own(RangeAt(i));
+							parsedLocality = true;
 						} else if (is_next(TokenType::selfInstance, i)) {
 							i++;
-							ptrOwner        = ast::Locality::in_self_instance(RangeAt(i));
-							parsedOwnership = true;
+							ptrLocality    = ast::Locality::in_self_instance(RangeAt(i));
+							parsedLocality = true;
 						} else if (is_next(TokenType::region, i)) {
 							const auto oStart = i + 1;
 							i++;
@@ -2062,17 +2062,17 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 									add_error("Expected ) after this", RangeSpan(pStart, i));
 								}
 								i++;
-								ptrOwner = ast::Locality::in_region_type(ownTy.first, RangeSpan(oStart, i));
+								ptrLocality = ast::Locality::in_region_type(ownTy.first, RangeSpan(oStart, i));
 							} else {
-								ptrOwner = ast::Locality::in_any_region(RangeAt(i));
+								ptrLocality = ast::Locality::in_any_region(RangeAt(i));
 							}
-							parsedOwnership = true;
+							parsedLocality = true;
 						} else if (is_next(TokenType::pre, i)) {
 							i++;
-							ptrOwner        = ast::Locality::in_prerun(RangeAt(i));
-							parsedOwnership = true;
+							ptrLocality    = ast::Locality::in_prerun(RangeAt(i));
+							parsedLocality = true;
 						}
-						if (parsedOwnership) {
+						if (parsedLocality) {
 							foundSeparator = false;
 							if (is_next(TokenType::separator, i)) {
 								foundSeparator = true;
@@ -2101,11 +2101,11 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 									add_error("Invalid format for address-space specification", RangeAt(i + 1));
 								}
 							} else {
-								if (parsedOwnership) {
+								if (parsedLocality) {
 									add_error("Expected the address-space specification after this",
 									          RangeSpan(start, i));
 								} else {
-									add_error("Expected either the ownership of the " +
+									add_error("Expected either the locality of the " +
 									              String(isMulti ? "multi-pointer" : "pointer") +
 									              " type or the address-space specification after this",
 									          RangeAt(i));
@@ -2119,7 +2119,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						          RangeSpan(start, i));
 					}
 					i++;
-					cacheTy = ast::PtrType::create(subRes.first, isSubtypeVar, ptrOwner, isNonNullable, isMulti,
+					cacheTy = ast::PtrType::create(subRes.first, isSubtypeVar, ptrLocality, isNonNullable, isMulti,
 					                               std::move(addressSpace), RangeSpan(start, i));
 				} else {
 					if (is_next(TokenType::bracketOpen, i)) {
@@ -5886,7 +5886,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						    ast::Cast::create(exp, targetTy.first, FileRange::merge(exp->fileRange, RangeAt(i))), i);
 					} else if (is_next(TokenType::polymorph, i)) {
 						const auto           start = i;
-						Maybe<ast::Locality> ptrOwner;
+						Maybe<ast::Locality> ptrLocality;
 						bool                 isPtrPoly = false;
 						i++;
 						if (is_next(TokenType::colon, i) && is_next(TokenType::ptrType, i + 1)) {
@@ -5971,37 +5971,38 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						Maybe<ast::AddressSpace> addressSpace;
 						if (foundSeparator) {
 							if (is_next(TokenType::heap, i)) {
-								ptrOwner = ast::Locality::in_heap(RangeAt(i + 1));
+								ptrLocality = ast::Locality::in_heap(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::Static, i)) {
-								ptrOwner = ast::Locality::in_static(RangeAt(i + 1));
+								ptrLocality = ast::Locality::in_static(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::own, i)) {
-								ptrOwner = ast::Locality::in_own(RangeAt(i + 1));
+								ptrLocality = ast::Locality::in_own(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::selfInstance, i)) {
-								ptrOwner = ast::Locality::in_self_instance(RangeAt(i + 1));
+								ptrLocality = ast::Locality::in_self_instance(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::region, i)) {
 								const auto oStart = i + 1;
 								if (is_next(TokenType::parenthesisOpen, i + 1)) {
-									const auto pStart = i + 2;
-									auto       ownTy  = do_type(preCtx, i + 2, None);
-									i                 = ownTy.second;
+									const auto pStart        = i + 2;
+									auto       localityOwner = do_type(preCtx, i + 2, None);
+									i                        = localityOwner.second;
 									if (not is_next(TokenType::parenthesisClose, i)) {
 										add_error("Expected ) after this", RangeSpan(pStart, i));
 									}
 									i++;
-									ptrOwner = ast::Locality::in_region_type(ownTy.first, RangeSpan(oStart, i));
+									ptrLocality =
+									    ast::Locality::in_region_type(localityOwner.first, RangeSpan(oStart, i));
 								} else {
-									ptrOwner = ast::Locality::in_any_region(RangeAt(i + 1));
+									ptrLocality = ast::Locality::in_any_region(RangeAt(i + 1));
 									i++;
 								}
 							} else if (is_next(TokenType::pre, i)) {
-								ptrOwner = ast::Locality::in_prerun(RangeAt(i + 1));
+								ptrLocality = ast::Locality::in_prerun(RangeAt(i + 1));
 								i++;
 							}
-							if (ptrOwner.has_value()) {
+							if (ptrLocality.has_value()) {
 								foundSeparator = false;
 								if (is_next(TokenType::separator, i)) {
 									foundSeparator = true;
@@ -6034,7 +6035,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 									} else {
 										add_error("Invalid address-space specification", RangeAt(i + 1));
 									}
-								} else if (ptrOwner.has_value()) {
+								} else if (ptrLocality.has_value()) {
 									add_error("Expected the address-space specification after this", RangeAt(i));
 								}
 							}
@@ -6044,11 +6045,11 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							          RangeSpan(specStart, i));
 						}
 						i++;
-						if (not ptrOwner.has_value() && isPtrPoly) {
-							ptrOwner = ast::Locality::none(RangeSpan(start, i));
+						if (not ptrLocality.has_value() && isPtrPoly) {
+							ptrLocality = ast::Locality::none(RangeSpan(start, i));
 						}
 						setCachedExpr(ast::GetPolymorph::create(exp, isVar, std::move(typeRange), std::move(skillSpec),
-						                                        std::move(ptrOwner), std::move(addressSpace),
+						                                        std::move(ptrLocality), std::move(addressSpace),
 						                                        RangeSpan(start, i)),
 						              i);
 						break;

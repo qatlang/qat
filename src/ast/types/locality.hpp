@@ -64,9 +64,9 @@ struct Locality {
 	String to_string() const;
 };
 
-ir::Locality get_locality(EmitCtx* ctx, Locality owner, FileRangePtr fileRange);
+ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRange);
 
-String locality_to_string(LocalityKind ownType);
+String locality_to_string(LocalityKind localityKind);
 
 } // namespace qat::ast
 

@@ -12,9 +12,9 @@ ir::Value* EndPointer::emit(EmitCtx* ctx) {
 	cand       = ir::Logic::handle_pass_semantics(ctx, cand->get_pass_type(), cand, fileRange);
 	if (cand->get_ir_type()->is_ptr()) {
 		auto ptrTy = cand->get_ir_type()->as_ptr();
-		if (not ptrTy->get_owner().is_heap()) {
+		if (not ptrTy->get_locality().is_heap()) {
 			ctx->Error(
-			    "Calling destructors on pointers and multi-pointers are only supported for heap ownership, but got a pointer value of type " +
+			    "Calling destructors on pointers and multi-pointers are only supported for heap locality, but got a pointer value of type " +
 			        ctx->color(ptrTy->to_string()) + " instead",
 			    fileRange);
 		}

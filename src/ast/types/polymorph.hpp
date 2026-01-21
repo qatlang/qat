@@ -3,7 +3,7 @@
 
 #include "../skill_entity.hpp"
 #include "./address_space.hpp"
-#include "./pointer_owner.hpp"
+#include "./locality.hpp"
 #include "./qat_type.hpp"
 #include "./type_kind.hpp"
 
@@ -17,18 +17,18 @@ class PolymorphType final : public Type {
 	bool                isTyped;
 	bool                isVar;
 	Vec<SkillEntity>    skills;
-	Maybe<Locality>     owner;
+	Maybe<Locality>     locality;
 	Maybe<AddressSpace> addressSpace;
 
   public:
-	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<Locality> _owner,
+	PolymorphType(bool _isTyped, bool _isVar, Vec<SkillEntity> _skills, Maybe<Locality> _locality,
 	              Maybe<AddressSpace> _addressSpace, FileRangePtr _range)
-	    : Type(_range), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
+	    : Type(_range), isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), locality(std::move(_locality)),
 	      addressSpace(std::move(_addressSpace)) {}
 
-	static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<Locality> owner,
+	static PolymorphType* create(bool isTyped, bool isVar, Vec<SkillEntity> skills, Maybe<Locality> locality,
 	                             Maybe<AddressSpace> addressSpace, FileRangePtr range) {
-		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), std::move(owner),
+		return std::construct_at(OwnNormal(PolymorphType), isTyped, isVar, std::move(skills), std::move(locality),
 		                         std::move(addressSpace), std::move(range));
 	}
 
@@ -36,8 +36,8 @@ class PolymorphType final : public Type {
 		for (auto& sk : skills) {
 			sk.update_dependencies(phase, ir::DependType::complete, ent, ctx);
 		}
-		if (owner.has_value() && owner.value().candidate) {
-			owner.value().candidate->update_dependencies(phase, ir::DependType::complete, ent, ctx);
+		if (locality.has_value() && locality.value().candidate) {
+			locality.value().candidate->update_dependencies(phase, ir::DependType::complete, ent, ctx);
 		}
 		if (addressSpace.has_value() && addressSpace.value().value) {
 			UPDATE_DEPS(addressSpace.value().value);
@@ -58,11 +58,12 @@ class PolymorphType final : public Type {
 				skillStr += " + ";
 			}
 		}
-		return String(isTyped ? (owner.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
-		                      : (owner.has_value() ? "poly:ptr[" : "poly:[")) +
+		return String(isTyped ? (locality.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
+		                      : (locality.has_value() ? "poly:ptr[" : "poly:[")) +
 		       (isVar ? "var " : "") + skillStr +
-		       (owner.has_value() && owner.value().kind != LocalityKind::NONE ? (", " + owner.value().to_string())
-		                                                                      : "") +
+		       (locality.has_value() && locality.value().kind != LocalityKind::NONE
+		            ? (", " + locality.value().to_string())
+		            : "") +
 		       (addressSpace.has_value() ? (", " + addressSpace.value().to_string()) : "") + "]";
 	}
 };

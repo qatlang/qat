@@ -34,7 +34,7 @@ ir::Value* Dereference::emit(EmitCtx* ctx) {
 		} else if (expTy->as_ptr()->is_multi()) {
 			refVal = ctx->irCtx->builder.CreateExtractValue(expEmit->get_llvm(), {0u});
 		}
-		// FIXME - Change implementation for each pointer ownership types
+		// FIXME - Change implementation for each pointer locality types
 		auto res = ir::Value::get(refVal, refTy, false);
 		res->set_confirmed_ref();
 		return res->with_range(fileRange);

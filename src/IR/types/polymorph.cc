@@ -10,12 +10,12 @@ namespace qat::ir {
 
 Vec<Polymorph*> Polymorph::allPolyTypes = {};
 
-Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Locality> _owner,
+Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Locality> _locality,
                      Maybe<ir::AddressSpace> _addressSpace, ir::Ctx* ctx)
-    : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), owner(std::move(_owner)),
+    : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), locality(std::move(_locality)),
       addressSpace(std::move(_addressSpace)) {
 	auto objPtrTy = ir::PtrType::get(isVar, ir::UnsignedType::create(8u, ctx), true,
-	                                 owner.value_or(Locality::of_none()), false, addressSpace, ctx);
+	                                 locality.value_or(Locality::of_none()), false, addressSpace, ctx);
 	// auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
 	auto globalPtrTy = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 
@@ -26,7 +26,7 @@ Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Loca
 		subTys.push_back(globalPtrTy);
 		linkingName += "typed";
 	}
-	if (owner.has_value()) {
+	if (locality.has_value()) {
 		linkingName += ":ptr";
 	}
 	linkingName += ":[";
@@ -45,7 +45,7 @@ Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Loca
 	allPolyTypes.push_back(this);
 }
 
-Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<Locality> owner,
+Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe<Locality> locality,
                              Maybe<AddressSpace> addressSpace, ir::Ctx* ctx) {
 	std::sort(skills.begin(), skills.end(), [](Skill* first, Skill* second) -> bool {
 		return utils::bytewise_comparison(first->get_full_name(), second->get_full_name());
@@ -58,9 +58,10 @@ Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe
 			if (type->isVar != isVar) {
 				continue;
 			}
-			if (type->owner.has_value() && owner.has_value() && not type->owner.value().is_same(owner.value())) {
+			if (type->locality.has_value() && locality.has_value() &&
+			    not type->locality.value().is_same(locality.value())) {
 				continue;
-			} else if (type->owner.has_value() != owner.has_value()) {
+			} else if (type->locality.has_value() != locality.has_value()) {
 				continue;
 			}
 			bool sameSkills = true;
@@ -75,7 +76,7 @@ Polymorph* Polymorph::create(bool isTyped, bool isVar, Vec<Skill*> skills, Maybe
 			}
 		}
 	}
-	return std::construct_at(OwnNormal(Polymorph), isTyped, isVar, std::move(skills), std::move(owner),
+	return std::construct_at(OwnNormal(Polymorph), isTyped, isVar, std::move(skills), std::move(locality),
 	                         std::move(addressSpace), ctx);
 }
 
@@ -87,16 +88,16 @@ String Polymorph::to_string() const {
 			skillStr += " + ";
 		}
 	}
-	if (owner.has_value() && not owner.value().is_none()) {
+	if (locality.has_value() && not locality.value().is_none()) {
 		skillStr += ", ";
-		skillStr += owner.value().to_string();
+		skillStr += locality.value().to_string();
 	}
 	if (addressSpace.has_value()) {
 		skillStr += ", ";
 		skillStr += addressSpace.value().to_string();
 	}
-	return String(isTyped ? (owner.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
-	                      : (owner.has_value() ? "poly:ptr:[" : "poly:[")) +
+	return String(isTyped ? (locality.has_value() ? "poly:ptr:[type, " : "poly:[type, ")
+	                      : (locality.has_value() ? "poly:ptr:[" : "poly:[")) +
 	       (isVar ? "var " : "") + skillStr + "]";
 }
 

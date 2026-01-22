@@ -5985,15 +5985,15 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 							} else if (is_next(TokenType::region, i)) {
 								const auto oStart = i + 1;
 								if (is_next(TokenType::parenthesisOpen, i + 1)) {
-									const auto pStart        = i + 2;
-									auto       localityOwner = do_type(preCtx, i + 2, None);
-									i                        = localityOwner.second;
+									const auto pStart         = i + 2;
+									auto       localityOrigin = do_type(preCtx, i + 2, None);
+									i                         = localityOrigin.second;
 									if (not is_next(TokenType::parenthesisClose, i)) {
 										add_error("Expected ) after this", RangeSpan(pStart, i));
 									}
 									i++;
 									ptrLocality =
-									    ast::Locality::in_region_type(localityOwner.first, RangeSpan(oStart, i));
+									    ast::Locality::in_region_type(localityOrigin.first, RangeSpan(oStart, i));
 								} else {
 									ptrLocality = ast::Locality::in_any_region(RangeAt(i + 1));
 									i++;

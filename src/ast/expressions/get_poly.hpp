@@ -54,9 +54,9 @@ class GetPolymorph final : public Expression {
 
   public:
 	GetPolymorph(Expression* _value, bool _isVar, Maybe<FileRangePtr> _isTypeRange, Vec<PolySkillSpec> _skills,
-	             Maybe<Locality> _owner, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
+	             Maybe<Locality> _locality, Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
 	    : Expression(std::move(_fileRange)), value(_value), isVar(_isVar), isTypeRange(std::move(_isTypeRange)),
-	      skills(std::move(_skills)), locality(std::move(_owner)), addressSpace(std::move(_addressSpace)) {}
+	      skills(std::move(_skills)), locality(std::move(_locality)), addressSpace(std::move(_addressSpace)) {}
 
 	static GetPolymorph* create(Expression* value, bool isVar, Maybe<FileRangePtr> isTypeRange,
 	                            Vec<PolySkillSpec> skills, Maybe<Locality> locality, Maybe<AddressSpace> addressSpace,

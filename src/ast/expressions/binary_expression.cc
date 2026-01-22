@@ -544,9 +544,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				}
 				auto* ptrType = lhsValueType->as_ptr();
 				lhsType       = ptrType;
-				auto resPtrTy =
-				    ir::PtrType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(), ir::Locality::of_none(),
-				                     false, ptrType->get_address_space(), ctx->irCtx);
+				auto resPtrTy = ir::PtrType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
+				                                 ir::Locality::none(), false, ptrType->get_address_space(), ctx->irCtx);
 				if (lhsEmit->is_prerun_value()) {
 					lhsCount = llvm::cast<llvm::ConstantStruct>(lhsEmit->get_llvm_constant())->getAggregateElement(1u);
 					lhsEmit  = ir::PrerunValue::get(
@@ -590,9 +589,8 @@ ir::Value* BinaryExpression::emit(EmitCtx* ctx) {
 				}
 				auto* ptrType = rhsValueType->as_ptr();
 				rhsType       = ptrType;
-				auto resPtrTy =
-				    ir::PtrType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(), ir::Locality::of_none(),
-				                     false, ptrType->get_address_space(), ctx->irCtx);
+				auto resPtrTy = ir::PtrType::get(false, ptrType->get_subtype(), ptrType->is_non_nullable(),
+				                                 ir::Locality::none(), false, ptrType->get_address_space(), ctx->irCtx);
 				if (rhsEmit->is_prerun_value()) {
 					SHOW("RHS is prerun")
 					rhsCount = rhsEmit->get_llvm_constant()->getAggregateElement(1u);

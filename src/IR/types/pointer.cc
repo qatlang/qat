@@ -12,23 +12,23 @@ namespace qat::ir {
 
 Vec<PtrType*> PtrType::allPtrTypes = {};
 
-Locality Locality::of_heap() { return Locality{.owner = nullptr, .locality = LocalityKind::HEAP}; }
+Locality Locality::in_heap() { return Locality{.origin = nullptr, .locality = LocalityKind::HEAP}; }
 
-Locality Locality::of_static() { return Locality{.owner = nullptr, .locality = LocalityKind::STATIC}; }
+Locality Locality::in_static() { return Locality{.origin = nullptr, .locality = LocalityKind::STATIC}; }
 
-Locality Locality::of_none() { return Locality{.owner = nullptr, .locality = LocalityKind::NONE}; }
+Locality Locality::none() { return Locality{.origin = nullptr, .locality = LocalityKind::NONE}; }
 
-Locality Locality::of_own(Function* fun) { return Locality{.owner = (void*)fun, .locality = LocalityKind::OWN}; }
+Locality Locality::in_own(Function* fun) { return Locality{.origin = (void*)fun, .locality = LocalityKind::OWN}; }
 
-Locality Locality::of_self(Type* typ) { return Locality{.owner = (void*)typ, .locality = LocalityKind::SELF}; }
+Locality Locality::in_self(Type* typ) { return Locality{.origin = (void*)typ, .locality = LocalityKind::SELF}; }
 
-Locality Locality::of_region_type(Region* region) {
-	return Locality{.owner = region, .locality = LocalityKind::REGION_TYPE};
+Locality Locality::in_region_type(Region* region) {
+	return Locality{.origin = region, .locality = LocalityKind::REGION_TYPE};
 }
 
-Locality Locality::of_any_region() { return Locality{.owner = nullptr, .locality = LocalityKind::ANY_REGION}; }
+Locality Locality::in_any_region() { return Locality{.origin = nullptr, .locality = LocalityKind::ANY_REGION}; }
 
-Locality Locality::of_prerun() { return Locality{.owner = nullptr, .locality = LocalityKind::PRERUN}; }
+Locality Locality::in_prerun() { return Locality{.origin = nullptr, .locality = LocalityKind::PRERUN}; }
 
 bool Locality::is_same(const Locality& other) const {
 	if (locality == other.locality) {
@@ -38,13 +38,14 @@ bool Locality::is_same(const Locality& other) const {
 			case LocalityKind::HEAP:
 			case LocalityKind::ANY_REGION:
 			case LocalityKind::PRERUN:
+			case LocalityKind::OWN:
+			case LocalityKind::USE:
+			case LocalityKind::ATOMIC:
 				return true;
 			case LocalityKind::REGION_TYPE:
-				return owner_as_region()->is_same(other.owner_as_region());
-			case LocalityKind::OWN:
-				return owner_as_parent_function()->get_id() == other.owner_as_parent_function()->get_id();
+				return origin_as_region()->is_same(other.origin_as_region());
 			case LocalityKind::SELF:
-				return owner_as_parent_type()->get_id() == other.owner_as_parent_type()->get_id();
+				return origin_as_parent_type()->get_id() == other.origin_as_parent_type()->get_id();
 		}
 	} else {
 		return false;
@@ -56,19 +57,23 @@ String Locality::to_string() const {
 		case LocalityKind::ANY_REGION:
 			return "region";
 		case LocalityKind::REGION_TYPE:
-			return "region(" + owner_as_region()->to_string() + ")";
+			return "region(" + origin_as_region()->to_string() + ")";
 		case LocalityKind::HEAP:
 			return "heap";
 		case LocalityKind::NONE:
 			return "";
 		case LocalityKind::SELF:
-			return "''(" + owner_as_parent_type()->to_string() + ")";
+			return "''(" + origin_as_parent_type()->to_string() + ")";
 		case LocalityKind::OWN:
 			return "own(" + owner_as_parent_function()->get_full_name() + ")";
 		case LocalityKind::STATIC:
 			return "static";
 		case LocalityKind::PRERUN:
 			return "pre";
+		case LocalityKind::USE:
+			return "use";
+		case LocalityKind::ATOMIC:
+			return "atomic";
 	}
 }
 
@@ -84,9 +89,9 @@ PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locali
 			llvmType = llvm::StructType::getTypeByName(irCtx->llctx, linkingName);
 		} else {
 			llvmType = llvm::StructType::create(
-			    {llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-			                            addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
-			                                                     : irCtx->dataLayout.getProgramAddressSpace()),
+			    {llvm::PointerType::get(irCtx->llctx, addressSpace.has_value()
+			                                              ? addressSpace.value().get_number(irCtx)
+			                                              : irCtx->dataLayout.getProgramAddressSpace()),
 			     llvm::Type::getIntNTy(irCtx->llctx,
 			                           irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()))},
 			    linkingName);
@@ -94,8 +99,8 @@ PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locali
 	} else {
 		linkingName = (nonNullable ? "qat'ptr![" : "qat'ptr:[") + String(isSubtypeVar ? "var " : "") +
 		              subType->get_name_for_linking() + (locality.is_none() ? "" : ",") + locality.to_string() + "]";
-		llvmType = llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-		                                  addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
+		llvmType =
+		    llvm::PointerType::get(irCtx->llctx, addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
 		                                                           : irCtx->dataLayout.getProgramAddressSpace());
 	}
 	allPtrTypes.push_back(this);

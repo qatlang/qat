@@ -77,12 +77,12 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 			                            usableTarget);
 		}
 	} else if (valTy->is_text()) {
-		if (usableTarget->is_native_type() && usableTarget->as_native_type()->is_native_bytestring()) {
+		if (usableTarget->is_native_type() and usableTarget->as_native_type()->is_native_byteptr()) {
 			return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), usableTarget);
-		} else if (valTy->is_ptr() &&
-		           (valTy->as_ptr()->get_subtype()->is_unsigned() ||
-		            (valTy->as_ptr()->get_subtype()->is_native_type() &&
-		             valTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
+		} else if (valTy->is_ptr() and
+		           (valTy->as_ptr()->get_subtype()->is_unsigned() or
+		            (valTy->as_ptr()->get_subtype()->is_native_type() and
+		             valTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) and
 		           (valTy->as_ptr()->get_subtype()->is_unsigned()
 		                ? (valTy->as_ptr()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
 		                : (valTy->as_ptr()
@@ -90,8 +90,8 @@ ir::PrerunValue* PrerunTo::emit(EmitCtx* ctx) {
 		                       ->as_native_type()
 		                       ->get_subtype()
 		                       ->as_unsigned()
-		                       ->get_bitwidth() == 8u)) &&
-		           (valTy->as_ptr()->get_locality().is_none()) && (not valTy->as_ptr()->is_subtype_variable())) {
+		                       ->get_bitwidth() == 8u)) and
+		           (valTy->as_ptr()->get_locality().is_none()) and (not valTy->as_ptr()->is_subtype_variable())) {
 			if (valTy->as_ptr()->is_multi()) {
 				return ir::PrerunValue::get(
 				    llvm::ConstantExpr::getBitCast(val->get_llvm_constant(), usableTarget->get_llvm_type()),

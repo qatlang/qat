@@ -142,7 +142,7 @@ bool Type::is_same(Type const* other) const {
 				if (not sameKind) {
 					return false;
 				} else {
-					if (thisVal->get_c_type_kind() == ir::NativeTypeKind::ByteString) {
+					if (thisVal->get_c_type_kind() == ir::NativeTypeKind::BytePtr) {
 						return thisVal->get_subtype()->as_ptr()->is_same(otherVal->get_subtype()->as_ptr());
 					} else if (thisVal->get_c_type_kind() == ir::NativeTypeKind::PtrDiff ||
 					           thisVal->get_c_type_kind() == ir::NativeTypeKind::UPtrDiff) {
@@ -287,7 +287,7 @@ bool Type::is_compatible_with(Type const* candidate) const {
 	if (this->is_same(candidate)) {
 		SHOW("Checking if candidate is same as this type")
 		return true;
-	} else if (this->is_ptr() && candidate->is_ptr()) {
+	} else if (this->is_ptr() and candidate->is_ptr()) {
 		SHOW("Target and candidate are pointers")
 		auto targPtr = this->as_ptr();
 		auto candPtr = this->as_ptr();
@@ -304,19 +304,19 @@ bool Type::is_compatible_with(Type const* candidate) const {
 		}
 		auto targLocality = targPtr->get_locality();
 		auto candLocality = candPtr->get_locality();
-		if (targLocality.is_none() && (candLocality.is_heap() || candLocality.is_any_region() ||
-		                               candLocality.is_region_type() || candLocality.is_static())) {
+		if (targLocality.is_none() and (candLocality.is_heap() or candLocality.is_any_region() or
+		                                candLocality.is_region_type() or candLocality.is_static())) {
 			return true;
-		} else if (targLocality.is_static() && (candLocality.is_region_type() || candLocality.is_any_region())) {
+		} else if (targLocality.is_static() and (candLocality.is_region_type() or candLocality.is_any_region())) {
 			return true;
-		} else if (targLocality.is_any_region() && candLocality.is_region_type()) {
+		} else if (targLocality.is_any_region() and candLocality.is_region_type()) {
 			return true;
 		}
 		return false;
-	} else if (this->is_native_type() && candidate->is_native_type() &&
-	           this->as_native_type()->is_native_bytestring() && candidate->as_native_type()->is_native_bytestring()) {
+	} else if (this->is_native_type() and candidate->is_native_type() and
+	           this->as_native_type()->is_native_byteptr() and candidate->as_native_type()->is_native_byteptr()) {
 		return this->as_native_type()->get_subtype()->is_compatible_with(candidate->as_native_type()->get_subtype());
-	} else if (this->is_ref() && candidate->is_ref() &&
+	} else if (this->is_ref() and candidate->is_ref() and
 	           (this->as_ref()->has_variability() ? candidate->as_ref()->has_variability() : true)) {
 		return true;
 	}

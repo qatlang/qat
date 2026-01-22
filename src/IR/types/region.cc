@@ -468,7 +468,7 @@ ir::Value* Region::ownData(ir::Type* otype, Maybe<llvm::Value*> _count, ir::Ctx*
 	                  : llvm::ConstantPointerNull::get(llvm::PointerType::get(
 	                        llvm::Type::getInt8Ty(irCtx->llctx), irCtx->dataLayout.getProgramAddressSpace())))}),
 	        llvm::PointerType::get(otype->get_llvm_type(), irCtx->dataLayout.getProgramAddressSpace())),
-	    ir::PtrType::get(true, otype, false, Locality::of_region_type(this), _count.has_value(), None, irCtx), false);
+	    ir::PtrType::get(true, otype, false, Locality::in_region_type(this), _count.has_value(), None, irCtx), false);
 }
 
 void Region::destroyObjects(ir::Ctx* irCtx) {

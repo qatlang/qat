@@ -24,27 +24,27 @@ enum class LocalityKind {
 
 class Locality {
   public:
-	void*        owner;
+	void*        origin;
 	LocalityKind locality;
 
-	static Locality of_heap();
-	static Locality of_static();
-	static Locality of_none();
-	static Locality of_own(Function* fun);
-	static Locality of_self(Type* type);
-	static Locality of_use();
-	static Locality of_atomic();
-	static Locality of_region_type(Region* region);
-	static Locality of_any_region();
-	static Locality of_prerun();
+	static Locality in_heap();
+	static Locality in_static();
+	static Locality none();
+	static Locality in_own(Function* fun);
+	static Locality in_self(Type* type);
+	static Locality in_use();
+	static Locality in_atomic();
+	static Locality in_region_type(Region* region);
+	static Locality in_any_region();
+	static Locality in_prerun();
 
-	Type* owner_as_type() const { return (Type*)owner; }
+	Type* origin_as_type() const { return (Type*)origin; }
 
-	Region* owner_as_region() const { return ((Type*)owner)->as_region(); }
+	Region* origin_as_region() const { return ((Type*)origin)->as_region(); }
 
-	Function* owner_as_parent_function() const { return (Function*)owner; }
+	Function* origin_as_parent_function() const { return (Function*)origin; }
 
-	Type* owner_as_parent_type() const { return (Type*)owner; }
+	Type* origin_as_parent_type() const { return (Type*)origin; }
 
 	bool is_none() const { return locality == LocalityKind::NONE; }
 
@@ -83,10 +83,10 @@ class PtrType : public Type {
 	static Vec<PtrType*> allPtrTypes;
 
   public:
-	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, Locality _owner, bool _hasMulti,
+	PtrType(bool _isSubVar, Type* _subtype, bool nonNullable, Locality _locality, bool _hasMulti,
 	        Maybe<AddressSpace> _addressSpace, ir::Ctx* irCtx);
 
-	static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locality _owner, bool _hasMulti,
+	static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locality _locality, bool _hasMulti,
 	                    Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
 	Type*    get_subtype() const;

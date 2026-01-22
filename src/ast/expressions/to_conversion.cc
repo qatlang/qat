@@ -47,8 +47,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 				loadRef();
 				auto targetTy =
 				    destTy->is_native_type() ? destTy->as_native_type()->get_subtype()->as_ptr() : destTy->as_ptr();
-				if (not valPtrTy->get_locality().is_same(targetTy->get_locality()) &&
-				    not targetTy->get_locality().is_none()) {
+				if (not(valPtrTy->get_locality().is_same(targetTy->get_locality())) and
+				    not(targetTy->get_locality().is_none())) {
 					ctx->Error(
 					    "This change of locality of the pointer type is not allowed. Pointers with known locality can only be converted to anonymous locality.",
 					    fileRange);
@@ -128,18 +128,18 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			}
 		} else if (valType->is_text()) {
 			auto destValTy = destTy->is_native_type() ? destTy->as_native_type()->get_subtype() : destTy;
-			if (destTy->is_native_type() && destTy->as_native_type()->is_native_bytestring()) {
+			if (destTy->is_native_type() && destTy->as_native_type()->is_native_byteptr()) {
 				if (val->is_prerun_value()) {
 					return ir::PrerunValue::get(val->get_llvm_constant()->getAggregateElement(0u), destTy);
 				} else {
 					loadRef();
 					return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}), destTy, false);
 				}
-			} else if (destValTy->is_ptr() &&
-			           (destValTy->as_ptr()->get_subtype()->is_unsigned() ||
-			            (destValTy->as_ptr()->get_subtype()->is_native_type() &&
-			             destValTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) &&
-			           destValTy->as_ptr()->get_locality().is_none() &&
+			} else if (destValTy->is_ptr() and
+			           (destValTy->as_ptr()->get_subtype()->is_unsigned() or
+			            (destValTy->as_ptr()->get_subtype()->is_native_type() and
+			             destValTy->as_ptr()->get_subtype()->as_native_type()->get_subtype()->is_unsigned())) and
+			           destValTy->as_ptr()->get_locality().is_none() and
 			           (destValTy->as_ptr()->get_subtype()->is_unsigned()
 			                ? (destValTy->as_ptr()->get_subtype()->as_unsigned()->get_bitwidth() == 8u)
 			                : (destValTy->as_ptr()
@@ -147,8 +147,8 @@ ir::Value* ToConversion::emit(EmitCtx* ctx) {
 			                       ->as_native_type()
 			                       ->get_subtype()
 			                       ->as_unsigned()
-			                       ->get_bitwidth() == 8u)) &&
-			           not destValTy->as_ptr()->is_subtype_variable()) {
+			                       ->get_bitwidth() == 8u)) and
+			           not(destValTy->as_ptr()->is_subtype_variable())) {
 				loadRef();
 				if (destValTy->as_ptr()->is_multi()) {
 					val->get_llvm()->mutateType(destTy->get_llvm_type());

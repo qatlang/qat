@@ -77,17 +77,17 @@ ir::Value* MemberAccess::emit(EmitCtx* ctx) {
 			if (inst->is_prerun_value()) {
 				return ir::PrerunValue::get(inst->get_llvm_constant()->getAggregateElement(0u),
 				                            ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                             ir::Locality::of_none(), false, None, ctx->irCtx));
+				                                             ir::Locality::none(), false, None, ctx->irCtx));
 			} else if (inst->is_value()) {
 				return ir::Value::get(ctx->irCtx->builder.CreateExtractValue(inst->get_llvm(), {0u}),
 				                      ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                       ir::Locality::of_none(), false, None, ctx->irCtx),
+				                                       ir::Locality::none(), false, None, ctx->irCtx),
 				                      false);
 			} else {
 				SHOW("Text is an implicit pointer or a reference or pointer")
 				// FIXME - Address space fix
 				auto dataPtrTy = ir::PtrType::get(false, ir::UnsignedType::create(8u, ctx->irCtx), false,
-				                                  ir::Locality::of_none(), false, None, ctx->irCtx);
+				                                  ir::Locality::none(), false, None, ctx->irCtx);
 				return ir::Value::get(ctx->irCtx->builder.CreateLoad(
 				                          dataPtrTy->get_llvm_type(),
 				                          ctx->irCtx->builder.CreateStructGEP(

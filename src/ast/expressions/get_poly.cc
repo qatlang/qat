@@ -7,8 +7,8 @@ namespace qat::ast {
 ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 	auto            val = value->emit(ctx);
 	Vec<ir::Skill*> skillsIR;
-	if (val->get_ir_type()->is_poly() ||
-	    (val->get_ir_type()->is_ref() && val->get_ir_type()->as_ref()->get_subtype()->is_poly())) {
+	if (val->get_ir_type()->is_poly() or
+	    (val->get_ir_type()->is_ref() and val->get_ir_type()->as_ref()->get_subtype()->is_poly())) {
 		for (auto& sk : skills) {
 			if (sk.is_done_skill()) {
 				ctx->Error(
@@ -96,9 +96,9 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		}
 		auto loc = ctx->get_fn()->get_block()->new_local(ctx->get_fn()->get_random_alloca_name(), resTy, false,
 		                                                 ctx->irCtx, fileRange);
-		if (origTy->has_locality() && not origTy->get_locality().is_none() &&
+		if (origTy->has_locality() and not(origTy->get_locality().is_none()) and
 		    llvm::cast<llvm::StructType>(origTy->get_llvm_type())->getElementType(0)->isStructTy() &&
-		    (not resTy->has_locality() || resTy->get_locality().is_none())) {
+		    (not resTy->has_locality() or resTy->get_locality().is_none())) {
 			ctx->irCtx->builder.CreateStore(
 			    ctx->irCtx->builder.CreateExtractValue(ctx->irCtx->builder.CreateExtractValue(val->get_llvm(), {0u}),
 			                                           {0u}),
@@ -216,22 +216,22 @@ ir::Value* GetPolymorph::emit(EmitCtx* ctx) {
 		                                               std::move(addr), ctx->irCtx);
 		bool storeInstanceAsIs = true;
 		if (not irLocality.has_value()) {
-			if (val->is_ptr() && not val->get_ir_type()->as_ptr()->get_locality().is_none()) {
+			if (val->is_ptr() and not(val->get_ir_type()->as_ptr()->get_locality().is_none())) {
 				ctx->Error(
 				    "Trying to get a reference polymorph of " + ctx->color(resTy->to_string()) +
 				        " from an expression which is a pointer with locality. Reference polymorphs can be extracted only from reference-like expressions or from pointers with anonymous locality",
 				    fileRange);
 			}
 		} else {
-			if (not irLocality.value().is_none() && val->is_ptr() &&
-			    not irLocality.value().is_same(val->get_ir_type()->as_ptr()->get_locality())) {
+			if (not(irLocality.value().is_none()) and val->is_ptr() and
+			    not(irLocality.value().is_same(val->get_ir_type()->as_ptr()->get_locality()))) {
 				ctx->Error(
 				    "Trying to get a pointer polymorph of " + ctx->color(resTy->to_string()) +
 				        " from a pointer expression of type " + ctx->color(val->get_ir_type()->to_string()) +
 				        ". The locality of the pointer polymorph and that of the pointer expression does not match",
 				    fileRange);
 			}
-			if (irLocality.value().is_none() && val->is_ptr() &&
+			if (irLocality.value().is_none() and val->is_ptr() and
 			    llvm::isa<llvm::StructType>(val->get_ir_type()->get_llvm_type())) {
 				storeInstanceAsIs = false;
 			}

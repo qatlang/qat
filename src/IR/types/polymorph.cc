@@ -15,7 +15,7 @@ Polymorph::Polymorph(bool _isTyped, bool _isVar, Vec<Skill*> _skills, Maybe<Loca
     : isTyped(_isTyped), isVar(_isVar), skills(std::move(_skills)), locality(std::move(_locality)),
       addressSpace(std::move(_addressSpace)) {
 	auto objPtrTy = ir::PtrType::get(isVar, ir::UnsignedType::create(8u, ctx), true,
-	                                 locality.value_or(Locality::of_none()), false, addressSpace, ctx);
+	                                 locality.value_or(Locality::none()), false, addressSpace, ctx);
 	// auto ptrTy       = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getProgramAddressSpace());
 	auto globalPtrTy = llvm::PointerType::get(ctx->llctx, ctx->dataLayout.getDefaultGlobalsAddressSpace());
 
@@ -88,7 +88,7 @@ String Polymorph::to_string() const {
 			skillStr += " + ";
 		}
 	}
-	if (locality.has_value() && not locality.value().is_none()) {
+	if (locality.has_value() and not(locality.value().is_none())) {
 		skillStr += ", ";
 		skillStr += locality.value().to_string();
 	}

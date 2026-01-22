@@ -286,9 +286,9 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 			           arguments[0]->fileRange);
 		}
 		auto ptrValTy  = ptrVal->get_ir_type()->as_ptr();
-		auto voidPtrTy = ir::PtrType::get(false, ir::VoidType::get(ctx->irCtx->llctx), true, ir::Locality::of_none(),
+		auto voidPtrTy = ir::PtrType::get(false, ir::VoidType::get(ctx->irCtx->llctx), true, ir::Locality::none(),
 		                                  false, ptrValTy->get_address_space(), ctx->irCtx);
-		auto vecPtrTy  = ir::PtrType::get(false, firstTy, true, ir::Locality::of_none(), false,
+		auto vecPtrTy  = ir::PtrType::get(false, firstTy, true, ir::Locality::none(), false,
 		                                  ptrValTy->get_address_space(), ctx->irCtx);
 		if (not ptrVal->get_ir_type()->is_same(voidPtrTy) && not ptrVal->get_ir_type()->is_same(vecPtrTy)) {
 			ctx->Error("The first argument is expected to be of type " + ctx->color(voidPtrTy->to_string()) + " or " +
@@ -419,9 +419,9 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 			           arguments[1]->fileRange);
 		}
 		auto ptrValTy  = ptrVal->get_ir_type()->as_ptr();
-		auto voidPtrTy = ir::PtrType::get(false, ir::VoidType::get(ctx->irCtx->llctx), true, ir::Locality::of_none(),
+		auto voidPtrTy = ir::PtrType::get(false, ir::VoidType::get(ctx->irCtx->llctx), true, ir::Locality::none(),
 		                                  false, ptrValTy->get_address_space(), ctx->irCtx);
-		auto vecPtrTy  = ir::PtrType::get(false, firstTy, true, ir::Locality::of_none(), false,
+		auto vecPtrTy  = ir::PtrType::get(false, firstTy, true, ir::Locality::none(), false,
 		                                  ptrValTy->get_address_space(), ctx->irCtx);
 		if (not ptrVal->get_ir_type()->is_same(voidPtrTy) && not ptrVal->get_ir_type()->is_same(vecPtrTy)) {
 			ctx->Error("The second argument is expected to be of type " + ctx->color(voidPtrTy->to_string()) + " or " +
@@ -552,7 +552,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		return ir::Value::get(
 		    ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn,
 		                                   {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 0u)}),
-		    ir::PtrType::get(true, ir::VoidType::get(ctx->irCtx->llctx), false, ir::Locality::of_none(), false, None,
+		    ir::PtrType::get(true, ir::VoidType::get(ctx->irCtx->llctx), false, ir::Locality::none(), false, None,
 		                     ctx->irCtx),
 		    false);
 	} else if (nmVal == IntrinsicID::caller_give_address) {
@@ -571,7 +571,7 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		return ir::Value::get(
 		    ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn,
 		                                   {llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx->irCtx->llctx), 1u)}),
-		    ir::PtrType::get(true, ir::VoidType::get(ctx->irCtx->llctx), false, ir::Locality::of_none(), false, None,
+		    ir::PtrType::get(true, ir::VoidType::get(ctx->irCtx->llctx), false, ir::Locality::none(), false, None,
 		                     ctx->irCtx),
 		    false);
 	} else if (nmVal == IntrinsicID::thread_pointer) {
@@ -586,9 +586,8 @@ ir::Value* MetaIntrinsic::emit(EmitCtx* ctx) {
 		    ctx->mod->get_llvm_module(), llvm::Intrinsic::thread_pointer,
 		    {llvm::PointerType::get(ctx->irCtx->llctx, ctx->irCtx->dataLayout.getDefaultGlobalsAddressSpace())});
 		return ir::Value::get(ctx->irCtx->builder.CreateCall(intrFn->getFunctionType(), intrFn, {}),
-		                      ir::PtrType::get(false, ir::VoidType::get(ctx->irCtx->llctx), true,
-		                                       ir::Locality::of_none(), false, ir::AddressSpace::from_name("global"),
-		                                       ctx->irCtx),
+		                      ir::PtrType::get(false, ir::VoidType::get(ctx->irCtx->llctx), true, ir::Locality::none(),
+		                                       false, ir::AddressSpace::from_name("global"), ctx->irCtx),
 		                      false);
 	} else {
 		ctx->Error("Unknown intrinsic found here", name->fileRange);

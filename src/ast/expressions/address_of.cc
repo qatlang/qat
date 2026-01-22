@@ -13,7 +13,7 @@ ir::Value* AddressOf::emit(EmitCtx* ctx) {
 			inst->load_ghost_ref(ctx->irCtx->builder);
 		}
 		return ir::Value::get(inst->get_llvm(),
-		                      ir::PtrType::get(isPtrVar, subTy, true, ir::Locality::of_none(), false, None, ctx->irCtx),
+		                      ir::PtrType::get(isPtrVar, subTy, true, ir::Locality::none(), false, None, ctx->irCtx),
 		                      false)
 		    ->with_range(fileRange);
 	} else {

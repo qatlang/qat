@@ -101,9 +101,9 @@ const HashMap<StringView, TokenType> Lexer::keywordMapping = {
 };
 
 const HashSet<StringView> Lexer::nativeTypeMapping = {
-    "int",      "uint",     "byte",      "ubyte",   "shortint", "ushortint", "widechar",   "uwidechar",  "longint",
-    "ulongint", "longlong", "ulonglong", "usize",   "isize",    "float",     "double",     "longdouble", "intmax",
-    "uintmax",  "intptr",   "uintptr",   "ptrdiff", "uptrdiff", "sigatomic", "bytestring", "widebool",
+    "int",      "uint",     "byte",      "ubyte",   "shortint", "ushortint", "widechar", "uwidechar",  "longint",
+    "ulongint", "longlong", "ulonglong", "usize",   "isize",    "float",     "double",   "longdouble", "intmax",
+    "uintmax",  "intptr",   "uintptr",   "ptrdiff", "uptrdiff", "sigatomic", "byteptr",  "widebool",
 };
 
 const HashSet<StringView> Lexer::intTypeMapping = {

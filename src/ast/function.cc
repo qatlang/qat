@@ -159,14 +159,14 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 					if (generatedTypes.at(0)->as_slice()->has_var()) {
 						irCtx->Error("Type of the argument of the " + irCtx->color("main") +
 						                 " function, cannot be a slice with variability. It should be of type " +
-						                 irCtx->color("slice:[bytestring]"),
+						                 irCtx->color("slice:[byteptr]"),
 						             arguments[0]->get_type()->fileRange);
 					}
 					mod->set_has_main_function();
 					irCtx->hasMain = true;
 				} else {
 					irCtx->Error("Type of the argument of the " + irCtx->color("main") + " function should be " +
-					                 irCtx->color("slice:[bytestring]"),
+					                 irCtx->color("slice:[byteptr]"),
 					             arguments[0]->get_type()->fileRange);
 				}
 			} else if (generatedTypes.empty()) {
@@ -191,8 +191,8 @@ ir::Function* FunctionPrototype::create_function(ir::Mod* mod, ir::Ctx* irCtx) c
 			        ir::UnsignedType::create(32u, irCtx), 0u));
 			args.push_back(ir::Argument::Create(
 			    Identifier(arguments.at(0)->get_name().value + "'data", arguments.at(0)->get_name().range),
-			    ir::PtrType::get(false, ir::NativeType::get_bytestring(false, true, None, irCtx), true,
-			                     ir::Locality::of_none(), false, None, irCtx),
+			    ir::PtrType::get(false, ir::NativeType::get_byteptr(false, true, None, irCtx), true,
+			                     ir::Locality::none(), false, None, irCtx),
 			    1u));
 		}
 		if (variadics.has_value()) {
@@ -365,8 +365,8 @@ void FunctionPrototype::emit_definition(ir::Mod* mod, ir::Ctx* irCtx) {
 		if (fnEmit->get_ir_type()->as_function()->get_argument_count() == 2u) {
 			auto* cmdArgsVal =
 			    block->new_local(fnEmit->arg_name_at(0).value.substr(0, fnEmit->arg_name_at(0).value.find('\'')),
-			                     ir::PtrType::get(false, ir::NativeType::get_bytestring(false, true, None, irCtx),
-			                                      false, ir::Locality::of_none(), true, None, irCtx),
+			                     ir::PtrType::get(false, ir::NativeType::get_byteptr(false, true, None, irCtx), false,
+			                                      ir::Locality::none(), true, None, irCtx),
 			                     false, irCtx, fnEmit->arg_name_at(0).range);
 			SHOW("Storing argument pointer")
 			irCtx->builder.CreateStore(

@@ -8,7 +8,7 @@ namespace qat::ir {
 
 // TODO - Support C arrays
 enum class NativeTypeKind {
-	ByteString,
+	BytePtr,
 	Bool,
 	Int,
 	Uint,
@@ -116,7 +116,7 @@ class NativeType : public Type {
 
 	bool is_native_sig_atomic() const { return nativeKind == NativeTypeKind::SigAtomic; }
 
-	bool is_native_bytestring() const { return nativeKind == NativeTypeKind::ByteString; }
+	bool is_native_byteptr() const { return nativeKind == NativeTypeKind::BytePtr; }
 
 	bool is_native_long_double() const { return nativeKind == NativeTypeKind::LongDouble; }
 
@@ -146,7 +146,7 @@ class NativeType : public Type {
 	static NativeType* get_ptrdiff_unsigned(Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 	// TODO - Check if there is more to SigAtomic than just an integer type
 	static NativeType* get_sigatomic(ir::Ctx* irCtx);
-	static NativeType* get_bytestring(bool isVar, bool isNonNullable, Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
+	static NativeType* get_byteptr(bool isVar, bool isNonNullable, Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
 	static bool        has_long_double(ir::Ctx* irCtx);
 	static NativeType* get_long_double(ir::Ctx* irCtx);

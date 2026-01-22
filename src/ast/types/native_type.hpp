@@ -19,9 +19,9 @@ class NativeType final : public Type {
 	    : Type(_fileRange), nativeKind(_cTypeKind), isNonNullable(_isNonNullable), varRange(_varRange),
 	      addressSpace(std::move(_addressSpace)) {}
 
-	static NativeType* create_bytestring(bool isNonNullable, Maybe<FileRangePtr> varRange,
-	                                     Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(NativeType), ir::NativeTypeKind::ByteString, isNonNullable, varRange,
+	static NativeType* create_byteptr(bool isNonNullable, Maybe<FileRangePtr> varRange,
+	                                  Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
+		return std::construct_at(OwnNormal(NativeType), ir::NativeTypeKind::Byteptr, isNonNullable, varRange,
 		                         std::move(addressSpace), fileRange);
 	}
 

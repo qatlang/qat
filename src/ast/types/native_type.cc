@@ -12,12 +12,12 @@ void NativeType::update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType>,
 
 ir::Type* NativeType::emit(EmitCtx* ctx) {
 	switch (nativeKind) {
-		case ir::NativeTypeKind::ByteString: {
+		case ir::NativeTypeKind::BytePtr: {
 			Maybe<ir::AddressSpace> addr = None;
 			if (addressSpace.has_value()) {
 				addr = addressSpace.value().to_ir(ctx);
 			}
-			return ir::NativeType::get_bytestring(varRange.has_value(), isNonNullable, std::move(addr), ctx->irCtx);
+			return ir::NativeType::get_byteptr(varRange.has_value(), isNonNullable, std::move(addr), ctx->irCtx);
 		}
 		case ir::NativeTypeKind::Bool:
 			return ir::NativeType::get_bool(ctx->irCtx);
@@ -92,7 +92,7 @@ ir::Type* NativeType::emit(EmitCtx* ctx) {
 
 Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 	switch (nativeKind) {
-		case ir::NativeTypeKind::ByteString: {
+		case ir::NativeTypeKind::BytePtr: {
 			if (addressSpace.has_value() && addressSpace.value().value) {
 				return None;
 			}
@@ -165,8 +165,8 @@ Maybe<usize> NativeType::get_type_bitsize(EmitCtx* ctx) const {
 }
 
 String NativeType::to_string() const {
-	if (nativeKind == ir::NativeTypeKind::ByteString) {
-		String res = "bytestring";
+	if (nativeKind == ir::NativeTypeKind::BytePtr) {
+		String res = "byteptr";
 		if (isNonNullable) {
 			res += "!";
 		}

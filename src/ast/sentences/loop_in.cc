@@ -64,15 +64,15 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 	auto const isTyArray = candType->is_array();
 	// auto const isTyMulti =
 	//     candType->is_ptr() && candType->as_ptr()->is_multi(); // TODO Disallow multi-pointers and allow slices
-	auto const isTyByteString = candType->is_native_type() && candType->as_native_type()->is_native_bytestring();
-	auto const isTyText       = candType->is_text();
-	auto const isTyVec        = candType->is_vector();
+	auto const isTyBytePtr = candType->is_native_type() && candType->as_native_type()->is_native_byteptr();
+	auto const isTyText    = candType->is_text();
+	auto const isTyVec     = candType->is_vector();
 	if (candExp->get_ir_type()->is_ref()) {
 		candExp->load_ghost_ref(ctx->irCtx->builder);
 	} else if (candExp->is_ghost_ref()) {
 		isRefUnder = true;
 	}
-	if (isTyArray || isTyText || isTyByteString || isTyText || isTyVec) {
+	if (isTyArray || isTyText || isTyBytePtr || isTyText || isTyVec) {
 		ir::Type*    elemTy  = nullptr;
 		ir::Type*    countTy = ir::NativeType::get_usize(ctx->irCtx);
 		llvm::Value* ptrVal  = nullptr;
@@ -100,7 +100,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 				lenVal = ctx->irCtx->builder.CreateExtractValue(candExp->get_llvm(), {1u});
 			}
 			candHasVar = candType->as_ptr()->is_subtype_variable();
-		} else if (isTyByteString) {
+		} else if (isTyBytePtr) {
 			elemTy = ir::UnsignedType::create(8, ctx->irCtx);
 			if (isRefUnder) {
 				candExp = ir::Value::get(ctx->irCtx->builder.CreateLoad(candType->get_llvm_type(), candExp->get_llvm()),
@@ -161,7 +161,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		auto itemVar = mainBlock->new_local(itemName.value, elemUseTy, false, ctx->irCtx, itemName.range);
 		ctx->irCtx->builder.CreateStore(llvm::ConstantInt::get(countTy->get_llvm_type(), 0u, false),
 		                                indexVar->get_llvm());
-		if (isTyByteString) {
+		if (isTyBytePtr) {
 			const auto ptrTy    = candType->as_native_type()->get_subtype()->as_ptr();
 			const auto intPtrTy = llvm::Type::getIntNTy(
 			    ctx->irCtx->llctx, ctx->irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
@@ -204,7 +204,7 @@ ir::Value* LoopIn::emit(EmitCtx* ctx) {
 		condBlock->set_active(ctx->irCtx->builder);
 		// Condition
 		llvm::Value* loopCond = nullptr;
-		if (isTyByteString) {
+		if (isTyBytePtr) {
 			loopCond = ctx->irCtx->builder.CreateICmpNE(
 			    ctx->irCtx->builder.CreateLoad(
 			        zeroU8->getType(), ctx->irCtx->builder.CreateInBoundsGEP(

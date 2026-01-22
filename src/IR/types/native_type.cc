@@ -9,8 +9,8 @@
 namespace qat::ir {
 
 Maybe<NativeTypeKind> NativeType::kind_from_string(String const& val) {
-	if (val == "bytestring") {
-		return NativeTypeKind::ByteString;
+	if (val == "byteptr") {
+		return NativeTypeKind::BytePtr;
 	} else if (val == "int") {
 		return NativeTypeKind::Int;
 	} else if (val == "uint") {
@@ -115,8 +115,8 @@ String NativeType::kind_to_string(NativeTypeKind kind) {
 			return "uptrdiff";
 		case NativeTypeKind::SigAtomic:
 			return "sigatomic";
-		case NativeTypeKind::ByteString:
-			return "bytestring";
+		case NativeTypeKind::BytePtr:
+			return "byteptr";
 		case NativeTypeKind::Bool:
 			return "widebool";
 	}
@@ -137,8 +137,8 @@ ir::Type* NativeType::get_subtype() const { return subType; }
 
 NativeType* NativeType::get_from_kind(NativeTypeKind kind, ir::Ctx* irCtx) {
 	switch (kind) {
-		case NativeTypeKind::ByteString:
-			return get_bytestring(false, false, None, irCtx);
+		case NativeTypeKind::BytePtr:
+			return get_byteptr(false, false, None, irCtx);
 		case NativeTypeKind::Bool:
 			return get_bool(irCtx);
 		case NativeTypeKind::Int:
@@ -513,10 +513,9 @@ NativeType* NativeType::get_sigatomic(ir::Ctx* irCtx) {
 	    NativeTypeKind::SigAtomic);
 }
 
-NativeType* NativeType::get_bytestring(bool hasVar, bool isNonNullable, Maybe<AddressSpace> addressSpace,
-                                       ir::Ctx* irCtx) {
+NativeType* NativeType::get_byteptr(bool hasVar, bool isNonNullable, Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx) {
 	for (auto* typ : allNativeTypes) {
-		if ((typ->nativeKind == NativeTypeKind::ByteString) &&
+		if ((typ->nativeKind == NativeTypeKind::BytePtr) &&
 		    (typ->get_subtype()->as_ptr()->is_subtype_variable() == hasVar) &&
 		    (typ->get_subtype()->as_ptr()->is_non_nullable() == isNonNullable) &&
 		    ir::AddressSpace::compare(typ->get_subtype()->as_ptr()->get_address_space(), addressSpace)) {
@@ -524,9 +523,9 @@ NativeType* NativeType::get_bytestring(bool hasVar, bool isNonNullable, Maybe<Ad
 		}
 	}
 	return std::construct_at(OwnNormal(NativeType),
-	                         ir::PtrType::get(hasVar, ir::IntegerType::get(8u, irCtx), isNonNullable,
-	                                          Locality::of_none(), false, addressSpace, irCtx),
-	                         NativeTypeKind::ByteString, std::move(addressSpace));
+	                         ir::PtrType::get(hasVar, ir::IntegerType::get(8u, irCtx), isNonNullable, Locality::none(),
+	                                          false, addressSpace, irCtx),
+	                         NativeTypeKind::BytePtr, std::move(addressSpace));
 }
 
 bool NativeType::has_long_double(ir::Ctx* irCtx) { return irCtx->clangTargetInfo->hasLongDoubleType(); }
@@ -572,8 +571,8 @@ Maybe<bool> NativeType::equality_of(ir::Ctx* irCtx, ir::PrerunValue* first, ir::
 }
 
 String NativeType::to_string() const {
-	if (nativeKind == NativeTypeKind::ByteString) {
-		String res = "bytestring";
+	if (nativeKind == NativeTypeKind::BytePtr) {
+		String res = "byteptr";
 		if (subType->as_ptr()->is_non_nullable()) {
 			res += "!";
 		}

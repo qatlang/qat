@@ -279,7 +279,7 @@ ir::Value* IndexAccess::emit(EmitCtx* ctx) {
 			                     ir::UnsignedType::create(8u, ctx->irCtx), None, ctx->irCtx),
 			    false);
 		}
-	} else if (instType->is_native_type() && instType->as_native_type()->is_native_bytestring()) {
+	} else if (instType->is_native_type() && instType->as_native_type()->is_native_byteptr()) {
 		ind->load_ghost_ref(ctx->irCtx->builder);
 		inst->load_ghost_ref(ctx->irCtx->builder);
 		auto* instVal = inst->get_llvm();

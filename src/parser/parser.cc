@@ -1443,7 +1443,7 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 					}
 					cacheTy =
 					    ast::NativeType::create_ptrdiff(ValueAt(i) == "uptrdiff", std::move(addr), RangeSpan(start, i));
-				} else if (ValueAt(i) == "bytestring") {
+				} else if (ValueAt(i) == "byteptr") {
 					bool isNonNullable = false;
 					auto startTy       = TokenType::genericTypeStart;
 					auto endTy         = TokenType::genericTypeEnd;
@@ -1496,8 +1496,8 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 						}
 						i++;
 					}
-					cacheTy = ast::NativeType::create_bytestring(isNonNullable, std::move(varRange),
-					                                             std::move(addressSpace), RangeSpan(start, i));
+					cacheTy = ast::NativeType::create_byteptr(isNonNullable, std::move(varRange),
+					                                          std::move(addressSpace), RangeSpan(start, i));
 				} else {
 					auto nativeKind = ir::NativeType::kind_from_string(ValueAt(i));
 					if (nativeKind.has_value()) {

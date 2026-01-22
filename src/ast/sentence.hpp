@@ -13,8 +13,8 @@ class Sentence : public Node {
 	virtual void update_dependencies(ir::EmitPhase phase, Maybe<ir::DependType> dep, ir::EntityState* ent,
 	                                 EmitCtx* ctx) = 0;
 
-	virtual ir::Value* emit(EmitCtx* ctx) = 0;
-	virtual NodeType   nodeType() const   = 0;
+	virtual ir::Value* emit(EmitCtx* ctx)        = 0;
+	virtual NodeType   nodeType() const override = 0;
 
 	~Sentence() override = default;
 };

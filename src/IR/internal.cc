@@ -10,19 +10,18 @@ namespace qat::ir {
 FunctionType* Internal::printf_signature(Ctx* irCtx) {
 	return FunctionType::create(
 	    ReturnType::get(NativeType::get_int(irCtx)),
-	    {ArgumentType::create_normal(NativeType::get_bytestring(false, false, None, irCtx), None, false)},
+	    {ArgumentType::create_normal(NativeType::get_byteptr(false, false, None, irCtx), None, false)},
 	    Variadics{.kind = VariadicsKind::LEGACY}, irCtx->llctx);
 }
 
 FunctionType* Internal::malloc_signature(Ctx* irCtx) {
-	return FunctionType::create(ReturnType::get(PtrType::get(true, VoidType::get(irCtx->llctx), false,
-	                                                         Locality::in_none(), false, None, irCtx)),
-	                            {ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)}, None,
-	                            irCtx->llctx);
+	return FunctionType::create(
+	    ReturnType::get(PtrType::get(true, VoidType::get(irCtx->llctx), false, Locality::none(), false, None, irCtx)),
+	    {ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)}, None, irCtx->llctx);
 }
 
 FunctionType* Internal::realloc_signature(Ctx* irCtx) {
-	auto ptrTy = PtrType::get(true, VoidType::get(irCtx->llctx), false, Locality::in_none(), false, None, irCtx);
+	auto ptrTy = PtrType::get(true, VoidType::get(irCtx->llctx), false, Locality::none(), false, None, irCtx);
 	return FunctionType::create(ReturnType::get(ptrTy),
 	                            {ArgumentType::create_normal(ptrTy, None, false),
 	                             ArgumentType::create_normal(NativeType::get_usize(irCtx), None, false)},
@@ -30,11 +29,11 @@ FunctionType* Internal::realloc_signature(Ctx* irCtx) {
 }
 
 FunctionType* Internal::free_signature(Ctx* irCtx) {
-	return FunctionType::create(ReturnType::get(VoidType::get(irCtx->llctx)),
-	                            {ArgumentType::create_normal(PtrType::get(true, VoidType::get(irCtx->llctx), false,
-	                                                                      Locality::in_none(), false, None, irCtx),
-	                                                         None, false)},
-	                            None, irCtx->llctx);
+	return FunctionType::create(
+	    ReturnType::get(VoidType::get(irCtx->llctx)),
+	    {ArgumentType::create_normal(
+	        PtrType::get(true, VoidType::get(irCtx->llctx), false, Locality::none(), false, None, irCtx), None, false)},
+	    None, irCtx->llctx);
 }
 
 } // namespace qat::ir

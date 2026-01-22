@@ -61,41 +61,41 @@ ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRang
 			           fileRange);
 		}
 	}
-	ir::Type* ownerVal = nullptr;
+	ir::Type* originVal = nullptr;
 	if (locality.kind == LocalityKind::REGION_TYPE) {
 		if (locality.candidate) {
 			auto* regTy = locality.candidate->emit(ctx);
 			if (not regTy->is_region()) {
-				ctx->Error("The provided type is not a region type and hence pointer "
-				           "owner cannot be " +
+				ctx->Error("The provided type is not a region type and hence the origin of the pointer "
+				           "locality cannot be " +
 				               ctx->color("region"),
 				           fileRange);
 			}
-			ownerVal = regTy;
+			originVal = regTy;
 		}
 	}
 	switch (locality.kind) {
 		case LocalityKind::SELF_INSTANCE: {
 			if (ctx->has_member_parent()) {
-				return ir::Locality::of_self(ctx->get_member_parent()->get_parent_type());
+				return ir::Locality::in_self(ctx->get_member_parent()->get_parent_type());
 			} else {
 				ctx->Error("No parent type or skill found", fileRange);
 			}
 		}
 		case LocalityKind::NONE:
-			return ir::Locality::of_none();
+			return ir::Locality::none();
 		case LocalityKind::HEAP:
-			return ir::Locality::of_heap();
+			return ir::Locality::in_heap();
 		case LocalityKind::STATIC:
-			return ir::Locality::of_static();
+			return ir::Locality::in_static();
 		case LocalityKind::OWN:
-			return ir::Locality::of_own(ctx->get_fn());
+			return ir::Locality::in_own(ctx->get_fn());
 		case LocalityKind::REGION_TYPE:
-			return ir::Locality::of_region_type(ownerVal->as_region());
+			return ir::Locality::in_region_type(originVal->as_region());
 		case LocalityKind::PRERUN:
-			return ir::Locality::of_prerun();
+			return ir::Locality::in_prerun();
 		case LocalityKind::ANY_REGION:
-			return ir::Locality::of_any_region();
+			return ir::Locality::in_any_region();
 	}
 }
 

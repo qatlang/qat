@@ -33,7 +33,7 @@ String locality_to_string(LocalityKind locality) {
 		case LocalityKind::SELF_INSTANCE:
 			return "typeParent";
 		case LocalityKind::OWN:
-			return "function";
+			return "own";
 		case LocalityKind::NONE:
 			return "anonymous";
 		case LocalityKind::HEAP:
@@ -48,13 +48,7 @@ String locality_to_string(LocalityKind locality) {
 }
 
 ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRange) {
-	if (locality.kind == LocalityKind::OWN) {
-		if (not ctx->get_fn()) {
-			ctx->Error("This pointer type is not inside a function and hence cannot have the " + ctx->color("own") +
-			               " locality.",
-			           fileRange);
-		}
-	} else if (locality.kind == LocalityKind::SELF_INSTANCE) {
+	if (locality.kind == LocalityKind::SELF_INSTANCE) {
 		if (not ctx->has_member_parent()) {
 			ctx->Error("No parent type found in scope and hence the pointer "
 			           "cannot be owned by the parent type instance",
@@ -89,7 +83,7 @@ ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRang
 		case LocalityKind::STATIC:
 			return ir::Locality::in_static();
 		case LocalityKind::OWN:
-			return ir::Locality::in_own(ctx->get_fn());
+			return ir::Locality::in_own();
 		case LocalityKind::REGION_TYPE:
 			return ir::Locality::in_region_type(originVal->as_region());
 		case LocalityKind::PRERUN:

@@ -14,14 +14,14 @@ class NativeType final : public Type {
 	Maybe<AddressSpace> addressSpace;
 
   public:
-	NativeType(ir::NativeTypeKind _cTypeKind, bool _isNonNullable, Maybe<FileRangePtr> _varRange,
+	NativeType(ir::NativeTypeKind _nativeKind, bool _isNonNullable, Maybe<FileRangePtr> _varRange,
 	           Maybe<AddressSpace> _addressSpace, FileRangePtr _fileRange)
-	    : Type(_fileRange), nativeKind(_cTypeKind), isNonNullable(_isNonNullable), varRange(_varRange),
+	    : Type(_fileRange), nativeKind(_nativeKind), isNonNullable(_isNonNullable), varRange(_varRange),
 	      addressSpace(std::move(_addressSpace)) {}
 
 	static NativeType* create_byteptr(bool isNonNullable, Maybe<FileRangePtr> varRange,
 	                                  Maybe<AddressSpace> addressSpace, FileRangePtr fileRange) {
-		return std::construct_at(OwnNormal(NativeType), ir::NativeTypeKind::Byteptr, isNonNullable, varRange,
+		return std::construct_at(OwnNormal(NativeType), ir::NativeTypeKind::BytePtr, isNonNullable, varRange,
 		                         std::move(addressSpace), fileRange);
 	}
 

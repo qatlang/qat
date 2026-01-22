@@ -18,7 +18,7 @@ Locality Locality::in_static() { return Locality{.origin = nullptr, .locality = 
 
 Locality Locality::none() { return Locality{.origin = nullptr, .locality = LocalityKind::NONE}; }
 
-Locality Locality::in_own(Function* fun) { return Locality{.origin = (void*)fun, .locality = LocalityKind::OWN}; }
+Locality Locality::in_own() { return Locality{.origin = nullptr, .locality = LocalityKind::OWN}; }
 
 Locality Locality::in_self(Type* typ) { return Locality{.origin = (void*)typ, .locality = LocalityKind::SELF}; }
 
@@ -65,7 +65,7 @@ String Locality::to_string() const {
 		case LocalityKind::SELF:
 			return "''(" + origin_as_parent_type()->to_string() + ")";
 		case LocalityKind::OWN:
-			return "own(" + owner_as_parent_function()->get_full_name() + ")";
+			return "own";
 		case LocalityKind::STATIC:
 			return "static";
 		case LocalityKind::PRERUN:
@@ -101,7 +101,7 @@ PtrType::PtrType(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locali
 		              subType->get_name_for_linking() + (locality.is_none() ? "" : ",") + locality.to_string() + "]";
 		llvmType =
 		    llvm::PointerType::get(irCtx->llctx, addressSpace.has_value() ? addressSpace.value().get_number(irCtx)
-		                                                           : irCtx->dataLayout.getProgramAddressSpace());
+		                                                                  : irCtx->dataLayout.getProgramAddressSpace());
 	}
 	allPtrTypes.push_back(this);
 }
@@ -139,9 +139,11 @@ PrerunValue* PtrType::get_prerun_default_value(ir::Ctx* irCtx) {
 	}
 }
 
-bool PtrType::has_simple_copy() const { return true; }
+bool PtrType::has_simple_copy() const { return not(locality.is_own() or locality.is_use() or locality.is_atomic()); }
 
-bool PtrType::has_simple_move() const { return not nonNullable; }
+bool PtrType::has_simple_move() const {
+	return (not nonNullable) and not(locality.is_own() or locality.is_use() or locality.is_atomic());
+}
 
 bool PtrType::is_multi() const { return hasMulti; }
 

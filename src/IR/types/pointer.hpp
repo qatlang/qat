@@ -30,7 +30,7 @@ class Locality {
 	static Locality in_heap();
 	static Locality in_static();
 	static Locality none();
-	static Locality in_own(Function* fun);
+	static Locality in_own();
 	static Locality in_self(Type* type);
 	static Locality in_use();
 	static Locality in_atomic();
@@ -41,8 +41,6 @@ class Locality {
 	Type* origin_as_type() const { return (Type*)origin; }
 
 	Region* origin_as_region() const { return ((Type*)origin)->as_region(); }
-
-	Function* origin_as_parent_function() const { return (Function*)origin; }
 
 	Type* origin_as_parent_type() const { return (Type*)origin; }
 
@@ -65,6 +63,10 @@ class Locality {
 	bool is_use() const { return locality == LocalityKind::USE; }
 
 	bool is_atomic() const { return locality == LocalityKind::ATOMIC; }
+
+	bool requires_destruction() const {
+		return locality == LocalityKind::OWN or locality == LocalityKind::USE or locality == LocalityKind::ATOMIC;
+	}
 
 	bool is_same(const Locality& other) const;
 

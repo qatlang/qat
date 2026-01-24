@@ -16,7 +16,6 @@ class Type;
 enum class LocalityKind : u8 {
 	NONE,
 	HEAP,
-	SELF_INSTANCE,
 	OWN,
 	REGION_TYPE,
 	ANY_REGION,
@@ -47,10 +46,6 @@ struct Locality {
 
 	static Locality in_region_type(ast::Type* region, FileRangePtr range) {
 		return Locality{.kind = LocalityKind::REGION_TYPE, .candidate = region, .range = range};
-	}
-
-	static Locality in_self_instance(FileRangePtr range) {
-		return Locality{.kind = LocalityKind::SELF_INSTANCE, .candidate = nullptr, .range = range};
 	}
 
 	static Locality none(FileRangePtr range) {

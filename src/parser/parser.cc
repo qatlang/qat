@@ -2047,10 +2047,6 @@ Pair<ast::Type*, usize> Parser::do_type(ParserContext& preCtx, usize from, Maybe
 							i++;
 							ptrLocality    = ast::Locality::in_own(RangeAt(i));
 							parsedLocality = true;
-						} else if (is_next(TokenType::selfInstance, i)) {
-							i++;
-							ptrLocality    = ast::Locality::in_self_instance(RangeAt(i));
-							parsedLocality = true;
 						} else if (is_next(TokenType::region, i)) {
 							const auto oStart = i + 1;
 							i++;
@@ -5978,9 +5974,6 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 								i++;
 							} else if (is_next(TokenType::own, i)) {
 								ptrLocality = ast::Locality::in_own(RangeAt(i + 1));
-								i++;
-							} else if (is_next(TokenType::selfInstance, i)) {
-								ptrLocality = ast::Locality::in_self_instance(RangeAt(i + 1));
 								i++;
 							} else if (is_next(TokenType::region, i)) {
 								const auto oStart = i + 1;

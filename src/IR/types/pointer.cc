@@ -20,8 +20,6 @@ Locality Locality::none() { return Locality{.origin = nullptr, .locality = Local
 
 Locality Locality::in_own() { return Locality{.origin = nullptr, .locality = LocalityKind::OWN}; }
 
-Locality Locality::in_self(Type* typ) { return Locality{.origin = (void*)typ, .locality = LocalityKind::SELF}; }
-
 Locality Locality::in_region_type(Region* region) {
 	return Locality{.origin = region, .locality = LocalityKind::REGION_TYPE};
 }
@@ -44,8 +42,6 @@ bool Locality::is_same(const Locality& other) const {
 				return true;
 			case LocalityKind::REGION_TYPE:
 				return origin_as_region()->is_same(other.origin_as_region());
-			case LocalityKind::SELF:
-				return origin_as_parent_type()->get_id() == other.origin_as_parent_type()->get_id();
 		}
 	} else {
 		return false;
@@ -62,8 +58,6 @@ String Locality::to_string() const {
 			return "heap";
 		case LocalityKind::NONE:
 			return "";
-		case LocalityKind::SELF:
-			return "''(" + origin_as_parent_type()->to_string() + ")";
 		case LocalityKind::OWN:
 			return "own";
 		case LocalityKind::STATIC:

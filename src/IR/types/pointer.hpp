@@ -15,7 +15,6 @@ enum class LocalityKind {
 	REGION_TYPE,
 	HEAP,
 	OWN,
-	SELF,
 	STATIC,
 	PRERUN,
 	USE,
@@ -31,18 +30,13 @@ class Locality {
 	static Locality in_static();
 	static Locality none();
 	static Locality in_own();
-	static Locality in_self(Type* type);
 	static Locality in_use();
 	static Locality in_atomic();
 	static Locality in_region_type(Region* region);
 	static Locality in_any_region();
 	static Locality in_prerun();
 
-	Type* origin_as_type() const { return (Type*)origin; }
-
 	Region* origin_as_region() const { return ((Type*)origin)->as_region(); }
-
-	Type* origin_as_parent_type() const { return (Type*)origin; }
 
 	bool is_none() const { return locality == LocalityKind::NONE; }
 
@@ -53,8 +47,6 @@ class Locality {
 	bool is_heap() const { return locality == LocalityKind::HEAP; }
 
 	bool is_own() const { return locality == LocalityKind::OWN; }
-
-	bool is_self() const { return locality == LocalityKind::SELF; }
 
 	bool is_static() const { return locality == LocalityKind::STATIC; }
 

@@ -475,8 +475,7 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					    irCtx->builder.CreateICmpNE(
 					        irCtx->builder.CreatePtrToInt(
 					            irCtx->builder.CreateLoad(
-					                llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-					                                       irCtx->dataLayout.getProgramAddressSpace()),
+					                llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getProgramAddressSpace()),
 					                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
 					            intPtrTy),
 					        llvm::ConstantInt::get(intPtrTy, 0u, false)),
@@ -491,13 +490,12 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 					            irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 1u))),
 					    trueBlock->get_bb(), restBlock->get_bb());
 					trueBlock->set_active(irCtx->builder);
-					SHOW("Set trueblock active")(void)
-					    dstrFn->call(irCtx,
-					                 {irCtx->builder.CreateLoad(
-					                     llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-					                                            irCtx->dataLayout.getProgramAddressSpace()),
-					                     irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u))},
-					                 None, fun->get_module());
+					SHOW("Set trueblock active")(void) dstrFn->call(
+					    irCtx,
+					    {irCtx->builder.CreateLoad(
+					        llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getProgramAddressSpace()),
+					        irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u))},
+					    None, fun->get_module());
 					irCtx->builder.CreateStore(
 					    irCtx->builder.CreateAdd(
 					        llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
@@ -531,17 +529,10 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 			irCtx->builder.CreateCall(
 			    freeFn->getFunctionType(), freeFn,
 			    {ptrTy->is_multi()
-			         ? irCtx->builder.CreatePointerCast(
-			               irCtx->builder.CreateLoad(
-			                   llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-			                                          irCtx->dataLayout.getProgramAddressSpace()),
-			                   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
-			               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-			                                      irCtx->dataLayout.getProgramAddressSpace()))
-			         : irCtx->builder.CreatePointerCast(
-			               irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()),
-			               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-			                                      irCtx->dataLayout.getProgramAddressSpace()))});
+			         ? irCtx->builder.CreateLoad(
+			               llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getProgramAddressSpace()),
+			               irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u))
+			         : irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm())});
 		}
 	}
 	locals.clear();

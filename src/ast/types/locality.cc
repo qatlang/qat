@@ -9,8 +9,6 @@ String Locality::to_string() const {
 	switch (kind) {
 		case LocalityKind::STATIC:
 			return "static";
-		case LocalityKind::SELF_INSTANCE:
-			return "''";
 		case LocalityKind::OWN:
 			return "own";
 		case LocalityKind::NONE:
@@ -30,8 +28,6 @@ String locality_to_string(LocalityKind locality) {
 	switch (locality) {
 		case LocalityKind::STATIC:
 			return "static";
-		case LocalityKind::SELF_INSTANCE:
-			return "typeParent";
 		case LocalityKind::OWN:
 			return "own";
 		case LocalityKind::NONE:
@@ -48,13 +44,6 @@ String locality_to_string(LocalityKind locality) {
 }
 
 ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRange) {
-	if (locality.kind == LocalityKind::SELF_INSTANCE) {
-		if (not ctx->has_member_parent()) {
-			ctx->Error("No parent type found in scope and hence the pointer "
-			           "cannot be owned by the parent type instance",
-			           fileRange);
-		}
-	}
 	ir::Type* originVal = nullptr;
 	if (locality.kind == LocalityKind::REGION_TYPE) {
 		if (locality.candidate) {
@@ -69,13 +58,6 @@ ir::Locality get_locality(EmitCtx* ctx, Locality locality, FileRangePtr fileRang
 		}
 	}
 	switch (locality.kind) {
-		case LocalityKind::SELF_INSTANCE: {
-			if (ctx->has_member_parent()) {
-				return ir::Locality::in_self(ctx->get_member_parent()->get_parent_type());
-			} else {
-				ctx->Error("No parent type or skill found", fileRange);
-			}
-		}
 		case LocalityKind::NONE:
 			return ir::Locality::none();
 		case LocalityKind::HEAP:

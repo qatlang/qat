@@ -95,23 +95,7 @@ class DefinitionType : public ExpandedType {
 
 	String to_string() const final;
 
-	bool is_expanded() const final;
-
 	bool is_type_sized() const final;
-
-	bool has_simple_copy() const final;
-
-	bool has_simple_move() const final;
-
-	bool is_copy_constructible() const final;
-
-	bool is_copy_assignable() const final;
-
-	bool is_move_constructible() const final;
-
-	bool is_move_assignable() const final;
-
-	bool is_destructible() const final;
 
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
 

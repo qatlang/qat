@@ -43,6 +43,8 @@ ToggleType::ToggleType(Identifier _name, Vec<GenericArgument*> _generics, Vec<Pa
 	if (generics.empty()) {
 		parent->toggleTypes.push_back(this);
 	}
+	hasSimpleCopy = true;
+	hasSimpleMove = true;
 }
 
 ir::PrerunValue* ToggleType::get_prerun_default_value(ir::Ctx*) {

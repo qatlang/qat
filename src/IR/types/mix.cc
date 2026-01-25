@@ -31,10 +31,29 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
 		if (sub.second.has_value()) {
 			auto* typ = sub.second.value();
 			if (not typ->has_simple_copy()) {
-				isSimpleCopy = false;
+				hasSimpleCopy = false;
 			}
 			if (not typ->has_simple_move()) {
-				isSimpleMove = false;
+				hasSimpleMove = false;
+			}
+			if (typ->is_copy_constructible()) {
+				isCopyConstructible = true;
+				hasSimpleCopy       = false;
+			}
+			if (typ->is_move_constructible()) {
+				isMoveConstructible = true;
+				hasSimpleMove       = false;
+			}
+			if (typ->is_copy_assignable()) {
+				isCopyAssignable = true;
+				hasSimpleCopy    = false;
+			}
+			if (typ->is_move_assignable()) {
+				isMoveAssignable = true;
+				hasSimpleMove    = false;
+			}
+			if (typ->is_destructible()) {
+				isDestructible = true;
 			}
 			SHOW("Getting size of the subtype in SUM TYPE")
 			usize size =
@@ -50,7 +69,7 @@ MixType::MixType(Identifier _name, ir::OpaqueType* _opaquedTy, Vec<GenericArgume
 		}
 	}
 	if (not addNoneVariant) {
-		isSimpleMove = false;
+		hasSimpleMove = false;
 	}
 	find_tag_bitwidth();
 	SHOW("Opaqued type is: " << opaquedType)
@@ -175,46 +194,6 @@ u64 MixType::get_data_bitwidth() const { return maxSize; }
 FileRangePtr MixType::get_file_range() const { return fileRange; }
 
 bool MixType::is_type_sized() const { return true; }
-
-bool MixType::has_simple_copy() const { return isSimpleCopy; }
-
-bool MixType::has_simple_move() const { return isSimpleMove; }
-
-bool MixType::is_copy_constructible() const {
-	for (auto sub : subtypes) {
-		if (sub.second.has_value() && not sub.second.value()->is_copy_constructible()) {
-			return false;
-		}
-	}
-	return true;
-}
-
-bool MixType::is_copy_assignable() const {
-	for (auto sub : subtypes) {
-		if (sub.second.has_value() && not sub.second.value()->is_copy_assignable()) {
-			return false;
-		}
-	}
-	return true;
-}
-
-bool MixType::is_move_constructible() const {
-	for (auto sub : subtypes) {
-		if (sub.second.has_value() && not sub.second.value()->is_move_constructible()) {
-			return false;
-		}
-	}
-	return true;
-}
-
-bool MixType::is_move_assignable() const {
-	for (auto sub : subtypes) {
-		if (sub.second.has_value() && not sub.second.value()->is_move_assignable()) {
-			return false;
-		}
-	}
-	return true;
-}
 
 void MixType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (is_copy_constructible()) {
@@ -518,15 +497,6 @@ void MixType::move_assign_value(ir::Ctx* irCtx, ir::Value* firstInst, ir::Value*
 	} else {
 		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()), None);
 	}
-}
-
-bool MixType::is_destructible() const {
-	for (auto sub : subtypes) {
-		if (sub.second.has_value() && not sub.second.value()->is_destructible()) {
-			return false;
-		}
-	}
-	return true;
 }
 
 void MixType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {

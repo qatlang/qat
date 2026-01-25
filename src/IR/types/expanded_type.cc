@@ -286,10 +286,6 @@ bool ExpandedType::has_move_assignment() const { return moveAssignment != nullpt
 
 Method* ExpandedType::get_move_assignment() const { return moveAssignment; }
 
-bool ExpandedType::has_copy() const { return has_copy_constructor() && has_copy_assignment(); }
-
-bool ExpandedType::has_move() const { return has_move_constructor() && has_move_assignment(); }
-
 bool ExpandedType::has_destructor() const { return destructor.has_value(); }
 
 ir::Method* ExpandedType::get_destructor() const { return destructor.value(); }

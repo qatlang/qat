@@ -25,6 +25,31 @@ StructType::StructType(Mod* mod, Identifier _name, Vec<GenericArgument*> _generi
 	Vec<llvm::Type*> subtypes;
 	for (auto* mem : members) {
 		subtypes.push_back(mem->type->get_llvm_type());
+		if (not mem->type->has_simple_copy()) {
+			hasSimpleCopy = false;
+		}
+		if (not mem->type->has_simple_move()) {
+			hasSimpleMove = false;
+		}
+		if (mem->type->is_copy_constructible()) {
+			isCopyConstructible = true;
+			hasSimpleCopy       = false;
+		}
+		if (mem->type->is_move_constructible()) {
+			isMoveConstructible = true;
+			hasSimpleMove       = false;
+		}
+		if (mem->type->is_copy_assignable()) {
+			isCopyAssignable = true;
+			hasSimpleCopy    = false;
+		}
+		if (mem->type->is_move_assignable()) {
+			isMoveAssignable = true;
+			hasSimpleMove    = false;
+		}
+		if (mem->type->is_destructible()) {
+			isDestructible = true;
+		}
 	}
 	metaInfo = opaquedType->metaInfo;
 	SHOW("All members' LLVM types obtained")
@@ -163,113 +188,6 @@ StaticMember* StructType::get_static_field(String const& name) const {
 }
 
 bool StructType::is_type_sized() const { return not members.empty(); }
-
-bool StructType::has_simple_copy() const {
-	if (explicitSimpleCopy) {
-		return true;
-	} else if (has_copy_constructor() || has_copy_assignment()) {
-		return false;
-	} else {
-		auto result = true;
-		for (auto mem : members) {
-			if (not mem->type->has_simple_copy()) {
-				result = false;
-				break;
-			}
-		}
-		return result;
-	}
-}
-
-bool StructType::has_simple_move() const {
-	if (explicitSimpleMove) {
-		return true;
-	} else if (has_move_constructor() || has_move_assignment()) {
-		return false;
-	} else {
-		for (auto mem : members) {
-			if (not mem->type->has_simple_move()) {
-				return false;
-			}
-		}
-		return true;
-	}
-}
-
-bool StructType::is_copy_constructible() const {
-	if (has_simple_copy() || has_copy_constructor()) {
-		return true;
-	} else {
-		bool allMemsRes = true;
-		for (auto* mem : members) {
-			if (not mem->type->is_copy_constructible()) {
-				allMemsRes = false;
-				break;
-			}
-		}
-		return allMemsRes;
-	}
-}
-
-bool StructType::is_copy_assignable() const {
-	if (has_simple_copy() || has_copy_assignment()) {
-		return true;
-	} else {
-		bool allMemsRes = true;
-		for (auto* mem : members) {
-			if (not mem->type->is_copy_assignable()) {
-				allMemsRes = false;
-				break;
-			}
-		}
-		return allMemsRes;
-	}
-}
-
-bool StructType::is_move_constructible() const {
-	if (has_simple_move() || has_move_constructor()) {
-		return true;
-	} else {
-		bool allMemsRes = true;
-		for (auto* mem : members) {
-			if (not mem->type->is_move_constructible()) {
-				allMemsRes = false;
-				break;
-			}
-		}
-		return allMemsRes;
-	}
-}
-
-bool StructType::is_move_assignable() const {
-	if (has_simple_move() || has_move_assignment()) {
-		return true;
-	} else {
-		bool allMemsRes = true;
-		for (auto* mem : members) {
-			if (not mem->type->is_move_assignable()) {
-				allMemsRes = false;
-				break;
-			}
-		}
-		return allMemsRes;
-	}
-}
-
-bool StructType::is_destructible() const {
-	if (has_simple_move() || has_destructor()) {
-		return true;
-	} else {
-		bool allMemsRes = true;
-		for (auto* mem : members) {
-			if (not mem->type->is_destructible()) {
-				allMemsRes = false;
-				break;
-			}
-		}
-		return allMemsRes;
-	}
-}
 
 void StructType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	if (not is_copy_constructible()) {

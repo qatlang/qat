@@ -18,10 +18,8 @@ class MixType : public ExpandedType {
   private:
 	Vec<Pair<Identifier, Maybe<Type*>>> subtypes;
 
-	u64  maxSize      = 8u;
-	bool isPack       = false;
-	bool isSimpleCopy = true;
-	bool isSimpleMove = true;
+	u64  maxSize = 8u;
+	bool isPack  = false;
 
 	usize           tagBitWidth = 1;
 	Maybe<usize>    defaultVal;
@@ -79,14 +77,6 @@ class MixType : public ExpandedType {
 		}
 		return true;
 	}
-
-	bool has_simple_copy() const final;
-	bool has_simple_move() const final;
-	bool is_copy_constructible() const final;
-	bool is_copy_assignable() const final;
-	bool is_move_constructible() const final;
-	bool is_move_assignable() const final;
-	bool is_destructible() const final;
 
 	void get_missing_names(Vec<Identifier>& vals, Vec<Identifier>& missing) const;
 	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;

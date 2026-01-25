@@ -43,8 +43,14 @@ class ExpandedType : public Type, public Mentionable {
 	Method*      copyAssignment  = nullptr; // Copy assignment operator
 	Method*      moveAssignment  = nullptr; // Move assignment operator
 
-	bool explicitSimpleCopy      = false;
-	bool explicitSimpleMove      = false;
+	bool hasSimpleCopy       = true;
+	bool hasSimpleMove       = true;
+	bool isCopyConstructible = false;
+	bool isMoveConstructible = false;
+	bool isCopyAssignable    = false;
+	bool isMoveAssignable    = false;
+	bool isDestructible      = false;
+
 	bool needsImplicitDestructor = false;
 	bool hasDefinedDestructor    = false;
 
@@ -57,6 +63,32 @@ class ExpandedType : public Type, public Mentionable {
 	ExpandedType(Identifier _name, Vec<GenericArgument*> _generics, Mod* _parent, const VisibilityInfo& _visib);
 
   public:
+	bool has_simple_copy() const final {
+		if (has_copy_constructor() or has_copy_assignment()) {
+			return false;
+		} else {
+			return hasSimpleCopy;
+		}
+	}
+
+	bool has_simple_move() const final {
+		if (has_move_constructor() or has_move_assignment()) {
+			return false;
+		} else {
+			return hasSimpleMove;
+		}
+	}
+
+	bool is_copy_constructible() const final { return (copyConstructor != nullptr) or isCopyConstructible; }
+
+	bool is_copy_assignable() const final { return (copyAssignment != nullptr) or isCopyAssignable; }
+
+	bool is_move_constructible() const final { return (moveConstructor != nullptr) or isMoveConstructible; }
+
+	bool is_move_assignable() const final { return (moveAssignment != nullptr) or isMoveAssignable; }
+
+	bool is_destructible() const final { return destructor.has_value() or isDestructible; }
+
 	bool is_generic() const;
 
 	bool has_generic_parameter(const String& name) const;
@@ -155,10 +187,6 @@ class ExpandedType : public Type, public Mentionable {
 	bool has_move_assignment() const;
 
 	Method* get_move_assignment() const;
-
-	bool has_copy() const;
-
-	bool has_move() const;
 
 	bool has_destructor() const;
 

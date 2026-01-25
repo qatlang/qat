@@ -110,17 +110,26 @@ class Type : public Uniq {
 	ExpandedType* as_expanded() const;
 
 	virtual bool can_be_prerun() const;
-	virtual bool has_prerun_default_value() const;
-	virtual bool is_default_constructible() const;
-	virtual bool is_copy_constructible() const;
-	virtual bool is_copy_assignable() const;
-	virtual bool is_move_constructible() const;
-	virtual bool is_move_assignable() const;
-	virtual bool is_destructible() const;
-	virtual bool has_simple_copy() const;
-	virtual bool has_simple_move() const;
 
-	virtual ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx);
+	virtual bool has_prerun_default_value() const { return false; }
+
+	virtual bool is_default_constructible() const { return false; }
+
+	virtual bool is_copy_constructible() const { return false; }
+
+	virtual bool is_copy_assignable() const { return false; }
+
+	virtual bool is_move_constructible() const { return false; }
+
+	virtual bool is_move_assignable() const { return false; }
+
+	virtual bool is_destructible() const { return false; }
+
+	virtual bool has_simple_copy() const { return false; }
+
+	virtual bool has_simple_move() const { return false; }
+
+	virtual ir::PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) { return nullptr; }
 
 	virtual void default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun);
 	virtual void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun);

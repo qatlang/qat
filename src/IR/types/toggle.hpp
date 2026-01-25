@@ -94,10 +94,6 @@ class ToggleType : public ExpandedType {
 
 	LinkNames get_link_names() const final;
 
-	bool has_simple_copy() const final { return true; }
-
-	bool has_simple_move() const final { return true; }
-
 	TypeKind type_kind() const final { return TypeKind::TOGGLE; }
 
 	String to_string() const final { return name.value; }

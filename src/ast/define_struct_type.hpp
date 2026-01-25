@@ -60,8 +60,6 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	PrerunExpression*     defineChecker;
 	Vec<Member*>          members;
 	Vec<StaticMember*>    staticMembers;
-	Maybe<FileRangePtr>   simpleCopy;
-	Maybe<FileRangePtr>   simpleMove;
 	Maybe<VisibilitySpec> visibSpec;
 	Maybe<MetaInfo>       metaInfo;
 
@@ -107,14 +105,6 @@ class DefineStructType final : public IsEntity, public Commentable, public Membe
 	void do_define(ir::StructType* resultTy, ir::Mod* mod, ir::Ctx* irCtx);
 
 	void do_emit(ir::StructType* resultTy, ir::Ctx* irCtx);
-
-	bool has_simple_copy() { return simpleCopy.has_value(); }
-
-	void set_simple_copy(FileRangePtr range) { simpleCopy = std::move(range); }
-
-	bool has_simple_move() { return simpleMove.has_value(); }
-
-	void set_simple_move(FileRangePtr range) { simpleMove = std::move(range); }
 
 	bool is_generic() const;
 

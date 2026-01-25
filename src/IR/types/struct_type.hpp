@@ -89,20 +89,6 @@ class StructType final : public ExpandedType {
 
 	bool is_type_sized() const final;
 
-	bool has_simple_copy() const final;
-
-	bool has_simple_move() const final;
-
-	bool is_copy_constructible() const final;
-
-	bool is_copy_assignable() const final;
-
-	bool is_move_constructible() const final;
-
-	bool is_move_assignable() const final;
-
-	bool is_destructible() const final;
-
 	bool can_be_prerun() const final {
 		for (auto* mem : members) {
 			if (not mem->type->can_be_prerun()) {

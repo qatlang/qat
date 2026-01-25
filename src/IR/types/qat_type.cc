@@ -351,27 +351,13 @@ OpaqueType* Type::as_opaque() const {
 	                                             : (OpaqueType*)this;
 }
 
-bool Type::has_simple_copy() const { return false; }
-
-bool Type::has_simple_move() const { return false; }
-
-bool Type::has_prerun_default_value() const { return false; }
-
-ir::PrerunValue* Type::get_prerun_default_value(ir::Ctx*) { return nullptr; }
-
-bool Type::is_default_constructible() const { return has_prerun_default_value(); }
-
 void Type::default_construct_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*) {
-	if (has_prerun_default_value()) {
-		auto* defVal = get_prerun_default_value(irCtx);
-		irCtx->builder.CreateStore(defVal->get_llvm(), instance->get_llvm());
-	} else {
+	if (not has_prerun_default_value()) {
 		irCtx->Error("Could not default construct an instance of type " + irCtx->color(to_string()), None);
 	}
-	std::unreachable();
+	auto* defVal = get_prerun_default_value(irCtx);
+	irCtx->builder.CreateStore(defVal->get_llvm(), instance->get_llvm());
 }
-
-bool Type::is_copy_constructible() const { return has_simple_copy(); }
 
 void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
 	if (not has_simple_copy()) {
@@ -382,8 +368,6 @@ void Type::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* sec
 	irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 }
 
-bool Type::is_copy_assignable() const { return has_simple_copy(); }
-
 void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
 	if (not has_simple_copy()) {
 		irCtx->Error("Could not copy assign an instance of type " + irCtx->color(to_string()) +
@@ -393,33 +377,25 @@ void Type::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second
 	irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
 }
 
-bool Type::is_move_constructible() const { return has_simple_move(); }
-
 void Type::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
-	if (has_simple_move()) {
-		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
-		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
-	} else {
+	if (not has_simple_move()) {
 		irCtx->Error("Could not move construct an instance of type " + irCtx->color(to_string()) +
 		                 " as it does not support simple-move",
 		             None);
 	}
+	irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
+	irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 }
 
-bool Type::is_move_assignable() const { return has_simple_move(); }
-
 void Type::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function*) {
-	if (has_simple_move()) {
-		irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
-		irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
-	} else {
+	if (not has_simple_move()) {
 		irCtx->Error("Could not move assign an instance of type " + irCtx->color(to_string()) +
 		                 " as it does not support simple-move",
 		             None);
 	}
+	irCtx->builder.CreateStore(irCtx->builder.CreateLoad(get_llvm_type(), second->get_llvm()), first->get_llvm());
+	irCtx->builder.CreateStore(llvm::Constant::getNullValue(get_llvm_type()), second->get_llvm());
 }
-
-bool Type::is_destructible() const { return has_simple_move(); }
 
 void Type::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function*) {
 	if (has_simple_move()) {

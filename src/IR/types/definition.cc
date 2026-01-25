@@ -27,6 +27,13 @@ DefinitionType::DefinitionType(Identifier _name, Type* _subType, Vec<GenericArgu
 	} else {
 		parent->typeDefs.push_back(this);
 	}
+	hasSimpleCopy       = subType->has_simple_copy();
+	hasSimpleMove       = subType->has_simple_move();
+	isCopyConstructible = subType->is_copy_constructible();
+	isMoveConstructible = subType->is_move_constructible();
+	isCopyAssignable    = subType->is_copy_assignable();
+	isMoveAssignable    = subType->is_move_assignable();
+	isDestructible      = subType->is_destructible();
 }
 
 LinkNames DefinitionType::get_link_names() const {
@@ -54,18 +61,6 @@ void DefinitionType::setSubType(Type* _subType) {
 }
 
 VisibilityInfo DefinitionType::get_visibility() const { return visibility; }
-
-bool DefinitionType::is_expanded() const { return subType->is_expanded(); }
-
-bool DefinitionType::is_copy_constructible() const { return subType->is_copy_constructible(); }
-
-bool DefinitionType::is_copy_assignable() const { return subType->is_copy_assignable(); }
-
-bool DefinitionType::is_move_constructible() const { return subType->is_move_constructible(); }
-
-bool DefinitionType::is_move_assignable() const { return subType->is_move_assignable(); }
-
-bool DefinitionType::is_destructible() const { return subType->is_destructible(); }
 
 void DefinitionType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
 	subType->copy_construct_value(irCtx, first, second, fun);
@@ -105,10 +100,6 @@ Type* DefinitionType::get_non_definition_subtype() {
 }
 
 bool DefinitionType::is_type_sized() const { return subType->is_type_sized(); }
-
-bool DefinitionType::has_simple_copy() const { return subType->has_simple_copy(); }
-
-bool DefinitionType::has_simple_move() const { return subType->has_simple_move(); }
 
 Maybe<String> DefinitionType::to_prerun_generic_string(ir::PrerunValue* constant) const {
 	if (subType->can_be_prerun_generic()) {

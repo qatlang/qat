@@ -445,94 +445,9 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 	SHOW(locals.size() << " locals collected so far")
 	for (auto* loc : locals) {
 		SHOW("Local name is: " << loc->get_name() << " and type is " << loc->get_ir_type()->to_string())
-		if (loc->is_ref()) {
-			continue;
-		}
-		if (loc->get_ir_type()->is_expanded() && loc->get_ir_type()->as_expanded()->has_destructor()) {
-			auto* eTy        = loc->get_ir_type()->as_expanded();
-			auto* destructor = eTy->get_destructor();
-			(void)destructor->call(irCtx, {loc->get_alloca()}, None, fun->get_module());
-		} else if (loc->get_ir_type()->is_destructible()) {
+		if (loc->get_ir_type()->is_destructible()) {
 			loc->get_ir_type()->destroy_value(irCtx, loc->to_new_ir_value(), fun);
 			SHOW("Destroyed value using type level feature")
-		} else if (loc->get_ir_type()->is_ptr() && loc->get_ir_type()->as_ptr()->get_locality().is_own()) {
-			auto* ptrTy = loc->get_ir_type()->as_ptr();
-			if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
-				auto  intPtrTy = llvm::PointerType::get(irCtx->llctx, ptrTy->usable_address_space(irCtx));
-				auto* dstrFn   = ptrTy->get_subtype()->as_struct()->get_destructor();
-				if (ptrTy->is_multi()) {
-					auto* currBlock = fun->get_block();
-					auto* condBlock = ir::Block::create(fun, currBlock);
-					auto* trueBlock = ir::Block::create(fun, currBlock);
-					auto* restBlock = ir::Block::create(fun, nullptr);
-					restBlock->link_previous_block(currBlock);
-					// NOLINTNEXTLINE(readability-magic-numbers)
-					auto* count = currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true,
-					                                   irCtx, FileRange::null);
-					irCtx->builder.CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
-					                           count->get_llvm());
-					irCtx->builder.CreateCondBr(
-					    irCtx->builder.CreateICmpNE(
-					        irCtx->builder.CreatePtrToInt(
-					            irCtx->builder.CreateLoad(
-					                llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getProgramAddressSpace()),
-					                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u)),
-					            intPtrTy),
-					        llvm::ConstantInt::get(intPtrTy, 0u, false)),
-					    condBlock->get_bb(), restBlock->get_bb());
-					condBlock->set_active(irCtx->builder);
-					SHOW("Set condition block active")
-					irCtx->builder.CreateCondBr(
-					    irCtx->builder.CreateICmpULT(
-					        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm()),
-					        irCtx->builder.CreateLoad(
-					            count->get_ir_type()->get_llvm_type(),
-					            irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 1u))),
-					    trueBlock->get_bb(), restBlock->get_bb());
-					trueBlock->set_active(irCtx->builder);
-					SHOW("Set trueblock active")(void) dstrFn->call(
-					    irCtx,
-					    {irCtx->builder.CreateLoad(
-					        llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getProgramAddressSpace()),
-					        irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u))},
-					    None, fun->get_module());
-					irCtx->builder.CreateStore(
-					    irCtx->builder.CreateAdd(
-					        llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
-					        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm())),
-					    count->get_llvm());
-					(void)ir::add_branch(irCtx->builder, condBlock->get_bb());
-					restBlock->set_active(irCtx->builder);
-				} else {
-					auto* currBlock = fun->get_block();
-					auto* trueBlock = ir::Block::create(fun, currBlock);
-					auto* restBlock = ir::Block::create(fun, nullptr);
-					restBlock->link_previous_block(currBlock);
-					irCtx->builder.CreateCondBr(
-					    irCtx->builder.CreateICmpNE(
-					        irCtx->builder.CreatePtrToInt(
-					            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm()), intPtrTy),
-					        llvm::ConstantInt::get(intPtrTy, 0u, false)),
-					    trueBlock->get_bb(), restBlock->get_bb());
-					trueBlock->set_active(irCtx->builder);
-					irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(),
-					                          dstrFn->get_llvm_function(),
-					                          {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm())});
-					(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
-					restBlock->set_active(irCtx->builder);
-				}
-			}
-			auto freeName = fun->get_module()->link_internal_dependency(
-			    InternalDependency::free, irCtx,
-			    fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
-			auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
-			irCtx->builder.CreateCall(
-			    freeFn->getFunctionType(), freeFn,
-			    {ptrTy->is_multi()
-			         ? irCtx->builder.CreateLoad(
-			               llvm::PointerType::get(irCtx->llctx, irCtx->dataLayout.getProgramAddressSpace()),
-			               irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), loc->get_llvm(), 0u))
-			         : irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), loc->get_llvm())});
 		}
 	}
 	locals.clear();

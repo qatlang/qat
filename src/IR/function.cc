@@ -540,131 +540,74 @@ void destructor_caller(ir::Ctx* irCtx, ir::Function* fun) {
 
 void method_handler(ir::Ctx* irCtx, ir::Function* fun) {
 	if (fun->is_method()) {
-		auto* mFn = (ir::Method*)fun;
-		// FIXME - Change this
-		if (not mFn->get_parent_type()->is_struct()) {
-			return;
-		}
-		auto* cTy = mFn->get_parent_type()->as_struct();
-		if (mFn->get_method_type() == MethodType::destructor) {
-			for (usize i = 0; i < cTy->get_members().size(); i++) {
-				auto& mem = cTy->get_members().at(i);
-				if (mem->type->is_ptr() && mem->type->as_ptr()->get_locality().is_self()) {
-					auto* ptrTy  = mem->type->as_ptr();
-					auto* memPtr = irCtx->builder.CreateStructGEP(
-					    ptrTy->get_llvm_type(),
-					    irCtx->builder.CreateStructGEP(cTy->get_llvm_type(),
-					                                   mFn->get_first_block()->get_value("''")->get_llvm(), i),
-					    0u);
-					if (ptrTy->get_subtype()->is_struct() && ptrTy->get_subtype()->as_struct()->has_destructor()) {
-						auto* dstrFn = ptrTy->get_subtype()->as_struct()->get_destructor();
-						if (ptrTy->is_multi()) {
-							auto* currBlock = fun->get_block();
-							auto* condBlock = ir::Block::create(fun, currBlock);
-							auto* trueBlock = ir::Block::create(fun, currBlock);
-							auto* restBlock = ir::Block::create(fun, nullptr);
-							restBlock->link_previous_block(currBlock);
-							// NOLINTNEXTLINE(readability-magic-numbers)
-							auto* count =
-							    currBlock->new_local(utils::uid_string(), ir::UnsignedType::create(64u, irCtx), true,
-							                         irCtx, FileRange::null);
-							irCtx->builder.CreateStore(
-							    llvm::ConstantInt::get(llvm::Type::getInt64Ty(irCtx->llctx), 0u, false),
-							    count->get_llvm());
-							auto intPtrTy = llvm::Type::getIntNTy(
-							    irCtx->llctx, irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
-							                      irCtx->llctx, ptrTy->usable_address_space(irCtx))));
-							irCtx->builder.CreateCondBr(
-							    irCtx->builder.CreateICmpNE(
-							        irCtx->builder.CreatePtrToInt(
-							            irCtx->builder.CreateLoad(
-							                llvm::PointerType::get(irCtx->llctx,
-							                                       irCtx->dataLayout.getProgramAddressSpace()),
-							                irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
-							            intPtrTy),
-							        llvm::ConstantInt::get(intPtrTy, 0u, false)),
-							    condBlock->get_bb(), restBlock->get_bb());
-							condBlock->set_active(irCtx->builder);
-							SHOW("Set condition block active")
-							irCtx->builder.CreateCondBr(
-							    irCtx->builder.CreateICmpULT(
-							        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(), count->get_llvm()),
-							        irCtx->builder.CreateLoad(
-							            count->get_ir_type()->get_llvm_type(),
-							            irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 1u))),
-							    trueBlock->get_bb(), restBlock->get_bb());
-							trueBlock->set_active(irCtx->builder);
-							SHOW("Set trueblock active")(void)
-							    dstrFn->call(irCtx,
-							                 {irCtx->builder.CreateLoad(
-							                     llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-							                                            irCtx->dataLayout.getProgramAddressSpace()),
-							                     irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u))},
-							                 None, fun->get_module());
-							irCtx->builder.CreateStore(
-							    irCtx->builder.CreateAdd(
-							        llvm::ConstantInt::get(count->get_ir_type()->get_llvm_type(), 1u, false),
-							        irCtx->builder.CreateLoad(count->get_ir_type()->get_llvm_type(),
-							                                  count->get_llvm())),
-							    count->get_llvm());
-							(void)ir::add_branch(irCtx->builder, condBlock->get_bb());
-							restBlock->set_active(irCtx->builder);
-						} else {
-							auto* currBlock = fun->get_block();
-							auto* trueBlock = ir::Block::create(fun, currBlock);
-							auto* restBlock = ir::Block::create(fun, nullptr);
-							restBlock->link_previous_block(currBlock);
-							auto intPtrTy = llvm::Type::getIntNTy(
-							    irCtx->llctx, irCtx->dataLayout.getPointerTypeSizeInBits(llvm::PointerType::get(
-							                      irCtx->llctx, ptrTy->usable_address_space(irCtx))));
-							irCtx->builder.CreateCondBr(
-							    irCtx->builder.CreateICmpNE(
-							        irCtx->builder.CreatePtrToInt(
-							            irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr), intPtrTy),
-							        llvm::ConstantInt::get(intPtrTy, 0u, false)),
-							    trueBlock->get_bb(), restBlock->get_bb());
-							trueBlock->set_active(irCtx->builder);
-							irCtx->builder.CreateCall(dstrFn->get_llvm_function()->getFunctionType(),
-							                          dstrFn->get_llvm_function(),
-							                          {irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr)});
-							(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
-							restBlock->set_active(irCtx->builder);
+		auto* method = (ir::Method*)fun;
+		if (method->get_method_type() == MethodType::destructor) {
+			const auto self = method->get_first_block()->get_value("''");
+			if (method->get_parent_type()->is_struct()) {
+				const auto structTy = method->get_parent_type()->as_struct();
+				if (structTy->is_destructible()) {
+					// We are creating the logic for the destructor for this type here,
+					// is_destructible works because it can be true if the fields are destructible
+					for (usize i = 0; i < structTy->get_members().size(); i++) {
+						const auto field = structTy->get_members().at(i);
+						if (field->type->is_destructible()) {
+							field->type->destroy_value(
+							    irCtx,
+							    ir::Value::get(
+							        irCtx->builder.CreateStructGEP(structTy->get_llvm_type(), self->get_llvm(), i),
+							        ir::RefType::get(true, field->type,
+							                         self->get_ir_type()->as_ref()->get_address_space(), irCtx),
+							        false),
+							    fun);
 						}
 					}
-					auto freeName = fun->get_module()->link_internal_dependency(
-					    InternalDependency::free, irCtx,
-					    fun->has_definition_range() ? fun->get_definition_range() : fun->get_name().range);
-					auto* freeFn = fun->get_module()->get_llvm_module()->getFunction(freeName);
-					irCtx->builder.CreateCall(
-					    freeFn->getFunctionType(), freeFn,
-					    {ptrTy->is_multi()
-					         ? irCtx->builder.CreatePointerCast(
-					               irCtx->builder.CreateLoad(
-					                   llvm::PointerType::get(ptrTy->get_subtype()->get_llvm_type(),
-					                                          irCtx->dataLayout.getProgramAddressSpace()),
-					                   irCtx->builder.CreateStructGEP(ptrTy->get_llvm_type(), memPtr, 0u)),
-					               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-					                                      irCtx->dataLayout.getProgramAddressSpace()))
-					         : irCtx->builder.CreatePointerCast(
-					               irCtx->builder.CreateLoad(ptrTy->get_llvm_type(), memPtr),
-					               llvm::PointerType::get(llvm::Type::getInt8Ty(irCtx->llctx),
-					                                      irCtx->dataLayout.getProgramAddressSpace()))});
+				}
+			} else if (method->get_parent_type()->is_mix()) {
+				const auto mixTy = method->get_parent_type()->as_mix();
+				if (mixTy->is_destructible()) {
+					// We are creating the logic for the destructor for this type here,
+					// is_destructible works because it can be true if the variants are destructible
+					const auto tag = irCtx->builder.CreateLoad(
+					    llvm::Type::getIntNTy(irCtx->llctx, mixTy->get_tag_bitwidth()),
+					    irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), self->get_llvm(), 0u));
+					auto       currBlock = method->get_block();
+					const auto restBlock = ir::Block::create(method, currBlock->get_parent());
+					restBlock->link_previous_block(currBlock);
+					for (usize i = 0; i < mixTy->get_variant_count(); i++) {
+						const auto trueBlock = ir::Block::create(method, currBlock);
+						const auto falseBlock =
+						    (i == (mixTy->get_variant_count() - 1)) ? restBlock : ir::Block::create(method, currBlock);
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpEQ(
+						        tag, llvm::ConstantInt::get(
+						                 llvm::Type::getIntNTy(irCtx->llctx, mixTy->get_tag_bitwidth()), i)),
+						    trueBlock->get_bb(), falseBlock->get_bb());
+						trueBlock->set_active(irCtx->builder);
+						auto variantTy = mixTy->get_variant_type_at(i);
+						if (variantTy->is_destructible()) {
+							variantTy->destroy_value(
+							    irCtx,
+							    ir::Value::get(
+							        irCtx->builder.CreateStructGEP(mixTy->get_llvm_type(), self->get_llvm(), 1u),
+							        ir::RefType::get(true, variantTy,
+							                         self->get_ir_type()->as_ref()->get_address_space(), irCtx),
+							        false),
+							    fun);
+						}
+						(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+						//
+						falseBlock->set_active(irCtx->builder);
+						currBlock = falseBlock;
+					}
 				}
 			}
-			if (fun->get_block_count() >= 1 && fun->get_first_block()->has_value("''")) {
-				SHOW("Destructor self value is zero assigned")
-				auto* selfVal = fun->get_first_block()->get_value("''");
-				irCtx->builder.CreateStore(llvm::Constant::getNullValue(cTy->get_llvm_type()), selfVal->get_alloca());
-			} else {
-				SHOW("Destructor has no self value")
-			}
+			// FIXME - Support distinct types once they are added
 		}
 	}
 }
 
 void function_return_handler(ir::Ctx* irCtx, ir::Function* fun, FileRangePtr fileRange) {
 	SHOW("Starting function return handle for: " << fun->get_full_name())
-	// FIXME - Support destructors for types besides struct types
 	auto* block = fun->get_block();
 	if (block->has_todo()) {
 		return;

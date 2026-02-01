@@ -24,7 +24,7 @@ enum class LocalityKind {
 class Locality {
   public:
 	void*        origin;
-	LocalityKind locality;
+	LocalityKind kind;
 
 	static Locality in_heap();
 	static Locality in_static();
@@ -38,26 +38,26 @@ class Locality {
 
 	Region* origin_as_region() const { return ((Type*)origin)->as_region(); }
 
-	bool is_none() const { return locality == LocalityKind::NONE; }
+	bool is_none() const { return kind == LocalityKind::NONE; }
 
-	bool is_any_region() const { return locality == LocalityKind::ANY_REGION; }
+	bool is_any_region() const { return kind == LocalityKind::ANY_REGION; }
 
-	bool is_region_type() const { return locality == LocalityKind::REGION_TYPE; }
+	bool is_region_type() const { return kind == LocalityKind::REGION_TYPE; }
 
-	bool is_heap() const { return locality == LocalityKind::HEAP; }
+	bool is_heap() const { return kind == LocalityKind::HEAP; }
 
-	bool is_own() const { return locality == LocalityKind::OWN; }
+	bool is_own() const { return kind == LocalityKind::OWN; }
 
-	bool is_static() const { return locality == LocalityKind::STATIC; }
+	bool is_static() const { return kind == LocalityKind::STATIC; }
 
-	bool is_prerun() const { return locality == LocalityKind::PRERUN; }
+	bool is_prerun() const { return kind == LocalityKind::PRERUN; }
 
-	bool is_use() const { return locality == LocalityKind::USE; }
+	bool is_use() const { return kind == LocalityKind::USE; }
 
-	bool is_atomic() const { return locality == LocalityKind::ATOMIC; }
+	bool is_atomic() const { return kind == LocalityKind::ATOMIC; }
 
 	bool requires_destruction() const {
-		return locality == LocalityKind::OWN or locality == LocalityKind::USE or locality == LocalityKind::ATOMIC;
+		return kind == LocalityKind::OWN or kind == LocalityKind::USE or kind == LocalityKind::ATOMIC;
 	}
 
 	bool is_same(const Locality& other) const;
@@ -97,7 +97,7 @@ class PtrType : public Type {
 	bool is_nullable() const;
 	bool is_non_nullable() const;
 
-	bool can_be_prerun() const final { return subType->is_function(); }
+	bool can_be_prerun() const final { return locality.kind == LocalityKind::PRERUN; }
 
 	bool is_type_sized() const final;
 	bool has_prerun_default_value() const final;

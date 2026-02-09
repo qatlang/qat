@@ -5805,7 +5805,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						auto sourceExp = do_expression(preCtx, None, i, None);
 						i              = sourceExp.second;
 						if (not is_next(TokenType::parenthesisClose, i)) {
-							add_error("Expected ) after this to end the 'span expression", RangeSpan(start, i));
+							add_error("Expected ) after this to end the 'swap expression", RangeSpan(start, i));
 						}
 						i++;
 						setCachedExpr(

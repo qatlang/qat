@@ -5801,7 +5801,7 @@ Pair<ast::Expression*, usize> Parser::do_expression(ParserContext&            pr
 						if (not is_next(TokenType::parenthesisOpen, i + 1)) {
 							add_error("Expected ( after this", RangeAt(i));
 						}
-						i++;
+						i += 2;
 						auto sourceExp = do_expression(preCtx, None, i, None);
 						i              = sourceExp.second;
 						if (not is_next(TokenType::parenthesisClose, i)) {

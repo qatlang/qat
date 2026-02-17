@@ -6,7 +6,7 @@
 <a href="https://github.com/AldrinMathew"><img src="https://img.shields.io/badge/Profile-000000?style=for-the-badge&logo=github&logoColor=white" alt="Github badge"/></a>
 </div>
 
-![Qat cover image](./media/curved_cover_wide.png)
+![Qat cover image](./media/qat_cover_wide.png)
 
 <div>
 <a href="https://opencollective.com/qatlang"><img src="https://img.shields.io/badge/Open%20Collective-3385FF?style=for-the-badge&logo=open-collective&logoColor=white" alt="Open Collective badge"/></a>

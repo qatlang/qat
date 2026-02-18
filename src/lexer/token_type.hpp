@@ -121,6 +121,8 @@ enum class TokenType : u8 {
 	atomic,
 	swap,
 	blank,
+	lambdaSymbol,
+	lambdaKeyword,
 };
 
 } // namespace qat::lexer

@@ -98,6 +98,7 @@ const HashMap<StringView, TokenType> Lexer::keywordMapping = {
     {"poly", TokenType::polymorph},
     {"ignore", TokenType::ignore},
     {"atomic", TokenType::atomic},
+    {"lambda", TokenType::lambdaKeyword},
 };
 
 const HashSet<StringView> Lexer::nativeTypeMapping = {
@@ -651,6 +652,11 @@ void Lexer::tokeniser() {
 			case ';': {
 				read();
 				NORMAL_TOKEN(TokenType::semiColon, this->get_position(1))
+				break;
+			}
+			case '^': {
+				read();
+				NORMAL_TOKEN(TokenType::lambdaSymbol, this->get_position(1));
 				break;
 			}
 			case '"': {

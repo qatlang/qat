@@ -1,8 +1,12 @@
 #include "./method_call.hpp"
 #include "../../IR/types/array.hpp"
+#include "../../IR/types/error.hpp"
+#include "../../IR/types/maybe.hpp"
 #include "../../IR/types/native_type.hpp"
 #include "../../IR/types/pointer.hpp"
+#include "../../IR/types/result.hpp"
 #include "../../IR/types/tuple.hpp"
+#include "../../IR/types/typed.hpp"
 #include "../../IR/types/unsigned.hpp"
 #include "../../IR/types/vector.hpp"
 
@@ -138,7 +142,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 		return ir::PrerunValue::get(
 		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_text() ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
-	} else if (memberName.value == "is_struct") {
+	} else if (memberName.value == "is_struct_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(
 		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx), subTy->is_struct() ? 1u : 0u),
@@ -204,7 +208,7 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 		    llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
 		                           (subTy->is_ptr() && not subTy->as_ptr()->is_multi()) ? 1u : 0u),
 		    ir::UnsignedType::create_bool(ctx->irCtx));
-	} else if (memberName.value == "is_multiptr_type") {
+	} else if (memberName.value == "is_multi_type") {
 		zeroArgCheck();
 		return ir::PrerunValue::get(llvm::ConstantInt::get(llvm::Type::getInt1Ty(ctx->irCtx->llctx),
 		                                                   (subTy->is_ptr() && subTy->as_ptr()->is_multi()) ? 1u : 0u),
@@ -294,9 +298,50 @@ ir::PrerunValue* handle_type_wrap_functions(ir::PrerunValue* typed, Vec<Expressi
 			    "This attribute can only be used for array, fixed vector or tuple types, make sure that the type is appropriate before querying this attribute",
 			    fileRange);
 		}
+	} else if (memberName.value == "value_type") {
+		zeroArgCheck();
+		if (subTy->is_ptr()) {
+			return ir::PrerunValue::get(
+			    ir::TypeInfo::create(ctx->irCtx, subTy->as_ptr()->get_subtype(), ctx->mod)->typeInfo,
+			    ir::TypedType::get(ctx->irCtx));
+		} else if (subTy->is_maybe()) {
+			return ir::PrerunValue::get(
+			    ir::TypeInfo::create(ctx->irCtx, subTy->as_maybe()->get_subtype(), ctx->mod)->typeInfo,
+			    ir::TypedType::get(ctx->irCtx));
+		} else if (subTy->is_result()) {
+			return ir::PrerunValue::get(
+			    ir::TypeInfo::create(ctx->irCtx, subTy->as_result()->get_valid_type(), ctx->mod)->typeInfo,
+			    ir::TypedType::get(ctx->irCtx));
+		} else if (subTy->is_error()) {
+			return ir::PrerunValue::get(
+			    ir::TypeInfo::create(ctx->irCtx, subTy->as_error()->get_subtype(), ctx->mod)->typeInfo,
+			    ir::TypedType::get(ctx->irCtx));
+		} else {
+			ctx->Error(
+			    "The attribute " + ctx->color(memberName.value) +
+			        " is only supported for pointer, multi-pointer, maybe, result and error types. Found the type " +
+			        ctx->color(subTy->to_string()) + " instead",
+			    memberName.range);
+		}
+	} else if (memberName.value == "error_type") {
+		zeroArgCheck();
+		if (subTy->is_result()) {
+			return ir::PrerunValue::get(
+			    ir::TypeInfo::create(ctx->irCtx, subTy->as_result()->get_error_type(), ctx->mod)->typeInfo,
+			    ir::TypedType::get(ctx->irCtx));
+		} else {
+			ctx->Error(
+			    "The attribute " + ctx->color(memberName.value) +
+			        " is only supported for result types. Found the type " + ctx->color(subTy->to_string()) +
+			        " instead." +
+			        (subTy->is_error()
+			             ? (" If you meant to retrieve the underlying type of an error type, use the attribute " +
+			                ctx->color("value_type") + " instead.")
+			             : ""),
+			    memberName.range);
+		}
 	} else {
-		ctx->Error(ctx->color(memberName.value) + " is not a recognised attribute for the wrapped type",
-		           memberName.range);
+		ctx->Error(ctx->color(memberName.value) + " is not a supported attribute for wrapped types", memberName.range);
 	}
 	return nullptr;
 }

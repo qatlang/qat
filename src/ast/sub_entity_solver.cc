@@ -1,9 +1,11 @@
 #include "./sub_entity_solver.hpp"
 #include "../IR/types/array.hpp"
 #include "../IR/types/definition.hpp"
+#include "../IR/types/error.hpp"
 #include "../IR/types/expanded_type.hpp"
 #include "../IR/types/integer.hpp"
 #include "../IR/types/maybe.hpp"
+#include "../IR/types/pointer.hpp"
 #include "../IR/types/result.hpp"
 #include "../IR/types/struct_type.hpp"
 #include "../IR/types/unsigned.hpp"
@@ -216,7 +218,7 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 					}
 				}
 			} else if (type->is_maybe()) {
-				if (name.value == "sub_type") {
+				if (name.value == "value_type") {
 					if (isLast()) {
 						return SubEntityResult::get_type(type->as_maybe()->get_subtype());
 					} else {
@@ -229,7 +231,7 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 					           name.range);
 				}
 			} else if (type->is_result()) {
-				if (name.value == "valid_type") {
+				if (name.value == "value_type") {
 					if (isLast()) {
 						return SubEntityResult::get_type(type->as_result()->get_valid_type());
 					} else {
@@ -247,6 +249,28 @@ SubEntityResult sub_entity_solver(EmitCtx* ctx, bool isStrictlyPrerun, SubEntity
 					ctx->Error("Unsupported property " + ctx->color(name.value) + " for type " +
 					               ctx->color(type->to_string()),
 					           name.range);
+				}
+			} else if (type->is_error()) {
+				if (name.value == "value_type") {
+					if (isLast()) {
+						return SubEntityResult::get_type(type->as_error()->get_subtype());
+					} else {
+						current = SubEntityParent::of_type(type->as_error()->get_subtype(), name.range);
+						continue;
+					}
+				} else {
+					ctx->Error("Unsupported property " + ctx->color(name.value) + " for type " +
+					               ctx->color(type->to_string()),
+					           name.range);
+				}
+			} else if (type->is_ptr()) {
+				if (name.value == "value_type") {
+					if (isLast()) {
+						return SubEntityResult::get_type(type->as_ptr()->get_subtype());
+					} else {
+						current = SubEntityParent::of_type(type->as_ptr()->get_subtype(), name.range);
+						continue;
+					}
 				}
 			}
 		} else if (current.kind == SubEntityParentKind::SKILL) {

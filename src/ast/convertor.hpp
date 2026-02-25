@@ -96,7 +96,7 @@ class ConvertorDefinition {
 
 	ir::Value* emit(MethodState& state, ir::Ctx* irCtx);
 
-	NodeType nodeType() const { return NodeType::FUNCTION_DEFINITION; }
+	NodeType nodeType() const { return NodeType::CONVERTOR_DEFINITION; }
 };
 
 } // namespace qat::ast

@@ -2,6 +2,7 @@ add_library(ASTSentences STATIC
 	assignment.cc
 	break.cc
 	continue.cc
+	copy_move_pointer.cc
 	expression_sentence.cc
 	give_sentence.cc
 	if_else.cc
@@ -18,8 +19,8 @@ add_library(ASTSentences STATIC
 )
 
 target_compile_options(ASTSentences PRIVATE
-  -Wall
-  -Wunused)
+	-Wall
+	-Wunused)
 
 target_include_directories(ASTSentences SYSTEM PRIVATE "${LLVM_INCLUDE_DIRS}" "${CMAKE_SOURCE_DIR}/../include")
 

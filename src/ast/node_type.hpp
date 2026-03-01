@@ -129,6 +129,7 @@ enum class NodeType {
 	ATOMIC_OPERATIONS,
 	SWAP,
 	END_POINTER,
+	COPY_MOVE_POINTER,
 };
 
 } // namespace qat::ast

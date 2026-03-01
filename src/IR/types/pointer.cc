@@ -1,5 +1,7 @@
 #include "./pointer.hpp"
+#include "../control_flow.hpp"
 #include "../function.hpp"
+#include "./reference.hpp"
 #include "./region.hpp"
 
 #include <llvm/IR/Constants.h>
@@ -12,25 +14,25 @@ namespace qat::ir {
 
 Vec<PtrType*> PtrType::allPtrTypes = {};
 
-Locality Locality::in_heap() { return Locality{.origin = nullptr, .locality = LocalityKind::HEAP}; }
+Locality Locality::in_heap() { return Locality{.origin = nullptr, .kind = LocalityKind::HEAP}; }
 
-Locality Locality::in_static() { return Locality{.origin = nullptr, .locality = LocalityKind::STATIC}; }
+Locality Locality::in_static() { return Locality{.origin = nullptr, .kind = LocalityKind::STATIC}; }
 
-Locality Locality::none() { return Locality{.origin = nullptr, .locality = LocalityKind::NONE}; }
+Locality Locality::none() { return Locality{.origin = nullptr, .kind = LocalityKind::NONE}; }
 
-Locality Locality::in_own() { return Locality{.origin = nullptr, .locality = LocalityKind::OWN}; }
+Locality Locality::in_own() { return Locality{.origin = nullptr, .kind = LocalityKind::OWN}; }
 
 Locality Locality::in_region_type(Region* region) {
-	return Locality{.origin = region, .locality = LocalityKind::REGION_TYPE};
+	return Locality{.origin = region, .kind = LocalityKind::REGION_TYPE};
 }
 
-Locality Locality::in_any_region() { return Locality{.origin = nullptr, .locality = LocalityKind::ANY_REGION}; }
+Locality Locality::in_any_region() { return Locality{.origin = nullptr, .kind = LocalityKind::ANY_REGION}; }
 
-Locality Locality::in_prerun() { return Locality{.origin = nullptr, .locality = LocalityKind::PRERUN}; }
+Locality Locality::in_prerun() { return Locality{.origin = nullptr, .kind = LocalityKind::PRERUN}; }
 
 bool Locality::is_same(const Locality& other) const {
-	if (locality == other.locality) {
-		switch (locality) {
+	if (kind == other.kind) {
+		switch (kind) {
 			case LocalityKind::NONE:
 			case LocalityKind::STATIC:
 			case LocalityKind::HEAP:
@@ -49,7 +51,7 @@ bool Locality::is_same(const Locality& other) const {
 }
 
 String Locality::to_string() const {
-	switch (locality) {
+	switch (kind) {
 		case LocalityKind::ANY_REGION:
 			return "region";
 		case LocalityKind::REGION_TYPE:
@@ -113,12 +115,6 @@ PtrType* PtrType::get(bool isSubtypeVariable, Type* type, bool nonNullable, Loca
 	                         std::move(addressSpace), irCtx);
 }
 
-bool PtrType::is_subtype_variable() const { return isSubtypeVar; }
-
-bool PtrType::is_type_sized() const { return true; }
-
-bool PtrType::has_prerun_default_value() const { return not nonNullable; }
-
 PrerunValue* PtrType::get_prerun_default_value(ir::Ctx* irCtx) {
 	if (has_prerun_default_value()) {
 		if (is_multi()) {
@@ -133,23 +129,677 @@ PrerunValue* PtrType::get_prerun_default_value(ir::Ctx* irCtx) {
 	}
 }
 
-bool PtrType::has_simple_copy() const { return not(locality.is_own() or locality.is_use() or locality.is_atomic()); }
-
-bool PtrType::has_simple_move() const {
-	return (not nonNullable) and not(locality.is_own() or locality.is_use() or locality.is_atomic());
+void PtrType::copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+	switch (locality.kind) {
+		case LocalityKind::USE: {
+			const auto ptrTy  = llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx));
+			const auto secPtr = irCtx->builder.CreateLoad(
+			    ptrTy,
+			    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), 0u) : second->get_llvm()));
+			if (nonNullable) {
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateStore(irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+				                                                    llvm::ConstantInt::get(refCountTy, 1u)),
+				                           refCountPtr);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+			} else {
+				const auto currBlock = fun->get_block();
+				const auto trueBlock = ir::Block::create(fun, currBlock);
+				const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+				restBlock->link_previous_block(currBlock);
+				const auto uintPtrTy =
+				    llvm::Type::getIntNTy(irCtx->llctx, irCtx->dataLayout.getPointerTypeSizeInBits(ptrTy));
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(irCtx->builder.CreatePtrToInt(secPtr, uintPtrTy),
+				                                llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    trueBlock->get_bb(), restBlock->get_bb());
+				trueBlock->set_active(irCtx->builder);
+				//
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateStore(irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+				                                                    llvm::ConstantInt::get(refCountTy, 1u)),
+				                           refCountPtr);
+				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+				//
+				restBlock->set_active(irCtx->builder);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+			}
+			break;
+		}
+		case LocalityKind::ATOMIC: {
+			const auto secPtr = irCtx->builder.CreateLoad(
+			    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+			    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), 0u) : second->get_llvm()));
+			if (nonNullable) {
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Add, refCountPtr,
+				                               llvm::ConstantInt::get(refCountTy, 1u), None,
+				                               llvm::AtomicOrdering::Monotonic);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+			} else {
+				const auto currBlock = fun->get_block();
+				const auto trueBlock = ir::Block::create(fun, currBlock);
+				const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+				restBlock->link_previous_block(currBlock);
+				const auto uintPtrTy = llvm::Type::getIntNTy(
+				    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntPtrType()));
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(irCtx->builder.CreatePtrToInt(secPtr, uintPtrTy),
+				                                llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    trueBlock->get_bb(), restBlock->get_bb());
+				trueBlock->set_active(irCtx->builder);
+				//
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Add, refCountPtr,
+				                               llvm::ConstantInt::get(refCountTy, 1u), None,
+				                               llvm::AtomicOrdering::Monotonic);
+				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+				//
+				restBlock->set_active(irCtx->builder);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+			}
+			break;
+		}
+		default:
+			break;
+	}
 }
 
-bool PtrType::is_multi() const { return hasMulti; }
+void PtrType::copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+	switch (locality.kind) {
+		case LocalityKind::USE: {
+			const auto secPtr = irCtx->builder.CreateLoad(
+			    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+			    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), 0u) : second->get_llvm()));
+			if (nonNullable) {
+				this->destroy_value(irCtx, first, fun);
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateStore(irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+				                                                    llvm::ConstantInt::get(refCountTy, 1u)),
+				                           refCountPtr);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+			} else {
+				const auto currBlock      = fun->get_block();
+				const auto firstTrueBlock = ir::Block::create(fun, currBlock);
+				const auto firstRestBlock = ir::Block::create(fun, currBlock->get_parent());
+				firstRestBlock->link_previous_block(currBlock);
+				const auto uintPtrTy = llvm::Type::getIntNTy(
+				    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntPtrType()));
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(
+				        irCtx->builder.CreatePtrToInt(
+				            irCtx->builder.CreateLoad(
+				                llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				                (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), 0u)
+				                          : first->get_llvm())),
+				            uintPtrTy),
+				        llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    firstTrueBlock->get_bb(), firstRestBlock->get_bb());
+				firstTrueBlock->set_active(irCtx->builder);
+				this->destroy_value(irCtx, first, fun);
+				(void)ir::add_branch(irCtx->builder, firstRestBlock->get_bb());
+				firstRestBlock->set_active(irCtx->builder);
+				const auto secTrueBlock = ir::Block::create(fun, firstRestBlock);
+				const auto restBlock    = ir::Block::create(fun, firstRestBlock->get_parent());
+				restBlock->link_previous_block(firstRestBlock);
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(irCtx->builder.CreatePtrToInt(secPtr, uintPtrTy),
+				                                llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    secTrueBlock->get_bb(), restBlock->get_bb());
+				secTrueBlock->set_active(irCtx->builder);
+				//
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateStore(irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+				                                                    llvm::ConstantInt::get(refCountTy, 1u)),
+				                           refCountPtr);
+				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+				restBlock->set_active(irCtx->builder);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+				//
+			}
+			break;
+		}
+		case LocalityKind::ATOMIC: {
+			const auto secPtr = irCtx->builder.CreateLoad(
+			    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+			    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, second->get_llvm(), 0u) : second->get_llvm()));
+			if (nonNullable) {
+				this->destroy_value(irCtx, first, fun);
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Add, refCountPtr,
+				                               llvm::ConstantInt::get(refCountTy, 1u), None,
+				                               llvm::AtomicOrdering::Monotonic);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+			} else {
+				const auto currBlock = fun->get_block();
+				const auto uintPtrTy = llvm::Type::getIntNTy(
+				    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntPtrType()));
+				const auto firstTrueBlock = ir::Block::create(fun, currBlock);
+				const auto firstRestBlock = ir::Block::create(fun, currBlock->get_parent());
+				firstRestBlock->link_previous_block(currBlock);
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(
+				        irCtx->builder.CreatePtrToInt(
+				            irCtx->builder.CreateLoad(
+				                llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				                (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, first->get_llvm(), 0u)
+				                          : first->get_llvm())),
+				            uintPtrTy),
+				        llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    firstTrueBlock->get_bb(), firstRestBlock->get_bb());
+				firstTrueBlock->set_active(irCtx->builder);
+				this->destroy_value(irCtx, first, fun);
+				(void)ir::add_branch(irCtx->builder, firstRestBlock->get_bb());
+				firstRestBlock->set_active(irCtx->builder);
+				const auto secTrueBlock = ir::Block::create(fun, firstRestBlock);
+				const auto restBlock    = ir::Block::create(fun, firstRestBlock->get_parent());
+				restBlock->link_previous_block(firstRestBlock);
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(irCtx->builder.CreatePtrToInt(secPtr, uintPtrTy),
+				                                llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    secTrueBlock->get_bb(), restBlock->get_bb());
+				secTrueBlock->set_active(irCtx->builder);
+				//
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, secPtr,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Add, refCountPtr,
+				                               llvm::ConstantInt::get(refCountTy, 1u), None,
+				                               llvm::AtomicOrdering::Monotonic);
+				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+				restBlock->set_active(irCtx->builder);
+				irCtx->builder.CreateStore(hasMulti ? irCtx->builder.CreateLoad(llvmType, second->get_llvm()) : secPtr,
+				                           first->get_llvm());
+				//
+			}
+			break;
+		}
+		default:
+			break;
+	}
+}
 
-bool PtrType::is_nullable() const { return not nonNullable; }
+void PtrType::move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+	switch (locality.kind) {
+		case LocalityKind::OWN:
+		case LocalityKind::USE:
+		case LocalityKind::ATOMIC: {
+			irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvmType, second->get_llvm()), first->get_llvm());
+			irCtx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), second->get_llvm());
+			break;
+		}
+		default:
+			break;
+	}
+}
 
-bool PtrType::is_non_nullable() const { return nonNullable; }
+void PtrType::move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) {
+	switch (locality.kind) {
+		case LocalityKind::OWN:
+		case LocalityKind::USE:
+		case LocalityKind::ATOMIC: {
+			this->destroy_value(irCtx, first, fun);
+			irCtx->builder.CreateStore(irCtx->builder.CreateLoad(llvmType, second->get_llvm()), first->get_llvm());
+			irCtx->builder.CreateStore(llvm::Constant::getNullValue(llvmType), second->get_llvm());
+			break;
+		}
+		default:
+			break;
+	}
+}
 
-Type* PtrType::get_subtype() const { return subType; }
-
-Maybe<AddressSpace> const& PtrType::get_address_space() const { return addressSpace; }
-
-Locality PtrType::get_locality() const { return locality; }
+void PtrType::destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) {
+	switch (locality.kind) {
+		case LocalityKind::OWN: {
+			if (subType->is_destructible()) {
+				if (nonNullable) {
+					if (hasMulti) {
+						const auto ptrVal = irCtx->builder.CreateLoad(
+						    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+						    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+						              : instance->get_llvm()));
+						const auto usizeTy = llvm::Type::getIntNTy(
+						    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()));
+						const auto ptrLen = irCtx->builder.CreateLoad(
+						    usizeTy, irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 1u));
+						const auto index = fun->get_str_comparison_index(irCtx);
+						irCtx->builder.CreateStore(llvm::ConstantInt::get(usizeTy, 0u), index->get_llvm());
+						const auto currBlock = fun->get_block();
+						const auto loopBlock = ir::Block::create(fun, currBlock);
+						const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						loopBlock->set_active(irCtx->builder);
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(irCtx->builder.CreateInBoundsGEP(
+						                       subType->get_llvm_type(), ptrVal,
+						                       {irCtx->builder.CreateLoad(usizeTy, index->get_llvm())}),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+						irCtx->builder.CreateStore(
+						    irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()),
+						                             llvm::ConstantInt::get(usizeTy, 1u)),
+						    index->get_llvm());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						restBlock->set_active(irCtx->builder);
+					} else {
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(instance->get_llvm(),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+					}
+				} else {
+					const auto currBlock = fun->get_block();
+					const auto uintPtrTy = llvm::Type::getIntNTy(
+					    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntPtrType()));
+					const auto trueBlock = ir::Block::create(fun, currBlock);
+					const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+					restBlock->link_previous_block(currBlock);
+					irCtx->builder.CreateCondBr(
+					    irCtx->builder.CreateICmpNE(
+					        irCtx->builder.CreatePtrToInt(
+					            irCtx->builder.CreateLoad(
+					                llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+					                (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+					                          : instance->get_llvm())),
+					            uintPtrTy),
+					        llvm::ConstantInt::get(uintPtrTy, 0u)),
+					    trueBlock->get_bb(), restBlock->get_bb());
+					trueBlock->set_active(irCtx->builder);
+					if (hasMulti) {
+						const auto ptrVal = irCtx->builder.CreateLoad(
+						    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+						    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+						              : instance->get_llvm()));
+						const auto usizeTy = llvm::Type::getIntNTy(
+						    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()));
+						const auto ptrLen = irCtx->builder.CreateLoad(
+						    usizeTy, irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 1u));
+						const auto index = fun->get_str_comparison_index(irCtx);
+						irCtx->builder.CreateStore(llvm::ConstantInt::get(usizeTy, 0u), index->get_llvm());
+						const auto currBlock = trueBlock;
+						const auto loopBlock = ir::Block::create(fun, currBlock);
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						loopBlock->set_active(irCtx->builder);
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(irCtx->builder.CreateInBoundsGEP(
+						                       subType->get_llvm_type(), ptrVal,
+						                       {irCtx->builder.CreateLoad(usizeTy, index->get_llvm())}),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+						irCtx->builder.CreateStore(
+						    irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()),
+						                             llvm::ConstantInt::get(usizeTy, 1u)),
+						    index->get_llvm());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+					} else {
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(instance->get_llvm(),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+					}
+					(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+					restBlock->set_active(irCtx->builder);
+				}
+			}
+			break;
+		}
+		case LocalityKind::USE: {
+			if (nonNullable) {
+				const auto ptrVal = irCtx->builder.CreateLoad(
+				    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+				              : instance->get_llvm()));
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, ptrVal,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateStore(irCtx->builder.CreateSub(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+				                                                    llvm::ConstantInt::get(refCountTy, 1u)),
+				                           refCountPtr);
+				if (subType->is_destructible()) {
+					const auto currBlock = fun->get_block();
+					const auto trueBlock = ir::Block::create(fun, currBlock);
+					const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+					restBlock->link_previous_block(currBlock);
+					irCtx->builder.CreateCondBr(
+					    irCtx->builder.CreateICmpEQ(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+					                                llvm::ConstantInt::get(refCountTy, 0u)),
+					    trueBlock->get_bb(), restBlock->get_bb());
+					trueBlock->set_active(irCtx->builder);
+					if (hasMulti) {
+						const auto usizeTy = llvm::Type::getIntNTy(
+						    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()));
+						const auto ptrLen = irCtx->builder.CreateLoad(
+						    usizeTy, irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 1u));
+						const auto index = fun->get_str_comparison_index(irCtx);
+						irCtx->builder.CreateStore(llvm::ConstantInt::get(usizeTy, 0u), index->get_llvm());
+						const auto currBlock = trueBlock;
+						const auto loopBlock = ir::Block::create(fun, currBlock);
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						loopBlock->set_active(irCtx->builder);
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(irCtx->builder.CreateInBoundsGEP(
+						                       subType->get_llvm_type(), ptrVal,
+						                       {irCtx->builder.CreateLoad(usizeTy, index->get_llvm())}),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+						irCtx->builder.CreateStore(
+						    irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()),
+						                             llvm::ConstantInt::get(usizeTy, 1u)),
+						    index->get_llvm());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+					} else {
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(instance->get_llvm(),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+					}
+					(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+					restBlock->set_active(irCtx->builder);
+				}
+			} else {
+				const auto currBlock = fun->get_block();
+				const auto uintPtrTy = llvm::Type::getIntNTy(
+				    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntPtrType()));
+				const auto trueBlock = ir::Block::create(fun, currBlock);
+				const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+				restBlock->link_previous_block(currBlock);
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(
+				        irCtx->builder.CreatePtrToInt(
+				            irCtx->builder.CreateLoad(
+				                llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				                (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+				                          : instance->get_llvm())),
+				            uintPtrTy),
+				        llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    trueBlock->get_bb(), restBlock->get_bb());
+				trueBlock->set_active(irCtx->builder);
+				//
+				const auto ptrVal = irCtx->builder.CreateLoad(
+				    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+				              : instance->get_llvm()));
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, ptrVal,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				irCtx->builder.CreateStore(irCtx->builder.CreateSub(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+				                                                    llvm::ConstantInt::get(refCountTy, 1u)),
+				                           refCountPtr);
+				if (subType->is_destructible()) {
+					const auto oneTrueBlock = ir::Block::create(fun, trueBlock);
+					irCtx->builder.CreateCondBr(
+					    irCtx->builder.CreateICmpEQ(irCtx->builder.CreateLoad(refCountTy, refCountPtr),
+					                                llvm::ConstantInt::get(refCountTy, 0u)),
+					    oneTrueBlock->get_bb(), restBlock->get_bb());
+					oneTrueBlock->set_active(irCtx->builder);
+					if (hasMulti) {
+						const auto usizeTy = llvm::Type::getIntNTy(
+						    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()));
+						const auto ptrLen = irCtx->builder.CreateLoad(
+						    usizeTy, irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 1u));
+						const auto index = fun->get_str_comparison_index(irCtx);
+						irCtx->builder.CreateStore(llvm::ConstantInt::get(usizeTy, 0u), index->get_llvm());
+						const auto currBlock = oneTrueBlock;
+						const auto loopBlock = ir::Block::create(fun, currBlock);
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						loopBlock->set_active(irCtx->builder);
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(irCtx->builder.CreateInBoundsGEP(
+						                       subType->get_llvm_type(), ptrVal,
+						                       {irCtx->builder.CreateLoad(usizeTy, index->get_llvm())}),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+						irCtx->builder.CreateStore(
+						    irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()),
+						                             llvm::ConstantInt::get(usizeTy, 1u)),
+						    index->get_llvm());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+					} else {
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(instance->get_llvm(),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+					}
+				}
+				//
+				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+				restBlock->set_active(irCtx->builder);
+			}
+			break;
+		}
+		case LocalityKind::ATOMIC: {
+			if (nonNullable) {
+				const auto ptrVal = irCtx->builder.CreateLoad(
+				    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+				              : instance->get_llvm()));
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, ptrVal,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				const auto oldValue = irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Sub, refCountPtr,
+				                                                     llvm::ConstantInt::get(refCountTy, 1u), None,
+				                                                     llvm::AtomicOrdering::AcquireRelease);
+				if (subType->is_destructible()) {
+					const auto currBlock = fun->get_block();
+					const auto trueBlock = ir::Block::create(fun, currBlock);
+					const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+					restBlock->link_previous_block(currBlock);
+					irCtx->builder.CreateCondBr(
+					    irCtx->builder.CreateICmpEQ(oldValue, llvm::ConstantInt::get(refCountTy, 1u)),
+					    trueBlock->get_bb(), restBlock->get_bb());
+					trueBlock->set_active(irCtx->builder);
+					//
+					if (hasMulti) {
+						const auto usizeTy = llvm::Type::getIntNTy(
+						    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()));
+						const auto ptrLen = irCtx->builder.CreateLoad(
+						    usizeTy, irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 1u));
+						const auto index = fun->get_str_comparison_index(irCtx);
+						irCtx->builder.CreateStore(llvm::ConstantInt::get(usizeTy, 0u), index->get_llvm());
+						const auto currBlock = trueBlock;
+						const auto loopBlock = ir::Block::create(fun, currBlock);
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						loopBlock->set_active(irCtx->builder);
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(irCtx->builder.CreateInBoundsGEP(
+						                       subType->get_llvm_type(), ptrVal,
+						                       {irCtx->builder.CreateLoad(usizeTy, index->get_llvm())}),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+						irCtx->builder.CreateStore(
+						    irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()),
+						                             llvm::ConstantInt::get(usizeTy, 1u)),
+						    index->get_llvm());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+					} else {
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(instance->get_llvm(),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+					}
+					//
+					(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+					restBlock->set_active(irCtx->builder);
+				}
+			} else {
+				const auto currBlock = fun->get_block();
+				const auto uintPtrTy = llvm::Type::getIntNTy(
+				    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getUIntPtrType()));
+				const auto trueBlock = ir::Block::create(fun, currBlock);
+				const auto restBlock = ir::Block::create(fun, currBlock->get_parent());
+				restBlock->link_previous_block(currBlock);
+				irCtx->builder.CreateCondBr(
+				    irCtx->builder.CreateICmpNE(
+				        irCtx->builder.CreatePtrToInt(
+				            irCtx->builder.CreateLoad(
+				                llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				                (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+				                          : instance->get_llvm())),
+				            uintPtrTy),
+				        llvm::ConstantInt::get(uintPtrTy, 0u)),
+				    trueBlock->get_bb(), restBlock->get_bb());
+				trueBlock->set_active(irCtx->builder);
+				//
+				const auto ptrVal = irCtx->builder.CreateLoad(
+				    llvm::PointerType::get(irCtx->llctx, usable_address_space(irCtx)),
+				    (hasMulti ? irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 0u)
+				              : instance->get_llvm()));
+				const auto refCountTy  = llvm::Type::getInt64Ty(irCtx->llctx);
+				const auto refCountPtr = irCtx->builder.CreateInBoundsGEP(
+				    refCountTy, ptrVal,
+				    {llvm::ConstantInt::get(
+				        llvm::Type::getIntNTy(irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(
+				                                                irCtx->clangTargetInfo->getSignedSizeType())),
+				        -1, true)});
+				const auto oldValue = irCtx->builder.CreateAtomicRMW(llvm::AtomicRMWInst::Sub, refCountPtr,
+				                                                     llvm::ConstantInt::get(refCountTy, 1u), None,
+				                                                     llvm::AtomicOrdering::AcquireRelease);
+				if (subType->is_destructible()) {
+					const auto oneTrueBlock = ir::Block::create(fun, trueBlock);
+					irCtx->builder.CreateCondBr(
+					    irCtx->builder.CreateICmpEQ(oldValue, llvm::ConstantInt::get(refCountTy, 1u)),
+					    oneTrueBlock->get_bb(), restBlock->get_bb());
+					oneTrueBlock->set_active(irCtx->builder);
+					if (hasMulti) {
+						const auto usizeTy = llvm::Type::getIntNTy(
+						    irCtx->llctx, irCtx->clangTargetInfo->getTypeWidth(irCtx->clangTargetInfo->getSizeType()));
+						const auto ptrLen = irCtx->builder.CreateLoad(
+						    usizeTy, irCtx->builder.CreateStructGEP(llvmType, instance->get_llvm(), 1u));
+						const auto index = fun->get_str_comparison_index(irCtx);
+						irCtx->builder.CreateStore(llvm::ConstantInt::get(usizeTy, 0u), index->get_llvm());
+						const auto currBlock = oneTrueBlock;
+						const auto loopBlock = ir::Block::create(fun, currBlock);
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+						loopBlock->set_active(irCtx->builder);
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(irCtx->builder.CreateInBoundsGEP(
+						                       subType->get_llvm_type(), ptrVal,
+						                       {irCtx->builder.CreateLoad(usizeTy, index->get_llvm())}),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+						irCtx->builder.CreateStore(
+						    irCtx->builder.CreateAdd(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()),
+						                             llvm::ConstantInt::get(usizeTy, 1u)),
+						    index->get_llvm());
+						irCtx->builder.CreateCondBr(
+						    irCtx->builder.CreateICmpULT(irCtx->builder.CreateLoad(usizeTy, index->get_llvm()), ptrLen),
+						    loopBlock->get_bb(), restBlock->get_bb());
+					} else {
+						subType->destroy_value(
+						    irCtx,
+						    ir::Value::get(instance->get_llvm(),
+						                   ir::RefType::get(true, subType, get_address_space(), irCtx), false),
+						    fun);
+					}
+				}
+				//
+				(void)ir::add_branch(irCtx->builder, restBlock->get_bb());
+				restBlock->set_active(irCtx->builder);
+			}
+			break;
+		}
+		default:
+			break;
+	}
+}
 
 u32 PtrType::usable_address_space(ir::Ctx* irCtx) const {
 	if (addressSpace.has_value()) {

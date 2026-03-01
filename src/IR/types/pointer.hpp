@@ -83,26 +83,108 @@ class PtrType : public Type {
 	static PtrType* get(bool _isSubtypeVariable, Type* _type, bool _nonNullable, Locality _locality, bool _hasMulti,
 	                    Maybe<AddressSpace> addressSpace, ir::Ctx* irCtx);
 
-	Type*    get_subtype() const;
-	Locality get_locality() const;
+	Type* get_subtype() const { return subType; }
+
+	Locality get_locality() const { return locality; }
 
 	bool has_address_space() const { return addressSpace.has_value(); }
 
 	u32 usable_address_space(ir::Ctx* irCtx) const;
 
-	Maybe<AddressSpace> const& get_address_space() const;
+	Maybe<AddressSpace> const& get_address_space() const { return addressSpace; }
 
-	bool is_subtype_variable() const;
-	bool is_multi() const;
-	bool is_nullable() const;
-	bool is_non_nullable() const;
+	bool is_subtype_variable() const { return isSubtypeVar; }
+
+	bool is_multi() const { return hasMulti; }
+
+	bool is_nullable() const { return not(nonNullable); }
+
+	bool is_non_nullable() const { return nonNullable; }
 
 	bool can_be_prerun() const final { return locality.kind == LocalityKind::PRERUN; }
 
-	bool is_type_sized() const final;
-	bool has_prerun_default_value() const final;
-	bool has_simple_copy() const final;
-	bool has_simple_move() const final;
+	bool is_copy_constructible() const final {
+		return locality.kind == LocalityKind::USE or locality.kind == LocalityKind::ATOMIC;
+	}
+
+	bool is_copy_assignable() const final {
+		return locality.kind == LocalityKind::USE or locality.kind == LocalityKind::ATOMIC;
+	}
+
+	bool is_move_constructible() const final {
+		switch (locality.kind) {
+			case LocalityKind::OWN:
+			case LocalityKind::USE:
+			case LocalityKind::ATOMIC: {
+				return is_nullable();
+			}
+			default: {
+				return false;
+			}
+		}
+	}
+
+	bool is_move_assignable() const final {
+		switch (locality.kind) {
+			case LocalityKind::OWN:
+			case LocalityKind::USE:
+			case LocalityKind::ATOMIC: {
+				return is_nullable();
+			}
+			default: {
+				return false;
+			}
+		}
+	}
+
+	bool is_destructible() const final {
+		switch (locality.kind) {
+			case LocalityKind::OWN:
+			case LocalityKind::USE:
+			case LocalityKind::ATOMIC: {
+				return true;
+			}
+			default: {
+				return false;
+			}
+		}
+	}
+
+	bool is_type_sized() const final { return true; }
+
+	bool has_prerun_default_value() const final { return is_nullable(); }
+
+	bool has_simple_copy() const final {
+		switch (locality.kind) {
+			case LocalityKind::OWN:
+			case LocalityKind::USE:
+			case LocalityKind::ATOMIC: {
+				return false;
+			}
+			default: {
+				return true;
+			}
+		}
+	}
+
+	bool has_simple_move() const final {
+		switch (locality.kind) {
+			case LocalityKind::OWN:
+			case LocalityKind::USE:
+			case LocalityKind::ATOMIC: {
+				return false;
+			}
+			default: {
+				return is_nullable();
+			}
+		}
+	}
+
+	void copy_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+	void copy_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+	void move_construct_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+	void move_assign_value(ir::Ctx* irCtx, ir::Value* first, ir::Value* second, ir::Function* fun) final;
+	void destroy_value(ir::Ctx* irCtx, ir::Value* instance, ir::Function* fun) final;
 
 	PrerunValue* get_prerun_default_value(ir::Ctx* irCtx) final;
 
